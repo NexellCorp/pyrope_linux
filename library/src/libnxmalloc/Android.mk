@@ -10,8 +10,9 @@ LOCAL_SHARED_LIBRARIES :=	\
 	liblog \
 	libcutils
 
-LOCAL_C_INCLUDES := system/core/include/ion
-LOCAL_C_INCLUDES += $(NX_HW_TOP)/include
+LOCAL_C_INCLUDES := system/core/include/ion \
+					$(NX_HW_TOP)/include \
+					$(TOP)/linux/pyrope/library/include
 
 LOCAL_CFLAGS := 
 

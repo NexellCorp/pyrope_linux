@@ -55,7 +55,7 @@
 #include "NSIH.h"
 #include "GEN_NANDBOOTEC.h"
 
-#define	VERSION_STR	"0.9.0"
+#define	VERSION_STR	"0.9.2"
 
 
 /* PRINT MACRO */
@@ -179,7 +179,7 @@ static size_t get_file_size( FILE *fd )
 //////////////////////////////////////////////////////////////////////////////
 
 
-int merge_nsih_secondboot(const char*nsih_file, const char *in_file, const char *out_file, const struct NSIH_INFO *NSIH_INFO)
+int merge_nsih_secondboot(const char*nsih_file, const char *in_file, const char *out_file, const struct NSIH_INFO *NSIH_INFO, int is_2ndboot)
 {
 	int ret = 0;
 	FILE *nish_fd = NULL;
@@ -206,6 +206,10 @@ int merge_nsih_secondboot(const char*nsih_file, const char *in_file, const char 
 	}
 
 	in_file_size = get_file_size( in_fd );
+	if( !is_2ndboot )
+	{
+		out_buf_size = in_file_size + 512;
+	}
 	if( in_file_size + NSIH_BIN_SIZE > out_buf_size )
 	{
 		ret = -1;
@@ -548,6 +552,7 @@ void print_usage(char *argv[])
 	printf(" %s -t bootloader -d nand -o nand_bootloader.bin -i u-boot.bin -n NSIH.txt -p 4096 -l 0x40100000 -e 0x40100000 \n", argv[0]);
 	printf("\nExample: normal image\n");
 	printf(" %s -t 2ndboot -d other -o 2ndboot.bin -i pyrope_2ndboot_USB.bin -n NSIH.txt -l 0x40100000 -e 0x40100000 \n", argv[0]);
+	printf(" %s -t bootloader -d other -o bootloader.bin -i u-boot.bin -n NSIH.txt -l 0x40100000 -e 0x40100000 \n", argv[0]);
 	printf("==============================================================================\n");
 	printf("\n");
 }
@@ -656,11 +661,11 @@ int main (int argc, char** argv)
 		return -1;
 	}
 
-	if( device_type==DEVICE_OTHER && build_type!=BUILD_2NDBOOT )
-	{
-		pr_error ("Other device support only second boot mode.\n");
-		return -1;
-	}
+	// if( device_type==DEVICE_OTHER && build_type!=BUILD_2NDBOOT )
+	// {
+	// 	pr_error ("Other device support only second boot mode.\n");
+	// 	return -1;
+	// }
 
 	if (!strcmp(out_file, PHASE1_FILE) || !strcmp(out_file, PHASE2_FILE)
 		|| !strcmp(in_file, PHASE1_FILE) || !strcmp(in_file, PHASE2_FILE)
@@ -716,12 +721,19 @@ int main (int argc, char** argv)
 		}
 		else
 		{
-			merge_nsih_secondboot(nsih_file, in_file, out_file, &NSIH_INFO);
+			merge_nsih_secondboot(nsih_file, in_file, out_file, &NSIH_INFO, 1);
 		}
 	}
 	else	// BUILD_BOOTLOADER
 	{
-		first_stage  (out_file, in_file, &NSIH_INFO, 0);
+		if( device_type == DEVICE_NAND )
+		{
+			first_stage  (out_file, in_file, &NSIH_INFO, 0);
+		}
+		else
+		{
+			merge_nsih_secondboot(nsih_file, in_file, out_file, &NSIH_INFO, 0);
+		}
 	}
 
 	return 0;

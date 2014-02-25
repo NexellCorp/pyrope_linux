@@ -33,7 +33,7 @@
 #define DBG_BUF_INFO		0
 #define	DBG_VBS				0
 #define	DBG_WARNING			1
-#define	DBG_USER_DATA		1
+#define	DBG_USER_DATA		0
 
 #define	DEV_NAME		"/dev/nx_vpu"
 #define	RECON_CHROMA_INTERLEAVED	0
@@ -720,6 +720,10 @@ NX_VID_RET NX_VidDecInit(NX_VID_DEC_HANDLE hDec, unsigned char *seqInfo, int seq
 	seqOut->height = seqArg->outHeight;
 	seqOut->nimBuffers = seqArg->minFrameBufCnt;
 	seqOut->numBuffers = hDec->numFrameBuffers;
+	seqOut->frameRateNum = seqArg->frameRateNum;	//	Frame Rate Numerator
+	seqOut->frameRateDen = seqArg->frameRateDen;	//	Frame Rate Denominator
+
+	NX_DbgMsg(0, ("frameRateNum = %d, frameRateDen = %d\n", seqOut->frameRateNum, seqOut->frameRateDen) );
 
 	hDec->isInitialized = 1;
 	if( seqArg )
@@ -784,7 +788,7 @@ NX_VID_RET NX_VidDecInitWidthBuffer(NX_VID_DEC_HANDLE hDec, unsigned char *seqIn
 		goto ERROR_EXIT;
 	}
 
-	NX_DbgMsg(1, ("SeqArg.Width=%d, SeqArg.Height=%d, minCnt=%d\n", seqArg->outWidth, seqArg->outHeight, seqArg->minFrameBufCnt) );
+	NX_DbgMsg(0, ("SeqArg.Width=%d, SeqArg.Height=%d, minCnt=%d\n", seqArg->outWidth, seqArg->outHeight, seqArg->minFrameBufCnt) );
 
 	if( seqArg->minFrameBufCnt < 1 || seqArg->minFrameBufCnt > numBuffers )
 	{
@@ -829,6 +833,10 @@ NX_VID_RET NX_VidDecInitWidthBuffer(NX_VID_DEC_HANDLE hDec, unsigned char *seqIn
 	seqOut->height = seqArg->outHeight;
 	seqOut->nimBuffers = seqArg->minFrameBufCnt;
 	seqOut->numBuffers = hDec->numFrameBuffers;
+	seqOut->frameRateNum = seqArg->frameRateNum;	//	Frame Rate Numerator
+	seqOut->frameRateDen = seqArg->frameRateDen;	//	Frame Rate Denominator
+
+	NX_DbgMsg(, ("frameRateNum = %d, frameRateDen = %d\n", seqOut->frameRateNum, seqOut->frameRateDen) );
 
 	if( seqOut->numBuffers - seqOut->nimBuffers < 4 )
 	{
@@ -957,6 +965,10 @@ NX_VID_RET NX_VidDecInit2(NX_VID_DEC_HANDLE hDec, NX_VID_SEQ_IN *seqIn, NX_VID_S
 	seqOut->height = seqArg->outHeight;
 	seqOut->nimBuffers = seqArg->minFrameBufCnt;
 	seqOut->numBuffers = hDec->numFrameBuffers;
+	seqOut->frameRateNum = seqArg->frameRateNum;	//	Frame Rate Numerator
+	seqOut->frameRateDen = seqArg->frameRateDen;	//	Frame Rate Denominator
+
+	NX_DbgMsg(0, ("frameRateNum = %d, frameRateDen = %d\n", seqOut->frameRateNum, seqOut->frameRateDen));
 
 	if( (seqOut->numBuffers - seqOut->nimBuffers < 2) && hDec->useExternalFrameBuffer )
 	{

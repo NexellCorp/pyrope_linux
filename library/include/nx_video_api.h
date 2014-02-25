@@ -101,6 +101,9 @@ typedef struct tNX_VID_SEQ_OUT{
 	int userDataNum;
 	int userDataSize;
 	int userDataBufFull;
+
+	int frameRateNum;	//	Frame Rate Numerator
+	int frameRateDen;	//	Frame Rate Denominator
 }NX_VID_SEQ_OUT;
 
 typedef struct tNX_VID_ENC_JPEG_PARAM{

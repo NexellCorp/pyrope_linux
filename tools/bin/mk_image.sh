@@ -9,7 +9,7 @@ FS_COPY_PATH=./
 
 FS_SIZE=16384
 FS_LOOP=loop1
-FS_NAME=image.img
+FS_NAME=fs.img
 FS_FORMAT=ext2
 FS_MOUNT_PATH=mnt
 

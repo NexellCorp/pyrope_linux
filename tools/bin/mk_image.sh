@@ -22,8 +22,8 @@ MKDEV_EXT_SH_PATH=
 function usage()
 {
 	echo "usage: `basename $0`"
-	echo "  -r directory path to build image									"
-	echo "  -c builded image copy directory, default current directory			"
+	echo "  -r root directory path to build image								"
+	echo "  -c builded image copy to directory, default current					"
 	echo "  -n builded image name, default image.img							"
 	echo "  -s image size, default 16384KB (unit KB)							"
 #	echo "  -l set loop device   (default loop1) 								"

@@ -836,7 +836,7 @@ NX_VID_RET NX_VidDecInitWidthBuffer(NX_VID_DEC_HANDLE hDec, unsigned char *seqIn
 	seqOut->frameRateNum = seqArg->frameRateNum;	//	Frame Rate Numerator
 	seqOut->frameRateDen = seqArg->frameRateDen;	//	Frame Rate Denominator
 
-	NX_DbgMsg(, ("frameRateNum = %d, frameRateDen = %d\n", seqOut->frameRateNum, seqOut->frameRateDen) );
+	NX_DbgMsg(0, ("frameRateNum = %d, frameRateDen = %d\n", seqOut->frameRateNum, seqOut->frameRateDen) );
 
 	if( seqOut->numBuffers - seqOut->nimBuffers < 4 )
 	{

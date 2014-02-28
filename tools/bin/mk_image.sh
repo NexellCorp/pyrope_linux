@@ -232,7 +232,7 @@ function build_image()
 	echo -e " Make image "
 	echo " root from = $root_path"
 	echo " disk name = $disk_name"
-	echo " disk size = $disk_size"
+	echo " disk size = $disk_size(K)"
 #	echo " loop node = $loop_node"
 	echo " fs format = $fs_format"
 	echo " copy to   = $copy_path"

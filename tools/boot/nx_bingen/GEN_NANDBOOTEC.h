@@ -2,8 +2,11 @@
 #define	__GEN_NANDBOOTEC_h__
 
 
-#define BUFSIZE				(16 * 1024)
-#define MAXPAGE				(4096)
+#define MAX_2NDBOOT			(16384)
+#define ROMBOOT_MAXPAGE		(4096)
+
+#define NSIH_LEN			(512)
+#define COPY_LEN			(8192)
 
 
 /* UTIL MACRO */

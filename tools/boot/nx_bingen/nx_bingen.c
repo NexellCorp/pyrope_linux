@@ -40,7 +40,7 @@
 #include "NSIH.h"
 #include "GEN_NANDBOOTEC.h"
 
-#define	VERSION_STR	"0.9.3"
+#define	VERSION_STR	"0.9.4"
 
 
 /* PRINT MACRO */
@@ -55,8 +55,8 @@
 
 //
 //
-#define DEFAULT_LOADADDR	(0x40100000)
-#define DEFAULT_LAUNCHADDR	(0x40100000)
+#define DEFAULT_LOADADDR	(0x40c00000)
+#define DEFAULT_LAUNCHADDR	(0x40c00000)
 
 #define	SECOND_BOOT_SIZE	(16*1024)
 
@@ -75,6 +75,7 @@ struct build_info {
 	char *					nsih_file;
 	uint32_t				loadaddr;
 	uint32_t				launchaddr;
+	uint32_t				dev_readaddr;
 	int						image_type;
 	unsigned int			page_size;
 };
@@ -174,11 +175,13 @@ static size_t get_file_size( FILE *fd )
 //////////////////////////////////////////////////////////////////////////////
 
 
-static int update_bootinfo (unsigned char *parsed_nsih, const build_info_t *BUILD_INFO, unsigned int BinFileSize)
+static int update_bootinfo (unsigned char *parsed_nsih, const build_info_t *BUILD_INFO, const unsigned int BinFileSize)
 {
 	struct NX_SecondBootInfo *bootinfo;
 
 	bootinfo = (struct NX_SecondBootInfo *)parsed_nsih;
+	if (BUILD_INFO->dev_readaddr)
+	bootinfo->DEVICEADDR		= BUILD_INFO->dev_readaddr;
 	bootinfo->LOADSIZE			= BinFileSize;
 	bootinfo->LOADADDR			= BUILD_INFO->loadaddr;
 	bootinfo->LAUNCHADDR		= BUILD_INFO->launchaddr;
@@ -250,11 +253,8 @@ static int merge_nsih_secondboot(const char *in_file, const char *out_file, cons
 	}
 	ret = 0;
 
-	bootinfo = (struct NX_SecondBootInfo *)out_buf;
-	bootinfo->LOADSIZE = in_file_size;
-	bootinfo->LOADADDR = BUILD_INFO->loadaddr;
-	bootinfo->LAUNCHADDR = BUILD_INFO->launchaddr;
-	bootinfo->SIGNATURE = HEADER_ID;
+	update_bootinfo (out_buf, BUILD_INFO, in_file_size);
+
 
 	read_size = fread( out_buf + NSIH_BIN_SIZE, 1, in_file_size, in_fd );
 	if( read_size != in_file_size )
@@ -579,15 +579,17 @@ void print_usage(char *argv[])
 	printf(" -i input file name                (mandatory)                 \n");
 	printf(" -o output file name               (mandatory)                 \n");
 	printf(" -n nsih file name                 (mandatory)                 \n");
+	printf(" -a device read address            (optional, default NSIH.txt)\n");
 	printf(" -p page size  (KiB)               (optional, nand only, default %d )    \n", ROMBOOT_MAXPAGE);
 	printf(" -l load address                   (optional, default 0x%08x )\n", DEFAULT_LOADADDR);
 	printf(" -e launch address                 (optional, default 0x%08x )\n", DEFAULT_LAUNCHADDR);
 	printf("\nExample: nand image\n");
-	printf(" %s -t 2ndboot -d nand -o nand_2ndboot.bin -i pyrope_2ndboot_NAND.bin -n NSIH.txt -p 4096 -l 0x40100000 -e 0x40100000 \n", argv[0]);
-	printf(" %s -t bootloader -d nand -o nand_bootloader.bin -i u-boot.bin -n NSIH.txt -p 4096 -l 0x40100000 -e 0x40100000 \n", argv[0]);
-	printf("\nExample: normal image\n");
-	printf(" %s -t 2ndboot -d other -o 2ndboot.bin -i pyrope_2ndboot_USB.bin -n NSIH.txt -l 0x40100000 -e 0x40100000 \n", argv[0]);
-	printf(" %s -t bootloader -d other -o bootloader.bin -i u-boot.bin -n NSIH.txt -l 0x40100000 -e 0x40100000 \n", argv[0]);
+	printf(" %s -t 2ndboot -d nand -o nand_2ndboot.bin -i pyrope_2ndboot_nand.bin -n NSIH.txt -p 4096 -l 0x40c00000 -e 0x40c00000 \n", argv[0]);
+	printf(" %s -t bootloader -d nand -o nand_bootloader.bin -i u-boot.bin -n NSIH.txt -p 4096 -l 0x40c00000 -e 0x40c00000 \n", argv[0]);
+	printf("\nExample: eeprom image\n");
+	printf(" %s -t 2ndboot -d other -o 2ndboot.bin -i pyrope_2ndboot_spi.bin -n NSIH.txt -l 0x40c00000 -e 0x40c00000 \n", argv[0]);
+	printf("\nExample: sd image\n");
+	printf(" %s -t 2ndboot -d other -o 2ndboot.bin -i pyrope_2ndboot_sd.bin -n NSIH.txt -l 0x40c00000 -e 0x40c00000 \n", argv[0]);
 	printf("==============================================================================\n");
 	printf("\n");
 }
@@ -600,6 +602,7 @@ int main (int argc, char** argv)
 	build_info_t BUILD_INFO;
 
 	uint32_t sector_size	= 0;
+	uint32_t dev_readaddr	= 0;
 	unsigned int page_size	= ROMBOOT_MAXPAGE;
 	uint32_t loadaddr		= DEFAULT_LOADADDR;
 	uint32_t launchaddr		= DEFAULT_LAUNCHADDR;
@@ -616,7 +619,7 @@ int main (int argc, char** argv)
 
 
 	// arguments parsing 
-	while (-1 != (opt = getopt(argc, argv, "ht:d:o:i:n:p:l:e:"))) {
+	while (-1 != (opt = getopt(argc, argv, "ht:d:o:i:n:a:p:l:e:"))) {
 		switch(opt) {
 			case 't':
 				bin_type = optarg; break;
@@ -628,6 +631,8 @@ int main (int argc, char** argv)
 				in_file = optarg; break;
 			case 'n':
 				nsih_file = optarg; break;
+			case 'a':
+				dev_readaddr = strtoul (optarg, NULL, 16); break;
 			case 'p':
 				page_size = strtoul (optarg, NULL, 10); break;
 			case 'l':
@@ -713,6 +718,7 @@ int main (int argc, char** argv)
 	BUILD_INFO.loadaddr = loadaddr;
 	BUILD_INFO.launchaddr = launchaddr;
 	BUILD_INFO.image_type = image_type;
+	BUILD_INFO.dev_readaddr = dev_readaddr;
 	BUILD_INFO.page_size = page_size;
 
 
@@ -724,6 +730,8 @@ int main (int argc, char** argv)
 	printf(" Input       : %s\n", in_file);
 	printf(" Output      : %s\n", out_file);
 	printf(" NSIH        : %s\n", nsih_file);
+	if (BUILD_INFO.dev_readaddr)
+	printf(" Read Addr   : 0x%x\n", BUILD_INFO.dev_readaddr);
 	printf(" Load Addr   : 0x%x\n", BUILD_INFO.loadaddr);
 	printf(" Luanch Addr : 0x%x\n", BUILD_INFO.launchaddr);
 	printf(" Signature   : 0x%x\n", HEADER_ID);

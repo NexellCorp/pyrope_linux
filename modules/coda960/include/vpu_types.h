@@ -211,7 +211,7 @@ typedef struct
 {
 	//	Frame Buffers
 	int	numFrameBuffer;					//	Number Of Frame Buffers
-	NX_VID_MEMORY_INFO frameBuffer[20];	//	Frame Buffer Informations
+	NX_VID_MEMORY_INFO frameBuffer[30];	//	Frame Buffer Informations
 
 	//	MV Buffer Address
 	NX_MEMORY_INFO colMvBuffer;

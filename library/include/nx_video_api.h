@@ -52,7 +52,7 @@ enum{
 };
 
 
-#define	MAX_DEC_FRAME_BUFFERS		22
+#define	MAX_DEC_FRAME_BUFFERS		30
 #define	ENC_BITSTREAM_BUFFER		(4*1024*1024)
 
 //

@@ -144,7 +144,7 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 		{
 			NX_VPU_RET vpuRet;
 			NX_VPU_INST_HANDLE hInst = 0;
-			static VPU_OPEN_ARG openArg;
+			VPU_OPEN_ARG openArg;
 
 			if( 0 != copy_from_user( &openArg, (void*)arg, sizeof(openArg) ) )
 			{
@@ -154,7 +154,7 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 			}
 			if( openArg.isEncoder )
 			{
-				 vpuRet = NX_VpuEncOpen( &openArg, &nx_vpu_device->dev, &hInst );
+				vpuRet = NX_VpuEncOpen( &openArg, &nx_vpu_device->dev, &hInst );
 			}
 			else
 			{

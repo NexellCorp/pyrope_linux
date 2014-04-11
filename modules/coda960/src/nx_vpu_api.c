@@ -1606,11 +1606,12 @@ NX_VPU_RET	NX_VpuDecOpen( VPU_OPEN_ARG *openArg, void *drvHandle, NX_VPU_INST_HA
 		pDecInfo->bitstreamMode = BS_MODE_ROLLBACK;
 	}
 
+	pDecInfo->cbcrInterleave = openArg->chromaInterleave;
 	pDecInfo->streamEndflag = 0;	//	Frame Unit Operation
 	pDecInfo->bwbEnable = VPU_ENABLE_BWB;
 	pDecInfo->seqInitEscape = 0;
 	pDecInfo->streamEndian = VPU_STREAM_ENDIAN;
-	pDecInfo->cacheConfig = MaverickCache2Config( 1, CBCR_INTERLEAVE, 0, 0, 3, 0, 15 );
+	pDecInfo->cacheConfig = MaverickCache2Config( 1, pDecInfo->cbcrInterleave, 0, 0, 3, 0, 15 );
 
 	NX_DrvMemset( (void*)hInst->paramVirAddr, 0, PARA_BUF_SIZE);
 
@@ -1644,26 +1645,27 @@ static int FillBuffer(NX_VPU_INST_HANDLE handle, unsigned char *stream, int size
 {
 	unsigned int vWriteOffset, vReadOffset;	//	Virtual Read/Write Position
 	int bufSize;
-	VpuDecInfo *pInfo = &handle->codecInfo.decInfo;
+	VpuDecInfo *pDecInfo = &handle->codecInfo.decInfo;
 
+	//	EOS
+	if( size==0 )
+		return 0;
 	if( !stream || size <0 )
 	{
 		return -1;
 	}
-	if( size==0 )
-		return 0;
 
-	vWriteOffset = pInfo->writePos - pInfo->strmBufPhyAddr;
-	vReadOffset  = pInfo->readPos  - pInfo->strmBufPhyAddr;
-	bufSize      = pInfo->strmBufSize;
+	vWriteOffset = pDecInfo->writePos - pDecInfo->strmBufPhyAddr;
+	vReadOffset  = pDecInfo->readPos  - pDecInfo->strmBufPhyAddr;
+	bufSize      = pDecInfo->strmBufSize;
 
 	// printk("%s, StreamBuffer(Addr=x0%08x, size=%d), InBuffer(Addr=x0%08x, size=%d) vWriteOffset = %d, vReadOffset = %d\n",
-	// 	__func__, pInfo->strmBufVirAddr, pInfo->strmBufSize, stream, size, vWriteOffset, vReadOffset );
+	// 	__func__, pDecInfo->strmBufVirAddr, pDecInfo->strmBufSize, stream, size, vWriteOffset, vReadOffset );
 
 	if( (bufSize - vWriteOffset) > size )
 	{
 		//	Just Memory Copy
-		NX_DrvMemcpy( (unsigned char*)(pInfo->strmBufVirAddr + vWriteOffset), stream, size );
+		NX_DrvMemcpy( (unsigned char*)(pDecInfo->strmBufVirAddr + vWriteOffset), stream, size );
 		//printk("vWriteOffset=%d, vReadOffset = %d\n", vWriteOffset, vReadOffset );
 		vWriteOffset += size;
 	}
@@ -1671,11 +1673,11 @@ static int FillBuffer(NX_VPU_INST_HANDLE handle, unsigned char *stream, int size
 	{
 		//	Memory Copy
 		int remain = bufSize - vWriteOffset;
-		NX_DrvMemcpy( (unsigned char*)(pInfo->strmBufVirAddr + vWriteOffset), stream, remain );
-		NX_DrvMemcpy( (unsigned char*)(pInfo->strmBufVirAddr), stream+remain, size-remain );
+		NX_DrvMemcpy( (unsigned char*)(pDecInfo->strmBufVirAddr + vWriteOffset), stream, remain );
+		NX_DrvMemcpy( (unsigned char*)(pDecInfo->strmBufVirAddr), stream+remain, size-remain );
 		vWriteOffset = size-remain;
 	}
-	pInfo->writePos = vWriteOffset + pInfo->strmBufPhyAddr;
+	pDecInfo->writePos = vWriteOffset + pDecInfo->strmBufPhyAddr;
 	return 0;
 }
 
@@ -1784,6 +1786,8 @@ NX_VPU_RET	NX_VpuDecFlush( NX_VPU_INST_HANDLE handle )
 		return VPU_RET_ERR_TIMEOUT;
 	}
 	pDecInfo->frameDisplayFlag = VpuReadReg( BIT_FRM_DIS_FLG );
+	pDecInfo->frameDisplayFlag = 0;
+	pDecInfo->streamEndflag &= ~(1<<2);		//	Clear End of Stream
 	pDecInfo->readPos = pDecInfo->strmBufPhyAddr;
 	pDecInfo->writePos= pDecInfo->strmBufPhyAddr;
 	NX_DrvMemset((unsigned char*)pDecInfo->strmBufVirAddr, 0, pDecInfo->strmBufSize);
@@ -2073,7 +2077,9 @@ static NX_VPU_RET VPU_DecSeqInitCommand(NX_VpuCodecInst *pInst, VPU_DEC_SEQ_INIT
 	VpuWriteReg(BIT_WR_PTR, pInfo->writePos);
 	VpuWriteReg(BIT_RD_PTR, pInfo->readPos);
 
-	pInfo->streamEndflag &= ~(3<<3);
+	//	Clear Stream Flag
+	pInfo->streamEndflag &= ~(1<<2);			//	Clear End of Stream
+	pInfo->streamEndflag &= ~(3<<3);			//	Clear Bitstream Mode
 	if (pInfo->bitstreamMode == BS_MODE_ROLLBACK)  //rollback mode
 		pInfo->streamEndflag |= (1<<3);
 	else if (pInfo->bitstreamMode == BS_MODE_PIC_END)
@@ -2173,7 +2179,7 @@ static NX_VPU_RET VPU_DecRegisterFrameBufCommand( NX_VpuCodecInst *pInst, VPU_DE
 	NX_DrvMemset( frameAddr, 0, sizeof(frameAddr) );
 	NX_DrvMemset( colMvAddr, 0, sizeof(frameAddr) );
 
-	SetTiledMapType(VPU_LINEAR_FRAME_MAP, bufferStride, CBCR_INTERLEAVE);
+	SetTiledMapType(VPU_LINEAR_FRAME_MAP, bufferStride, pInfo->cbcrInterleave);
 
 	for (i=0; i<pArg->numFrameBuffer; i++) {
 		frameAddr[i][0][0] = (pArg->frameBuffer[i].luPhyAddr >> 24) & 0xFF;
@@ -2278,7 +2284,7 @@ static NX_VPU_RET VPU_DecRegisterFrameBufCommand( NX_VpuCodecInst *pInst, VPU_DE
 
 	val = 0;
 	val |= (VPU_ENABLE_BWB<<12);
-	val |= (CBCR_INTERLEAVE<<2); // Interleave bit position is modified
+	val |= (pInfo->cbcrInterleave<<2); // Interleave bit position is modified
 	val |= VPU_FRAME_ENDIAN;
 	VpuWriteReg(BIT_FRAME_MEM_CTRL, val);
 	VpuWriteReg(CMD_SET_FRAME_MAX_DEC_SIZE, 0);  // set 1FE0_78_44 for 1920x1088
@@ -2619,6 +2625,8 @@ static NX_VPU_RET VPU_DecGetOutputInfo(NX_VpuCodecInst *pInst, VPU_DEC_DEC_FRAME
 	pInfo->bytePosFrameStart = VpuReadReg(BIT_BYTE_POS_FRAME_START);
 	pInfo->bytePosFrameEnd   = VpuReadReg(BIT_BYTE_POS_FRAME_END);
 
+	pArg->strmReadPos  = pInfo->readPos  - pInfo->strmBufPhyAddr;
+	pArg->strmWritePos = pInfo->writePos - pInfo->strmBufPhyAddr;
 	//printk("pArg->picType = %d displayIdx = %d, decodeIdx = %d, readPos = 0x%.8x, writePos = 0x%.8x\n",	pArg->picType, pArg->indexFrameDisplay, pArg->indexFrameDecoded, pInfo->readPos, pInfo->writePos );
 	return VPU_RET_OK;
 }
@@ -2713,8 +2721,13 @@ static NX_VPU_RET VPU_DecStartOneFrameCommand(NX_VpuCodecInst *pInst, VPU_DEC_DE
 
 	val = pInfo->frameDisplayFlag;
 	val &= ~pInfo->clearDisplayIndexes;
-    VpuWriteReg(BIT_FRM_DIS_FLG, val);
-    pInfo->clearDisplayIndexes = 0;
+	VpuWriteReg(BIT_FRM_DIS_FLG, val);
+	pInfo->clearDisplayIndexes = 0;
+
+	if( pArg->eos )
+		pInfo->streamEndflag |= 1<<2;
+	else
+		pInfo->streamEndflag &= ~(1<<2);
 
 	pInfo->streamEndflag &= ~(3<<3);
 	if (pInfo->bitstreamMode == BS_MODE_ROLLBACK)  //rollback mode

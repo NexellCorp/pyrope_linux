@@ -17,6 +17,7 @@ typedef struct
 	int codecStd;
 	int isEncoder;			//	Encoder
 	int mp4Class;			//	Mpeg4 Class
+	int chromaInterleave;	//	CbCr Interleaved
 
 	NX_MEMORY_INFO	instanceBuf;
 	NX_MEMORY_INFO	streamBuf;
@@ -249,6 +250,7 @@ typedef struct
 	int iFrameSearchEnable;
 	int skipFrameMode;
 	int decSkipFrameNum;
+	int eos;
 
 	//	Output Arguments
 	int outWidth;
@@ -275,11 +277,13 @@ typedef struct
 	int numOfErrMBs;
 	int sequenceChanged;
 
+	unsigned int strmReadPos;
+	unsigned int strmWritePos;
+
 	//	AVC Specific Informations
 	int avcFpaSeiExist;
 	int avcFpaSeiValue1;
 	int avcFpaSeiValue2;
-
 	//	Output Bitstream Information
 	unsigned int frameStartPos;
 	unsigned int frameEndPos;

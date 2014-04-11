@@ -7,42 +7,37 @@ INC_INSTALL	:= 	../../include
 
 ######################################################################
 # Build options
-INCLUDE += -I./ -I../../include -I$(KERNDIR)/include
+INCLUDE += -I./ -I../libion -I../../include -I$(KERNDIR)/include
 
 LIBRARY += -L../../lib/
-LIBRARY += -lnxvmem
 
 ######################################################################
 # Target
 COBJS  	:= 
-COBJS  	+= nx_video_api.o
+COBJS  	+= nx_alloc_mem_ion.o
 CPPOBJS	:=  
 
 CFLAGS	+= -g
 
-LIBNAME	:= libnxvpu
-TARGET  := libnxvpu.so
+LIBNAME	:= libnxvmem
 
 ######################################################################
 # Build
 OBJS	:= $(COBJS) $(CPPOBJS)
 
-all: $(TARGET)
+all: $(LIBNAME)
 
-$(TARGET):	depend $(OBJS)
+$(LIBNAME):	depend $(OBJS)
 	$(AR) $(ARFLAGS) $(LIBNAME).a $(OBJS)
-	$(CC) $(LDFLAGS) -shared -Wl,-soname,$(TARGET) -o $@ $(OBJS)
 
 install:
 	install -m 755 -d $(LIB_INSTALL)
-	install -m 644 $(TARGET) $(LIB_INSTALL)
 	install -m 644 $(LIBNAME).a $(LIB_INSTALL)
 
 clean:
 	rm -f *.o *.so *.a .depend
 
 distclean: clean
-	rm -f $(LIB_INSTALL)/lib/$(TARGET)
 	rm -f $(LIB_INSTALL)/lib/$(LIBNAME).a
 
 

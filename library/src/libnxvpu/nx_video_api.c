@@ -100,6 +100,7 @@ NX_VID_ENC_HANDLE NX_VidEncOpen( int codecType )
 	//	Create Context
 	NX_VID_ENC_HANDLE hEnc = (NX_VID_ENC_HANDLE)malloc( sizeof(struct NX_VIDEO_ENC_INFO) );
 	memset( hEnc, 0, sizeof(struct NX_VIDEO_ENC_INFO) );
+	memset( &openArg, 0, sizeof(openArg) );
 
 	//	Open Device Driver
 	hEnc->hEncDrv = open(DEV_NAME, O_RDWR);
@@ -402,7 +403,7 @@ NX_VID_RET NX_VidEncEncodeFrame( NX_VID_ENC_HANDLE hEnc, NX_VID_MEMORY_HANDLE hI
 NX_VID_RET NX_VidEncJpegGetHeader( NX_VID_ENC_HANDLE hEnc, unsigned char *jpgHeader, int *headerSize )
 {
 	int ret;
-	VPU_ENC_GET_HEADER_ARG *pHdrArg = (VPU_ENC_GET_HEADER_ARG *)malloc(sizeof(VPU_ENC_GET_HEADER_ARG));
+	VPU_ENC_GET_HEADER_ARG *pHdrArg = (VPU_ENC_GET_HEADER_ARG *)calloc(sizeof(VPU_ENC_GET_HEADER_ARG), 1);
 	ret = ioctl( hEnc->hEncDrv, IOCTL_VPU_JPG_GET_HEADER, pHdrArg );
 	printf("pHdrArg->jpgHeader.headerSize = %d\n", pHdrArg->jpgHeader.headerSize);
 	if( ret < 0 )
@@ -502,7 +503,7 @@ struct NX_VIDEO_DEC_INFO
 };
 
 
-NX_VID_DEC_HANDLE NX_VidDecOpen( int codecType, unsigned int mp4Class )
+NX_VID_DEC_HANDLE NX_VidDecOpen( int codecType, unsigned int mp4Class, int options )
 {
 	int ret;
 	VPU_OPEN_ARG openArg;
@@ -511,6 +512,7 @@ NX_VID_DEC_HANDLE NX_VidDecOpen( int codecType, unsigned int mp4Class )
 	NX_VID_DEC_HANDLE hDec = (NX_VID_DEC_HANDLE)malloc( sizeof(struct NX_VIDEO_DEC_INFO) );
 
 	memset( hDec, 0, sizeof(struct NX_VIDEO_DEC_INFO) );
+	memset( &openArg, 0, sizeof(openArg) );
 
 	//	Open Device Driver
 	hDec->hDecDrv = open(DEV_NAME, O_RDWR);
@@ -536,9 +538,7 @@ NX_VID_DEC_HANDLE NX_VidDecOpen( int codecType, unsigned int mp4Class )
 		NX_ErrMsg(("hInstanceBuf allocation failed.\n"));
 		goto ERROR_EXIT;
 	}
-	//	Check Driver Validity
 
-	openArg.mp4Class = 0;
 	switch( codecType )
 	{
 		case NX_AVC_DEC:
@@ -573,11 +573,14 @@ NX_VID_DEC_HANDLE NX_VidDecOpen( int codecType, unsigned int mp4Class )
 			NX_ErrMsg( ("IOCTL_VPU_OPEN_INSTANCE codec Type\n") );
 			goto ERROR_EXIT;
 	}
-
-	openArg.isEncoder = 0;
 	openArg.instIndex = -1;
 	openArg.instanceBuf = *hDec->hInstanceBuf;
 	openArg.streamBuf = *hDec->hBitStreamBuf;
+
+	if( options && DEC_OPT_CHROMA_INTERLEAVE )
+	{
+		openArg.chromaInterleave = 1;
+	}
 
 	ret = ioctl( hDec->hDecDrv, IOCTL_VPU_OPEN_INSTANCE, &openArg );
 	if( ret < 0 )
@@ -639,231 +642,16 @@ NX_VID_RET NX_VidDecClose( NX_VID_DEC_HANDLE hDec )
 	return 0;
 }
 
-//
-//	width & height for divx3 mode
-//
-NX_VID_RET NX_VidDecInit(NX_VID_DEC_HANDLE hDec, unsigned char *seqInfo, int seqSize, int width, int height, NX_VID_SEQ_OUT *seqOut)
-{
-	int i, ret;
-	VPU_DEC_SEQ_INIT_ARG *seqArg = (VPU_DEC_SEQ_INIT_ARG *)calloc(sizeof(VPU_DEC_SEQ_INIT_ARG), 1);
-	VPU_DEC_REG_FRAME_ARG *frameArg = (VPU_DEC_REG_FRAME_ARG *)calloc(sizeof(VPU_DEC_REG_FRAME_ARG), 1);
-	if( !hDec )
-	{
-		NX_ErrMsg( ("Invalid encoder handle or driver handle!!!\n") );
-		return -1;
-	}
 
-	if( hDec->hDecDrv <= 0 )
-	{
-		NX_ErrMsg( ("Invalid encoder handle or driver handle!!!\n") );
-		return -1;
-	}
-
-	//	Initialize Encoder
-	if( hDec->isInitialized  )
-	{
-		NX_ErrMsg( ("Already initialized\n") );
-		return -1;
-	}
-
-	seqArg->seqData = seqInfo;
-	seqArg->seqDataSize = seqSize;
-
-	ret = ioctl( hDec->hDecDrv, IOCTL_VPU_DEC_SET_SEQ_INFO, seqArg );
-
-	if(ret == VID_NEED_MORE_BUF)
-	{
-		goto ERROR_EXIT;
-	}
-	if( ret != 0 )
-	{
-		NX_ErrMsg( ("IOCTL_VPU_DEC_SET_SEQ_INFO ioctl failed!!!(ret=%d)\n", ret) );
-		goto ERROR_EXIT;
-	}
-
-	if( seqArg->minFrameBufCnt < 1 || seqArg->minFrameBufCnt > MAX_DEC_FRAME_BUFFERS )
-	{
-		NX_ErrMsg( ("IOCTL_VPU_DEC_SET_SEQ_INFO ioctl failed(nimFrameBufCnt = %d)!!!\n", seqArg->minFrameBufCnt) );
-		goto ERROR_EXIT;
-	}
-
-	//	Minimum + 3
-	hDec->numFrameBuffers = seqArg->minFrameBufCnt+4;
-	hDec->width = seqArg->outWidth;
-	hDec->height = seqArg->outHeight;
-
-	if( 0 != AllocateDecoderMemory( hDec ) )
-	{
-		NX_ErrMsg(("AllocateDecoderMemory() Failed!!!\n"));
-		goto ERROR_EXIT;
-	}
-
-	frameArg->numFrameBuffer = hDec->numFrameBuffers;
-	for( i=0 ; i< hDec->numFrameBuffers ; i++ )
-	{
-		frameArg->frameBuffer[i] = *hDec->hFrameBuffer[i];
-	}
-	if( hDec->hSliceBuffer )
-		frameArg->sliceBuffer = *hDec->hSliceBuffer;
-	if( hDec->hColMvBuffer)
-		frameArg->colMvBuffer = *hDec->hColMvBuffer;
-
-	ret = ioctl( hDec->hDecDrv, IOCTL_VPU_DEC_REG_FRAME_BUF, frameArg );
-	if( ret < 0 )
-	{
-		NX_ErrMsg( ("IOCTL_VPU_DEC_REG_FRAME_BUF ioctl failed!!!\n") );
-		goto ERROR_EXIT;
-	}
-
-	memset( seqOut, 0, sizeof(NX_VID_SEQ_OUT) );
-	seqOut->width  = seqArg->outWidth;
-	seqOut->height = seqArg->outHeight;
-	seqOut->nimBuffers = seqArg->minFrameBufCnt;
-	seqOut->numBuffers = hDec->numFrameBuffers;
-	seqOut->frameRateNum = seqArg->frameRateNum;	//	Frame Rate Numerator
-	seqOut->frameRateDen = seqArg->frameRateDen;	//	Frame Rate Denominator
-
-	NX_DbgMsg(0, ("frameRateNum = %d, frameRateDen = %d\n", seqOut->frameRateNum, seqOut->frameRateDen) );
-
-	hDec->isInitialized = 1;
-	if( seqArg )
-		free( seqArg );
-	if( frameArg )
-		free( frameArg );
-	return 0;
-
-ERROR_EXIT:
-	if( seqArg )
-		free( seqArg );
-	if( frameArg )
-		free( frameArg );
-	return ret;
-}
-
-
-
-//
-//	For Android Native Buffer
-//
-NX_VID_RET NX_VidDecInitWidthBuffer(NX_VID_DEC_HANDLE hDec, unsigned char *seqInfo, int seqSize, int width, int height, NX_VID_MEMORY_HANDLE *pMemHandle, int numBuffers, NX_VID_SEQ_OUT *seqOut)
-{
-	int i, ret;
-	VPU_DEC_SEQ_INIT_ARG *seqArg = NULL;
-	VPU_DEC_REG_FRAME_ARG *frameArg = NULL;
-	if( !hDec )
-	{
-		NX_ErrMsg( ("Invalid encoder handle or driver handle!!!\n") );
-		return -1;
-	}
-
-	if( hDec->hDecDrv <= 0 )
-	{
-		NX_ErrMsg( ("Invalid encoder handle or driver handle!!!\n") );
-		return -1;
-	}
-
-	if( numBuffers > MAX_DEC_FRAME_BUFFERS )
-	{
-		NX_ErrMsg( ("Too many input buffers for Decoder(Decoder Max Buffer(%d))!!!\n", MAX_DEC_FRAME_BUFFERS) );
-		return -1;
-	}
-
-	//	Initialize Encoder
-	if( hDec->isInitialized  )
-	{
-		NX_ErrMsg( ("Already initialized\n") );
-		return -1;
-	}
-
-	seqArg = (VPU_DEC_SEQ_INIT_ARG *)calloc(sizeof(VPU_DEC_SEQ_INIT_ARG), 1);
-	frameArg = (VPU_DEC_REG_FRAME_ARG *)calloc(sizeof(VPU_DEC_REG_FRAME_ARG), 1);
-
-	seqArg->seqData = seqInfo;
-	seqArg->seqDataSize = seqSize;
-
-	ret = ioctl( hDec->hDecDrv, IOCTL_VPU_DEC_SET_SEQ_INFO, seqArg );
-	if( ret < 0 )
-	{
-		NX_ErrMsg( ("IOCTL_VPU_DEC_SET_SEQ_INFO ioctl failed!!!\n") );
-		goto ERROR_EXIT;
-	}
-
-	NX_DbgMsg(0, ("SeqArg.Width=%d, SeqArg.Height=%d, minCnt=%d\n", seqArg->outWidth, seqArg->outHeight, seqArg->minFrameBufCnt) );
-
-	if( seqArg->minFrameBufCnt < 1 || seqArg->minFrameBufCnt > numBuffers )
-	{
-		NX_ErrMsg( ("IOCTL_VPU_DEC_SET_SEQ_INFO ioctl failed(nimFrameBufCnt = %d)!!!\n", seqArg->minFrameBufCnt) );
-		goto ERROR_EXIT;
-	}
-
-
-	//	Allocation & Save Parameter in the decoder handle.
-	hDec->numFrameBuffers = numBuffers;
-	hDec->width = seqArg->outWidth;
-	hDec->height = seqArg->outHeight;
-	hDec->useExternalFrameBuffer = 1;
-
-	if( 0 != AllocateDecoderMemory( hDec ) )
-	{
-		NX_ErrMsg(("AllocateDecoderMemory() Failed!!!\n"));
-		goto ERROR_EXIT;
-	}
-
-	//	Set Frame Argement Valiable
-	frameArg->numFrameBuffer = hDec->numFrameBuffers;
-	for( i=0 ; i< hDec->numFrameBuffers ; i++ )
-	{
-		hDec->hFrameBuffer[i] = pMemHandle[i];
-		frameArg->frameBuffer[i] = *hDec->hFrameBuffer[i];
-	}
-	if( hDec->hSliceBuffer )
-		frameArg->sliceBuffer = *hDec->hSliceBuffer;
-	if( hDec->hColMvBuffer)
-		frameArg->colMvBuffer = *hDec->hColMvBuffer;
-
-	ret = ioctl( hDec->hDecDrv, IOCTL_VPU_DEC_REG_FRAME_BUF, frameArg );
-	if( ret < 0 )
-	{
-		NX_ErrMsg( ("IOCTL_VPU_DEC_REG_FRAME_BUF ioctl failed!!!\n") );
-		goto ERROR_EXIT;
-	}
-
-	memset( seqOut, 0, sizeof(NX_VID_SEQ_OUT) );
-	seqOut->width  = seqArg->outWidth;
-	seqOut->height = seqArg->outHeight;
-	seqOut->nimBuffers = seqArg->minFrameBufCnt;
-	seqOut->numBuffers = hDec->numFrameBuffers;
-	seqOut->frameRateNum = seqArg->frameRateNum;	//	Frame Rate Numerator
-	seqOut->frameRateDen = seqArg->frameRateDen;	//	Frame Rate Denominator
-
-	NX_DbgMsg(0, ("frameRateNum = %d, frameRateDen = %d\n", seqOut->frameRateNum, seqOut->frameRateDen) );
-
-	if( seqOut->numBuffers - seqOut->nimBuffers < 4 )
-	{
-		NX_ErrMsg(("Too Many Requre Frame Buffer !!!(Min=%d)\n", seqOut->nimBuffers) );
-		goto ERROR_EXIT;
-	}
-
-	hDec->isInitialized = 1;
-	if( seqArg )
-		free( seqArg );
-	if( frameArg )
-		free( frameArg );
-	return 0;
-
-ERROR_EXIT:
-	if( seqArg )
-		free( seqArg );
-	if( frameArg )
-		free( frameArg );
-	return ret;
-}
-
-NX_VID_RET NX_VidDecInit2(NX_VID_DEC_HANDLE hDec, NX_VID_SEQ_IN *seqIn, NX_VID_SEQ_OUT *seqOut)
+NX_VID_RET NX_VidDecInit(NX_VID_DEC_HANDLE hDec, NX_VID_SEQ_IN *seqIn, NX_VID_SEQ_OUT *seqOut)
 {
 	int i, ret=-1;
-	VPU_DEC_SEQ_INIT_ARG *seqArg = (VPU_DEC_SEQ_INIT_ARG *)calloc(sizeof(VPU_DEC_SEQ_INIT_ARG), 1);
-	VPU_DEC_REG_FRAME_ARG *frameArg = (VPU_DEC_REG_FRAME_ARG *)calloc(sizeof(VPU_DEC_REG_FRAME_ARG), 1);
+	VPU_DEC_SEQ_INIT_ARG seqArg;
+	VPU_DEC_REG_FRAME_ARG frameArg;
+
+	memset( &seqArg, 0, sizeof(seqArg) );
+	memset( &frameArg, 0, sizeof(frameArg) );
+
 	if( !hDec )
 	{
 		NX_ErrMsg( ("Invalid encoder handle or driver handle!!!\n") );
@@ -884,18 +672,13 @@ NX_VID_RET NX_VidDecInit2(NX_VID_DEC_HANDLE hDec, NX_VID_SEQ_IN *seqIn, NX_VID_S
 	if( seqIn->disableOutReorder )
 	{
 		NX_DbgMsg( DBG_WARNING, ("Diable Reordering!!!!\n") );
-		seqArg->disableOutReorder = 1;
+		seqArg.disableOutReorder = 1;
 	}
-	seqArg->seqData = seqIn->seqInfo;
-	seqArg->seqDataSize = seqIn->seqSize;
-	seqArg->enableUserData = seqIn->enableUserData && (hDec->codecStd == CODEC_STD_MPEG2);
+	seqArg.seqData        = seqIn->seqInfo;
+	seqArg.seqDataSize    = seqIn->seqSize;
+	seqArg.enableUserData = seqIn->enableUserData && (hDec->codecStd == CODEC_STD_MPEG2);
 
-	//NX_DbgMsg(DBG_USER_DATA, ("================================================\n"));
-	//NX_DbgMsg(DBG_USER_DATA, ("============== hDec->codecStd = %d\n", hDec->codecStd));
-	//NX_DbgMsg(DBG_USER_DATA, ("============== seqArg->enableUserData = %d\n", seqArg->enableUserData));
-	//NX_DbgMsg(DBG_USER_DATA, ("============== seqIn->enableUserData = %d\n", seqIn->enableUserData));
-
-	if( seqArg->enableUserData )
+	if( seqArg.enableUserData )
 	{
 		NX_DbgMsg(DBG_USER_DATA, ("Enabled user data\n"));
 		hDec->enableUserData = 1;
@@ -904,9 +687,9 @@ NX_VID_RET NX_VidDecInit2(NX_VID_DEC_HANDLE hDec, NX_VID_SEQ_IN *seqIn, NX_VID_S
 			NX_ErrMsg(("hUserDataBuffer allocation failed.(size=%d,align=%d)\n", 0x10000, 4096));
 			goto ERROR_EXIT;
 		}
-		seqArg->userDataBuffer = *hDec->hUserDataBuffer;
+		seqArg.userDataBuffer = *hDec->hUserDataBuffer;
 	}
-	ret = ioctl( hDec->hDecDrv, IOCTL_VPU_DEC_SET_SEQ_INFO, seqArg );
+	ret = ioctl( hDec->hDecDrv, IOCTL_VPU_DEC_SET_SEQ_INFO, &seqArg );
 	if( ret == VID_NEED_MORE_BUF )
 		goto ERROR_EXIT;
 	if( ret < 0 )
@@ -915,9 +698,9 @@ NX_VID_RET NX_VidDecInit2(NX_VID_DEC_HANDLE hDec, NX_VID_SEQ_IN *seqIn, NX_VID_S
 		goto ERROR_EXIT;
 	}
 
-	if( seqArg->minFrameBufCnt < 1 || seqArg->minFrameBufCnt > MAX_DEC_FRAME_BUFFERS )
+	if( seqArg.minFrameBufCnt < 1 || seqArg.minFrameBufCnt > MAX_DEC_FRAME_BUFFERS )
 	{
-		NX_ErrMsg( ("IOCTL_VPU_DEC_SET_SEQ_INFO ioctl failed(nimFrameBufCnt = %d)!!!\n", seqArg->minFrameBufCnt) );
+		NX_ErrMsg( ("IOCTL_VPU_DEC_SET_SEQ_INFO ioctl failed(nimFrameBufCnt = %d)!!!\n", seqArg.minFrameBufCnt) );
 		goto ERROR_EXIT;
 	}
 
@@ -928,11 +711,11 @@ NX_VID_RET NX_VidDecInit2(NX_VID_DEC_HANDLE hDec, NX_VID_SEQ_IN *seqIn, NX_VID_S
 	}
 	else
 	{
-		hDec->numFrameBuffers = seqArg->minFrameBufCnt+4;
+		hDec->numFrameBuffers = seqArg.minFrameBufCnt+4;
 	}
 	//	Allocation & Save Parameter in the decoder handle.
-	hDec->width = seqArg->outWidth;
-	hDec->height = seqArg->outHeight;
+	hDec->width  = seqArg.outWidth;
+	hDec->height = seqArg.outHeight;
 
 	if( 0 != AllocateDecoderMemory( hDec ) )
 	{
@@ -941,33 +724,32 @@ NX_VID_RET NX_VidDecInit2(NX_VID_DEC_HANDLE hDec, NX_VID_SEQ_IN *seqIn, NX_VID_S
 	}
 
 	//	Set Frame Argement Valiable
-	frameArg->numFrameBuffer = hDec->numFrameBuffers;
+	frameArg.numFrameBuffer = hDec->numFrameBuffers;
 	for( i=0 ; i< hDec->numFrameBuffers ; i++ )
 	{
 		if( hDec->useExternalFrameBuffer )
 			hDec->hFrameBuffer[i] = seqIn->pMemHandle[i];
-		frameArg->frameBuffer[i] = *hDec->hFrameBuffer[i];
+		frameArg.frameBuffer[i] = *hDec->hFrameBuffer[i];
 	}
 	if( hDec->hSliceBuffer )
-		frameArg->sliceBuffer = *hDec->hSliceBuffer;
+		frameArg.sliceBuffer = *hDec->hSliceBuffer;
 	if( hDec->hColMvBuffer)
-		frameArg->colMvBuffer = *hDec->hColMvBuffer;
+		frameArg.colMvBuffer = *hDec->hColMvBuffer;
 
-	ret = ioctl( hDec->hDecDrv, IOCTL_VPU_DEC_REG_FRAME_BUF, frameArg );
+	ret = ioctl( hDec->hDecDrv, IOCTL_VPU_DEC_REG_FRAME_BUF, &frameArg );
 	if( ret < 0 )
 	{
 		NX_ErrMsg( ("IOCTL_VPU_DEC_REG_FRAME_BUF ioctl failed!!!\n") );
 		goto ERROR_EXIT;
 	}
 
-	memset( seqOut, 0, sizeof(NX_VID_SEQ_OUT) );
-	seqOut->width  = seqArg->outWidth;
-	seqOut->height = seqArg->outHeight;
-	seqOut->nimBuffers = seqArg->minFrameBufCnt;
-	seqOut->numBuffers = hDec->numFrameBuffers;
-	seqOut->frameRateNum = seqArg->frameRateNum;	//	Frame Rate Numerator
-	seqOut->frameRateDen = seqArg->frameRateDen;	//	Frame Rate Denominator
-
+	seqOut->numBuffers   = hDec->numFrameBuffers;
+	seqOut->width        = seqArg.outWidth;
+	seqOut->height       = seqArg.outHeight;
+	seqOut->frameBufDelay= seqArg.frameBufDelay;
+	seqOut->nimBuffers   = seqArg.minFrameBufCnt;
+	seqOut->frameRateNum = seqArg.frameRateNum;	//	Frame Rate Numerator
+	seqOut->frameRateDen = seqArg.frameRateDen;	//	Frame Rate Denominator
 	NX_DbgMsg(0, ("frameRateNum = %d, frameRateDen = %d\n", seqOut->frameRateNum, seqOut->frameRateDen));
 
 	if( (seqOut->numBuffers - seqOut->nimBuffers < 2) && hDec->useExternalFrameBuffer )
@@ -976,17 +758,9 @@ NX_VID_RET NX_VidDecInit2(NX_VID_DEC_HANDLE hDec, NX_VID_SEQ_IN *seqIn, NX_VID_S
 	}
 
 	hDec->isInitialized = 1;
-	if( seqArg )
-		free( seqArg );
-	if( frameArg )
-		free( frameArg );
 	return ret;
 
 ERROR_EXIT:
-	if( seqArg )
-		free( seqArg );
-	if( frameArg )
-		free( frameArg );
 	return ret;
 }
 
@@ -1038,7 +812,7 @@ static long long DecoderGetTimeStamp( NX_VID_DEC_HANDLE hDec, int index, int *pi
 }
 
 
-NX_VID_RET NX_VidDecDecodeFrame( NX_VID_DEC_HANDLE hDec, unsigned char *strmBuf, int strmSize, long long timeStamp, NX_VID_DEC_OUT *pDecOut )
+NX_VID_RET NX_VidDecDecodeFrame( NX_VID_DEC_HANDLE hDec, NX_VID_DEC_IN *pDecIn, NX_VID_DEC_OUT *pDecOut )
 {
 	int ret;
 	VPU_DEC_DEC_FRAME_ARG decArg;
@@ -1051,8 +825,9 @@ NX_VID_RET NX_VidDecDecodeFrame( NX_VID_DEC_HANDLE hDec, unsigned char *strmBuf,
 	}
 
 	memset( &decArg, 0, sizeof(decArg) );
-	decArg.strmData = strmBuf;
-	decArg.strmDataSize = strmSize;
+	decArg.strmData = pDecIn->strmBuf;
+	decArg.strmDataSize = pDecIn->strmSize;
+	decArg.eos = pDecIn->eos;
 	decArg.iFrameSearchEnable = 0;
 	decArg.skipFrameMode = 0;
 	decArg.decSkipFrameNum = 0;
@@ -1073,8 +848,10 @@ NX_VID_RET NX_VidDecDecodeFrame( NX_VID_DEC_HANDLE hDec, unsigned char *strmBuf,
 	pDecOut->picType   = PIC_TYPE_UNKNOWN;
 	pDecOut->outImgIdx = decArg.indexFrameDisplay;
 	pDecOut->outDecIdx = decArg.indexFrameDecoded;
+	pDecOut->strmReadPos  = decArg.strmReadPos;
+	pDecOut->strmWritePos = decArg.strmWritePos;
 
-	DecoderPutTimeStamp( hDec, pDecOut->outDecIdx, &decArg, timeStamp );
+	DecoderPutTimeStamp( hDec, pDecOut->outDecIdx, &decArg, pDecIn->timeStamp );
 
 	if( pDecOut->outImgIdx >= 0 && hDec->numFrameBuffers > pDecOut->outImgIdx )
 	{
@@ -1105,7 +882,6 @@ NX_VID_RET NX_VidDecDecodeFrame( NX_VID_DEC_HANDLE hDec, unsigned char *strmBuf,
 	}
 
 	NX_RelMsg( 0, ("NX_VidDecDecodeFrame() Resol:%dx%d, picType=%d, imgIdx = %d\n", pDecOut->width, pDecOut->height, pDecOut->picType, pDecOut->outImgIdx) );
-
 	return 0;
 }
 

@@ -51,6 +51,10 @@ enum{
 	PIC_TYPE_UNKNOWN = 0xff,
 };
 
+enum {
+	DEC_OPT_CHROMA_INTERLEAVE	= 0x00000001,
+};
+
 
 #define	MAX_DEC_FRAME_BUFFERS		30
 #define	ENC_BITSTREAM_BUFFER		(4*1024*1024)
@@ -67,6 +71,13 @@ typedef struct tNX_VID_ENC_OUT{
 	int height;				//	encoded image height
 }NX_VID_ENC_OUT;
 
+typedef struct tNX_VID_DEC_IN{
+	unsigned char *strmBuf;
+	int strmSize;
+	long long timeStamp;
+	int eos;
+}NX_VID_DEC_IN;
+
 typedef struct tNX_VID_DEC_OUT{
 	int width;
 	int height;
@@ -75,6 +86,8 @@ typedef struct tNX_VID_DEC_OUT{
 	int outImgIdx;			//	Display Index
 	int outDecIdx;			//	Decode Index
 	long long timeStamp;	//
+	unsigned int strmReadPos;	//	Remained bitstream buffer size
+	unsigned int strmWritePos;	//	Remained bitstream buffer size
 }NX_VID_DEC_OUT;
 
 typedef struct tNX_VID_SEQ_IN{
@@ -96,6 +109,7 @@ typedef struct tNX_VID_SEQ_OUT{
 	int numBuffers;
 	int width;
 	int height;
+	int frameBufDelay;
 
 	//	for User Data( MPEG2 Decoder Only )
 	int userDataNum;
@@ -152,12 +166,10 @@ NX_VID_RET NX_VidEncEncodeFrame( NX_VID_ENC_HANDLE handle, NX_VID_MEMORY_HANDLE 
 //
 //	Decoder
 //
-NX_VID_DEC_HANDLE NX_VidDecOpen( int codecType, unsigned int mp4Class );
+NX_VID_DEC_HANDLE NX_VidDecOpen( int codecType, unsigned int mp4Class, int options );
 NX_VID_RET NX_VidDecClose( NX_VID_DEC_HANDLE hDec );
-NX_VID_RET NX_VidDecInit(NX_VID_DEC_HANDLE hDec, unsigned char *seqInfo, int seqSize, int width, int height, NX_VID_SEQ_OUT *seqOut);
-NX_VID_RET NX_VidDecInit2(NX_VID_DEC_HANDLE hDec, NX_VID_SEQ_IN *seqIn, NX_VID_SEQ_OUT *seqOut);
-NX_VID_RET NX_VidDecInitWidthBuffer(NX_VID_DEC_HANDLE hDec, unsigned char *seqInfo, int seqSize, int width, int height, NX_VID_MEMORY_HANDLE *pMemHandle, int numBuffers, NX_VID_SEQ_OUT *seqOut );
-NX_VID_RET NX_VidDecDecodeFrame( NX_VID_DEC_HANDLE hDec, unsigned char *strmBuf, int strmSize, long long timeStamp, NX_VID_DEC_OUT *pDecOut );
+NX_VID_RET NX_VidDecInit(NX_VID_DEC_HANDLE hDec, NX_VID_SEQ_IN *seqIn, NX_VID_SEQ_OUT *seqOut);
+NX_VID_RET NX_VidDecDecodeFrame( NX_VID_DEC_HANDLE hDec, NX_VID_DEC_IN *pDecIn, NX_VID_DEC_OUT *pDecOut );
 NX_VID_RET NX_VidDecClrDspFlag( NX_VID_DEC_HANDLE hDec, NX_VID_MEMORY_HANDLE hFrameBuf, int frameIdx );
 NX_VID_RET NX_VidDecFlush( NX_VID_DEC_HANDLE hDec );
 
@@ -165,7 +177,6 @@ NX_VID_RET NX_VidDecFlush( NX_VID_DEC_HANDLE hDec );
 //	Jpeg Encoder APIs
 //	Usage : NX_VidEncOpen() --> NX_VidEncInit() NX_VidEncJpegRunFrame() --> NX_VidEncClose()
 //
-
 NX_VID_RET NX_VidEncJpegGetHeader( NX_VID_ENC_HANDLE hEnc, unsigned char *jpgHeader, int *headerSize );
 NX_VID_RET NX_VidEncJpegRunFrame( NX_VID_ENC_HANDLE hEnc, NX_VID_MEMORY_HANDLE hInImage, NX_VID_ENC_OUT *pEncOut );
 

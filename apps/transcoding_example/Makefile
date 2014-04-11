@@ -1,50 +1,41 @@
 ########################################################################
 # Get Linux Build Enviornment:
-include ../../../build.env
-
-LIB_INSTALL	:=	../../lib
-INC_INSTALL	:= 	../../include
+include ../../build.env
 
 ######################################################################
 # Build options
-INCLUDE += -I./ -I../../include -I$(KERNDIR)/include
-
-LIBRARY += -L../../lib/
-LIBRARY += -lnxvmem
+INCLUDE += -I./
+LIBRARY	+= -L$(LIBSDIR)/lib 
+LIBRARY += -lnxvpu -lnxdsp -lnxv4l2 -lnxgraphictools -lnxvmem -lnxscaler -lion
+LIBRARY += -lEGL -lGLESv2 -lVR
+LIBRARY	+= -lavcodec -lavformat -lpthread -lstdc++
 
 ######################################################################
 # Target
-COBJS  	:= 
-COBJS  	+= nx_video_api.o
+TRNAS_OBJS	:= codec_info.o
+TRNAS_OBJS	+= queue.o
+TRNAS_OBJS	+= NX_Semaphore.o
+TRNAS_OBJS	+= trans_main.o
+
+COBJS	:= queue.o codec_info.o NX_Semaphore.o trans_main.o
+
 CPPOBJS	:=  
 
 CFLAGS	+= -g
 
-LIBNAME	:= libnxvpu
-TARGET  := libnxvpu.so
+TRNASAPP := trans_test2
 
 ######################################################################
 # Build
 OBJS	:= $(COBJS) $(CPPOBJS)
 
-all: $(TARGET)
+all: $(TRNASAPP)
 
-$(TARGET):	depend $(OBJS)
-	$(AR) $(ARFLAGS) $(LIBNAME).a $(OBJS)
-	$(CC) $(LDFLAGS) -shared -Wl,-soname,$(TARGET) -o $@ $(OBJS)
-
-install:
-	install -m 755 -d $(LIB_INSTALL)
-	install -m 644 $(TARGET) $(LIB_INSTALL)
-	install -m 644 $(LIBNAME).a $(LIB_INSTALL)
+$(TRNASAPP):	depend $(OBJS)
+	$(CC) $(CFLAGS) $(TRNAS_OBJS) -o $@ $(LIBRARY)
 
 clean:
-	rm -f *.o *.so *.a .depend
-
-distclean: clean
-	rm -f $(LIB_INSTALL)/lib/$(TARGET)
-	rm -f $(LIB_INSTALL)/lib/$(LIBNAME).a
-
+	rm -f $(TRNASAPP) *.o .depend
 
 #########################################################################
 # Dependency

@@ -6,8 +6,8 @@
 #include <gst/gst.h>
 #include <glib.h>
 #include "NX_DbgMsg.h"
-#include "NX_MoviePlay.h"
-#include "NX_TypeFind.h"
+#include <NX_MoviePlay.h>
+#include <NX_TypeFind.h>
 
 #define Audio_on	1
 #define Video_on	1
@@ -23,7 +23,7 @@ typedef struct MOVIE_TYPE
 	GstElement *video_queue;
 
 	GstElement *demuxer;
-	GstElement *parse;
+	GstElement *video_parse;
 	GstElement *audio_parse;
 
 	GstElement *audio_decoder;
@@ -63,17 +63,23 @@ typedef struct MOVIE_TYPE
 	gint play_state;	
 	gint stop_state;
 
+	gint display;
+
 	void (*callback)(void*, guint, guint, guint );
 	void *owner;
 
 }MOVIE_TYPE;
 
+typedef struct AppData{
+	MP_HANDLE hPlayer;
+}AppData;
+
 //	uri type
-static const char *URITypeString[] =
-{
-	"URI_TYPE_FILE",
-	"URI_TYPE_URL"
-};
+//static const char *URITypeString[] =
+//{
+//	"URI_TYPE_FILE",
+//	"URI_TYPE_URL"
+//};
 
 #define DEMUX_TYPE_NUM	20
 static const char *DemuxTypeString[DEMUX_TYPE_NUM] =
@@ -151,7 +157,7 @@ static int audio_only_element_set(MP_HANDLE handle, int volumem, int dspPort);
 static int audio_only_bin_add_link(MP_HANDLE handle);
 static int video_only_bin_add_link(MP_HANDLE handle);
 static int video_audio_bin_add_link(MP_HANDLE handle);
-static int video_element_set(MP_HANDLE handle, int dspModule, int dspPort);
+static int video_element_set(MP_HANDLE handle, int dspModule, int dspPort, int display);
 static void typefind_debug(TYMEDIA_INFO *ty_handle);
 
 
@@ -246,20 +252,27 @@ static void on_demux_pad_added(GstElement *element, GstPad *pad, MP_HANDLE handl
 	GstPadLinkReturn rc;
 	GstElement *targetqueue;
 	GstPad *targetsink;
-	gint video_track_num = 0;
-	gint audio_track_num = 0;
+//	gint video_track_num = 0;
+//	gint audio_track_num = 0;
 	gint audio_on = -1;
 	gint video_on = -1;
 
 	FUNC_IN();
 
-	video_track_num = handle->video_select_track_num;
-	audio_track_num = handle->audio_select_track_num ;
+//	video_track_num = handle->video_select_track_num;
+//	audio_track_num = handle->audio_select_track_num ;
 
 	caps = gst_pad_get_caps(pad);
 	g_assert(caps != NULL);
 	name = gst_pad_get_name(pad);
 	DbgMsg("-new demux pad %s\n", name);
+
+	//
+	if( (0 == strcasecmp( name, "private_2" ) ) )
+	{
+		goto EXIT;
+	}
+	//
 
 	str = gst_caps_get_structure(caps, 0);
 	g_assert(str != NULL);
@@ -285,7 +298,7 @@ static void on_demux_pad_added(GstElement *element, GstPad *pad, MP_HANDLE handl
 	if(0 == video_on)
 	{
 #if Video_on
-		if(0 == strcmp(name,(char *)handle->TymediaInfo.VideoInfo[video_track_num].VideoPadName))	
+//		if(0 == strcmp(name,(char *)handle->TymediaInfo.VideoInfo[video_track_num].VideoPadName))	
 		{  
 			if (targetqueue) {
 				targetsink = gst_element_get_pad(targetqueue, "sink");
@@ -316,7 +329,8 @@ static void on_demux_pad_added(GstElement *element, GstPad *pad, MP_HANDLE handl
 				gst_object_unref(targetsink);
 			}
 		}
-		else if(0 == strcmp(name,(char *)handle->TymediaInfo.AudioInfo[audio_track_num].AudioPadName))		
+//		else if(0 == strcmp(name,(char *)handle->TymediaInfo.AudioInfo[audio_track_num].AudioPadName))		
+		else 
 		{  
 			if (targetqueue) {
 				targetsink = gst_element_get_pad(targetqueue, "sink");
@@ -329,6 +343,8 @@ static void on_demux_pad_added(GstElement *element, GstPad *pad, MP_HANDLE handl
 			}
 		}
 	}
+
+EXIT:
 
 	g_free(name);	
 
@@ -395,15 +411,19 @@ static int demux_element_search(MP_HANDLE handle)
 	{
 	case DEMUX_TYPE_MPEGPSDEMUX:
 		{
-			handle->demuxer = gst_element_factory_make ("mpegpsdemux", "demuxer" );		//mpeg2
-			handle->parse = gst_element_factory_make ("mpegvideoparse", "parse" );		//mpegvideoparse
+			if ( handle->audio_type == AUDIO_TYPE_AC3 )
+				handle->demuxer = gst_element_factory_make ("dvddemux", "demuxer" );		//dvddemux				
+			else
+				handle->demuxer = gst_element_factory_make ("mpegpsdemux", "demuxer" );		//mpeg2
+			handle->video_parse = gst_element_factory_make ("mpegvideoparse", "parse" );		//mpegvideoparse
+			//g_print("==========dvddemux======\n");
 			break;
 		}
 	case TYPE_3GP:
 	case DEMUX_TYPE_QTDEMUX:
 		{
 			handle->demuxer = gst_element_factory_make ("qtdemux", "demuxer" );			//h264, mp4v, h263
-			handle->parse = gst_element_factory_make ("h264parse", "parse" );					
+			handle->video_parse = gst_element_factory_make ("h264parse", "parse" );					
 			break;
 		}
 	case DEMUX_TYPE_OGGDEMUX:
@@ -439,7 +459,7 @@ static int demux_element_search(MP_HANDLE handle)
 	case DEMUX_TYPE_MPEGTSDEMUX:
 		{
 			handle->demuxer = gst_element_factory_make ("mpegtsdemux", "demuxer" );		//mpegtsdemux				
-			handle->parse = gst_element_factory_make ("h264parse", "parse" );
+			handle->video_parse = gst_element_factory_make ("h264parse", "parse" );
 			g_object_set (G_OBJECT(handle->demuxer), "program-number", handle->TymediaInfo.program_no[handle->video_select_track_num], NULL);
 			break;
 		}
@@ -470,6 +490,7 @@ static int audio_element_set(MP_HANDLE handle, int volumem, int dspPort)
 	}
 	else if( handle->audio_type == AUDIO_TYPE_FLAC )
 	{
+		handle->audio_parse = gst_element_factory_make ("flacparse", "AudioParse");
 		handle->audio_decoder = gst_element_factory_make ("ffdec_flac", "AudioDec");
 		//DbgMsg("=====AUDIO_TYPE_FLAC\n");
 	}
@@ -523,19 +544,19 @@ static int audio_only_element_set(MP_HANDLE handle, int volumem, int dspPort)
 		
 	if( handle->audio_type == AUDIO_TYPE_AC3 )
 	{
-		handle->parse = gst_element_factory_make ("ac3parse", "audio_parse");
+		handle->audio_parse = gst_element_factory_make ("ac3parse", "audio_parse");
 		handle->audio_decoder = gst_element_factory_make ("ffdec_ac3", "AudioDec");
 		//DbgMsg("=====AUDIO_TYPE_AC3\n");
 	}
 	else if( handle->audio_type == AUDIO_TYPE_FLAC )
 	{
-		handle->parse = gst_element_factory_make ("flacparse", "AudioParse");
+		handle->audio_parse = gst_element_factory_make ("flacparse", "AudioParse");
 		handle->audio_decoder = gst_element_factory_make ("ffdec_flac", "AudioDec");
 		//DbgMsg("=====AUDIO_TYPE_FLAC\n");
 	}
 	else if( handle->audio_type == AUDIO_TYPE_DTS )
 	{
-		handle->parse = gst_element_factory_make ("dcaparse", "AudioParse");
+		handle->audio_parse = gst_element_factory_make ("dcaparse", "AudioParse");
 		handle->audio_decoder = gst_element_factory_make ("ffdec_dca", "AudioDec");		
 		//DbgMsg("=====AUDIO_TYPE_DTS\n");
 	}
@@ -583,7 +604,7 @@ static int audio_only_bin_add_link(MP_HANDLE handle)
 		gst_bin_add_many(	(handle->pipeline),
 			handle->input_src,																	
 			handle->audio_queue, 
-			handle->parse, 
+			handle->audio_parse, 
 			handle->audio_decoder, handle->volume, handle->audio_convert, handle->audio_sink,	
 			NULL	);
 	}
@@ -592,7 +613,7 @@ static int audio_only_bin_add_link(MP_HANDLE handle)
 		gst_bin_add_many(	(handle->pipeline),
 			handle->input_src,																	
 			handle->audio_queue, 
-			handle->parse, 
+			handle->audio_parse, 
 			handle->audio_decoder, handle->volume, handle->audio_convert, handle->audio_sink,	
 			NULL	);
 	}
@@ -609,7 +630,7 @@ static int audio_only_bin_add_link(MP_HANDLE handle)
 	//audio link
 	if(	   handle->audio_type == AUDIO_TYPE_AC3 )
 	{
-		ret = gst_element_link_many( handle->input_src,handle->audio_queue, handle->parse, handle->audio_decoder, handle->volume, handle->audio_convert, handle->audio_sink, NULL );
+		ret = gst_element_link_many( handle->input_src,handle->audio_queue, handle->audio_parse, handle->audio_decoder, handle->volume, handle->audio_convert, handle->audio_sink, NULL );
 		if(ret == 0){
 			g_printerr("Error not link:%s:%s:Line(%d) \n", __FILE__, __func__, __LINE__);
 			return ret;
@@ -617,7 +638,7 @@ static int audio_only_bin_add_link(MP_HANDLE handle)
 	}
 	else if( (handle->audio_type == AUDIO_TYPE_FLAC) || (handle->audio_type ==  AUDIO_TYPE_DTS) ) 
 	{
-		ret = gst_element_link_many( handle->input_src,handle->audio_queue, handle->parse, handle->audio_decoder, handle->volume, handle->audio_convert, handle->audio_sink, NULL );
+		ret = gst_element_link_many( handle->input_src,handle->audio_queue, handle->audio_parse, handle->audio_decoder, handle->volume, handle->audio_convert, handle->audio_sink, NULL );
 		if(ret == 0){
 			g_printerr("Error not link:%s:%s:Line(%d) \n", __FILE__, __func__, __LINE__);
 			return ret;
@@ -659,7 +680,7 @@ static int video_only_bin_add_link(MP_HANDLE handle)
 		gst_bin_add_many(	(handle->pipeline),
 							handle->input_src,																	//	input_src 
 							handle->demuxer,																	//	demux
-							handle->video_queue, handle->parse, handle->video_decoder, handle->video_sink,		//	video						
+							handle->video_queue, handle->video_parse, handle->video_decoder, handle->video_sink,		//	video						
 							NULL	);
 		//	link
 		ret  = gst_element_link( handle->input_src, handle->demuxer );
@@ -667,7 +688,7 @@ static int video_only_bin_add_link(MP_HANDLE handle)
 			g_print("Error not link !!!:%s:%s:Line(%d) \n", __FILE__, __func__, __LINE__);
 			return ret;
 		}
-		ret  = gst_element_link_many ( handle->video_queue, handle->parse, handle->video_decoder, handle->video_sink, NULL );	
+		ret  = gst_element_link_many ( handle->video_queue, handle->video_parse, handle->video_decoder, handle->video_sink, NULL );	
 		if(ret == 0){
 			g_print("Error not link !!!:%s:%s:Line(%d) \n", __FILE__, __func__, __LINE__);
 			return ret;
@@ -712,17 +733,16 @@ static int video_audio_bin_add_link(MP_HANDLE handle)
 	{
 		//		input-source | demux	| queue	| parse | videodecoder	| 			 videosink
 		//								| queue			| audiodecoder	| volume    |alsasink
-//		if(handle->audio_type == AUDIO_TYPE_AC3 || handle->audio_type == AUDIO_TYPE_WMA)
 		if( handle->audio_type == AUDIO_TYPE_AC3)
-		{
+		{  
 			gst_bin_add_many(	(handle->pipeline),
 								handle->input_src,																	//	input_src 
 								handle->demuxer,																	//	demux
 #if Video_on
-								handle->video_queue, handle->parse, handle->video_decoder, handle->video_sink,		//	video						
+								handle->video_queue, handle->video_parse, handle->video_decoder, handle->video_sink,		//	video						
 #endif
 #if Audio_on						
-								handle->audio_queue, handle->audio_decoder, handle->volume, handle->audio_convert, handle->audio_sink,		//	audio
+								handle->audio_queue, handle->audio_parse, handle->audio_decoder, handle->volume, handle->audio_convert, handle->audio_sink,		//	audio
 #endif						
 								NULL	);
 		}
@@ -732,7 +752,7 @@ static int video_audio_bin_add_link(MP_HANDLE handle)
 								handle->input_src,																	//	input_src 
 								handle->demuxer,																	//	demux
 #if Video_on
-								handle->video_queue, handle->parse, handle->video_decoder, handle->video_sink,		//	video						
+								handle->video_queue, handle->video_parse, handle->video_decoder, handle->video_sink,		//	video						
 #endif
 #if Audio_on						
 								handle->audio_queue, handle->audio_decoder, handle->volume, handle->audio_convert, handle->audio_sink,		//	audio
@@ -745,7 +765,7 @@ static int video_audio_bin_add_link(MP_HANDLE handle)
 			g_print("Error not link !!!:%s:%s:Line(%d) \n", __FILE__, __func__, __LINE__);
 			return ret;
 		}
-		ret  = gst_element_link_many ( handle->video_queue, handle->parse, handle->video_decoder, handle->video_sink, NULL );	
+		ret  = gst_element_link_many ( handle->video_queue, handle->video_parse, handle->video_decoder, handle->video_sink, NULL );	
 		if(ret == 0){
 			g_print("Error not link !!!:%s:%s:Line(%d) \n", __FILE__, __func__, __LINE__);
 			return ret;
@@ -767,7 +787,7 @@ static int video_audio_bin_add_link(MP_HANDLE handle)
 								handle->video_queue, handle->video_decoder, handle->video_sink,						//	video
 #endif
 #if Audio_on						
-								handle->audio_queue, handle->audio_decoder, handle->volume, handle->audio_convert, handle->audio_sink,		//	audio
+								handle->audio_queue, handle->audio_parse, handle->audio_decoder, handle->volume, handle->audio_convert, handle->audio_sink,		//	audio
 #endif	
 								NULL	);
 		}
@@ -810,7 +830,7 @@ static int video_audio_bin_add_link(MP_HANDLE handle)
 		|| handle->audio_type ==  AUDIO_TYPE_DTS
 		)
 	{
-		gst_element_link_many( handle->audio_queue, handle->audio_decoder, handle->volume, handle->audio_convert, handle->audio_sink );
+		gst_element_link_many( handle->audio_queue, handle->audio_parse, handle->audio_decoder, handle->volume, handle->audio_convert, handle->audio_sink );
 	}
 	else
 	{
@@ -833,23 +853,46 @@ static int video_audio_bin_add_link(MP_HANDLE handle)
 	return ret;
 }
 
-static int video_element_set(MP_HANDLE handle, int dspModule, int dspPort)
+static int video_element_set(MP_HANDLE handle, int dspModule, int dspPort, int display)
 {
 	int ret = 1;
 
 	//add video queue,decoder,sink
-	handle->video_queue = gst_element_factory_make ("queue2", "VideoQueue");
+	if( (handle->demux_type == DEMUX_TYPE_MPEGPSDEMUX) && (handle->audio_type == AUDIO_TYPE_AC3) )
+		handle->video_queue = gst_element_factory_make ("queue", "VideoQueue");
+	else
+		handle->video_queue = gst_element_factory_make ("queue2", "VideoQueue");
+
 	handle->video_decoder = gst_element_factory_make ("nxvideodecoder", "VideoDec");
 
-	
 	handle->video_sink = gst_element_factory_make ("nxvideosink", "video-sink");
 	g_object_set(G_OBJECT(handle->video_sink), "dsp-module", dspModule, NULL);
 	g_object_set(G_OBJECT(handle->video_sink), "dsp-port", dspPort, NULL);
 	g_object_set(G_OBJECT(handle->video_sink), "dsp-priority", 0, NULL);
 
+
+	if( ( dspModule == 0) && (dspPort == 0) && (display == DISPLAY_PORT_LCD) )	//lcd
+	{
+		g_object_set(G_OBJECT(handle->video_sink), "lcd-display", ON, NULL);
+		g_object_set(G_OBJECT(handle->video_sink), "hdmi-display", OFF, NULL);
+//		g_printf("====( dspModule == 0) && (dspPort == 0)\n");
+	}
+	else if( ( dspModule == 1) && (dspPort == 1) && (display == DISPLAY_PORT_HDMI) )	//hdmi
+	{
+		g_object_set(G_OBJECT(handle->video_sink), "lcd-display", OFF, NULL);
+		g_object_set(G_OBJECT(handle->video_sink), "hdmi-display", ON, NULL);
+//		g_printf("====( dspModule == 1) && (dspPort == 1)\n");
+	}
+	else if( ( dspModule == 0) && (dspPort == 0) && (display == DISPLAY_PORT_DUAL) )	//dual
+	{
+		g_object_set(G_OBJECT(handle->video_sink), "lcd-display",  ON, NULL);
+		g_object_set(G_OBJECT(handle->video_sink), "hdmi-display", ON, NULL);
+//		g_object_set(G_OBJECT(handle->video_sink), "dual-display", ON, NULL);
+	}
+
 	if(handle->demux_type == DEMUX_TYPE_MPEGTSDEMUX)
 	{
-		handle->parse = gst_element_factory_make ("h264parse", "VideoParse");
+		handle->video_parse = gst_element_factory_make ("h264parse", "VideoParse");
 		g_object_set(G_OBJECT(handle->video_sink), "src-width", handle->TymediaInfo.VideoInfo[handle->video_select_track_num].Width, NULL);			
 		g_object_set(G_OBJECT(handle->video_sink), "src-height",handle->TymediaInfo.VideoInfo[handle->video_select_track_num].Height, NULL);
 		
@@ -913,7 +956,7 @@ static void typefind_debug(TYMEDIA_INFO *ty_handle)
 	g_print("===============================================================================\n\n");
 }
 
-MP_RESULT NX_MPOpen( MP_HANDLE *handle_s, const char *uri, int volumem, int dspModule, int dspPort, int audio_track_num, int video_track_num, char *media_info,
+MP_RESULT NX_MPOpen( MP_HANDLE *handle_s, const char *uri, int volumem, int dspModule, int dspPort, int audio_track_num, int video_track_num, char *media_info, int display,
 					void (*cb)(void *owner, unsigned int msg, unsigned int param1, unsigned int param2), void *cbPrivate )
 {
 	MP_HANDLE handle = NULL;
@@ -922,8 +965,14 @@ MP_RESULT NX_MPOpen( MP_HANDLE *handle_s, const char *uri, int volumem, int dspM
 //	double vol = 0;
 	int ret = 0;
 	TYMEDIA_INFO *ty_handle = (TYMEDIA_INFO *)media_info;
+	AppData *appData = NULL;
+
+//	int display = 0;
 
 	FUNC_IN();
+	
+	if(cbPrivate != NULL)
+		appData = (AppData*)cbPrivate;
 
 	if( !gst_is_initialized() ){
 		gst_init(NULL, NULL);
@@ -989,6 +1038,9 @@ MP_RESULT NX_MPOpen( MP_HANDLE *handle_s, const char *uri, int volumem, int dspM
 	}
 	//typefind end
 
+	handle->display = display;
+	 
+
 	handle->audio_select_track_num = audio_track_num;
 	handle->video_select_track_num = video_track_num;
 
@@ -996,6 +1048,8 @@ MP_RESULT NX_MPOpen( MP_HANDLE *handle_s, const char *uri, int volumem, int dspM
 	handle->video_type =handle->TymediaInfo.VideoInfo[handle->video_select_track_num].VCodecType;
 
 	handle->callback = cb;
+	if(cbPrivate != NULL)
+		appData->hPlayer = handle;
 	handle->owner = cbPrivate;
 
 	if( handle->pipeline_is_linked )
@@ -1051,7 +1105,7 @@ MP_RESULT NX_MPOpen( MP_HANDLE *handle_s, const char *uri, int volumem, int dspM
 	}
 	else if(handle->TymediaInfo.VideoOnly == ON){
 		//add video queue,decoder,sink
-		ret = video_element_set( handle,  dspModule,  dspPort);
+		ret = video_element_set( handle,  dspModule,  dspPort, display);
 		if(ret == 0){
 			goto ERROR_EXIT;
 		}		
@@ -1071,7 +1125,7 @@ MP_RESULT NX_MPOpen( MP_HANDLE *handle_s, const char *uri, int volumem, int dspM
 			goto ERROR_EXIT;
 		}		
 		//add video queue,decoder,sink
-		ret = video_element_set( handle,  dspModule,  dspPort);
+		ret = video_element_set( handle,  dspModule,  dspPort, display);
 		if(ret == 0){
 			goto ERROR_EXIT;
 		}		
@@ -1137,15 +1191,15 @@ void NX_MPClose( MP_HANDLE handle )
 MP_RESULT NX_MPGetMediaInfo( MP_HANDLE handle, int idx, MP_MEDIA_INFO *pInfo )
 {
 	FUNC_IN();
-	int ret = 0;
-	ret = NX_MPGetCurDuration(handle,  (unsigned int *)&pInfo->VDuration);
+//	int ret = 0;
+	NX_MPGetCurDuration(handle,  (unsigned int *)&pInfo->VDuration);
 	if(handle->TymediaInfo.VideoInfo[idx].Framerate.value_numerator == 0 || handle->TymediaInfo.VideoInfo[idx].Framerate.value_denominator == 0)
 		pInfo->Framerate = 0;
 	else
 		pInfo->Framerate = (unsigned long)handle->TymediaInfo.VideoInfo[idx].Framerate.value_numerator/handle->TymediaInfo.VideoInfo[idx].Framerate.value_denominator;
 	pInfo->Width = handle->TymediaInfo.VideoInfo[idx].Width;
 	pInfo->Height = handle->TymediaInfo.VideoInfo[idx].Height;
-	ret = NX_MPGetCurDuration(handle, (unsigned int *)&pInfo->ADuration);
+	NX_MPGetCurDuration(handle, (unsigned int *)&pInfo->ADuration);
 	pInfo->samplerate = (unsigned long)handle->TymediaInfo.AudioInfo[idx].samplerate;
 	pInfo->channels = handle->TymediaInfo.AudioInfo[idx].channels;
 	pInfo->bitrate = -1;
@@ -1386,15 +1440,34 @@ MP_RESULT NX_MPGetCurPosition(MP_HANDLE handle, unsigned int *position)
 }
 
 
-MP_RESULT NX_MPSetDspPosition(MP_HANDLE handle,	int dspModule, int dsPport, int x, int y, int width,	int height )
+MP_RESULT NX_MPSetDspPosition(MP_HANDLE handle,	int dspModule, int dsPport, int x, int y, int width, int height )
 {
 	FUNC_IN();
 	if( handle && handle->video_sink )
 	{
-		g_object_set(G_OBJECT(handle->video_sink), "dsp-x", x, NULL);
-		g_object_set(G_OBJECT(handle->video_sink), "dsp-y", y, NULL);
-		g_object_set(G_OBJECT(handle->video_sink), "dsp-width", width, NULL);
-		g_object_set(G_OBJECT(handle->video_sink), "dsp-height", height, NULL);
+		if( ( dspModule == 0) && (dsPport == 0) )
+		{
+			//g_print("===lcd display===\n");
+			g_object_set(G_OBJECT(handle->video_sink), "lcd-display", ON, NULL);
+			g_object_set(G_OBJECT(handle->video_sink), "dsp-module", dspModule, NULL);
+			g_object_set(G_OBJECT(handle->video_sink), "dsp-port", dsPport, NULL);			
+			g_object_set(G_OBJECT(handle->video_sink), "dsp-x", x, NULL);
+			g_object_set(G_OBJECT(handle->video_sink), "dsp-y", y, NULL);
+			g_object_set(G_OBJECT(handle->video_sink), "dsp-width", width, NULL);
+			g_object_set(G_OBJECT(handle->video_sink), "dsp-height", height, NULL);
+		}
+		else if( ( dspModule == 1) && (dsPport == 1) )
+		{
+			//g_print("===hdmi display===\n");
+			g_object_set(G_OBJECT(handle->video_sink), "hdmi-display", ON, NULL);
+			g_object_set(G_OBJECT(handle->video_sink), "dsp-module", dspModule, NULL);
+			g_object_set(G_OBJECT(handle->video_sink), "dsp-port", dsPport, NULL);			
+			g_object_set(G_OBJECT(handle->video_sink), "dsp-x", x, NULL);
+			g_object_set(G_OBJECT(handle->video_sink), "dsp-y", y, NULL);
+			g_object_set(G_OBJECT(handle->video_sink), "dsp-width", width, NULL);
+			g_object_set(G_OBJECT(handle->video_sink), "dsp-height", height, NULL);
+		}
+
 	}
 	FUNC_OUT();
 	return	ERROR_NONE;

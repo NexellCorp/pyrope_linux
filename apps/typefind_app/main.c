@@ -26,7 +26,7 @@ static const char *DemuxTypeString[DEMUX_TYPE_NUM] =
 	"audio/mpeg",						//audio mpeg
 	"audio/x-ac3",						//audio ac3
 	"audio/x-dts",						//audio dts
-	"NULL",
+	"application/x-3gp",
 	"NULL",
 	"NULL",
 	"NULL",

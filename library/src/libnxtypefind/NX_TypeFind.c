@@ -5,7 +5,7 @@
 #include <sys/time.h>
 #include <gst/gst.h>
 #include <glib.h>
-#include "NX_TypeFind.h"
+#include <NX_TypeFind.h>
 
 
 //	Debug Flags
@@ -62,11 +62,11 @@
 
 
 //	uri type
-static const char *URITypeString[] =
-{
-	"URI_TYPE_FILE",
-	"URI_TYPE_URL"
-};
+//static const char *URITypeString[] =
+//{
+//	"URI_TYPE_FILE",
+//	"URI_TYPE_URL"
+//};
 
 #define DEMUX_TYPE_NUM	20
 static const char *DemuxTypeString[DEMUX_TYPE_NUM] =
@@ -366,8 +366,8 @@ static void on_demux_pad_added_typefind(GstElement *element, GstPad *pad, TypeFi
 	GstPad *targetsink;
 	gint i = 0, len = 0;
 	gint tot_num = 0;
-	gint video_track_num = 0;
-	gint audio_track_num = 0;
+//	gint video_track_num = 0;
+//	gint audio_track_num = 0;
 	gint audio_on = OFF;
 	gint video_on = OFF;
 	gint codec_type = ty_handle->codec_type;
@@ -378,13 +378,18 @@ static void on_demux_pad_added_typefind(GstElement *element, GstPad *pad, TypeFi
 
 	DbgMsg("===on_demux_pad_added_typefind ++\n");
 
-	video_track_num = ty_handle->video_track_num ;
-	audio_track_num = ty_handle->audio_track_num ;
+//	video_track_num = ty_handle->video_track_num ;
+//	audio_track_num = ty_handle->audio_track_num ;
 
 	caps = gst_pad_get_caps(pad);
 	g_assert(caps != NULL);
 	name = gst_pad_get_name(pad);
 	DbgMsg("new demux pad %s\n", name);
+
+	if( (0 == strcasecmp( name, "private_2" ) ) )
+	{
+		goto EXIT;
+	}
 
 	str = gst_caps_get_structure(caps, 0);
 	g_assert(str != NULL);
@@ -521,7 +526,7 @@ static void on_demux_pad_added_typefind(GstElement *element, GstPad *pad, TypeFi
 				DbgMsg("demux pad video link succeed\n");
 			}
 		}
-		else if(0 == strcmp(name,(char *)ty_handle->TymediaInfo->VideoInfo[video_track_num].VideoPadName))	
+		else //if(0 == strcmp(name,(char *)ty_handle->TymediaInfo->VideoInfo[video_track_num].VideoPadName))	
 		{  
 			if (targetqueue) {
 				targetsink = gst_element_get_pad(targetqueue, "sink");
@@ -550,7 +555,7 @@ static void on_demux_pad_added_typefind(GstElement *element, GstPad *pad, TypeFi
 				DbgMsg("demux pad audio link succeed\n");
 			}
 		}
-		else if(0 == strcmp(name,(char *)ty_handle->TymediaInfo->AudioInfo[audio_track_num].AudioPadName))	
+		else //if(0 == strcmp(name,(char *)ty_handle->TymediaInfo->AudioInfo[audio_track_num].AudioPadName))	
 		{  
 			
 			if (targetqueue) {
@@ -565,6 +570,9 @@ static void on_demux_pad_added_typefind(GstElement *element, GstPad *pad, TypeFi
 			}
 		}
 	}
+
+EXIT:
+
 	g_free(name);	
 	gst_caps_unref(caps);
 
@@ -946,10 +954,23 @@ static int typefind_codec_info( TYMEDIA_INFO *ty_media_handle, const char *uri, 
 	g_object_set (G_OBJECT (ty_handle.filesrc), "location", uri, NULL);
 
 	if(demux_type == DEMUX_TYPE_MPEGPSDEMUX) {
-		ty_handle.demux = gst_element_factory_make ("mpegpsdemux", "demux");
+		if( CODEC_TYPE_AUDIO == codec_type){
+			if(ty_handle.TymediaInfo->AudioInfo[ty_handle.audio_track_num].ACodecType == AUDIO_TYPE_AC3){
+				ty_handle.demux = gst_element_factory_make ("dvddemux", "demux");
+				//g_printf("=======dvd demux====\n");
+			}
+			else{
+				ty_handle.demux = gst_element_factory_make ("mpegpsdemux", "demux");
+			}
+		}
+		else{
+				ty_handle.demux = gst_element_factory_make ("mpegpsdemux", "demux");
+		}
+		
+		
 		ty_handle.video_parse = gst_element_factory_make ("mpegvideoparse", "parse_video");
 		if( CODEC_TYPE_AUDIO == codec_type)
-		{
+		{ 
 			if(ty_handle.TymediaInfo->AudioInfo[ty_handle.audio_track_num].ACodecType == AUDIO_TYPE_MPEG)
 				ty_handle.audio_parse = gst_element_factory_make ("mpegaudioparse", "parse_audio");
 			else if(ty_handle.TymediaInfo->AudioInfo[ty_handle.audio_track_num].ACodecType == AUDIO_TYPE_AC3)
@@ -1216,6 +1237,8 @@ static void on_demux_pad_added_num(GstElement *element, GstPad *pad, TypeFindSt 
 		gst_object_unref(targetsink);
 	}
 
+
+
 	g_free(name);	
 
 	gst_caps_unref(caps);
@@ -1323,6 +1346,203 @@ static int find_avcodec_num( TYMEDIA_INFO *ty_media_handle, const char *uri )
 		if(ret == 0)
 			g_print("Error not link !!!:%s:%s:Line(%d) \n", __FILE__, __func__, __LINE__);
 	}
+
+
+	/* setup */
+	gst_element_set_state ( (ty_handle.pipeline), GST_STATE_PLAYING);
+
+	g_main_loop_run (ty_handle.loop);
+
+
+	/* unset */
+	gst_element_set_state ( (ty_handle.pipeline), GST_STATE_NULL);
+	gst_object_unref (GST_OBJECT (ty_handle.pipeline));
+
+	FUNC_OUT();
+
+	return ret;
+}
+
+
+static void cb_typefind_video_ps (
+								GstElement *typefind,
+	      						guint       probability,
+	      						GstCaps    *caps,
+	      						gpointer    data
+								)
+{
+	GMainLoop *loop = NULL;
+	TypeFindSt *ty_handle = data;
+
+	FUNC_IN();
+
+//	DbgMsg("===cb_typefind_video ++\n");
+
+	loop = ty_handle->loop;
+
+
+  /* since we connect to a signal in the pipeline thread context, we need
+   * to set an idle handler to exit the main loop in the mainloop context.
+   * Normally, your app should not need to worry about such things. */
+	g_idle_add (idle_exit_loop, loop);
+
+//	DbgMsg("===cb_typefind_video --\n");
+
+	FUNC_OUT();
+}
+
+								
+static void on_demux_pad_added_num_ps(GstElement *element, GstPad *pad, TypeFindSt *ty_handle)
+{
+//	GMainLoop *loop = NULL;
+	GstCaps *caps;
+	GstStructure *str;
+	gchar *name;
+	GstPadLinkReturn rc;
+	GstElement *targetqueue;
+	GstPad *targetsink;
+	gint	tot_num = 0;
+	gint	len = 0, i = 0;
+
+	FUNC_IN();
+	
+	DbgMsg("===on_demux_pad_added_num ++\n");
+
+//	loop = ty_handle->loop;
+
+	caps = gst_pad_get_caps(pad);
+	g_assert(caps != NULL);
+	name = gst_pad_get_name(pad);
+	DbgMsg("new demux pad add %s\n", name);
+
+	str = gst_caps_get_structure(caps, 0);
+	g_assert(str != NULL);
+
+	DbgMsg("compare string %s\n", gst_structure_get_name(str));
+
+	targetqueue = NULL;
+
+	// TODO: is this the right way to match video/audio pads
+	if (g_strrstr(gst_structure_get_name(str), "video")) {
+		DbgMsg("Linking %s to %s\n", name, gst_structure_get_name(str) );
+		targetqueue = ty_handle->video_queue;
+		tot_num = ty_handle->TymediaInfo->VideoTrackTotNum;
+		ty_handle->TymediaInfo->VideoTrackTotNum++;
+		ty_handle->TymediaInfo->VideoInfo[tot_num].VCodecType = -1;
+		
+		for(i = 0; i <VIDEO_TYPE_NUM ; i++)
+		{
+			len = strlen(VideoTypeString[i]);
+
+			if( 0 == strncmp(gst_structure_get_name(str), VideoTypeString[i], len) ){
+				ty_handle->TymediaInfo->VideoInfo[tot_num].VCodecType = i;
+				break;
+			}			
+		}
+		
+	}
+
+	if (g_strrstr(gst_structure_get_name(str), "audio")) {
+		DbgMsg("Linking %s to %s\n", name, gst_structure_get_name(str) );
+		targetqueue = ty_handle->audio_queue;
+		tot_num = ty_handle->TymediaInfo->AudioTrackTotNum;
+		ty_handle->TymediaInfo->AudioTrackTotNum++;
+		ty_handle->TymediaInfo->AudioInfo[tot_num].ACodecType = -1;
+		
+		for(i = 0; i <AUDIO_TYPE_NUM ; i++)
+		{
+			len = strlen(AudioTypeString[i]);
+			if( 0 == strncmp(gst_structure_get_name(str), AudioTypeString[i], len) ){
+				ty_handle->TymediaInfo->AudioInfo[tot_num].ACodecType = i;
+				break;
+			}			
+		}
+		if(ty_handle->TymediaInfo->AudioInfo[tot_num].ACodecType == AUDIO_TYPE_AC3_PRI) 				
+			ty_handle->TymediaInfo->AudioInfo[tot_num].ACodecType = AUDIO_TYPE_AC3;
+	}
+
+	if (targetqueue) {
+		targetsink = gst_element_get_pad(targetqueue, "sink");
+		g_assert(targetsink != NULL);			
+		rc = gst_pad_link(pad, targetsink);			
+		if (rc) {
+			g_critical("demux pad link failed(%s): %d\n", __func__, rc);
+		}
+		gst_object_unref(targetsink);
+	}
+
+	g_free(name);	
+
+	gst_caps_unref(caps);
+
+	DbgMsg("===on_demux_pad_added_num --\n");
+
+	FUNC_OUT();
+}
+
+static int find_avcodec_num_ps( TYMEDIA_INFO *ty_media_handle, const char *uri )
+{
+	TypeFindSt ty_handle ;
+
+	FUNC_IN();
+
+	gint ret = 0;
+//	gint demux_type = 0;
+
+	ty_handle.loop = g_main_loop_new (NULL, FALSE);
+	ty_handle.TymediaInfo = ty_media_handle;
+//	demux_type = ty_handle.TymediaInfo->DemuxType;
+
+	/* create a new pipeline to hold the elements */
+//	g_print("=======find_avcodec_num_ps====\n");
+	ty_handle.pipeline = gst_pipeline_new ("pipe");
+
+	ty_handle.bus = gst_pipeline_get_bus (GST_PIPELINE (ty_handle.pipeline));
+	gst_bus_add_watch (ty_handle.bus, bus_callback, NULL);
+	gst_object_unref (ty_handle.bus);
+
+	/* create file source and typefind element */
+	ty_handle.filesrc = gst_element_factory_make ("filesrc", "source");
+	g_object_set (G_OBJECT (ty_handle.filesrc), "location", uri, NULL);
+
+	ty_handle.demux = gst_element_factory_make ("mpegpsdemux", "demux");
+	ty_handle.video_decode = gst_element_factory_make ("decodebin", "video_decode");
+	ty_handle.video_typefind = gst_element_factory_make ("typefind", "typefinder_video");
+	ty_handle.audio_decode = gst_element_factory_make ("decodebin", "audio_decode");
+		
+	ty_handle.video_queue = gst_element_factory_make ("queue2", "video_queue");
+	ty_handle.temp_queue = gst_element_factory_make ("queue2", "temp_queue");
+	ty_handle.video_fakesink = gst_element_factory_make ("fakesink", "sink_video");
+
+	ty_handle.audio_queue = gst_element_factory_make ("queue2", "audio_queue");
+	ty_handle.audio_fakesink = gst_element_factory_make ("fakesink", "sink_audio");
+
+	g_signal_connect( ty_handle.demux, "pad-added", G_CALLBACK(on_demux_pad_added_num_ps), &ty_handle );
+	g_signal_connect (ty_handle.video_typefind, "have-type", G_CALLBACK (cb_typefind_video_ps), &ty_handle);
+
+	gst_bin_add_many(	(ty_handle.pipeline),
+						ty_handle.filesrc,																	
+						ty_handle.demux,																	
+						ty_handle.video_queue, /*ty_handle.video_parse,*/ ty_handle.video_decode,  ty_handle.video_typefind, ty_handle.video_fakesink,		
+						ty_handle.audio_queue, /*ty_handle.audio_decode,*/  ty_handle.audio_fakesink,		
+						NULL	
+					);
+
+	//	link
+	g_signal_connect( ty_handle.video_decode, "pad-added", G_CALLBACK(on_video_decodebin_pad_added), &ty_handle );
+	ret  = gst_element_link( ty_handle.filesrc, ty_handle.demux );
+	if(ret == 0)				
+		g_print("Error not link !!!:%s:%s:Line(%d) \n", __FILE__, __func__, __LINE__);
+
+	ret  = gst_element_link ( ty_handle.video_queue, ty_handle.video_decode);
+	if(ret == 0)
+		g_print("Error not link !!!:%s:%s:Line(%d) \n", __FILE__, __func__, __LINE__);
+	ret  = gst_element_link_many ( ty_handle.video_typefind, ty_handle.video_fakesink, NULL );	
+	if(ret == 0)
+		g_print("Error not link !!!:%s:%s:Line(%d) \n", __FILE__, __func__, __LINE__);
+	ret  = gst_element_link_many ( ty_handle.audio_queue, /*ty_handle.audio_decode,*/ ty_handle.audio_fakesink, NULL );	
+	if(ret == 0)
+		g_print("Error not link !!!:%s:%s:Line(%d) \n", __FILE__, __func__, __LINE__);
 
 
 	/* setup */
@@ -1705,7 +1925,6 @@ MP_RESULT NX_TypeFind( TYMEDIA_INFO *ty_media_handle,  const char *uri)
 		return ret;
 	}
 
-	//DbgMsg("===typefind_demux END, ty_media_handle->AudioOn %d\n",ty_media_handle->AudioOnly);
 	if( ty_media_handle->AudioOnly == ON)
 	{
 		ret = typefind_audio_codec_info( ty_media_handle, uri, 0 );
@@ -1721,6 +1940,13 @@ MP_RESULT NX_TypeFind( TYMEDIA_INFO *ty_media_handle,  const char *uri)
 	else
 	{
 		find_avcodec_num( ty_media_handle, uri);
+		if(ty_media_handle->DemuxType == DEMUX_TYPE_MPEGPSDEMUX){
+			if(ty_media_handle->AudioTrackTotNum <= 0 ){
+				ty_media_handle->VideoTrackTotNum = 0;
+				find_avcodec_num_ps( ty_media_handle, uri);
+			}
+		}
+
 		if(ty_media_handle->DemuxType == DEMUX_TYPE_MPEGTSDEMUX){
 			VideoTotNum = ty_media_handle->program_tot_no;
 			AudioTotNum = ty_media_handle->program_tot_no;
@@ -1731,7 +1957,7 @@ MP_RESULT NX_TypeFind( TYMEDIA_INFO *ty_media_handle,  const char *uri)
 		}
 		ty_media_handle->VideoTrackTotNum = 0;
 		ty_media_handle->AudioTrackTotNum = 0;
-#if 1
+
 		if(ty_media_handle->DemuxType == DEMUX_TYPE_MPEGTSDEMUX){
 			g_print("\n");
 			g_print("============================================\n");
@@ -1755,8 +1981,6 @@ MP_RESULT NX_TypeFind( TYMEDIA_INFO *ty_media_handle,  const char *uri)
 			g_print("\n");
 		}
 
-#endif
-		
 		if(0 < VideoTotNum)
 		{
 			ty_media_handle->VideoTrackTotNum = 0;

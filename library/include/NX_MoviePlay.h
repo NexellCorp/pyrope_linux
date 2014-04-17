@@ -15,7 +15,8 @@ enum{
 //	disply port
 enum{
 	DISPLAY_PORT_LCD,
- 	DISPLAY_PORT_HDMI
+ 	DISPLAY_PORT_HDMI,
+ 	DISPLAY_PORT_DUAL
 };
 
 //	disply module
@@ -55,7 +56,7 @@ typedef struct MP_MEDIA_INFO {
 extern "C" {
 #endif	//	__cplusplus
 
-MP_RESULT NX_MPOpen( MP_HANDLE *handle, const char *uri, int volumem, int dspModule, int dspPort, int audio_track_num, int video_track_num, char *media_info,
+MP_RESULT NX_MPOpen( MP_HANDLE *handle, const char *uri, int volumem, int dspModule, int dspPort, int audio_track_num, int video_track_num, char *media_info, int display,
 						void (*cb)(void *owner, unsigned int msg, unsigned int param1, unsigned int param2), void *cbPrivate);
 void NX_MPClose( MP_HANDLE handle );
 MP_RESULT NX_MPGetMediaInfo( MP_HANDLE handle, int index, MP_MEDIA_INFO *pInfo );
@@ -65,7 +66,7 @@ MP_RESULT NX_MPStop(MP_HANDLE hande);
 MP_RESULT NX_MPSeek(MP_HANDLE hande, unsigned int seekTime);				//seekTime : msec
 MP_RESULT NX_MPGetCurDuration(MP_HANDLE handle, unsigned int *duration);	//duration : msec
 MP_RESULT NX_MPGetCurPosition(MP_HANDLE handle, unsigned int *position);	//position : msec	
-MP_RESULT NX_MPSetDspPosition(MP_HANDLE handle,	int dspModule, int dspPort, int x, int y, int w,	int h );
+MP_RESULT NX_MPSetDspPosition(MP_HANDLE handle,	int dspModule, int dsPport, int x, int y, int width, int height );
 MP_RESULT NX_MPSetVolume(MP_HANDLE handle, int volume);						//volume range : 0 ~ 100
 
 #ifdef __cplusplus

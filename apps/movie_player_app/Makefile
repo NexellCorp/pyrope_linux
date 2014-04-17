@@ -13,6 +13,7 @@ LIBRARY	+= -lstdc++ -lpthread -lgobject-2.0 -lm
 LIBRARY += -lglib-2.0 -lgstreamer-0.10 
 LIBRARY += -L$(LIBSDIR)/lib -lnxmovplayer
 LIBRARY += -L$(LIBSDIR)/lib -lnxtypefind
+LIBRARY += -L$(LIBSDIR)/lib -lnxuevent
 
 ######################################################################
 # Target

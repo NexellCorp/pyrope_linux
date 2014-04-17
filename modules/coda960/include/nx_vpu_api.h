@@ -281,6 +281,8 @@ typedef struct tagVpuEncInfo
 		EncJpegInfo jpgEncInfo;
 	}EncCodecParam;
 
+	unsigned int numEncFrames;	//	encoding frame counter
+
 	//	Motion Estimation
 	int MEUseZeroPmv;
 	int MESearchRange;			//	ME Search Range

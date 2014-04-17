@@ -137,13 +137,18 @@ typedef struct tNX_VID_ENC_INIT_PARAM{
 	int fpsDen;
 
 	//	Rate Control Parameters
-	int enableRC;		//	En/Disable Rate Control
-	int enableSkip;		//	Enable Skip Frame Mode ( in RC Mode )
-	int maxQScale;		//	Max Quantization Scale  ( Maximum Quantization Scale in RC Mode )
-	int userQScale;		//	User Quantization Scale ( in disable RC )
+	int enableRC;			//	En/Disable Rate Control
+	int enableSkip;			//	Enable Skip Frame Mode ( in RC Mode )
+	int maxQScale;			//	Max Quantization Scale  ( Maximum Quantization Scale in RC Mode )
+	int userQScale;			//	User Quantization Scale ( in disable RC )
+
+	int numIntraRefreshMbs;	//	an Intra MB refresh number.(Cyclic Intra Refresh)
 
 	//	Input Buffer Format
 	int chromaInterleave;	//	0(disable) or 1(enable)
+
+	//	for AVC Encoder
+	int	enableAUDelimiter;	//	add Access Unit Delimiter before NAL unit.
 
 	//	for JPEG Specific Parameter
 	int jpgQuality;		//	1~100

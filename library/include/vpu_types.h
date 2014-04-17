@@ -29,30 +29,46 @@ typedef struct
 typedef struct
 {
 	//	
-	int srcWidth;		//	source image's width
-	int srcHeight;		//	source image's height
+	int srcWidth;			//	source image's width
+	int srcHeight;			//	source image's height
 
 	//	Set Stream Buffer Handle
 	unsigned int strmBufVirAddr;
 	unsigned int strmBufPhyAddr;
 	int strmBufSize;
 
-	int frameRate;		//	frame rate
-	int gopSize;		//	group of picture size
+	int frameRate;			//	frame rate
+	int gopSize;			//	group of picture size
 
 	//	Rate Control
-	int	enableRC;		//	Enable Rate Control
-	int bitrate;		//	Bitrate
-	int rcAutoSkip;		//	Auto Skip
-	int maxQScale;		//	Max Quantization Scale
-	int userQScale;		//	User Quantization Scale
+	int	enableRC;			//	Enable Rate Control
+	int bitrate;			//	Bitrate
+	int rcAutoSkip;			//	Auto Skip
+
+	//	Quantization Scale [ H.264/AVC(0~51), MPEG4(1~31) ]
+	int maxQScale;			//	Max Quantization Scale
+	int userQScale;			//	User Quantization Scale
 
 	//	Input Buffer Chroma Interleaved
 	int chromaInterleave;	//	Input Buffer Chroma Interleaved Format
 	int refChromaInterleave;//	Reference Buffer's Chorma Interleaved Format
 
 	//	ME Search Range
-	int searchRange;	//	ME_SEARCH_RAGME_[0~3] ( recomand ME_SEARCH_RAGME_2 )
+	int searchRange;		//	ME_SEARCH_RAGME_[0~3] ( recomand ME_SEARCH_RAGME_2 )
+							//	0 : H(-128~127), V(-64~63)
+							//	1 : H( -64~ 63), V(-32~31)
+							//	2 : H( -32~ 31), V(-16~15)
+							//	3 : H( -16~ 15), V(-16~15)
+	//	Other Options
+	int intialDelay;		//	This vali is ignored enableRC is 0.(MAX 0x7FFF)
+							//	0 does not check Reference decoder buffer delay constraint.
+	int	vbvBufferSize;		//	Reference Decoder buffer size in bits.
+							//	This valid is ignored if enableRC is 0 or initDelay is is 0.(MAX 0x7FFFFFFF)
+	int intraRefreshMbs;	//	an Intra MB refresh number.
+							//	It must be less than total MacroBlocks.
+
+	//	AVC Only
+	int	enableAUDelimiter;	//	enable/disable Access Unit Delimiter
 
 	//	JPEG Specific
 	int rotAngle;

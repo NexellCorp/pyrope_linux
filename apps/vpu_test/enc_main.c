@@ -160,6 +160,7 @@ int main( int argc, char *argv[] )
 	encInitParam.enableSkip = 0;	//	Enable Skip
 	encInitParam.maxQScale = 51;	//	Max Qunatization Scale
 	encInitParam.userQScale = 10;	//	Default Encoder API ( enableRC == 0 )
+	encInitParam.enableAUDelimiter = 1;	//	Enable / Disable AU Delimiter
 
 	NX_VidEncInit( hEnc, &encInitParam );
 
@@ -169,7 +170,7 @@ int main( int argc, char *argv[] )
 		//	Write Sequence Data
 		NX_VidEncGetSeqInfo( hEnc, seqBuffer, &size );
 		fwrite( seqBuffer, 1, size, fdOut );
-		//dumpdata( seqBuffer, size, "sps pps" );
+		dumpdata( seqBuffer, size, "sps pps" );
 		printf("Encoder Out Size = %d\n", size);
 	}
 
@@ -222,7 +223,7 @@ int main( int argc, char *argv[] )
 				//	Write Sequence Data
 				fwrite( encOut.outBuf, 1, encOut.bufSize, fdOut );
 				printf("FrameType = %d, size = %8d, ", encOut.isKey, encOut.bufSize);
-				dumpdata( encOut.outBuf, 16, "output data" );
+				dumpdata( encOut.outBuf, 16, "" );
 				totalSize += encOut.bufSize;
 				bitRate = (double)totalSize/(double)frameCnt*.8;
 				printf("bitRate = %4.3f kbps\n", bitRate*30/1024.);

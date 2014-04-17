@@ -237,6 +237,11 @@ NX_VID_RET NX_VidEncInit( NX_VID_ENC_HANDLE hEnc, NX_VID_ENC_INIT_PARAM *pParam 
 	seqArg.chromaInterleave = pParam->chromaInterleave;
 	seqArg.refChromaInterleave = hEnc->refChromaInterleave;
 
+	seqArg.intraRefreshMbs = pParam->numIntraRefreshMbs;
+	if( hEnc->codecMode == NX_AVC_ENC && pParam->enableAUDelimiter != 0 )
+	{
+		seqArg.enableAUDelimiter = 1;
+	}
 	seqArg.strmBufPhyAddr = hEnc->hBitStreamBuf->phyAddr;
 	seqArg.strmBufVirAddr = hEnc->hBitStreamBuf->virAddr;
 	seqArg.strmBufSize = hEnc->hBitStreamBuf->size;

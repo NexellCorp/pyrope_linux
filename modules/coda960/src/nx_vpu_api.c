@@ -779,6 +779,9 @@ NX_VPU_RET	NX_VpuEncSetSeqParam( NX_VPU_INST_HANDLE handle, VPU_ENC_SEQ_ARG *seq
 	encInfo->cbcrInterleave = seqArg->chromaInterleave;
 	encInfo->cbcrInterleaveRefFrame = seqArg->refChromaInterleave;
 
+	encInfo->intraRefresh = seqArg->intraRefreshMbs;
+	encInfo->EncCodecParam.avcEncParam.audEnable = seqArg->enableAUDelimiter?1:0;
+
 	NX_DbgMsg(1, ("NX_VpuEncSetSeqParam() : %dx%d, %d fps, %d kbps (gop(%d), maxQ(%d) StreamBuffer(0x%08x, 0x%08x))\n",
 		encInfo->srcWidth, encInfo->srcHeight, encInfo->frameRate, encInfo->bitRate,
 		encInfo->gopSize, encInfo->userQpMax, encInfo->strmBufPhyAddr, encInfo->strmBufVirAddr));
@@ -892,7 +895,11 @@ GET_HEADER_EXIT:
 //
 NX_VPU_RET	NX_VpuEncRunFrame( NX_VPU_INST_HANDLE handle, VPU_ENC_RUN_FRAME_ARG *runArg )
 {
-//	NX_VPU_RET ret = VPU_RET_OK;
+	VpuEncInfo *pEncInfo = &handle->codecInfo.encInfo;
+
+	if( pEncInfo->gopSize && pEncInfo->numEncFrames++ % pEncInfo->gopSize == 0 )
+		runArg->forceIPicture = 1;
+
 	return VPU_EncOneFrameCommand( handle, runArg );
 }
 
@@ -1302,7 +1309,7 @@ static NX_VPU_RET VPU_EncGetHeaderCommand(NX_VpuCodecInst *pInst, unsigned int h
 	}
 
 	pEncInfo->strmWritePrt = wdPtr;	//	Bitstream Write Ptr
-	pEncInfo->strmReadPrt = rdPtr;		//	Bitstream Read Ptr
+	pEncInfo->strmReadPrt = rdPtr;	//	Bitstream Read Ptr
 
 	*ptr = (unsigned char *)pEncInfo->strmBufVirAddr;
 	*size = headerSize;

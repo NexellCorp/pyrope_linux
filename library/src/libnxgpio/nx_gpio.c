@@ -18,10 +18,13 @@
 //------------------------------------------------------------------------------
 
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>		// malloc
 #include <unistd.h>		// write
 #include <fcntl.h>		// open
 #include <assert.h>		// assert
+#include <pthread.h>
+#include <sys/poll.h>
 
 #include "nx_gpio.h"
 
@@ -41,8 +44,10 @@
 // cat value
 
 typedef struct {
-	int32_t	port;			// gpio number
-	int32_t direction;		// gpio direction
+	int32_t			port;			// gpio number
+	int32_t 		direction;		// gpio direction
+	int32_t			bPost;
+	pthread_mutex_t hLock;
 } NX_GPIO_HANDLE_INFO;
 
 NX_GPIO_HANDLE NX_GpioInit( int32_t nGpio )
@@ -83,8 +88,11 @@ NX_GPIO_HANDLE NX_GpioInit( int32_t nGpio )
 
 	pInfo->port			= nGpio;
 	pInfo->direction	= GPIO_DIRECTION_IN;	// default input
+	pInfo->bPost		= false;
 
 	close(fd);
+
+	pthread_mutex_init( &pInfo->hLock, NULL );
 
 	return (NX_GPIO_HANDLE_INFO*)pInfo;
 }
@@ -110,7 +118,9 @@ void	NX_GpioDeinit( NX_GPIO_HANDLE hGpio )
 	}
 	
 	close(fd);
-	
+
+	pthread_mutex_destroy( &pInfo->hLock );
+
 	if(pInfo)
 		free(pInfo);
 }
@@ -204,4 +214,119 @@ int32_t	NX_GpioGetValue( NX_GPIO_HANDLE hGpio )
 	close(fd);
 	
 	return atoi(buf);
+}
+
+int32_t NX_GPioSetEdge( NX_GPIO_HANDLE hGpio, int32_t edge )
+{
+	int32_t fd = 0, len = 0;
+	NX_GPIO_HANDLE_INFO	*pInfo;
+	char buf[64];
+
+	assert(hGpio);
+	pInfo = (NX_GPIO_HANDLE_INFO*)hGpio;
+
+	if( edge < GPIO_EDGE_NONE || edge > GPIO_EDGE_BOTH ) {
+		printf("unknown gpio edge! ( %d )\n", edge);
+		return -1;
+	}
+
+	len = snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/edge", pInfo->port);
+	if( 0 > (fd = open(buf, O_RDWR)) ){
+		printf("cannot open gpio%d edge!\n", pInfo->port);
+		return -1;
+	}
+
+	if( edge == GPIO_EDGE_NONE ) 	len = snprintf(buf, sizeof(buf), "none");
+	if( edge == GPIO_EDGE_FALLING ) len = snprintf(buf, sizeof(buf), "falling");
+	if( edge == GPIO_EDGE_RIGING )	len = snprintf(buf, sizeof(buf), "rising");
+	if( edge == GPIO_EDGE_BOTH )	len = snprintf(buf, sizeof(buf), "both");
+	
+	if( 0 > write(fd, buf, len) ) {
+		printf("cannot write gpio%d edge!\n", pInfo->port);
+		close(fd);
+		return -1;
+	}
+	
+	close(fd);
+
+	return 0;	
+}
+
+int32_t NX_GpioGetInterrupt( NX_GPIO_HANDLE hGpio )
+{
+	NX_GPIO_HANDLE_INFO	*pInfo;
+
+	int32_t fd = 0, len = 0;
+	int32_t hPoll = 0;
+	struct pollfd   pollEvent;
+	char buf[64];
+	int32_t bRun = true;
+
+	assert(hGpio);
+	pInfo = (NX_GPIO_HANDLE_INFO*)hGpio;
+
+	pthread_mutex_lock( &pInfo->hLock );
+	pInfo->bPost = false;
+	pthread_mutex_unlock( &pInfo->hLock );
+
+	if( pInfo->direction != GPIO_DIRECTION_IN ) {
+		printf("direction is not input.\n");
+		return -1;
+	}
+
+	len = snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/value", pInfo->port);
+	if( 0 > (fd = open(buf, O_RDWR)) ){
+		printf("cannot open gpio%d value!\n", pInfo->port);
+		return -1;
+	}
+
+	// dummy read.
+	if( 0 > (len = read(fd, buf, sizeof(buf))) ) {
+		printf("cannot read gpio%d value!\n", pInfo->port);
+		if( fd ) close(fd);
+		return -1;
+	}
+
+	memset( &pollEvent, 0x00, sizeof(pollEvent) );
+	pollEvent.fd = fd;
+	pollEvent.events = POLLPRI;
+
+	while( bRun )
+	{
+		hPoll = poll( (struct pollfd*)&pollEvent, 1, 1000 );
+
+		if( hPoll < 0 ) {
+			printf("error poller.\n");
+			if( fd ) close(fd);
+			return -1;
+		}
+		else if( hPoll > 0 ) {
+			if( pollEvent.revents & POLLPRI ) {
+				if( fd ) close(fd);
+				return 0;
+			}
+		}
+
+		pthread_mutex_lock( &pInfo->hLock );
+		if( pInfo->bPost ) bRun = false;
+		pthread_mutex_unlock( &pInfo->hLock );
+	}
+
+	if( fd ) close(fd);
+	
+	return -1;
+}
+
+int32_t NX_GpioPostInterrupt( NX_GPIO_HANDLE hGpio )
+{
+	NX_GPIO_HANDLE_INFO	*pInfo;
+
+	assert(hGpio);
+	pInfo = (NX_GPIO_HANDLE_INFO*)hGpio;
+
+	pthread_mutex_lock( &pInfo->hLock );
+	pInfo->bPost = true;
+	pthread_mutex_unlock( &pInfo->hLock );
+
+	return 0;
 }

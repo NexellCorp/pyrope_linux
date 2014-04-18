@@ -69,15 +69,28 @@ enum NX_GPIO_DIRECTION {
 	GPIO_DIRECTION_OUT,
 };
 
+enum NX_GPIO_EDGE {
+	GPIO_EDGE_NONE,
+	GPIO_EDGE_FALLING,
+	GPIO_EDGE_RIGING,
+	GPIO_EDGE_BOTH,
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 NX_GPIO_HANDLE	NX_GpioInit		( int32_t nGpio );
 void			NX_GpioDeinit	( NX_GPIO_HANDLE hGpio );
+
 int32_t			NX_GpioDirection( NX_GPIO_HANDLE hGpio, int32_t direction );
+
 int32_t			NX_GpioSetValue	( NX_GPIO_HANDLE hGpio, int32_t value );
 int32_t			NX_GpioGetValue	( NX_GPIO_HANDLE hGpio );
+
+int32_t			NX_GPioSetEdge	( NX_GPIO_HANDLE hGpio, int32_t edge );
+int32_t 		NX_GpioGetInterrupt ( NX_GPIO_HANDLE hGpio );
+int32_t 		NX_GpioPostInterrupt( NX_GPIO_HANDLE hGpio );
 
 #ifdef __cplusplus
 }

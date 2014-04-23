@@ -46,7 +46,7 @@ FFFF021C	// 0x03C : SRAMBASE + Header
 40100000	// 0x048 : Load Address 									
 40100000	// 0x04C : Launch Address 									 
 										
-00000000	// 0x050	Boot From SDMMC								
+00000001	// 0x050	Boot From SDMMC								
 00000000	// 0x054									
 00000000	// 0x058									
 //------------------------------------------------------------------------------ 										
@@ -80,9 +80,9 @@ FFFF021C	// 0x03C : SRAMBASE + Header
 										
 // DDR AC Timing Configuration 										
 00000618	// 0x09C	/Refresh Interval:7.8us								
-6846650F	// 0x0A0	/tRFC:104nCK	/tRRD:4nCK	/tRP:6nCK	/tRCD:6nCK	/tRC:20nCK	/tRAS:15nCK			
-4641880B	// 0x0A4	/tWTR:4nCK	/tWR:6nCK	/tRTP:4nCK						
-306C0370	// 0x0A8	/tFAW:12nCK	/tXSR:108nCK	/tXP:3nCK	/tCKE:3nCK					
+6846650F	// 0x0A0	/tRFC:260ns(tCK)	/tRRD:7.5ns(tCK)	/tRP:13.75ns(tCK)	/tRCD:13.75ns(tCK)	/tRC:48.75ns(tCK)	/tRAS:35ns(tCK)			
+4641880B	// 0x0A4	/tWTR:7.5ns(tCK)	/tWR:15ns(tCK)	/tRTP:7.5ns(tCK)						
+3A000334	// 0x0A8	/tFAW:35ns(tCK)	/tXSR:512ns(tCK)	/tXP:6ns(tCK)	/tCKE:5ns(tCK)					
 										
 //------------------------------------------------------------------------------ 										
 // AXI Master Priority registers 										

@@ -53,17 +53,17 @@ FFFF021C	// 0x03C : SRAMBASE + Header
 // CLKPWR registers 										
 //------------------------------------------------------------------------------ 										
 10199001	// 0x05C : PLL0		800MHz							
-10199001	// 0x060 : PLL1		800MHz							
+10119001	// 0x060 : PLL1		1200MHz							
 50086601	// 0x064 : PLL2		614.4MHz							
-100CC802	// 0x068 : PLL3		400MHz							
+50116302	// 0x068 : PLL3		533MHz							
 										
 66660104	// 0x06C : PLL2 SPREAD 									
-00000104	// 0x070 : PLL3 SPREAD 									
+55550104	// 0x070 : PLL3 SPREAD 									
 										
-00000601	// 0x074 : CPU		PLL1	/FCLK:800	/HCLK:200					
+00000A01	// 0x074 : CPU		PLL1	/FCLK:1200	/HCLK:200					
 00000208	// 0x078 : BUS		PLL0	/BCLK:400	/PCLK:200					
 00208000	// 0x07C : MEM		PLL0	/MDCLK:800	/MCLK:800	/MBCLK:400	/MPCLK:200			
-00000203	// 0x080 : GR3D		PLL3	/GR3DBCLK:400						
+00000203	// 0x080 : GR3D		PLL3	/GR3DBCLK:533						
 00000208	// 0x084 : MPEG		PLL0	/MPEGBCLK:400	/MPEGPCLK:200					
 										
 //------------------------------------------------------------------------------ 										
@@ -80,9 +80,9 @@ FFFF021C	// 0x03C : SRAMBASE + Header
 										
 // DDR AC Timing Configuration 										
 00000618	// 0x09C	/Refresh Interval:7.8us								
-6846650F	// 0x0A0	/tRFC:104nCK	/tRRD:4nCK	/tRP:6nCK	/tRCD:6nCK	/tRC:20nCK	/tRAS:15nCK			
-4641880B	// 0x0A4	/tWTR:4nCK	/tWR:6nCK	/tRTP:4nCK						
-306C0370	// 0x0A8	/tFAW:12nCK	/tXSR:108nCK	/tXP:3nCK	/tCKE:3nCK					
+6846650E	// 0x0A0	/tRFC:260ns(tCK)	/tRRD:7.5ns(tCK)	/tRP:13.75ns(tCK)	/tRCD:13.75ns(tCK)	/tRC:48.75ns(tCK)	/tRAS:35ns(tCK)			
+4641880B	// 0x0A4	/tWTR:7.5ns(tCK)	/tWR:15ns(tCK)	/tRTP:7.5ns(tCK)						
+38000370	// 0x0A8	/tFAW:35ns(tCK)	/tXSR:ns(tCK)	/tXP:6ns(tCK)	/tCKE:5ns(tCK)					
 										
 //------------------------------------------------------------------------------ 										
 // AXI Master Priority registers 										

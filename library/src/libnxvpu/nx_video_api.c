@@ -865,18 +865,25 @@ NX_VID_RET NX_VidDecDecodeFrame( NX_VID_DEC_HANDLE hDec, NX_VID_DEC_IN *pDecIn, 
 		pDecOut->timeStamp = DecoderGetTimeStamp( hDec, decArg.indexFrameDisplay, &picType );
 		pDecOut->picType = picType;
 #if DBG_BUF_INFO
+		// {
+		// 	int j=0;
+		// 	NX_MEMORY_INFO *memInfo;
+		// 	for( j=0 ; j<3 ; j++ )
+		// 	{
+		// 		memInfo = (NX_MEMORY_INFO *)pDecOut->outImg.privateDesc[j];
+		// 		NX_DbgMsg( DBG_BUF_INFO, ("privateDesc = 0x%.8x\n", memInfo->privateDesc ) );
+		// 		NX_DbgMsg( DBG_BUF_INFO, ("align       = 0x%.8x\n", memInfo->align       ) );
+		// 		NX_DbgMsg( DBG_BUF_INFO, ("size        = 0x%.8x\n", memInfo->size        ) );
+		// 		NX_DbgMsg( DBG_BUF_INFO, ("virAddr     = 0x%.8x\n", memInfo->virAddr     ) );
+		// 		NX_DbgMsg( DBG_BUF_INFO, ("phyAddr     = 0x%.8x\n", memInfo->phyAddr     ) );
+		// 	}
+		// }
 		{
-			int j=0;
-			NX_MEMORY_INFO *memInfo;
-			for( j=0 ; j<3 ; j++ )
-			{
-				memInfo = (NX_MEMORY_INFO *)pDecOut->outImg.privateDesc[j];
-				NX_DbgMsg( DBG_BUF_INFO, ("privateDesc = 0x%.8x\n", memInfo->privateDesc ) );
-				NX_DbgMsg( DBG_BUF_INFO, ("align       = 0x%.8x\n", memInfo->align       ) );
-				NX_DbgMsg( DBG_BUF_INFO, ("size        = 0x%.8x\n", memInfo->size        ) );
-				NX_DbgMsg( DBG_BUF_INFO, ("virAddr     = 0x%.8x\n", memInfo->virAddr     ) );
-				NX_DbgMsg( DBG_BUF_INFO, ("phyAddr     = 0x%.8x\n", memInfo->phyAddr     ) );
-			}
+			NX_VID_MEMORY_INFO *memInfo = &pDecOut->outImg;
+			NX_DbgMsg( DBG_BUF_INFO, ("Phy(0x%08x,0x%08x,0x%08x), Vir(0x%08x,0x%08x,0x%08x), Stride(0x%08x,0x%08x,0x%08x)\n", 
+				memInfo->luPhyAddr, memInfo->cbPhyAddr, memInfo->crPhyAddr,
+				memInfo->luVirAddr, memInfo->cbVirAddr, memInfo->crVirAddr,
+				memInfo->luStride , memInfo->cbStride , memInfo->crStride) );
 		}
 #endif
 	}

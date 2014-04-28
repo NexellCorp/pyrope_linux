@@ -918,6 +918,7 @@ int transcoding( const char *inFileName, const char *outFileName )
 	dspInfo.module = 0;
 	dspInfo.width = pReader->video_stream->codec->coded_width;
 	dspInfo.height = pReader->video_stream->codec->coded_height;
+	dspInfo.numPlane = 1;
 
 	dspInfo.dspSrcRect.left = 0;
 	dspInfo.dspSrcRect.top = 0;

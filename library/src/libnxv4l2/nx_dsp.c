@@ -117,7 +117,16 @@ DISPLAY_HANDLE NX_DspInit( DISPLAY_INFO *pDspInfo )
 	}
 #endif	//	DISABLE_PORT_CONFIG
 
-	result = v4l2_set_format(hPrivate, mlcId, pDspInfo->width, pDspInfo->height, PIXFORMAT_YUV420_PLANAR);
+	if( pDspInfo->numPlane == 1 )
+	{
+		result = v4l2_set_format(hPrivate, mlcId, pDspInfo->width, pDspInfo->height, PIXFORMAT_YUV420_YV12);
+	}
+	else
+	{
+		result = v4l2_set_format(hPrivate, mlcId, pDspInfo->width, pDspInfo->height, V4L2_PIX_FMT_YUV420M);
+	}
+
+
 	if( result < 0 ) 
 	{
 		printf("v4l2_set_format() failed!!!\n");
@@ -165,7 +174,7 @@ DISPLAY_HANDLE NX_DspInit( DISPLAY_INFO *pDspInfo )
 	memcpy( &hDisplay->displayInfo, pDspInfo, sizeof(hDisplay->displayInfo) );
 
 	hDisplay->hPrivate			= hPrivate;
-	hDisplay->numPlane			= 3;
+	hDisplay->numPlane			= pDspInfo->numPlane;
 	hDisplay->streamOnFlag		= 0;
 	hDisplay->numberV4L2ReqBuf	= DISPLAY_MAX_BUF_SIZE;
 	hDisplay->mlcId				= mlcId;

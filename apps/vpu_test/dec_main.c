@@ -1089,6 +1089,7 @@ int dec_main( int argc, char *argv[] )
 	dspInfo.module = 0;
 	dspInfo.width = pReader->video_stream->codec->coded_width;
 	dspInfo.height = pReader->video_stream->codec->coded_height;
+	dspInfo.numPlane = 1;
 	dspInfo.dspSrcRect.left = 0;
 	dspInfo.dspSrcRect.top = 0;
 	dspInfo.dspSrcRect.right = dspInfo.width;
@@ -1098,6 +1099,7 @@ int dec_main( int argc, char *argv[] )
 	dspInfo.dspDstRect.right = dspWidth+dspX;
 	dspInfo.dspDstRect.bottom = dspHeight+dspY;
 	hDsp = NX_DspInit( &dspInfo );
+	NX_DspVideoSetPriority(hDsp, 0);
 	if( hDsp == NULL )
 	{
 		printf("Display Failed!!!\n");
@@ -1175,6 +1177,7 @@ int dec_main( int argc, char *argv[] )
 			tmpSize = pos;
 		}
 
+		memset(&decIn, 0, sizeof(decIn));
 		decIn.strmBuf = streamBuffer;
 		decIn.strmSize = pos;
 		decIn.timeStamp = timeStamp;
@@ -1224,7 +1227,7 @@ int dec_main( int argc, char *argv[] )
 #endif
 
 #ifdef ENABLE_DISPLAY
-//	NX_DspClose(hDsp);
+	NX_DspClose(hDsp);
 #endif
 
 	return 0;

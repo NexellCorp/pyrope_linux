@@ -156,6 +156,7 @@ int main( int argc, char *argv[] )
 	//	Sensor Input Size
 	vipInfo.width = inWidth;
 	vipInfo.height = inHeight;
+	vipInfo.numPlane = 1;
 
 	//	Clipper Setting
 	vipInfo.cropX = cropX;
@@ -176,6 +177,7 @@ int main( int argc, char *argv[] )
 	dspInfo.module = 0;
 	dspInfo.width = cropW;
 	dspInfo.height = cropH;
+	dspInfo.numPlane = 1;
 
 	dspInfo.dspSrcRect.left = 0;
 	dspInfo.dspSrcRect.top = 0;

@@ -55,6 +55,7 @@ typedef struct DISPLAY_INFO {
 	int32_t			height;		// source height
 	int32_t			stride;		// source image's strid
 	int32_t			fourcc;		// source image's format fourcc
+	int32_t			numPlane;	// source image's plane number
 
 	DSP_IMG_RECT 	dspSrcRect;	// source image's crop region
 	DSP_IMG_RECT	dspDstRect;	// target display rect

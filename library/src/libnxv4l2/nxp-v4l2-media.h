@@ -44,17 +44,26 @@ struct nxp_vid_buffer {
 
 /* pixel format */
 #define PIXFORMAT_YUV422_PACKED     V4L2_PIX_FMT_YUYV
-#define PIXFORMAT_YUV420_PLANAR     V4L2_PIX_FMT_YUV420M
+#define PIXFORMAT_YUV420_PLANAR     V4L2_PIX_FMT_YUV420M        //  3 plane
+#define PIXFORMAT_YUV420_YV12       V4L2_PIX_FMT_YUV420         //  1 Plane
 #define PIXFORMAT_YUV422_PLANAR     V4L2_PIX_FMT_YUV422P
 #define PIXFORMAT_YUV444_PLANAR     V4L2_PIX_FMT_YUV444
 
 enum {
     YUV422_PACKED = 0,
-    YUV420_PLANAR,
+    YUV420_PLANAR,      //  3 Plane
+    YUV420_YV12,        //  1 Plane
     YUV422_PLANAR,
     YUV444_PLANAR,
     MAX_PIXFORMAT
 };
+
+struct PixFormatPixCode {
+    uint32_t format;
+    uint32_t code;
+};
+
+extern struct PixFormatPixCode PixelArray[MAX_PIXFORMAT];
 
 #ifndef ANDROID
 #ifdef __cplusplus

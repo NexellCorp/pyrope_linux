@@ -53,6 +53,8 @@ struct VIP_INFO {
 	int32_t		width;		//  Camera Input Width
 	int32_t		height;		//  Camera Input Height
 
+	int32_t		numPlane;	//	Input image's plane number
+
 	int32_t		fpsNum;		//	Frame per seconds's Numerate value
 	int32_t		fpsDen;		//	Frame per seconds's Denominate value
 

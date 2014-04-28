@@ -155,7 +155,7 @@ void DrvMutexUnlock( NX_MutexHandle handle )
 //
 void DrvMSleep( unsigned int mSeconds )
 {
-	mdelay( mSeconds );
+	msleep( mSeconds );
 }
 
 void DrvUSleep( unsigned int uSeconds )

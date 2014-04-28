@@ -48,6 +48,8 @@ struct VIP_HANDLE_INFO {
 	int32_t				sensorId;		//	
 	int32_t				decimatorId;	//	
 
+	int32_t				numPlane;		//	Input Image's Plane Number
+
 	//	Buffer Control Informatons
 	NX_VID_MEMORY_INFO *pMgmtMem[VIP_MAX_BUF_SIZE];
 	int32_t				curQueuedSize;
@@ -140,7 +142,11 @@ VIP_HANDLE NX_VipInit( VIP_INFO *pVipInfo )
 		v4l2_set_ctrl(hPrivate, sensorId, V4L2_CID_CAMERA_MODE_CHANGE, 0);
 
 	if( pVipInfo->mode == VIP_MODE_CLIPPER ) {		// Cliper
-		v4l2_set_format(hPrivate, cliperId, width, height, PIXFORMAT_YUV420_PLANAR);
+
+		if( pVipInfo->numPlane == 3 )
+			v4l2_set_format(hPrivate, cliperId, width, height, PIXFORMAT_YUV420_PLANAR);
+		else
+			v4l2_set_format(hPrivate, cliperId, width, height, PIXFORMAT_YUV420_YV12);
 		v4l2_set_crop(hPrivate, cliperId, pVipInfo->cropX, pVipInfo->cropY, pVipInfo->cropWidth, pVipInfo->cropHeight);
 		v4l2_reqbuf(hPrivate, cliperId, VIP_MAX_BUF_SIZE);
 	}
@@ -155,9 +161,10 @@ VIP_HANDLE NX_VipInit( VIP_INFO *pVipInfo )
 
 	hVip->hPrivate	= hPrivate;
 	hVip->mode		= pVipInfo->mode;
+	hVip->numPlane  = pVipInfo->numPlane;
 	hVip->cliperId	= cliperId;
 	hVip->sensorId	= sensorId;
-	
+
 	pthread_mutex_init( &hVip->hMutex, NULL );
 
 	return hVip;
@@ -238,13 +245,27 @@ int32_t NX_VipQueueBuffer( VIP_HANDLE hVip, NX_VID_MEMORY_INFO *pInfo )
 	if( 1 == hVip->mode )		//	Clipper Only
 	{
 		struct nxp_vid_buffer vipBuffer;
-		NX_MEMORY_INFO *vidMem;
-		for( i = 0; i < 3; i++ ) {
-			vidMem				= (NX_MEMORY_INFO *)pInfo->privateDesc[i];
-			vipBuffer.fds[i]	= (int)vidMem->privateDesc;
-			vipBuffer.virt[i]	= (char*)vidMem->virAddr;
-			vipBuffer.phys[i]	= vidMem->phyAddr;
-			vipBuffer.sizes[i]	= vidMem->size;
+		if( hVip->numPlane == 1 )
+		{
+			NX_MEMORY_INFO *vidMem;
+			for( i = 0; i<hVip->numPlane ; i++ ) {
+				vidMem				= (NX_MEMORY_INFO *)pInfo->privateDesc[i];
+				vipBuffer.fds[i]	= (int)vidMem->privateDesc;
+				vipBuffer.virt[i]	= (char*)vidMem->virAddr;
+				vipBuffer.phys[i]	= vidMem->phyAddr;
+				vipBuffer.sizes[i]	= vidMem->size;
+			}
+		}
+		else
+		{
+			NX_MEMORY_INFO *vidMem;
+			for( i = 0; i < 3; i++ ) {
+				vidMem				= (NX_MEMORY_INFO *)pInfo->privateDesc[i];
+				vipBuffer.fds[i]	= (int)vidMem->privateDesc;
+				vipBuffer.virt[i]	= (char*)vidMem->virAddr;
+				vipBuffer.phys[i]	= vidMem->phyAddr;
+				vipBuffer.sizes[i]	= vidMem->size;
+			}
 		}
 		v4l2_qbuf( hVip->hPrivate, hVip->cliperId , 3, slotIndex, &vipBuffer, -1, NULL);
 	}

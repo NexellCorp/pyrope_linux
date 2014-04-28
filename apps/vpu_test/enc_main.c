@@ -104,6 +104,8 @@ int main( int argc, char *argv[] )
 	vipInfo.width = inWidth;
 	vipInfo.height = inHeight;
 
+	vipInfo.numPlane = 1;
+
 	//	Clipper Setting
 	vipInfo.cropX = cropX;
 	vipInfo.cropY = cropY;
@@ -127,6 +129,7 @@ int main( int argc, char *argv[] )
 	dspInfo.module = 0;
 	dspInfo.width = cropW;
 	dspInfo.height = cropH;
+	dspInfo.numPlane = 1;
 	dspInfo.dspSrcRect.left = 0;
 	dspInfo.dspSrcRect.top = 0;
 	dspInfo.dspSrcRect.right = cropW;
@@ -136,6 +139,7 @@ int main( int argc, char *argv[] )
 	dspInfo.dspDstRect.right = cropW;
 	dspInfo.dspDstRect.bottom = cropH;
 	hDsp = NX_DspInit( &dspInfo );
+	NX_DspVideoSetPriority(hDsp, 0);
 	hVip = NX_VipInit(&vipInfo);
 
 	//	Initialize Encoder

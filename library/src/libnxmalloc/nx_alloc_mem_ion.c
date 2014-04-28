@@ -20,6 +20,7 @@
 #include "ion-private.h"
 #endif
 
+#define	EN_MULTIPLE_PLANE
 
 #define	DTAG			"[DEBUG|ALLOC] "
 #define	ETAG			"[ERROR|ALLOC] "
@@ -34,6 +35,11 @@
 							printf(xxx);	\
 						}while(0)
 
+#ifndef ALIGN
+#define	ALIGN(X,N)	( (X+N-1) & (~(N-1)) )
+#endif
+
+#define	ALIGNED16(X)	ALIGN(X,16)
 
 //	Nexell Private Memory Allocator for ION
 NX_MEMORY_HANDLE NX_AllocateMemory( int size, int align )
@@ -121,13 +127,13 @@ void NX_FreeMemory( NX_MEMORY_HANDLE handle )
 	}
 }
 
-#define	ALIGNED16(X)	(((X+15)>>4)<<4)
-
 //	Nexell Private Video Specific Allocator for ION
 NX_VID_MEMORY_HANDLE NX_VideoAllocateMemory( int align, int width, int height, int memMap, int fourCC )
 {
 	int lWidth, lHeight;
 	int cWidth, cHeight;
+	unsigned int lSize;	//	Luminance plane size
+	unsigned int cSize;	//	Chrominance plane size
 	NX_VID_MEMORY_HANDLE handle = NULL;
 	NX_MEMORY_HANDLE luHandle=NULL, cbHandle=NULL, crHandle=NULL;
 
@@ -138,40 +144,41 @@ NX_VID_MEMORY_HANDLE NX_VideoAllocateMemory( int align, int width, int height, i
 		goto Error_Exit;
 	}
 
+	lWidth  = ALIGN(width,  32);
+	lHeight = ALIGN(height, 16);
+	lSize = lWidth * lHeight;
 	switch( fourCC )
 	{
 		case FOURCC_MVS0:
-			lWidth = ALIGNED16(width);
-			lHeight = ALIGNED16(height);
-			cWidth = lWidth/2;
-			cHeight = lHeight/2;
+			cWidth  = ALIGN(width/2,  16);
+			cHeight = ALIGN(height/2, 16);
+			// cWidth  = lWidth/2;
+			// cHeight = lHeight/2;
+			cSize = cWidth * cHeight;
 			break;
 		case FOURCC_MVS2:
-			lWidth = ALIGNED16(width);
-			lHeight = ALIGNED16(height);
-			cWidth = lWidth/2;
-			cHeight = ALIGNED16(height);
+			cWidth  = ALIGN(width/2, 16);
+			cHeight = lHeight;
+			cSize = cWidth * cHeight;
 			break;
 		case FOURCC_MVS4:
-			lWidth = ALIGNED16(width);
-			lHeight = ALIGNED16(height);
-			cWidth = ALIGNED16(width);
-			cHeight = ALIGNED16(height);
+			cWidth  = lWidth;
+			cHeight = lHeight;
+			cSize = cWidth * cHeight;
 			break;
 		case FOURCC_NV12:
 		case FOURCC_NV21:
-			lWidth = ALIGNED16(width);
-			lHeight = ALIGNED16(height);
-			cWidth = ALIGNED16(width);
+			cWidth  = lWidth;
 			cHeight = lHeight/2;
+			cSize = cWidth * cHeight;
 			break;
 		default:
 			ErrMsg("Unknown fourCC type.\n");
 			goto Error_Exit;
-
 	}
 
-	luHandle = NX_AllocateMemory(lWidth*lHeight, align);
+#ifdef EN_MULTIPLE_PLANE
+	luHandle = NX_AllocateMemory(lSize, align);
 	if( NULL == luHandle )
 	{
 		ErrMsg("NX_AllocateMemory failed!!\n");
@@ -184,7 +191,7 @@ NX_VID_MEMORY_HANDLE NX_VideoAllocateMemory( int align, int width, int height, i
 		{
 			case FOURCC_NV12:
 			case FOURCC_NV21:
-				cbHandle = NX_AllocateMemory(cWidth*cHeight, align);
+				cbHandle = NX_AllocateMemory(cSize, align);
 				if( NULL==cbHandle )
 				{
 					ErrMsg("NX_AllocateMemory failed!!\n");
@@ -192,8 +199,8 @@ NX_VID_MEMORY_HANDLE NX_VideoAllocateMemory( int align, int width, int height, i
 				}
 				break;
 			default:
-				cbHandle = NX_AllocateMemory(cWidth*cHeight, align);
-				crHandle = NX_AllocateMemory(cWidth*cHeight, align);
+				cbHandle = NX_AllocateMemory(cSize, align);
+				crHandle = NX_AllocateMemory(cSize, align);
 				if( NULL==cbHandle || NULL==crHandle )
 				{
 					ErrMsg("NX_AllocateMemory failed!!\n");
@@ -202,7 +209,6 @@ NX_VID_MEMORY_HANDLE NX_VideoAllocateMemory( int align, int width, int height, i
 				break;
 		}
 	}
-
 	handle->privateDesc[0] 	= luHandle;
 	handle->privateDesc[1] 	= cbHandle;
 	handle->privateDesc[2] 	= crHandle;
@@ -226,7 +232,38 @@ NX_VID_MEMORY_HANDLE NX_VideoAllocateMemory( int align, int width, int height, i
 		handle->crVirAddr		= crHandle->virAddr;
 		handle->crStride		= cWidth;
 	}
+#else
+	luHandle = NX_AllocateMemory(lSize+cSize*2, align);
+	handle->privateDesc[0] 	= luHandle;
+	handle->privateDesc[1] 	= 0;
+	handle->privateDesc[2] 	= 0;
+	handle->align 			= align;	//	Start Address Align
+	handle->memoryMap		= memMap;
+	handle->fourCC			= fourCC;
+	handle->imgWidth		= width;
+	handle->imgHeight		= height;
+	handle->luPhyAddr		= luHandle->phyAddr;
+	handle->luVirAddr		= luHandle->virAddr;
+	handle->luStride		= lWidth;
 
+	handle->cbPhyAddr		= luHandle->phyAddr + lSize;
+	handle->cbVirAddr		= luHandle->virAddr + lSize;
+	handle->cbStride		= cWidth;
+
+	if( fourCC == FOURCC_NV12 || fourCC == FOURCC_NV21 )
+	{
+		//	Write cb Address & Value
+		handle->crPhyAddr		= handle->cbPhyAddr;
+		handle->crVirAddr		= handle->cbVirAddr;
+		handle->crStride		= cWidth;
+	}
+	else
+	{
+		handle->crPhyAddr		= handle->cbPhyAddr + cSize;
+		handle->crVirAddr		= handle->cbVirAddr + cSize;
+		handle->crStride		= cWidth;
+	}
+#endif
 	return handle;
 
 Error_Exit:
@@ -255,7 +292,7 @@ NX_VID_MEMORY_HANDLE NX_VideoAllocateMemory2( int align, int width, int height, 
 	}
 
 	lWidth = stride;
-	lHeight = ALIGNED16(height);
+	lHeight = ALIGN(height, 16);
 
 	switch( fourCC )
 	{
@@ -265,11 +302,11 @@ NX_VID_MEMORY_HANDLE NX_VideoAllocateMemory2( int align, int width, int height, 
 			break;
 		case FOURCC_MVS2:
 			cWidth = lWidth/2;
-			cHeight = ALIGNED16(height);
+			cHeight = ALIGN(height, 16);
 			break;
 		case FOURCC_MVS4:
-			cWidth = ALIGNED16(width);
-			cHeight = ALIGNED16(height);
+			cWidth = ALIGN(width, 16);
+			cHeight = ALIGN(height, 16);
 			break;
 		default:
 			ErrMsg("Unknown fourCC type.\n");

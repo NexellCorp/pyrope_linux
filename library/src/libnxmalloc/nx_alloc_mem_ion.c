@@ -20,7 +20,7 @@
 #include "ion-private.h"
 #endif
 
-#define	EN_MULTIPLE_PLANE
+//#define	EN_MULTIPLE_PLANE
 
 #define	DTAG			"[DEBUG|ALLOC] "
 #define	ETAG			"[ERROR|ALLOC] "

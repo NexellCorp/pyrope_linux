@@ -31,7 +31,7 @@ all: $(TARGET)
 
 $(TARGET):	depend $(OBJS)
 	$(AR) $(ARFLAGS) $(LIBNAME).a $(OBJS)
-	$(CC) $(LDFLAGS) -shared -Wl,-soname,$(TARGET) -o $@ $(OBJS)
+	$(CC) $(LDFLAGS) -shared -Wl,-soname,$(TARGET) -o $@ $(OBJS) $(LIBRARY)
 
 install:
 	install -m 755 -d $(LIB_INSTALL)

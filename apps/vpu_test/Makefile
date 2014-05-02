@@ -7,7 +7,7 @@ include ../../build.env
 INCLUDE += -I./
 INCLUDE += -I../../library/include
 LIBRARY	+= -L../../library/lib 
-LIBRARY += -lnxvpu -lnxdsp -lnxvip -lnxv4l2 -lnxvmem -lion 
+LIBRARY += -lnxvpu -lnxdsp -lnxvip -lnxv4l2 -lnxvmem
 LIBRARY += -L./theoraparser -ltheoraparser
 LIBRARY	+= -lavcodec -lavformat -lstdc++
 

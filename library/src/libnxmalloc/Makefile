@@ -10,6 +10,7 @@ INC_INSTALL	:= 	../../include
 INCLUDE += -I./ -I../libion -I../../include -I$(KERNDIR)/include
 
 LIBRARY += -L../../lib/
+LIBRARY += -lion
 
 ######################################################################
 # Target
@@ -20,25 +21,29 @@ CPPOBJS	:=
 CFLAGS	+= -g
 
 LIBNAME	:= libnxvmem
+TARGET  := libnxvmem.so
 
 ######################################################################
 # Build
 OBJS	:= $(COBJS) $(CPPOBJS)
 
-all: $(LIBNAME)
+all: $(TARGET)
 
-$(LIBNAME):	depend $(OBJS)
+$(TARGET):	depend $(OBJS)
 	$(AR) $(ARFLAGS) $(LIBNAME).a $(OBJS)
+	$(CC) $(LDFLAGS) -shared -Wl,-soname,$(TARGET) -o $@ $(OBJS) $(LIBRARY)
 
 install:
 	install -m 755 -d $(LIB_INSTALL)
 	install -m 644 $(LIBNAME).a $(LIB_INSTALL)
+	install -m 644 $(TARGET) $(LIB_INSTALL)
 
 clean:
 	rm -f *.o *.so *.a .depend
 
 distclean: clean
 	rm -f $(LIB_INSTALL)/lib/$(LIBNAME).a
+	rm -f $(LIB_INSTALL)/lib/$(TARGET)
 
 
 #########################################################################

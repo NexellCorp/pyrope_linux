@@ -1442,18 +1442,18 @@ static NX_VPU_RET VPU_EncOneFrameCommand( NX_VpuCodecInst *pInst, VPU_ENC_RUN_FR
 
 static NX_VPU_RET VPU_EncCloseCommand(NX_VpuCodecInst *pInst)
 {
-	VpuEncInfo *pEncInfo = &pInst->codecInfo.encInfo;
+	FUNCIN();
 	if (pInst->isInitialized)
 	{
+		VpuEncInfo *pEncInfo = &pInst->codecInfo.encInfo;
 		VpuWriteReg(BIT_WR_PTR, pEncInfo->strmBufPhyAddr);
 		VpuWriteReg(BIT_RD_PTR, pEncInfo->strmBufPhyAddr);
 
-		VpuWriteReg(BIT_INT_CLEAR, 0x1);	//	For Signal Break Out
-		atomic_set(&gVpuEventPresent, 0);	//	Clear Atomic
-
 		VpuBitIssueCommand(pInst, SEQ_END);
-		if( VPU_RET_OK == VPU_WaitVpuBusy(VPU_BUSY_CHECK_TIMEOUT, BIT_BUSY_FLAG) )
+		if( VPU_RET_OK != VPU_WaitVpuBusy(VPU_BUSY_CHECK_TIMEOUT, BIT_BUSY_FLAG) )
 		{
+			VpuWriteReg(BIT_INT_CLEAR, 0x1);	//	For Signal Break Out
+			atomic_set(&gVpuEventPresent, 0);	//	Clear Atomic
 			NX_ErrMsg(("VPU_EncCloseCommand() Failed. Timeout(%d)\n", VPU_BUSY_CHECK_TIMEOUT));
 			VPU_SWReset( SW_RESET_SAFETY );
 			pInst->isInitialized = 0;
@@ -1461,9 +1461,72 @@ static NX_VPU_RET VPU_EncCloseCommand(NX_VpuCodecInst *pInst)
 		}
 		pInst->isInitialized = 0;
 	}
+	VpuWriteReg(BIT_INT_CLEAR, 0x1);	//	For Signal Break Out
+	atomic_set(&gVpuEventPresent, 0);	//	Clear Atomic
+
+	FUNCOUT();
 	return VPU_RET_OK;
 }
+#if 0
+RetCode VPU_EncClose(EncHandle handle)
+{
+	CodecInst * pCodecInst;
+	EncInfo * pEncInfo;
+	RetCode ret;
 
+	ret = CheckEncInstanceValidity(handle);
+	if (ret != RETCODE_SUCCESS)
+		return ret;
+
+	pCodecInst = handle;
+	pEncInfo = &pCodecInst->CodecInfo.encInfo;
+
+	EnterLock(pCodecInst->coreIdx);
+
+	if (pEncInfo->initialInfoObtained) {
+
+		VpuWriteReg(pCodecInst->coreIdx, pEncInfo->streamWrPtrRegAddr, pEncInfo->streamWrPtr);
+		VpuWriteReg(pCodecInst->coreIdx, pEncInfo->streamRdPtrRegAddr, pEncInfo->streamRdPtr);
+
+		BitIssueCommand(pCodecInst->coreIdx, pCodecInst, SEQ_END);
+		if (vdi_wait_vpu_busy(pCodecInst->coreIdx, VPU_BUSY_CHECK_TIMEOUT, BIT_BUSY_FLAG) == -1) {
+			if (pCodecInst->loggingEnable)
+				vdi_log(pCodecInst->coreIdx, SEQ_END, 2);
+			LeaveLock(pCodecInst->coreIdx);	
+			return RETCODE_VPU_RESPONSE_TIMEOUT;
+		}
+		if (pCodecInst->loggingEnable)
+			vdi_log(pCodecInst->coreIdx, SEQ_END, 0);
+		pEncInfo->streamWrPtr = VpuReadReg(pCodecInst->coreIdx, pEncInfo->streamWrPtrRegAddr);
+	}
+
+	if (pEncInfo->vbScratch.size)
+		vdi_free_dma_memory(pCodecInst->coreIdx, &pEncInfo->vbScratch);
+	if (pEncInfo->vbWork.size)
+		vdi_free_dma_memory(pCodecInst->coreIdx, &pEncInfo->vbWork);
+	if (pEncInfo->vbFrame.size) {
+		if (pEncInfo->frameAllocExt == 0) {
+			vdi_free_dma_memory(pCodecInst->coreIdx, &pEncInfo->vbFrame);
+		}		
+	}	
+
+	if (pEncInfo->vbPPU.size) {
+		if (pEncInfo->ppuAllocExt == 0) {
+			vdi_free_dma_memory(pCodecInst->coreIdx, &pEncInfo->vbPPU);
+		}		
+	}
+
+
+	if (pEncInfo->vbSubSampFrame.size)
+		vdi_free_dma_memory(pCodecInst->coreIdx, &pEncInfo->vbSubSampFrame);
+
+	LeaveLock(pCodecInst->coreIdx);
+
+	FreeCodecInstance(pCodecInst);
+
+	return RETCODE_SUCCESS;
+}
+#endif
 //----------------------------------------------------------------------------
 
 

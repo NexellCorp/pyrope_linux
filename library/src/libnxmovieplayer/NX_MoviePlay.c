@@ -157,7 +157,7 @@ static int audio_only_element_set(MP_HANDLE handle, int volumem, int dspPort);
 static int audio_only_bin_add_link(MP_HANDLE handle);
 static int video_only_bin_add_link(MP_HANDLE handle);
 static int video_audio_bin_add_link(MP_HANDLE handle);
-static int video_element_set(MP_HANDLE handle, int dspModule, int dspPort, int display);
+static int video_element_set(MP_HANDLE handle, int dspModule, int dspPort, int display, int priority);
 static void typefind_debug(TYMEDIA_INFO *ty_handle);
 
 
@@ -853,7 +853,7 @@ static int video_audio_bin_add_link(MP_HANDLE handle)
 	return ret;
 }
 
-static int video_element_set(MP_HANDLE handle, int dspModule, int dspPort, int display)
+static int video_element_set(MP_HANDLE handle, int dspModule, int dspPort, int display, int priority)
 {
 	int ret = 1;
 
@@ -868,7 +868,7 @@ static int video_element_set(MP_HANDLE handle, int dspModule, int dspPort, int d
 	handle->video_sink = gst_element_factory_make ("nxvideosink", "video-sink");
 	g_object_set(G_OBJECT(handle->video_sink), "dsp-module", dspModule, NULL);
 	g_object_set(G_OBJECT(handle->video_sink), "dsp-port", dspPort, NULL);
-	g_object_set(G_OBJECT(handle->video_sink), "dsp-priority", 0, NULL);
+	g_object_set(G_OBJECT(handle->video_sink), "dsp-priority", priority, NULL);
 
 
 	if( ( dspModule == 0) && (dspPort == 0) && (display == DISPLAY_PORT_LCD) )	//lcd
@@ -889,6 +889,8 @@ static int video_element_set(MP_HANDLE handle, int dspModule, int dspPort, int d
 		g_object_set(G_OBJECT(handle->video_sink), "hdmi-display", ON, NULL);
 //		g_object_set(G_OBJECT(handle->video_sink), "dual-display", ON, NULL);
 	}
+
+	
 
 	if(handle->demux_type == DEMUX_TYPE_MPEGTSDEMUX)
 	{
@@ -956,7 +958,7 @@ static void typefind_debug(TYMEDIA_INFO *ty_handle)
 	g_print("===============================================================================\n\n");
 }
 
-MP_RESULT NX_MPOpen( MP_HANDLE *handle_s, const char *uri, int volumem, int dspModule, int dspPort, int audio_track_num, int video_track_num, char *media_info, int display,
+MP_RESULT NX_MPOpen( MP_HANDLE *handle_s, const char *uri, int volumem, int dspModule, int dspPort, int audio_track_num, int video_track_num, char *media_info, int display, int priority,
 					void (*cb)(void *owner, unsigned int msg, unsigned int param1, unsigned int param2), void *cbPrivate )
 {
 	MP_HANDLE handle = NULL;
@@ -970,7 +972,7 @@ MP_RESULT NX_MPOpen( MP_HANDLE *handle_s, const char *uri, int volumem, int dspM
 //	int display = 0;
 
 	FUNC_IN();
-	
+
 	if(cbPrivate != NULL)
 		appData = (AppData*)cbPrivate;
 
@@ -1105,7 +1107,7 @@ MP_RESULT NX_MPOpen( MP_HANDLE *handle_s, const char *uri, int volumem, int dspM
 	}
 	else if(handle->TymediaInfo.VideoOnly == ON){
 		//add video queue,decoder,sink
-		ret = video_element_set( handle,  dspModule,  dspPort, display);
+		ret = video_element_set( handle,  dspModule,  dspPort, display, priority);
 		if(ret == 0){
 			goto ERROR_EXIT;
 		}		
@@ -1125,7 +1127,7 @@ MP_RESULT NX_MPOpen( MP_HANDLE *handle_s, const char *uri, int volumem, int dspM
 			goto ERROR_EXIT;
 		}		
 		//add video queue,decoder,sink
-		ret = video_element_set( handle,  dspModule,  dspPort, display);
+		ret = video_element_set( handle,  dspModule,  dspPort, display, priority);
 		if(ret == 0){
 			goto ERROR_EXIT;
 		}		

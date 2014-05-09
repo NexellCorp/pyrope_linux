@@ -56,7 +56,7 @@ typedef struct MP_MEDIA_INFO {
 extern "C" {
 #endif	//	__cplusplus
 
-MP_RESULT NX_MPOpen( MP_HANDLE *handle, const char *uri, int volumem, int dspModule, int dspPort, int audio_track_num, int video_track_num, char *media_info, int display,
+MP_RESULT NX_MPOpen( MP_HANDLE *handle, const char *uri, int volumem, int dspModule, int dspPort, int audio_track_num, int video_track_num, char *media_info, int display, int priority,
 						void (*cb)(void *owner, unsigned int msg, unsigned int param1, unsigned int param2), void *cbPrivate);
 void NX_MPClose( MP_HANDLE handle );
 MP_RESULT NX_MPGetMediaInfo( MP_HANDLE handle, int index, MP_MEDIA_INFO *pInfo );

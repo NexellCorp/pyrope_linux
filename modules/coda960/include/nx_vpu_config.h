@@ -4,8 +4,8 @@
 
 
 #define	NX_MAX_VPU_INST_SPACE	5
-#define	NX_MAX_VPU_INSTANCE		3
-#define	NX_MAX_VPU_ENC_INST		2
+#define	NX_MAX_VPU_INSTANCE		5
+#define	NX_MAX_VPU_ENC_INST		3
 #define	NX_MAX_VPU_DEC_INST		2
 #define	NX_MAX_VPU_JPG_INST		1
 

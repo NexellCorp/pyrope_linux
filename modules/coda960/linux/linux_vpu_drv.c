@@ -54,7 +54,7 @@ static int nx_vpu_open( struct inode *inode, struct file *flip )
 	if( gstCurNumInstance >= NX_MAX_VPU_INSTANCE )
 	{
 		NX_ErrMsg( ("Cannot open vpu driver.(gstCurNumInstance=%d)\n", gstCurNumInstance) );
-		DrvMutexLock( gstDrvMutex );
+		DrvMutexUnlock( gstDrvMutex );
 		return -1;
 	}
 
@@ -86,22 +86,21 @@ static int nx_vpu_close( struct inode *inode, struct file *filp )
 	NX_VPU_Clock( 1 );
 #endif
 
-	if( hInst )
+	if( hInst && hInst->inUse )
 	{
-		if( hInst->inUse )
-		{
-			hInst->inUse = 0;
+		hInst->inUse = 0;
+		if( hInst->codecMode < AVC_ENC )	gstCruDecInstance --;
+		else								gstCruEncInstance --;
 
-			if( hInst->isInitialized )
-			{
-				if( hInst->codecMode < AVC_ENC )
-					NX_VpuDecClose( hInst );
-				else
-					NX_VpuEncClose( hInst );
-				hInst->isInitialized = 0;
-			}
-			NX_DrvMemset( &hInst->codecInfo, 0, sizeof(hInst->codecInfo) );
+		if( hInst->isInitialized )
+		{
+			if( hInst->codecMode < AVC_ENC )
+				NX_VpuDecClose( hInst );
+			else
+				NX_VpuEncClose( hInst );
+			hInst->isInitialized = 0;
 		}
+		NX_DrvMemset( &hInst->codecInfo, 0, sizeof(hInst->codecInfo) );
 	}
 	gstCurNumInstance --;
 
@@ -154,10 +153,22 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 			}
 			if( openArg.isEncoder )
 			{
+				if( gstCruEncInstance >= NX_MAX_VPU_ENC_INST )
+				{
+					NX_ErrMsg( ("Maximum encoder limit error. Current(%d) vs. MAX(%d)!!!", gstCruEncInstance, NX_MAX_VPU_ENC_INST) );
+					ret = -1;
+					break;
+				}
 				vpuRet = NX_VpuEncOpen( &openArg, &nx_vpu_device->dev, &hInst );
 			}
 			else
 			{
+				if( gstCruDecInstance >= NX_MAX_VPU_DEC_INST )
+				{
+					NX_ErrMsg( ("Maximum decoder limit error. Current(%d) vs. MAX(%d)!!!", gstCruDecInstance, NX_MAX_VPU_DEC_INST) );
+					ret = -1;
+					break;
+				}
 				vpuRet = NX_VpuDecOpen( &openArg, &nx_vpu_device->dev, &hInst );
 			}
 			if( (VPU_RET_OK!=vpuRet) || (0==hInst) )
@@ -176,6 +187,11 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 				break;
 			}
 			filp->private_data = hInst;
+			if( ret == 0 )
+			{
+				if( openArg.isEncoder )	gstCruEncInstance ++;
+				else					gstCruDecInstance ++;
+			}
 		}
 		break;
 	case IOCTL_VPU_CLOSE_INSTANCE:
@@ -186,6 +202,7 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 				ret = -1;
 				break;
 			}
+
 			if( (MP4_ENC == hInst->codecMode) ||  (AVC_ENC == hInst->codecMode) )
 			{
 				NX_VpuEncClose( hInst );
@@ -665,6 +682,7 @@ static int __devinit nx_vpu_init(void)
 
 static void __exit nx_vpu_exit(void)
 {
+	DrvMutexLock( gstDrvMutex );
 	if(gstCurNumInstance > 0)
 	{
 		NX_DbgMsg( NX_DBG_INFO, ("Warning Video Frimware is running.(Total(%d)=Enc(%d)+Dec(%d)+Jpeg(%d)\n" ,
@@ -687,6 +705,7 @@ static void __exit nx_vpu_exit(void)
 	{
 		NX_LinearFree( &nx_vpu_device->dev, gstFirmPhyAddress, gstFirmVirAddress );
 	}
+	DrvMutexUnlock( gstDrvMutex );
 
 	DrvDestroyMutex( gstDrvMutex );
 

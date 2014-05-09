@@ -601,7 +601,10 @@ NX_VPU_RET	NX_VpuInit( unsigned int firmVirAddr, unsigned int firmPhyAddr )
 NX_VPU_RET	NX_VpuDeInit( void )
 {
 	if( !gstIsInitialized )
+	{
+		NX_ErrMsg(("VPU Already Denitialized!!!\n"));
 		return VPU_RET_ERR_INIT;
+	}
 	if( VPU_IsBusy() )
 	{
 		NX_ErrMsg(("NX_VpuDeInit() failed. VPU_IsBusy!!!\n"));

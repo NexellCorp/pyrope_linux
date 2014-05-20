@@ -632,7 +632,7 @@ function build_filesystem()
 			echo '//////////////////////////'
 			echo '// copy BlackBox Solution '
 			cp -v $BLACKBOX_SOLUTION_DIR/lib/*.so $FILESYSTEM_DIR/buildroot/out/rootfs/usr/lib/
-			cp -v $BLACKBOX_SOLUTION_DIR/bin/nxdvrsol $FILESYSTEM_DIR/buildroot/out/rootfs/usr/bin/
+			cp -v $BLACKBOX_SOLUTION_DIR/bin/* $FILESYSTEM_DIR/buildroot/out/rootfs/usr/bin/
 		fi
 
 		pushd . > /dev/null

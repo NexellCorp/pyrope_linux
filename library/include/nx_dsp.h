@@ -81,8 +81,8 @@ int32_t			NX_DspVideoSetSourceFormat ( DISPLAY_HANDLE hDisplay, int32_t width, i
 int32_t			NX_DspVideoSetSourceCrop ( DISPLAY_HANDLE hDisplay, DSP_IMG_RECT *pRect );
 
 //	Display Control
-int32_t			NX_DspVideoSetPriority( DISPLAY_HANDLE hDisplay, int32_t priority );
-int32_t			NX_DspSetColorKey( DISPLAY_HANDLE hDisplay, int32_t colorKey );
+int32_t			NX_DspVideoSetPriority( int32_t module, int32_t priority );
+int32_t			NX_DspSetColorKey( int32_t module, int32_t priority );
 
 #ifdef __cplusplus
 }

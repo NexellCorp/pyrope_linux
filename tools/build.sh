@@ -14,7 +14,7 @@ UBOOT_CONFIG_NAME=nxp4330q_${BUILD_NAME}
 KERNEL_CONFIG_NAME=nxp4330_${BUILD_NAME}
  
 UBOOT_DIR=$TOP/bootloader/u-boot-2013.x
-KERNEL_DIR=$TOP/kernel/kernel-3.4.x
+KERNEL_DIR=$TOP/kernel/kernel-3.4.39
 
 MODULES_DIR=$TOP/pyrope/modules
 APPLICATION_DIR=$TOP/pyrope/apps
@@ -304,6 +304,17 @@ function build_application()
 		make install -sw
 	fi	
 
+	if [ -d $LIBRARY_DIR/src/libnxmalloc ]; then
+		echo ''
+		echo '#########################################################'
+		echo '# libnxmalloc '
+		echo '#########################################################'
+		cd $LIBRARY_DIR/src/libnxmalloc
+		make -sw
+		check_result
+		make install -sw
+	fi
+
 	if [ -d $LIBRARY_DIR/src/libnxadc ]; then
 		echo ''
 		echo '#########################################################'
@@ -402,7 +413,17 @@ function build_application()
 		check_result
 		make install -sw
 	fi
-
+	
+	if [ -d $LIBRARY_DIR/src/libnxuevent ]; then
+		echo ''
+		echo '#########################################################'
+		echo '# libnxuevent '
+		echo '#########################################################'
+		cd $LIBRARY_DIR/src/libnxuevent
+		make -sw
+		check_result
+		make install -sw
+	fi
 
 
 	if [ -d $APPLICATION_DIR/adc_test ]; then
@@ -611,7 +632,7 @@ function build_filesystem()
 			echo '//////////////////////////'
 			echo '// copy BlackBox Solution '
 			cp -v $BLACKBOX_SOLUTION_DIR/lib/*.so $FILESYSTEM_DIR/buildroot/out/rootfs/usr/lib/
-			cp -v $BLACKBOX_SOLUTION_DIR/bin/nxdvrsol $FILESYSTEM_DIR/buildroot/out/rootfs/usr/bin/
+			cp -v $BLACKBOX_SOLUTION_DIR/bin/* $FILESYSTEM_DIR/buildroot/out/rootfs/usr/bin/
 		fi
 
 		pushd . > /dev/null

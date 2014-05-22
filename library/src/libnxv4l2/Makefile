@@ -69,6 +69,7 @@ install:
 	install -m 644 $(DSP_TARGET) $(LIB_INSTALL)
 
 distclean: clean
+	rm -f $(LIB_INSTALL)/$(NXV4L2_TARGET)
 	rm -f $(LIB_INSTALL)/$(V4L2_TARGET)
 	rm -f $(LIB_INSTALL)/$(VIP_TARGET)
 	rm -f $(LIB_INSTALL)/$(DSP_TARGET)

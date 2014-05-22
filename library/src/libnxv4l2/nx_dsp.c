@@ -153,14 +153,14 @@ DISPLAY_HANDLE NX_DspInit( DISPLAY_INFO *pDspInfo )
 	// }
 
 
-	if( pDspInfo->port == DISPLAY_PORT_LCD ) {
-		result = v4l2_set_ctrl(hPrivate, mlcId, V4L2_CID_MLC_VID_PRIORITY, 0);
-		if( result < 0 )
-		{
-			printf("v4l2_set_ctrl() failed!!!\n");
-			goto ErrorExit;
-		}
-	}
+	//if( pDspInfo->port == DISPLAY_PORT_LCD ) {
+	//	result = v4l2_set_ctrl(hPrivate, mlcId, V4L2_CID_MLC_VID_PRIORITY, 0);
+	//	if( result < 0 )
+	//	{
+	//		printf("v4l2_set_ctrl() failed!!!\n");
+	//		goto ErrorExit;
+	//	}
+	//}
 
 	result = v4l2_reqbuf(hPrivate, mlcId, DISPLAY_MAX_BUF_SIZE);
 	if( result < 0 )
@@ -393,37 +393,82 @@ int32_t NX_DspVideoSetSourceCrop ( DISPLAY_HANDLE hDisplay, DSP_IMG_RECT *pRect 
 	return 0;
 }
 
-int32_t NX_DspVideoSetPriority( DISPLAY_HANDLE hDisplay, int32_t priority )
+int32_t NX_DspVideoSetPriority( int32_t module, int32_t priority )
 {
-	int32_t ret = 0;
+	V4L2_PRIVATE_HANDLE	hPrivate;
+	int32_t mlcId;
+	
+	struct V4l2UsageScheme s;
+	memset(&s, 0, sizeof(s));
 
-	if( !hDisplay || !hDisplay->hPrivate ) {
+	if( module == DISPLAY_MODULE_MLC0 ) {
+		s.useMlc0Video	= true;
+		s.useMlc1Video	= false;
+		
+		mlcId	= nxp_v4l2_mlc0_video;
+	}
+	else if( module == DISPLAY_MODULE_MLC1 ) {
+		s.useMlc0Video	= false;
+		s.useMlc1Video	= true;
+
+		mlcId	= nxp_v4l2_mlc1_video;
+	}
+	else {
+		printf("Unknown Mode..\n");
 		return -1;
 	}
 	
-	if( priority >= 0 && priority <= 3 ) {
-		ret = v4l2_set_ctrl( hDisplay->hPrivate, hDisplay->mlcId, V4L2_CID_MLC_VID_PRIORITY, priority );
-		if( ret < 0 ) {
-			printf("v4l2_set_ctrl() failed!!!\n");
-			return -1;
-		}
-	}
-	return 0;
-}
-
-int32_t NX_DspSetColorKey( DISPLAY_HANDLE hDisplay, int32_t colorkey )
-{
-	int32_t ret = 0;
-
-	if( !hDisplay || !hDisplay->hPrivate ) {
+	if( NULL == (hPrivate = v4l2_init(&s)) ) 
+	{
+		printf("v4l2_init() failed!!!\n");
 		return -1;
 	}
-
-	ret = v4l2_set_ctrl( hDisplay->hPrivate, hDisplay->mlcId, V4L2_CID_MLC_VID_COLORKEY, colorkey );
-	if( ret < 0 ) {
+	
+	if( 0 >  v4l2_set_ctrl( hPrivate, mlcId, V4L2_CID_MLC_VID_PRIORITY, priority ) ) {
 		printf("v4l2_set_ctrl() failed!!!\n");
 		return -1;
 	}
+	
+	v4l2_exit(hPrivate);
+	return 0;
+}
 
+int32_t NX_DspSetColorKey( int32_t module, int32_t colorkey )
+{
+	V4L2_PRIVATE_HANDLE	hPrivate;
+	int32_t mlcId;
+	
+	struct V4l2UsageScheme s;
+	memset(&s, 0, sizeof(s));
+
+	if( module == DISPLAY_MODULE_MLC0 ) {
+		s.useMlc0Video	= true;
+		s.useMlc1Video	= false;
+		
+		mlcId	= nxp_v4l2_mlc0_video;
+	}
+	else if( module == DISPLAY_MODULE_MLC1 ) {
+		s.useMlc0Video	= false;
+		s.useMlc1Video	= true;
+
+		mlcId	= nxp_v4l2_mlc1_video;
+	}
+	else {
+		printf("Unknown Mode..\n");
+		return -1;
+	}
+	
+	if( NULL == (hPrivate = v4l2_init(&s)) ) 
+	{
+		printf("v4l2_init() failed!!!\n");
+		return -1;
+	}
+	
+	if( 0 >  v4l2_set_ctrl( hPrivate, mlcId, V4L2_CID_MLC_VID_COLORKEY, colorkey ) ) {
+		printf("v4l2_set_ctrl() failed!!!\n");
+		return -1;
+	}
+	
+	v4l2_exit(hPrivate);
 	return 0;
 }

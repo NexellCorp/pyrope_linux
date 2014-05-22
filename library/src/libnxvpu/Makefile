@@ -42,8 +42,8 @@ clean:
 	rm -f *.o *.so *.a .depend
 
 distclean: clean
-	rm -f $(LIB_INSTALL)/lib/$(TARGET)
-	rm -f $(LIB_INSTALL)/lib/$(LIBNAME).a
+	rm -f $(LIB_INSTALL)/$(TARGET)
+	rm -f $(LIB_INSTALL)/$(LIBNAME).a
 
 
 #########################################################################

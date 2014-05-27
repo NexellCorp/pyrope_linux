@@ -11,7 +11,7 @@
 // 
 //	debugging mode
 //
-#define VR_DEBUG
+//#define VR_DEBUG
 
 #define VR_TRUE 	1
 #define VR_FALSE	0
@@ -81,7 +81,7 @@ typedef unsigned long long VR_ULONG;
 	#define VR_FEATURE_STRIDE_USE
 	#define VR_FEATURE_INPUT_HEIGHT_ALIGN_BYTE	16
 	
-	#if 1 /* temp test */
+	#if 0 /* temp test */
 	#define VR_FEATURE_OUTPUT_HEIGHT_ALIGN_BYTE 0
 	#else /* org */
 	#define VR_FEATURE_OUTPUT_HEIGHT_ALIGN_BYTE	VR_FEATURE_INPUT_HEIGHT_ALIGN_BYTE

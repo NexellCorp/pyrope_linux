@@ -112,6 +112,8 @@ const char scaler_frag_shader[] = {
 	void main()										\n\
 	{												\n\
 		gl_FragColor = texture2D(diffuse, v_tex);	\n\
+		//vec4 tval0 = vec4(1.0, 1.0, 1.0, 1.0); \n\
+		//gl_FragColor = tval0; \n\
 	}												\n\
 "
 };
@@ -172,7 +174,11 @@ const char cvt2uv_vertex_shader[] = {
 "
 };
 
+#ifdef VR_FEATURE_YCRCB_NV21_USE
 //compile error =>precision highp float;
+//NV12 : Y,U/V
+//color.b = Cb(U)
+//color.g = Cr(V)
 const char cvt2uv_frag_shader[] = {
 "													\n\
 	#version 100									\n\
@@ -192,6 +198,30 @@ const char cvt2uv_frag_shader[] = {
 	}												\n\
 "
 };
+#else
+//NV21 : Y,V/U
+//color.g = Cr(V)
+//color.b = Cb(U)
+const char cvt2uv_frag_shader[] = {
+"													\n\
+	#version 100									\n\
+													\n\
+	precision mediump float;						\n\
+	uniform sampler2D diffuse;						\n\
+	varying vec2 v_tex;								\n\
+													\n\
+	void main()										\n\
+	{												\n\
+		vec4 tval;	\n\
+		vec4 color = vec4(0.0, 0.0, 0.0, 0.0);	\n\
+		tval = texture2D(diffuse, v_tex);	\n\
+		color.g = -(0.148*tval.x) - (0.291*tval.y) + (0.439*tval.z) + 0.5; \n\
+		color.b = (0.439*tval.x) - (0.368*tval.y) - (0.071*tval.z) + 0.5; \n\
+		gl_FragColor = color; \n\
+	}												\n\
+"
+};
+#endif
 
 const char cvt2rgba_vertex_shader[] = {
 "									\n\
@@ -200,12 +230,18 @@ const char cvt2rgba_vertex_shader[] = {
 	precision highp float;			\n\
 									\n\
 	attribute vec4 a_v4Position;	\n\
-	attribute vec2 a_v2TexCoord;	\n\
-	varying vec2 v_tex;				\n\
+	attribute vec2 a_v2TexCoordY;	\n\
+	attribute vec2 a_v2TexCoordU;	\n\
+	attribute vec2 a_v2TexCoordV;	\n\
+	varying vec2 v_texY;			\n\
+	varying vec2 v_texU; 			\n\
+	varying vec2 v_texV; 			\n\
 									\n\
 	void main()						\n\
 	{								\n\
-		v_tex = a_v2TexCoord;		\n\
+		v_texY = a_v2TexCoordY;		\n\
+		v_texU = a_v2TexCoordU;		\n\
+		v_texV = a_v2TexCoordV;		\n\
 		gl_Position = a_v4Position;	\n\
 	}								\n\
 "
@@ -220,15 +256,17 @@ const char cvt2rgba_frag_shader[] = {
 	uniform sampler2D diffuseY;						\n\
 	uniform sampler2D diffuseU;						\n\
 	uniform sampler2D diffuseV;						\n\
-	varying vec2 v_tex;								\n\
+	varying vec2 v_texY;							\n\
+	varying vec2 v_texU;							\n\
+	varying vec2 v_texV;							\n\
 													\n\
 	void main()										\n\
 	{												\n\
 		float tvalY, tvalU, tvalV;	\n\
 		vec4 color = vec4(0.0, 0.0, 0.0, 0.0);	\n\
-		tvalY = texture2D(diffuseY, v_tex).x;	\n\
-		tvalU = texture2D(diffuseU, v_tex).x;	\n\
-		tvalV = texture2D(diffuseV, v_tex).x;	\n\
+		tvalY = texture2D(diffuseY, v_texY).x;	\n\
+		tvalU = texture2D(diffuseU, v_texU).x;	\n\
+		tvalV = texture2D(diffuseV, v_texV).x;	\n\
 		color.r = 1.164 * (tvalY - 0.0625) + 1.596 * (tvalV - 0.5); \n\
 		color.g = 1.164 * (tvalY - 0.0625) - 0.813 * (tvalV - 0.5) - 0.391 * (tvalU - 0.5); \n\
 		color.b = 1.164 * (tvalY - 0.0625) + 2.018 * (tvalU - 0.5); \n\

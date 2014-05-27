@@ -16,8 +16,8 @@
 #include <nx_fourcc.h>
 #include <nx_alloc_mem.h>
 #include <nx_graphictools.h>
-#include "vr_deinterlace.h"
-#include "vr_egl_runtime.h"
+#include "src/vr_deinterlace.h"
+#include "src/vr_egl_runtime.h"
 
 #include "src/dbgmsg.h"
 
@@ -36,6 +36,7 @@ void print_usage(const char *appName)
 	printf("	                    m = 3 Deinterlace & Scaling\n");
 	printf("	                    m = 4 Frame buffer caputer & Encoding\n");
 	printf("	                    m = 5 YUV(YV12) to RGB(ARGB)\n");
+	printf("                        m = 6 RGB(ARGB) to YUV(YV12)\n");
 	printf("  -t                  : Thread test mode\n");
 	printf("-----------------------------------------------------------------------\n");
 	printf(" example) \n");
@@ -48,7 +49,9 @@ void print_usage(const char *appName)
 	printf(" 4. framebuffer capture & Encoding\n");
 	printf("  #> %s -m 4 -d 1280,720\n", appName);
 	printf(" 5. Yuv 2 Rgb Test\n");
-	printf("  #> %s -m 5 -d 1280,720 -o framebuffer.yuv\n", appName);
+	printf("  #> %s -m 5 -f input.yuv -s 1280,720\n", appName);
+	printf(" 6. Rgb 2 Yuv Test\n");
+	printf("  #> %s -m 6 -f input.rgba -s 1280,720\n", appName);
 }
 
 const char *gstModeStr[] = 
@@ -56,7 +59,9 @@ const char *gstModeStr[] =
 	"Deinterlace Mode",
 	"Scaling Mode",
 	"Deinterlace & Scaling Mode",
-	"FrameBuffer Capture Mode"
+	"FrameBuffer Capture Mode",
+	"YUV to RGB Mode",
+	"RGB to YUV Mode"
 };
 
 
@@ -90,21 +95,46 @@ static int MODE5_YUV2RGB( const char *inFileName, int srcWidth, int srcHeight, c
 
 	FILE *inFd = NULL;							//	Input File Handle
 	FILE *outFd = NULL;							//	Output File Handle
-	int ret = 0;
+	int ret = 0, mode = 5;
 
+	//	Step 0. Prepare processing.
 	if( inFileName == NULL )
 	{
 		printf("%s() Error : input file name!!!\n", __func__);
-		return -1;
+		ret = -1;
+		goto ErrorExit;
 	}
-	//	Step 1. Load YUV Image
+
 	inFd = fopen( inFileName, "rb" );
 	if( inFd == NULL )
 	{
 		printf( "%s() Error : Cannot open file(%s)", __func__, inFileName );
-		return -1;
+		ret = -1;
+		goto ErrorExit;
 	}
 
+	if( outFileName == NULL )
+		outFd = fopen("Yuv2RgbResult.rgb", "wb");
+	else
+		outFd = fopen(outFileName, "wb");
+
+	if( outFd == NULL )
+	{
+		printf( "%s() Error : Cannot open file.(%s)", __func__, !outFileName ? "Yuv2RgbResult.rgb" : outFileName );
+		ret = -1;
+		goto ErrorExit;
+	}
+
+	//	Print In/Out Informations
+	printf("\n====================================================\n");
+	printf("  Mode = %s(%d)\n", gstModeStr[mode-1], mode);
+	printf("  Source filename   : %s\n", inFileName);
+	printf("  Source Image Size : %d, %d\n", srcWidth, srcHeight);
+	printf("  Output filename   : %s\n", !outFileName ? "Yuv2RgbResult.rgb" : outFileName);
+	printf("  Output Image Size : %d, %d\n", dstWidth, dstHeight);
+	printf("====================================================\n");
+
+	//	Step 1. Load YUV Image
 	hInImage = NX_VideoAllocateMemory( 16, srcWidth, srcHeight, NX_MEM_MAP_LINEAR, FOURCC_MVS0 );
 	if( hInImage == NULL )
 	{
@@ -117,7 +147,7 @@ static int MODE5_YUV2RGB( const char *inFileName, int srcWidth, int srcHeight, c
 	fread( (unsigned char*)hInImage->crVirAddr, 1, srcWidth*srcHeight/4, inFd );
 
 	//	Step 2. Create RGB Buffer(ION)
-	hOutImage = NX_AllocateMemory( dstWidth*dstHeight*4, 16 );
+	hOutImage = NX_AllocateMemory( dstWidth*dstHeight*4, 4096 );
 	if( hOutImage == NULL )
 	{
 		printf("%s() Error : Cannot Allocate hOutImage!!!\n", __func__);
@@ -141,20 +171,8 @@ static int MODE5_YUV2RGB( const char *inFileName, int srcWidth, int srcHeight, c
 	}
 
 	//	Step 4. Save RGB Buffer
-	if( outFileName == NULL )
-		outFd = fopen("Yuv2RgbResult.rgb", "wb");
-	else
-		outFd = fopen(outFileName, "wb");
-
-	if( outFd == NULL )
-	{
-		printf( "%s() Error : Cannot open file.", __func__ );
-		ret = -1;
-		goto ErrorExit;
-	}
-
+	rewind(outFd);
 	fwrite( (unsigned char*)hOutImage->virAddr, 1, dstWidth*dstHeight*4, outFd );
-
 	printf("Converting Done.\n");
 
 ErrorExit:
@@ -164,7 +182,7 @@ ErrorExit:
 	}
 	if( outFd != NULL )
 	{
-		fclose( inFd );
+		fclose( outFd );
 	}
 	if( hInImage != NULL )
 	{
@@ -184,11 +202,136 @@ ErrorExit:
 //
 //////////////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////////////
+//
+//	Implementation Mode 6 ( RGB to YUV )
+//
+
+//
+//	Step 1. Load RGB Image
+//	Step 2. Create YUV Buffer(ION)
+//	Step 3. Do RGB to YUV
+//	Step 4. Save YUV Buffer
+//
+static int MODE6_RGB2YUV( const char *inFileName, int srcWidth, int srcHeight, const char *outFileName, int dstWidth, int dstHeight )
+{
+	NX_GT_RGB2YUV_HANDLE hRgb2Yuv = NULL;		//	Converter Handle
+	NX_MEMORY_HANDLE hInImage = NULL;			//	Input Image Handle
+	NX_VID_MEMORY_HANDLE hOutImage = NULL;		//	OUtput Image Handle
+
+	FILE *inFd = NULL;							//	Input File Handle
+	FILE *outFd = NULL;							//	Output File Handle
+	int ret = 0, mode = 6;
+
+	//	Step 0. Prepare processing.
+	if( inFileName == NULL )
+	{
+		printf("%s() Error : input file name!!!\n", __func__);
+		ret = -1;
+		goto ErrorExit;
+	}
+	
+	inFd = fopen( inFileName, "rb" );
+	if( inFd == NULL )
+	{
+		printf( "%s() Error : Cannot open file(%s)", __func__, inFileName );
+		ret = -1;
+		goto ErrorExit;
+	}
+	
+	if( outFileName == NULL )
+		outFd = fopen("Rgb2YuvResult.yuv", "wb");
+	else
+		outFd = fopen(outFileName, "wb");
+
+	if( outFd == NULL )
+	{
+		printf( "%s() Error : Cannot open file.", __func__ );
+		ret = -1;
+		goto ErrorExit;
+	}
+
+	//	Print In/Out Informations
+	printf("\n====================================================\n");
+	printf("  Mode = %s(%d)\n", gstModeStr[mode-1], mode);
+	printf("  Source filename   : %s\n", inFileName);
+	printf("  Source Image Size : %d, %d\n", srcWidth, srcHeight);
+	printf("  Output filename   : %s\n", !outFileName ? "Rgb2YuvResult.yuv" : outFileName);
+	printf("  Output Image Size : %d, %d\n", dstWidth, dstHeight);
+	printf("====================================================\n");
+
+	//	Step 1. Load RGB Image
+	hInImage = NX_AllocateMemory( srcWidth*srcHeight*4, 16 );
+	if( hInImage == NULL )
+	{
+		printf("%s() Error : Cannot Allocate hInImage!!!\n", __func__);
+		ret = -1;
+		goto ErrorExit;
+	}	
+	fread( (unsigned char*)hInImage->virAddr, 1, srcWidth*srcHeight*4, inFd );
+
+	//	Step 2. Create YUV Buffer(ION)
+	hOutImage = NX_VideoAllocateMemory( 16, dstWidth, dstHeight, NX_MEM_MAP_LINEAR, FOURCC_NV12 );	// FOURCC_MVS0, FOURCC_NV12
+	if( hOutImage == NULL )
+	{
+		printf("%s() Error : Cannot Allocate hOutImage!!!\n", __func__);
+		ret = -1;
+		goto ErrorExit;
+	}
+
+	//	Step 3. Do RGB to YUV
+	hRgb2Yuv = NX_GTRgb2YuvOpen( srcWidth, srcHeight, dstWidth, dstHeight, 1 );
+	if( hRgb2Yuv == NULL )
+	{
+		printf("%s() Error : NX_GTRgb2YuvOpen() failed!!!\n", __func__);
+		ret = -1;
+		goto ErrorExit;
+	}
+	ret = NX_GTRgb2YuvDoConvert( hRgb2Yuv, (int)hInImage->privateDesc, hOutImage );
+	if( ret != 0 )
+	{
+		printf("%s() Error : NX_GTRgb2YuvDoConvert() failed!!!(ret=%d)\n", __func__, ret);
+		goto ErrorExit;
+	}	
+
+	//	Step 4. Save YUV Buffer
+	fwrite( (unsigned char*)hOutImage->luVirAddr, 1, dstWidth*dstHeight, outFd );
+	fwrite( (unsigned char*)hOutImage->cbVirAddr, 1, dstWidth*dstHeight / 2, outFd );
+
+	printf("Converting Done.\n");
+
+ErrorExit:
+	if( inFd != NULL )
+	{
+		fclose( inFd );
+	}
+	if( outFd != NULL )
+	{
+		fclose( outFd );
+	}
+	if( hInImage != NULL )
+	{
+		NX_FreeMemory( hInImage );
+	}
+	if( hOutImage != NULL )
+	{
+		NX_FreeVideoMemory( hOutImage );
+	}
+	if( hRgb2Yuv != NULL )
+	{
+		NX_GTRgb2YuvClose( hRgb2Yuv );
+	}
+	return ret;
+}
+
+//
+//////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
 //
-//	Implementation Mode 5 ( YUV to RGB )
+//	Implementation Mode 99 ( Dinterlace -> Scaling Asing Test )
 //
+
 static int AGING_TEST( const char *inFileName, int srcWidth, int srcHeight, const char *outFileName, int dstWidth, int dstHeight )
 {
 	unsigned int counter = 0;
@@ -240,8 +383,8 @@ static int AGING_TEST( const char *inFileName, int srcWidth, int srcHeight, cons
 			break;
 		}
 
-		NX_GTDeintClose(hDeint);
-		NX_GTSclClose(hScale);
+		if( hDeint ) NX_GTDeintClose(hDeint);
+		if( hScale ) NX_GTSclClose(hScale);
 		hDeint = NULL;
 		hScale = NULL;
 
@@ -264,6 +407,7 @@ static int AGING_TEST( const char *inFileName, int srcWidth, int srcHeight, cons
 
 	return 0;
 }
+
 //
 //////////////////////////////////////////////////////////////////////////////
 
@@ -415,7 +559,7 @@ int FrameBufferCapture( const char *outFileName, int outWidth, int outHeight )
 	//	Step 2. Enable Vertical Sync
 	//
 	{
-		int err = write(vsync_ctl_fd, VSYNC_ON, sizeof(VSYNC_ON));
+		err = write(vsync_ctl_fd, VSYNC_ON, sizeof(VSYNC_ON));
 		if( err < 0 )
 		{
 			printf("Virtical sync eanble failed!!!\n");
@@ -638,6 +782,11 @@ int main( int argc, char *argv[] )
 		printf("YUV 2 RGB Mode.\n");
 		return MODE5_YUV2RGB( inFileName, srcWidth, srcHeight, outFileName, dstWidth, dstHeight );
 	}
+	else if( mode == 6 )
+	{
+		printf("RGB 2 YUV Mode.\n");
+		return MODE6_RGB2YUV( inFileName, srcWidth, srcHeight, outFileName, dstWidth, dstHeight );
+	}
 	else if( mode == 99 )
 	{
 		printf("================ Aging Test ================\n");
@@ -734,7 +883,7 @@ int main( int argc, char *argv[] )
 
 	switch( mode )
 	{
-		case 1:	//	Deinterloace Only
+		case 1:	//	Deinterlace Only
 		{
 			hDeint = NX_GTDeintOpen( srcWidth, srcHeight, 1 );
 			if( NULL == hDeint )
@@ -745,7 +894,7 @@ int main( int argc, char *argv[] )
 			NX_GTDeintDoDeinterlace( hDeint, inBuffer, outBuffer );
 			break;
 		}
-		case 2:
+		case 2:	//	Scaling Only
 		{
 			hScale = NX_GTSclOpen( srcWidth, srcHeight, dstWidth, dstHeight, 1 );
 			if( NULL == hScale )
@@ -756,11 +905,10 @@ int main( int argc, char *argv[] )
 			NX_GTSclDoScale( hScale, inBuffer, outBuffer );
 			break;
 		}
-		case 3:
+		case 3:	//	Deinterlace -> Scaling
 		{
 			tmpBuffer = NX_VideoAllocateMemory( 4096, srcWidth, srcHeight, NX_MEM_MAP_LINEAR, FOURCC_MVS0 );
 
-			//	Deinterlace --> Scaling
 			if( NULL == (hDeint = NX_GTDeintOpen( srcWidth, srcHeight, 1 )) )
 			{
 				printf("NX_DeintOpen() failed!!!\n");
@@ -787,15 +935,15 @@ int main( int argc, char *argv[] )
 	{
 		for( int i=0 ; i<dstHeight ; i++ )
 		{
-			fwrite( (unsigned char*)(outBuffer->luVirAddr + dstWidth*i), 1, dstWidth, outFd );
+			fwrite( (unsigned char*)(outBuffer->luVirAddr + outBuffer->luStride*i), 1, dstWidth, outFd );
 		}
 		for( int i=0 ; i<dstHeight/2 ; i++ )
 		{
-			fwrite( (unsigned char*)(outBuffer->cbVirAddr + i * dstWidth/2), 1, dstWidth/2, outFd );
+			fwrite( (unsigned char*)(outBuffer->cbVirAddr + i * outBuffer->luStride/2), 1, dstWidth/2, outFd );
 		}
 		for( int i=0 ; i<dstHeight/2 ; i++ )
 		{
-			fwrite( (unsigned char*)(outBuffer->crVirAddr + i * dstWidth/2), 1, dstWidth/2, outFd );
+			fwrite( (unsigned char*)(outBuffer->crVirAddr + i * outBuffer->luStride/2), 1, dstWidth/2, outFd );
 		}
 		fclose(outFd);
 	}
@@ -805,6 +953,12 @@ int main( int argc, char *argv[] )
 		exit(-1);
 	}
 
+
+	if( inFileName )
+		free( inFileName );
+
+	if( outFileName )
+		free( outFileName );
 
 	if( outBuffer )
 		NX_FreeVideoMemory(outBuffer);

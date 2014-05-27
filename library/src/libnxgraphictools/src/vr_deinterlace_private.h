@@ -13,7 +13,7 @@ typedef struct
 	GLuint iFragName;
 	GLuint iProgName;
 	GLint iLocPosition;
-	GLint iLocTexCoord;
+	GLint iLocTexCoord[VR_INPUT_MODE_YUV_MAX];
 	GLint iLocInputHeight;
 	GLint iLocOutputHeight;
 	GLint iLocMainTex[VR_INPUT_MODE_YUV_MAX];
@@ -33,7 +33,6 @@ typedef struct
 
 
 //interanl API
-void vrTerminateStatics();
 Statics *vrGetStatics();
 
 //external

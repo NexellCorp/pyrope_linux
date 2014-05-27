@@ -34,13 +34,13 @@ extern "C"{
 
 
 //#define DUMP_FILE_FORMAT
-//#define	ENABLE_DISPLAY
+#define	ENABLE_DISPLAY
 
 //#define	CHECK_IMG_PROC_TIME
 
 #ifdef	ENABLE_DISPLAY
-//	#define	DISPLAY_IMG_OUT
 	#define	DISPLAY_DEC_OUT
+	// #define	DISPLAY_IMG_OUT
 #endif
 
 
@@ -878,16 +878,45 @@ void *ImageProcessingThread( void *arg )
 #ifdef ENABLE_DISPLAY
 	DISPLAY_HANDLE hDsp;
 	DISPLAY_INFO dspInfo;
+	DSP_IMG_RECT dspSrcRect;
+	DSP_IMG_RECT dspDstRect;
+
 	int displayCnt = 0;
 
-	dspInfo.port = 0;
-	dspInfo.module = 0;
-	dspInfo.width = 1920;
-	dspInfo.height = 1080;
-	dspInfo.left = 0;
-	dspInfo.top = 0;
-	dspInfo.right = 1280;
-	dspInfo.bottom = 800;
+	memset( &dspInfo, 0x00, sizeof(dspInfo) );
+	dspInfo.port	= 0;
+	dspInfo.module	= 0;
+#ifdef DISPLAY_DEC_OUT	
+	dspInfo.width	= pAppData->srcWidth;
+	dspInfo.height	= pAppData->srcHeight;
+#endif	
+#ifdef DISPLAY_IMG_OUT
+	dspInfo.width	= pAppData->encWidth;
+	dspInfo.height	= pAppData->encHeight;
+#endif
+
+	dspInfo.numPlane	= 1;
+
+	dspSrcRect.left		= 0;
+	dspSrcRect.top		= 0;
+#ifdef DISPLAY_DEC_OUT		
+	dspSrcRect.right	= pAppData->srcWidth;
+	dspSrcRect.bottom	= pAppData->srcHeight;
+#endif
+#ifdef DISPLAY_IMG_OUT	
+	dspSrcRect.right	= pAppData->srcWidth;
+	dspSrcRect.bottom	= pAppData->srcHeight;
+#endif
+
+	dspDstRect.left		= 0;
+	dspDstRect.top		= 0;
+	dspDstRect.right	= 1280;
+	dspDstRect.bottom	= 800;
+
+	dspInfo.dspSrcRect = dspSrcRect;
+	dspInfo.dspDstRect = dspDstRect;	
+
+	NX_DspVideoSetPriority( 0, 0 );
 
 	hDsp = NX_DspInit( &dspInfo );
 	if( hDsp == NULL )
@@ -939,12 +968,11 @@ void *ImageProcessingThread( void *arg )
 		}
 #endif // CHECK_IMG_PROC_TIME
 
-
-#ifdef DISPLAY_IMG_OUT
-		NX_DspQueueBuffer( hDsp, pDeintOutImg );
-#endif	// DISPLAY_IMG_OUT
 #ifdef DISPLAY_DEC_OUT
 		NX_DspQueueBuffer( hDsp, &pAppData->decOutImage[inIndex] );
+#endif
+#ifdef DISPLAY_IMG_OUT
+		NX_DspQueueBuffer( hDsp, pDeintOutImg );
 #endif
 
 #ifdef ENABLE_DISPLAY
@@ -1159,7 +1187,7 @@ void *DecodeThread( void *arg )
 			if( 0 != vidRet )
 			{
 				printf("Initialize Failed!!!\n");
-				return -1;
+				exit(-1);
 			}
 
 			pos = 0;

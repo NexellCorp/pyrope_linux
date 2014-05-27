@@ -42,7 +42,7 @@ VR_ULONG base_util_time_get_usec(void)
 
 
 EGLNativePixmapType vrCreatePixmap(unsigned int uiWidth, unsigned int uiHeight, void* pData, int is_video_dma_buf, 
-								unsigned int pixel_bits, int is_yuv_format)
+								unsigned int pixel_bits, VRImageFormatMode format)
 {	
 	fbdev_pixmap* pPixmap = (fbdev_pixmap *)CALLOC(1, sizeof(fbdev_pixmap));
 	if(pPixmap == NULL)
@@ -51,9 +51,6 @@ EGLNativePixmapType vrCreatePixmap(unsigned int uiWidth, unsigned int uiHeight, 
 		return NULL;
 	}
 	
-	if(is_yuv_format && 32 == pixel_bits)
-		uiWidth /= 4;
-		
 	pPixmap->width = uiWidth;
 	pPixmap->height = uiHeight;
 	if(32 == pixel_bits)
@@ -427,7 +424,7 @@ int vrInitializeEGLConfig(void)
 int vrCreateEGLContext(unsigned int program)
 {
 	Statics *pStatics = vrGetStatics();
-	EGLBoolean bResult = EGL_FALSE;
+//	EGLBoolean bResult = EGL_FALSE;
 
 	static const EGLint aEGLContextAttributes[] =
 	{
@@ -481,9 +478,6 @@ int vrTerminateEGL(void)
 	Statics *pStatics = vrGetStatics();
 
     EGL_CHECK(eglTerminate(pStatics->egl_info.sEGLDisplay));
-
-	/* Clear up globals. */
-	//vrTerminateStatics();
 
 	return 0;
 }

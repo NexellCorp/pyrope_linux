@@ -615,6 +615,14 @@ NX_VPU_RET	NX_VpuDeInit( void )
 	return VPU_RET_OK;
 }
 
+#if 0
+#ifdef PM_DBGOUT
+#undef PM_DBGOUT
+#endif
+
+#define PM_DBGOUT	lldebugout
+#endif
+
 //----------------------------------------------------------------------------
 NX_VPU_RET	NX_VpuSuspend( void )
 {
@@ -660,7 +668,9 @@ NX_VPU_RET	NX_VpuResume( void )
 	VpuWriteReg(BIT_CODE_RESET, 1);
 	VpuWriteReg(BIT_CODE_RUN, 1);
 
-	if( VPU_RET_OK == VPU_WaitVpuBusy(VPU_BUSY_CHECK_TIMEOUT, BIT_BUSY_FLAG) )
+	VpuWriteReg(BIT_USE_NX_EXPND, USE_NX_EXPND);	//	Nexell AXI Expander ( Enable )
+
+	if( VPU_RET_OK != VPU_WaitVpuBusy(VPU_BUSY_CHECK_TIMEOUT, BIT_BUSY_FLAG) )
 	{
 		NX_ErrMsg(("NX_VpuResume() Failed. Timeout(%d)\n", VPU_BUSY_CHECK_TIMEOUT));
 		return VPU_RET_ERR_TIMEOUT;

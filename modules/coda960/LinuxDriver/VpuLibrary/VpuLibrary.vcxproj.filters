@@ -15,22 +15,20 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\..\library\src\libnxvpu\vpu_types.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\..\library\src\libnxvpu\api_osapi.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\..\library\src\libnxvpu\nx_video_api.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\..\library\src\libnxvpu\vpu_drv_ioctl.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
+    <None Include="..\..\..\..\library\src\libnxvpu\Makefile" />
+    <None Include="..\..\..\..\library\src\libnxvpu\Android.mk" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\..\library\src\libnxvpu\nx_video_api.c">
+    <ClCompile Include="..\..\..\..\library\src\libnxvpu\nx_video_api.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\library\src\libnxvpu\vpu_drv_ioctl.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\library\src\libnxvpu\api_osapi.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

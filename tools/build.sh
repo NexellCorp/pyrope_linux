@@ -29,7 +29,11 @@ RESULT_DIR=$TOP/pyrope/result
 BOOT_PARTITION_SIZE=67108864
 
 # Kbyte default:11,264, 16384, 24576, 32768, 49152, 
-RAMDISK_SIZE=11264
+if [ ${CMD_V_UBOOT_CLEAN} = "blackbox" ]; then
+	RAMDISK_SIZE=11264
+else
+	RAMDISK_SIZE=49152
+fi
 
 RAMDISK_FILE=$FILESYSTEM_DIR/buildroot/out/ramdisk.gz
 
@@ -724,7 +728,7 @@ function build_fastboot_boot()
 
 	sleep 1.5
 	pushd . > /dev/null
-	sudo fastboot flash boot $RESULT_DIR/uImage
+	sudo fastboot flash kernel $RESULT_DIR/uImage
 	popd > /dev/null
 }
 
@@ -742,7 +746,7 @@ function build_fastboot_system()
 
 	sleep 1.5
 	pushd . > /dev/null
-	sudo fastboot flash system $RESULT_DIR/ramdisk.gz
+	sudo fastboot flash ramdisk $RESULT_DIR/ramdisk.gz
 	popd > /dev/null
 }
 

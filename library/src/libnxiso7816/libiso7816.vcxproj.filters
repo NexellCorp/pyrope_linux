@@ -7,7 +7,7 @@
     </Filter>
     <Filter Include="헤더 파일">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
     <Filter Include="리소스 파일">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
@@ -15,19 +15,21 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\..\library\src\libnxvpu\Makefile" />
-    <None Include="..\..\..\..\library\src\libnxvpu\Android.mk" />
+    <None Include="Makefile" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\library\src\libnxvpu\nx_video_api.c">
+    <ClCompile Include="nx_iso7816.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\library\src\libnxvpu\vpu_drv_ioctl.h">
+    <ClInclude Include="..\..\include\nx_iso7816.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\library\src\libnxvpu\api_osapi.h">
+    <ClInclude Include="..\..\include\nx_pwm.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\nx_gpio.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

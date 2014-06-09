@@ -1007,12 +1007,41 @@ int32_t CNX_DvrManager::SetPreview( int32_t channel )
 	// b. Disable rendering
 	for( int32_t i = 0; i < m_VideoNum; i++ )
 	{
-		if( i != channel )
-			if( m_pVrFilter[i] ) m_pVrFilter[i]->EnableRender( false );	
+		if( m_pVrFilter[i] ) m_pVrFilter[i]->EnableRender( false );	
+		if( m_pVrFilter[i] ) m_pVrFilter[i]->EnableHdmiRender( false );
 	}
 
 	// c. Enable rendering
 	if( m_pVrFilter[channel] ) m_pVrFilter[channel]->EnableRender( true );	
+
+	// d. preview channel update
+	m_DisplayChannel = channel;
+
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	return 0;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_DvrManager::SetPreviewHdmi( int32_t channel )
+{
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	CNX_AutoLock lock( &m_hLock );
+
+	// a. Check rendering channel
+	if( channel >= m_VideoNum ) {
+		NxDbgMsg( NX_DBG_ERR, (TEXT("Overrange rendering number.\n")) );
+		return -1;
+	}
+
+	// b. Disable rendering
+	for( int32_t i = 0; i < m_VideoNum; i++ )
+	{
+		if( m_pVrFilter[i] ) m_pVrFilter[i]->EnableRender( false );	
+		if( m_pVrFilter[i] ) m_pVrFilter[i]->EnableHdmiRender( false );
+	}
+
+	// c. Enable HDMI rendering
+	if( m_pVrFilter[channel] ) m_pVrFilter[channel]->EnableHdmiRender( true );	
 
 	// d. preview channel update
 	m_DisplayChannel = channel;

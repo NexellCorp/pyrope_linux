@@ -145,6 +145,7 @@ int32_t			NX_DvrEvent					( NX_DVR_HANDLE hDvr );
 int32_t 		NX_DvrChangeMode 			( NX_DVR_HANDLE hDvr, NX_DVR_ENCODE_TYPE nEncodeType );
 int32_t			NX_DvrCapture				( NX_DVR_HANDLE hDvr, int32_t channel );
 int32_t 		NX_DvrSetPreview			( NX_DVR_HANDLE hDvr, int32_t preview );
+int32_t			NX_DvrSetPreviewHdmi		( NX_DVR_HANDLE hDvr, int32_t preview );
 
 // For Debugging Tools
 int32_t			NX_DvrChgDebugLevel			( NX_DVR_HANDLE hDvr, uint32_t dbgLevel );

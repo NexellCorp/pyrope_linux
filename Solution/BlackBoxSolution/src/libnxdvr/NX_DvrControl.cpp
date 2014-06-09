@@ -96,6 +96,15 @@ int32_t NX_DvrSetPreview( NX_DVR_HANDLE hDvr, int32_t preview )
 }
 
 //------------------------------------------------------------------------------
+int32_t NX_DvrSetPreviewHdmi( NX_DVR_HANDLE hDvr, int32_t preview )
+{
+	if( hDvr )
+		hDvr->SetPreviewHdmi( preview );
+
+	return 0;
+}
+
+//------------------------------------------------------------------------------
 int32_t NX_DvrSetDisplay( NX_DVR_HANDLE hDvr, NX_DVR_DISPLAY_CONFIG *pDisplayConfig )
 {
 	printf("Not yet..\n");

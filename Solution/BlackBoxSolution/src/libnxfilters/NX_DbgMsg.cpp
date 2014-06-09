@@ -25,9 +25,9 @@
 //uint32_t gNxFilterDebugLevel = NX_DBG_DISABLE;
 //uint32_t gNxFilterDebugLevel = NX_DBG_ERR;
 //uint32_t gNxFilterDebugLevel = NX_DBG_WARN;
-//uint32_t gNxFilterDebugLevel = NX_DBG_INFO;
+uint32_t gNxFilterDebugLevel = NX_DBG_INFO;
 //uint32_t gNxFilterDebugLevel = NX_DBG_DEBUG;
-uint32_t gNxFilterDebugLevel = NX_DBG_VBS;
+//uint32_t gNxFilterDebugLevel = NX_DBG_VBS;
 
 void NxChgFilterDebugLevel( uint32_t level )
 {

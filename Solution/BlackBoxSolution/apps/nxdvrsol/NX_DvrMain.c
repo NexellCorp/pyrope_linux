@@ -52,7 +52,9 @@
 
 // #define VEHICLE_TEST
 // #define DEMO
- #define BOARD_TYPE_LYNX
+
+#define BOARD_TYPE_LYNX
+// #define CAMERA_TYPE_FHD
 
 // #define DISABLE_AUDIO
 
@@ -61,6 +63,7 @@
 #define AUDIO_TYPE_AAC
 #define EXTERNAL_MOTION_DETECTION
 
+#define MMCBLOCK				"mmcblk0"
 #define DIRECTORY_TOP			"/mnt/mmc"
 
 static int32_t DvrInputEventThreadStart( void );
@@ -97,6 +100,8 @@ static uint8_t dir_capture[256]	= {0x00, };
 
 static pthread_mutex_t	gstModeLock; 
 static int32_t			gDvrMode 	= DVR_MODE_NORMAL;
+
+static uint8_t gstSdNode[64];
 
 static int32_t gstMsg = false;
 static int32_t gstNoConsole = false;
@@ -238,9 +243,11 @@ static void ExitApp( void )
 		sync();
 		usleep(100000);
 		if( !umount("/mnt/mmc") ) break;
-		if( pendCnt > 10)
+		if( pendCnt > 10) {
 			printf("Fail, umount..\n");
-		printf("Retry umount..\n");
+			break;
+		}
+		printf("[%d]Retry umount..\n", pendCnt);
 	}
 }
 
@@ -560,8 +567,44 @@ int32_t cbMotionDetect( NX_VID_MEMORY_INFO *pPrevMemory, NX_VID_MEMORY_INFO *pCu
 //
 // debug shell
 //
+#define	SHELL_MAX_ARG	32
+#define	SHELL_MAX_STR	1024
+
 static int32_t bDvrShellThreadRun = false;
 static pthread_t hDvrShellThread = 0;
+
+static int32_t GetArgument( char *pSrc, char arg[][SHELL_MAX_STR] )
+{
+	int32_t i, j;
+
+	// Reset all arguments
+	for( i = 0; i < SHELL_MAX_ARG; i++ )
+	{
+		arg[i][0] = 0x00;
+	}
+
+	for( i = 0; i < SHELL_MAX_ARG; i++ )
+	{
+		// Remove space char
+		while( *pSrc == ' ' )
+			pSrc++;
+		
+		// check end of string.
+		if( *pSrc == 0 || *pSrc == '\n' )
+			break;
+
+		j = 0;
+		while( (*pSrc != ' ') && (*pSrc != 0) && *pSrc != '\n' )
+		{
+			arg[i][j] = *pSrc++;
+			j++;
+			if( j > (SHELL_MAX_STR-1) )
+				j = SHELL_MAX_STR-1;
+		}
+		arg[i][j] = 0;
+	}
+	return i;
+}
 
 void shell_usage( void )
 {
@@ -571,22 +614,25 @@ void shell_usage( void )
 	printf("+----------------------------------------------------------------+\n");
 	printf("| help                        : help                             |\n");
 	printf("| event                       : occur event                      |\n");
-	printf("| capture                     : jpeg capture                     |\n");
-	printf("| dbg                         : change debug level( 0 - 5)       |\n");
+	printf("| capture [channel]           : jpeg capture                     |\n");
+	printf("| lcd [channel]               : lcd preview channel              |\n");
+	printf("| hdmi [channel]              : hdmi preview channel             |\n");
+	printf("| dbg [debug_level]           : change debug level( 0 - 5)       |\n");
 	printf("| exit                        : exit application                 |\n");
 	printf("+----------------------------------------------------------------+\n");
 }
 
 void *DvrShellThread( void *arg )
 {
-	static char cmdString[256];
-	static int32_t dbgLevel = 3;
+	static char cmdString[SHELL_MAX_ARG * SHELL_MAX_STR];
+	static char cmd[SHELL_MAX_ARG][SHELL_MAX_STR];
+	int32_t cmdCnt;
 
     fd_set readfds;
     int32_t state;
 	struct timeval tv;
 	
-	CMD_MESSAGE cmd; 
+	CMD_MESSAGE cmdMsg; 
 
 	shell_usage();
 
@@ -613,59 +659,91 @@ void *DvrShellThread( void *arg )
 		{
 			printf(" > ");
 
+			memset( cmdString, 0x00, sizeof( cmdString ) );
 			fgets(cmdString, sizeof(cmdString), stdin);
 			if( strlen(cmdString) != 0 ) cmdString[strlen(cmdString) - 1] = 0x00;
-			
-			if( !strcmp( cmdString, "exit" ) ) {
+
+			cmdCnt = GetArgument( cmdString, cmd );
+
+			if( cmdCnt == 0 )
+				continue;
+
+			if( !strcasecmp( cmd[0], "exit") ) {
 				printf("Exit.\n");
 				if( g_hAudio )	NX_AudioPlay( g_hAudio, "/root/wav/stop.wav" );
 				usleep(2000000);
 				ExitApp();
 				break;
 			}
-			else if( !strcmp( cmdString, "help" ) ) {
+			else if( !strcasecmp( cmd[0], "help" ) ) {
 				shell_usage();
 			}
-			else if( !strcmp( cmdString, "event" ) ) {
+			else if( !strcasecmp( cmd[0], "event") ) {
 				printf("Event.\n");
-				memset( &cmd, 0x00, sizeof(CMD_MESSAGE) );
-				cmd.cmdType = CMD_TYPE_EVENT;
-				DvrCmdQueuePush( g_hCmd, &cmd );
+				memset( &cmdMsg, 0x00, sizeof(CMD_MESSAGE) );
+				cmdMsg.cmdType = CMD_TYPE_EVENT;
+				DvrCmdQueuePush( g_hCmd, &cmdMsg );
 			}
-			else if( !strcmp( cmdString, "capture" ) ) {
-				printf("Capture.\n");
-				memset( &cmd, 0x00, sizeof(CMD_MESSAGE) );
-				cmd.cmdType = CMD_TYPE_CAPTURE;
-				cmd.cmdData = 0;
-				DvrCmdQueuePush( g_hCmd, &cmd );
+			else if( !strcasecmp( cmd[0], "capture") ) {
+				if( !strcasecmp( cmd[1], "0" ) || !strcasecmp( cmd[1], "1" ) ) {
+					int32_t ch = atoi(cmd[1]);
+					printf("Capture. (ch = %d)\n", ch );
+					cmdMsg.cmdType = CMD_TYPE_CAPTURE;
+					cmdMsg.cmdData = ch;
+					DvrCmdQueuePush( g_hCmd, &cmdMsg );
+				}
+				else {
+					printf("unknown argument. ( 0 or 1 )\n");
+				}
 			}
-			else if( !strcmp( cmdString, "dbg" ) ) {
-				dbgLevel++;
-				dbgLevel %= 6;
+			else if( !strcasecmp( cmd[0], "lcd") ) {
+				if( !strcasecmp( cmd[1], "0" ) || !strcasecmp( cmd[1], "1" ) ) {
+					int32_t ch = atoi(cmd[1]);
+					printf("LCD Preview. (ch = %d)\n", ch );
+					cmdMsg.cmdType = CMD_TYPE_CHG_LCD;
+					cmdMsg.cmdData = ch;
+					DvrCmdQueuePush( g_hCmd, &cmdMsg );
+				}
+				else {
+					printf("unknown argument. ( 0 or 1 )\n");
+				}				
+			}
+			else if( !strcasecmp( cmd[0], "hdmi") ) {
+				if( !strcasecmp( cmd[1], "0" ) || !strcasecmp( cmd[1], "1" ) ) {
+					int32_t ch = atoi(cmd[1]);
+					printf("HDMI Preview. (ch = %d)\n", ch );
+					cmdMsg.cmdType = CMD_TYPE_CHG_HDMI;
+					cmdMsg.cmdData = ch;
+					DvrCmdQueuePush( g_hCmd, &cmdMsg );
+				}
+				else {
+					printf("unknown argument. ( 0 or 1 )\n");
+				}				
+			}
+			else if( !strcasecmp( cmd[0], "dbg") ) {
+				if( !strcasecmp( cmd[1], "0" ) || 
+					!strcasecmp( cmd[1], "1" ) ||
+					!strcasecmp( cmd[1], "2" ) ||
+					!strcasecmp( cmd[1], "3" ) ||
+					!strcasecmp( cmd[1], "4" ) ||
+					!strcasecmp( cmd[1], "5" ) ) {
+					int32_t level = atoi(cmd[1]);
 
-				printf("Change Debug Level. ( %s )\n", 
-					dbgLevel == 0 ? "NX_DBG_DISABLE" :
-					dbgLevel == 1 ? "NX_DBG_ERR" :
-					dbgLevel == 2 ? "NX_DBG_WARN" :
-					dbgLevel == 3 ? "NX_DBG_INFO" :
-					dbgLevel == 4 ? "NX_DBG_DEBUG" : "NX_DBG_VBS");
-
-				NX_DvrChgDebugLevel( g_hDvr, dbgLevel );
-			}
-			else if( !strcmp( cmdString, "mode") ) {
-				static int32_t mode = 0;
-				mode = !mode;
-				memset( &cmd, 0x00, sizeof(CMD_MESSAGE) );
-				cmd.cmdType = CMD_TYPE_CHG_MODE;
-				cmd.cmdData = mode;
-				DvrCmdQueuePush( g_hCmd, &cmd );
-			}
-			else if( !strcmp( cmdString, "preview") ) {
-				gstPrviewChannel = !gstPrviewChannel;
-				memset( &cmd, 0x00, sizeof(CMD_MESSAGE) );
-				cmd.cmdType = CMD_TYPE_CHG_PREVIEW;
-				cmd.cmdData = gstPrviewChannel;
-				DvrCmdQueuePush( g_hCmd, &cmd );
+					printf("Change Debug Level. ( %s )\n", 
+						level == 0 ? "NX_DBG_DISABLE" :
+						level == 1 ? "NX_DBG_ERR" :
+						level == 2 ? "NX_DBG_WARN" :
+						level == 3 ? "NX_DBG_INFO" :
+						level == 4 ? "NX_DBG_DEBUG" : "NX_DBG_VBS");
+					
+					NX_DvrChgDebugLevel( g_hDvr, level );
+				}
+				else {
+					printf("unknown argument. (0 - 5)\n");
+				}
+			}			
+			else {
+				printf("unknown command. (%s)\n", cmdString );
 			}
 		}
 	}
@@ -733,7 +811,7 @@ void *DvrSDCheckerThread( void *arg )
 {
 	CMD_MESSAGE	cmd;
 
-	char buf[4096];
+	char buf[4096], sdNodekeyword[64];
 	int32_t len, socketFd = 0;
 	struct sockaddr_nl sockAddr;
 	struct iovec	iov	= { buf, sizeof(buf) };
@@ -760,9 +838,11 @@ void *DvrSDCheckerThread( void *arg )
 	}
 
 	// first node checker
-	if( !access( "/dev/mmcblk0p1", F_OK) )
+	sprintf( sdNodekeyword, "%sp1", MMCBLOCK );
+	sprintf( (char*)gstSdNode, "/dev/%s", sdNodekeyword );
+	if( !access( (char*)gstSdNode, F_OK) )
 	{
-		printf("%s(): Insert SD Card. ( node : /dev/mmcblk0p1)\n", __func__);
+		printf("%s(): Insert SD Card. ( node : %s)\n", __func__, gstSdNode);
 		memset( &cmd, 0x00, sizeof(CMD_MESSAGE) );
 		cmd.cmdType = CMD_TYPE_SD_INSERT;
 		if( g_hCmd )	DvrCmdQueuePush( g_hCmd, &cmd );
@@ -795,9 +875,9 @@ void *DvrSDCheckerThread( void *arg )
 				break;
 			}
 
-			if( strstr(buf, "add@") && strstr(buf, "mmcblk0p1") )
+			if( strstr(buf, "add@") && strstr(buf, sdNodekeyword) )
 			{
-				printf("%s(): Insert SD Card. ( node : /dev/mmcblk0p1)\n", __func__);
+				printf("%s(): Insert SD Card. ( node : %s)\n", __func__, gstSdNode);
 				memset( &cmd, 0x00, sizeof(CMD_MESSAGE) );
 				cmd.cmdType = CMD_TYPE_SD_INSERT;
 				if( g_hCmd )	DvrCmdQueuePush( g_hCmd, &cmd );
@@ -805,7 +885,7 @@ void *DvrSDCheckerThread( void *arg )
 
 			if( strstr(buf, "remove@") && strstr(buf, "mmcblk0p1") )
 			{
-				printf("%s(): Remove SD Card. ( node : /dev/mmcblk0p1)\n", __func__);
+				printf("%s(): Remove SD Card. ( node : %s)\n", __func__, gstSdNode);
 				memset( &cmd, 0x00, sizeof(CMD_MESSAGE) );
 				cmd.cmdType = CMD_TYPE_SD_REMOVE;
 				if( g_hCmd )	DvrCmdQueuePush( g_hCmd, &cmd );
@@ -1091,11 +1171,19 @@ int main( int32_t argc, char *argv[] )
 		mediaConfig.nContainer		= DVR_CONTAINER_MP4;
 	}
 
-#ifndef BOARD_TYPE_LYNX
+
+#ifndef BOARD_TYPE_LINX
+#ifdef CAMERA_TYPE_FHD
+	mediaConfig.videoConfig[0].nPort 		= DVR_CAMERA_MIPI;
+	mediaConfig.videoConfig[0].nSrcWidth	= 1920;
+	mediaConfig.videoConfig[0].nSrcHeight	= 1080;
+	mediaConfig.videoConfig[0].nFps			= 30;
+#else
 	mediaConfig.videoConfig[0].nPort 		= DVR_CAMERA_VIP1;
 	mediaConfig.videoConfig[0].nSrcWidth	= 1280;
 	mediaConfig.videoConfig[0].nSrcHeight	= 720;
 	mediaConfig.videoConfig[0].nFps			= 30;
+#endif
 #else
 	mediaConfig.videoConfig[0].nPort 		= DVR_CAMERA_MIPI;
 	mediaConfig.videoConfig[0].nSrcWidth	= 1024;
@@ -1105,7 +1193,13 @@ int main( int32_t argc, char *argv[] )
 	mediaConfig.videoConfig[0].bExternProc	= false;
 	mediaConfig.videoConfig[0].nDstWidth	= !mediaConfig.videoConfig[0].bExternProc ? mediaConfig.videoConfig[0].nSrcWidth : 1920;
 	mediaConfig.videoConfig[0].nDstHeight	= !mediaConfig.videoConfig[0].bExternProc ? mediaConfig.videoConfig[0].nSrcHeight : 1080;
+
+#ifdef CAMERA_TYPE_FHD
+	mediaConfig.videoConfig[0].nBitrate		= 12000000;
+#else
 	mediaConfig.videoConfig[0].nBitrate		= 7000000;	// 3M( ), 7M(middle), 12M(MAX)
+#endif
+
 	mediaConfig.videoConfig[0].nCodec		= DVR_CODEC_H264;
 	
 #ifndef BOARD_TYPE_LYNX
@@ -1122,7 +1216,7 @@ int main( int32_t argc, char *argv[] )
 	mediaConfig.videoConfig[1].bExternProc	= false;
 	mediaConfig.videoConfig[1].nDstWidth	= !mediaConfig.videoConfig[1].bExternProc ? mediaConfig.videoConfig[1].nSrcWidth : 720;
 	mediaConfig.videoConfig[1].nDstHeight	= !mediaConfig.videoConfig[1].bExternProc ? mediaConfig.videoConfig[1].nSrcHeight : 480;
-	mediaConfig.videoConfig[1].nBitrate		= 7000000;	// 3M( ), 7M(middle), 12M(MAX)
+	mediaConfig.videoConfig[1].nBitrate		= 7000000;
 	mediaConfig.videoConfig[1].nCodec		= DVR_CODEC_H264;
 	
 	mediaConfig.textConfig.nBitrate			= 3000000;
@@ -1173,7 +1267,7 @@ int main( int32_t argc, char *argv[] )
 	displayConfig.nX		= 0;
 	displayConfig.nY		= 0;
 	displayConfig.nWidth	= 1024;
-	displayConfig.nHeight	= 768;
+	displayConfig.nHeight	= 720;
 #endif
 
 #ifndef DISABLE_AUDIO
@@ -1207,8 +1301,13 @@ int main( int32_t argc, char *argv[] )
 		{
 			case CMD_TYPE_SD_INSERT :
 				usleep(100000);
-				printf("%s(): mount mmc.\n", __func__);
-				system("mount -t vfat /dev/mmcblk0p1 /mnt/mmc");
+				
+				if( !mount( (char*)gstSdNode, DIRECTORY_TOP, "vfat", 0, "") ) {
+					printf("%s(): mount mmc. (mount pos: %s)\n", __func__, DIRECTORY_TOP);
+				}
+				else {
+					printf("%s(): mount failed.", __func__);
+				}
 
 #ifdef DEMO
 				if( !access("/mnt/mmc/network.txt", F_OK) ) {
@@ -1250,7 +1349,7 @@ int main( int32_t argc, char *argv[] )
 				memset( dir_event, 0x00, sizeof(dir_event) );
 				memset( dir_capture, 0x00, sizeof(dir_capture) );
 
-				sprintf( (char*)dir_normal, "%s/normal", dir_top);
+				sprintf( (char*)dir_normal,	"%s/normal", dir_top);
 				sprintf( (char*)dir_event, "%s/event", dir_top);
 				sprintf( (char*)dir_capture, "%s/capture", dir_top);
 
@@ -1342,9 +1441,11 @@ int main( int32_t argc, char *argv[] )
 					sync();
 					usleep(100000);
 					if( !umount("/mnt/mmc") ) break;
-					if( pendCnt > 50)
+					if( pendCnt < 10) {
 						printf("Fail, umount..\n");
-					printf("Retry umount..\n");
+						break;
+					}
+					printf("[%d]Retry umount..\n", pendCnt);
 				}
 				break;
 
@@ -1367,8 +1468,12 @@ int main( int32_t argc, char *argv[] )
 				if( g_hDvr )	NX_DvrCapture( g_hDvr, cmd.cmdData );
 				break;
 
-			case CMD_TYPE_CHG_PREVIEW :
+			case CMD_TYPE_CHG_LCD :
 				if( g_hDvr )	NX_DvrSetPreview( g_hDvr, cmd.cmdData );
+				break;
+
+			case CMD_TYPE_CHG_HDMI :
+				if( g_hDvr )	NX_DvrSetPreviewHdmi( g_hDvr, cmd.cmdData );
 				break;
 
 			case CMD_TYPE_CHG_MODE :

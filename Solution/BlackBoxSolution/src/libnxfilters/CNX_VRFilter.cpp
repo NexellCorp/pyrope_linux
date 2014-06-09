@@ -28,6 +28,7 @@ CNX_VRFilter::CNX_VRFilter( void )
 	: m_bInit( false )
 	, m_bRun( false )
 	, m_bEnable( false )
+	, m_bEnableHdmi( false )
 	, m_hDsp( NULL )
 	, m_pPrevVideoSample( NULL )
 {
@@ -54,22 +55,24 @@ void	CNX_VRFilter::Init( NX_VIDRENDER_CONFIG *pConfig )
 
 	if( false == m_bInit )
 	{
-		m_DisplayInfo.port		= pConfig->port;
-		m_DisplayInfo.module	= DISPLAY_MODULE_MLC0;
+		if( pConfig->port == 0) {
+			m_DisplayInfo.port		= pConfig->port;
+			m_DisplayInfo.module	= DISPLAY_MODULE_MLC0;
+		}
+		else {
+			m_DisplayInfo.port		= pConfig->port;
+			m_DisplayInfo.module	= DISPLAY_MODULE_MLC1;
+		}
+		
 		m_DisplayInfo.width		= pConfig->width;
 		m_DisplayInfo.height	= pConfig->height;
 
 		m_DisplayInfo.numPlane	= 1;
 
-		m_DisplayInfo.dspSrcRect.left		= pConfig->left;
-		m_DisplayInfo.dspSrcRect.top		= pConfig->top;
-		m_DisplayInfo.dspSrcRect.right		= pConfig->right;	// pConfig->right - pConfig->left;
-		m_DisplayInfo.dspSrcRect.bottom		= pConfig->bottom;	// pConfig->bottom - pConfig->top;
-
-		m_DisplayInfo.dspDstRect.left		= pConfig->left;
-		m_DisplayInfo.dspDstRect.top		= pConfig->top;
-		m_DisplayInfo.dspDstRect.right		= pConfig->right;	// pConfig->right - pConfig->left;
-		m_DisplayInfo.dspDstRect.bottom		= pConfig->bottom;	// pConfig->bottom - pConfig->top;
+		m_DisplayInfo.dspSrcRect.left		= m_DisplayInfo.dspDstRect.left		= pConfig->left;
+		m_DisplayInfo.dspSrcRect.top		= m_DisplayInfo.dspDstRect.top		= pConfig->top;
+		m_DisplayInfo.dspSrcRect.right		= m_DisplayInfo.dspDstRect.right	= pConfig->right;
+		m_DisplayInfo.dspSrcRect.bottom		= m_DisplayInfo.dspDstRect.bottom	= pConfig->bottom;
 
 		m_bInit = true;
 	}
@@ -105,7 +108,7 @@ int32_t	CNX_VRFilter::Receive( CNX_Sample *pSample )
 
 	pthread_mutex_lock( &m_hEnableLock );
 	pVideoSample->Lock();
-	if( m_bEnable ) {
+	if( m_bEnable || m_bEnableHdmi ) {
 		if( m_hDsp ){
 			NX_DspQueueBuffer( m_hDsp, pVideoSample->GetVideoMemory() );
 			NX_DspDequeueBuffer( m_hDsp );
@@ -175,6 +178,48 @@ int32_t CNX_VRFilter::EnableRender( uint32_t enable )
 		}		
 	}
 	m_bEnable = enable;
+	pthread_mutex_unlock( &m_hEnableLock );
+
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	return true;	
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_VRFilter::EnableHdmiRender( uint32_t enable )
+{
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_INFO, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnableHdmi)?"Enable":"Disable", (enable)?"Enable":"Disable") );
+
+	DISPLAY_INFO dspInfo;
+	memset( &dspInfo, 0x00, sizeof(dspInfo) );
+
+	dspInfo.port 		= 1;
+	dspInfo.module		= DISPLAY_MODULE_MLC1;
+	dspInfo.width		= m_DisplayInfo.width;
+	dspInfo.height		= m_DisplayInfo.height;
+
+	dspInfo.numPlane	= 1;
+
+	dspInfo.dspSrcRect.left		= dspInfo.dspDstRect.left	= 0;
+	dspInfo.dspSrcRect.top		= dspInfo.dspDstRect.top	= 0;
+	dspInfo.dspSrcRect.right	= dspInfo.dspDstRect.right	= 1920;
+	dspInfo.dspSrcRect.bottom	= dspInfo.dspDstRect.bottom	= 1080;
+
+	pthread_mutex_lock( &m_hEnableLock );
+	if( enable ) {
+		if( !m_hDsp ) {
+			m_hDsp = NX_DspInit( &dspInfo );
+	 		NX_DspStreamControl( m_hDsp, true );			
+		}
+	}
+	else {
+		if( m_hDsp ) {
+			NX_DspStreamControl( m_hDsp, false );
+			NX_DspClose( m_hDsp );
+			m_hDsp = NULL;
+		}		
+	}
+	m_bEnableHdmi = enable;
 	pthread_mutex_unlock( &m_hEnableLock );
 
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );

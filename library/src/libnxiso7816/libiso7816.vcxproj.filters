@@ -32,5 +32,8 @@
     <ClInclude Include="..\..\include\nx_gpio.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="iso7816_cfg.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -12,6 +12,7 @@
 #include <pthread.h>
 
 #include <nx_iso7816.h>
+#include "iso7816_cfg.h"
 
 #define	MMAP_ALIGN		4096	// 0x1000
 #define	MMAP_DEVICE		"/dev/mem"

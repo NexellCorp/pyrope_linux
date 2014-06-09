@@ -1676,10 +1676,10 @@ NX_VPU_RET	NX_VpuDecOpen( VPU_OPEN_ARG *openArg, void *drvHandle, NX_VPU_INST_HA
 		pDecInfo->bitstreamMode = BS_MODE_PIC_END;
 		//pDecInfo->bitstreamMode = BS_MODE_ROLLBACK;
 	}
-	//else if( pDecInfo->codecStd == CODEC_STD_H263 || pDecInfo->codecStd == CODEC_STD_MPEG4 )
-	//{
-	//	pDecInfo->bitstreamMode = BS_MODE_ROLLBACK;
-	//}
+	else if( pDecInfo->codecStd == CODEC_STD_H263 || pDecInfo->codecStd == CODEC_STD_MPEG4 )
+	{
+		pDecInfo->bitstreamMode = BS_MODE_PIC_END;
+	}
 	//else if( pDecInfo->codecStd == CODEC_STD_VP8 )
 	//{
 	//	pDecInfo->bitstreamMode = BS_MODE_PIC_END;

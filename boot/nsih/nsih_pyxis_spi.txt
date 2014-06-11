@@ -80,9 +80,9 @@ FFFF021C	// 0x03C : SRAMBASE + Header
 										
 // DDR AC Timing Configuration 										
 00000618	// 0x09C	/Refresh Interval:7.8us								
-5435540C	// 0x0A0	/tRFC:208ns(tCK)	/tRRD:6ns(tCK)	/tRP:11ns(tCK)	/tRCD:11ns(tCK)	/tRC:39ns(tCK)	/tRAS:28ns(tCK)			
-2421880B	// 0x0A4	/tWTR:5ns(tCK)	/tWR:8ns(tCK)	/tRTP:5ns(tCK)						
-306C0334	// 0x0A8	/tFAW:30ns(tCK)	/tXSR:108ns(tCK)	/tXP:5ns(tCK)	/tCKE:5ns(tCK)					
+6846650E	// 0x0A0	/tRFC:260ns(tCK)	/tRRD:7.5ns(tCK)	/tRP:13.75ns(tCK)	/tRCD:13.75ns(tCK)	/tRC:48.75ns(tCK)	/tRAS:35ns(tCK)			
+4441880B	// 0x0A4	/tWTR:2nCK	/tWR:4nCK	/tRTP:2nCK						
+42000A34	// 0x0A8	/tFAW:40ns(tCK)	/tXSR:512ns(tCK)	/tXP:24ns(tCK)	/tCKE:5ns(tCK)					
 										
 //------------------------------------------------------------------------------ 										
 // AXI Master Priority registers 										

@@ -83,6 +83,7 @@
     <ClInclude Include="..\..\include\nx_gpio.h" />
     <ClInclude Include="..\..\include\nx_iso7816.h" />
     <ClInclude Include="..\..\include\nx_pwm.h" />
+    <ClInclude Include="iso7816_cfg.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

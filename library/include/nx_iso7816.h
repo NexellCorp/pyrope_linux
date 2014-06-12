@@ -7,14 +7,6 @@
 #include <nx_pwm.h>
 
 //
-//	Nexell VTK Board
-//
-//#define	USE_EXTERNAL_CLK
-#define	RST_GPIO_PORT		GPIOC4
-#define	CLK_PWM_PORT		PWM_1
-#define	DATA_UART_PORT		4		//	0,1,2,3,4,5
-
-//
 //	Supported Data Frequency :
 //		9600, 19200, 38400, 57600,
 //		115200 ,230400 ,460800 ,500000 ,

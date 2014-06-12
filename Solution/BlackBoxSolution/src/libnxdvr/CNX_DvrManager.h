@@ -111,7 +111,8 @@ public:
 	int32_t SetEvent( void );
 	int32_t SetCapture( int32_t channel );
 	int32_t SetPreview( int32_t channel );
-	
+	int32_t SetPreviewHdmi( int32_t channel );
+
 	int32_t ChangeMode( NX_DVR_ENCODE_TYPE mode );
 	// Control Function ( Not Implemetation )
 	//int32_t SetDisplay( int32_t channel );

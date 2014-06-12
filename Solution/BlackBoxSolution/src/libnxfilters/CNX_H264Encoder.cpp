@@ -94,7 +94,8 @@ void CNX_H264Encoder::Init( NX_VIDENC_CONFIG *pConfig )
 		m_EncInfo.enableRC		= 1;
 		m_EncInfo.enableSkip	= 0;
 		m_EncInfo.maxQScale		= 51;
-		m_EncInfo.userQScale	= 21;
+		//m_EncInfo.userQScale	= 21;
+		m_EncInfo.userQScale	= 10;
 		m_EncInfo.chromaInterleave = 0;
 
 		m_EncInfo.enableAUDelimiter = false;
@@ -431,12 +432,12 @@ int32_t CNX_H264Encoder::EncodeVideo( CNX_VideoSample *pInSample, CNX_MuxerSampl
 				free(seqBuffer);
 				seqBuffer = NULL;
 				
-				printf("SPS PPS ( ");
-				for(int32_t i = 0; i < audSize + seqSize; i++)
-				{
-					printf("0x%02x ", encBuffer[i] );
-				}
-				printf(")\n");
+				// printf("SPS PPS ( ");
+				// for(int32_t i = 0; i < audSize + seqSize; i++)
+				// {
+				// 	printf("0x%02x ", encBuffer[i] );
+				// }
+				// printf(")\n");
 
 			}
 			memcpy( encBuffer + seqSize + audSize, encOut.outBuf, encOut.bufSize );

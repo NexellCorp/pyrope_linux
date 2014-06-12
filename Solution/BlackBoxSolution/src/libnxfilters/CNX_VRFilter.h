@@ -53,7 +53,7 @@ public:
 	//	External Interfaces
 	//------------------------------------------------------------------------
 			int32_t	EnableRender( uint32_t enable );
-
+			int32_t EnableHdmiRender( uint32_t enable );
 protected:
 	//------------------------------------------------------------------------
 	//	Filter status
@@ -61,6 +61,7 @@ protected:
 	int32_t				m_bInit;
 	int32_t				m_bRun;
 	int32_t				m_bEnable;
+	int32_t				m_bEnableHdmi;
 	pthread_mutex_t		m_hEnableLock;
 	//------------------------------------------------------------------------
 	//	Display

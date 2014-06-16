@@ -19,7 +19,7 @@ KERNEL_DIR=$TOP/kernel/kernel-3.4.39
 MODULES_DIR=$TOP/pyrope/modules
 APPLICATION_DIR=$TOP/pyrope/apps
 LIBRARY_DIR=$TOP/pyrope/library
-BLACKBOX_SOLUTION_DIR=$TOP/pyrope/solution/BlackBoxSolution
+BLACKBOX_SOLUTION_DIR=$TOP/pyrope/Solution/BlackBoxSolution
 
 FILESYSTEM_DIR=$TOP/pyrope/fs
 TOOLS_DIR=$TOP/pyrope/tools

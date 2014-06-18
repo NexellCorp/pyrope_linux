@@ -525,9 +525,9 @@ function build_application()
 			make distclean -C ../apps/nxguisol
 			make distclean -C ../apps/nxdvrmonitor
 
-			#./clean-hls.sh
-			#./clean-mp4.sh
-			#./clean-rtp.sh
+			./clean-hls.sh
+			./clean-mp4.sh
+			./clean-rtp.sh
 		fi
 		##./build-blackbox.sh
 		make -j8 -C ../src/libnxfilters || exit $?
@@ -550,9 +550,9 @@ function build_application()
 		make install -C ../apps/nxdvrmonitor
 		check_result
 
-		#./build-hls.sh
-		#./build-mp4.sh
-		#./build-rtp.sh
+		./build-hls.sh
+		./build-mp4.sh
+		./build-rtp.sh
 	fi
 
 	popd > /dev/null

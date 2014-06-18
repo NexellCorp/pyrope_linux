@@ -4,8 +4,12 @@
 //              Simple Library Package Architecture & Build Order
 //
 
+
 //------------------------------------------------------------------------------
  -. Revision History
+   2014.06.16
+     Support HDMI output.
+   
    2014.05.23
      Add GUI Solution.  
 
@@ -39,26 +43,39 @@
 //------------------------------------------------------------------------------
 -. Directory Architecture
 
- --+-- apps    --+-- nxdvrsol     : Simple Blackbox Encoding Application
+ --+-- apps    --+-- nxdvrmonitor : simple network monitor program ( Support SoftAP & Station Mode)
    |			 |
-   |             +-- nxmp4encsol  : Simple Mp4 Encoding Application
+   |             +-- nxdvrsol     : simple blackbox encoding application
    |             |
-   |             +-- nxguisol     : Simple GUI Based Blackbox / Player Application
-   +-- bin
+   |             +-- nxguisol     : simple GUI based blackbox / player application
+   |             |
+   |             +-- nxhlssol     : simple HLS test application
+   |             |
+   |             +-- nxmp4encsol  : simple MP4 encoding test application
+   |             |
+   |             +-- nxrtpsol     : simple RTP test application ( Not yet )
    |
-   +-- include
+   +-- bin                        : build result & resource files
    |
-   +-- lib
+   +-- build                      : library & application build script
    |
-   +-- src     --+-- libnxdvrsol  : Blackbox Encoding Manager API
+   +-- include                    : include files
+   |
+   +-- lib                        : private static library, library build result
+   |
+   +-- src     --+-- libnxdvr     : blackbox encoding manager library
                  |
-                 +-- libnxfilters : Base Filter Components
+                 +-- libnxfilters : base filter components
                  |
-                 +-- libnxmp4manager : Simple MP4 File Encoding Manager API
+                 +-- libnxhls     : HLS manager library
+                 |
+                 +-- libnxmp4manager : simple MP4 encoding manager library
+                 |
+                 +-- libnxrtp     : simple HLS manager library
 
 
 //------------------------------------------------------------------------------
--. Build Sequence
+-. Build Sequence ( example: blackbox encoding application )
 
  Step 1. Modify build.env file for each system.
      ...
@@ -75,11 +92,7 @@
       [ARCHDIR]/library/src/libnxvpu
       [ARCHDIR]/library/src/libnxgraphictools
       [ARCHDIR]/library/src/libnxnmeaparser
-
-   -. Dependent library for "Simple MP4 Encoding application"
-      [ARCHDIR]/library/src/libion
-      [ARCHDIR]/library/src/libnxv4l2
-      [ARCHDIR]/library/src/libnxvpu
+      [ARCHDIR]/library/src/libnxmalloc
 
       $ cd [ARCHDIR]/library/src/[Each library directory]
       $ make
@@ -90,15 +103,16 @@
       $ make ARCH=arm
 
  Step 4. Run build script.
-      $ cd [SOLUTION]
-      $ ./build-blackbox.sh or ./build-mp4.sh
+      $ cd [SOLUTION]/build
+      $ ./build-blackbox.sh
 
 
 //------------------------------------------------------------------------------
--. Run Sequence
+-. Run Sequence ( example: blackbox encoding application )
 
- Step 1. Prepare root file system ( extract "rootfs-tiny.tar.gz" or etc.. )
- 
+ Step 1. Prepare root file system ( [ARCHDIR]/fs/buildroot/ )
+	 buildroot configuration : br.2013.11.cortex_a9_glibc_gst_sdl_dfb_wifi.config
+	  
  Step 2. Copy system depedent shared objects.
      ex)
       $ cp -a [ARCHDIR]/library/lib/*.so [ROOTDIR]/usr/lib
@@ -123,5 +137,5 @@
 
  Step 8. Run Blackbox Solution applications ( at Target board)
      ex)
-      $ /root/nxdvrsol or /root/nxmp4encsol
+      $ /root/nxdvrsol
 

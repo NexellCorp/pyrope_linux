@@ -154,7 +154,7 @@ int32_t main( int32_t argc, char *argv[] )
 	// Run nxdvrsol Application
 	if( 0 != NX_AppIsRunning( "nxdvrsol" ) )
 	{
-		system( "/root/nxdvrsol -b &" );
+		system( "/root/nxdvrsol -b -n &" );
 	}
 
 

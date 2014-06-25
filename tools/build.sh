@@ -19,7 +19,7 @@ KERNEL_DIR=$TOP/kernel/kernel-3.4.39
 MODULES_DIR=$TOP/pyrope/modules
 APPLICATION_DIR=$TOP/pyrope/apps
 LIBRARY_DIR=$TOP/pyrope/library
-BLACKBOX_SOLUTION_DIR=$TOP/pyrope/solution/BlackBoxSolution
+BLACKBOX_SOLUTION_DIR=$TOP/pyrope/Solution/BlackBoxSolution
 
 FILESYSTEM_DIR=$TOP/pyrope/fs
 TOOLS_DIR=$TOP/pyrope/tools
@@ -515,15 +515,44 @@ function build_application()
 		echo '#########################################################'
 		echo '# BlackBox Solution '
 		echo '#########################################################'
-		cd $BLACKBOX_SOLUTION_DIR
+		cd $BLACKBOX_SOLUTION_DIR/build
 		chmod 755 ./*.sh
 		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			##./clean-blackbox.sh
+			make distclean -C ../src/libnxfilters
+			make distclean -C ../src/libnxdvr
+			make distclean -C ../apps/nxdvrsol
+			make distclean -C ../apps/nxguisol
+			make distclean -C ../apps/nxdvrmonitor
+
+			./clean-hls.sh
 			./clean-mp4.sh
-			./clean-blackbox.sh
+			./clean-rtp.sh
 		fi
-		./build-mp4.sh
-		./build-blackbox.sh
+		##./build-blackbox.sh
+		make -j8 -C ../src/libnxfilters || exit $?
+		make install -C ../src/libnxfilters
 		check_result
+
+		make -j8 -C ../src/libnxdvr || exit $?
+		make install -C ../src/libnxdvr
+		check_result
+
+		make -j8 -C ../apps/nxdvrsol || exit $?
+		make install -C ../apps/nxdvrsol
+		check_result
+
+		make -j8 -C ../apps/nxguisol || exit $?
+		make install -C ../apps/nxguisol
+		check_result
+
+		make -j8 -C ../apps/nxdvrmonitor || exit $?
+		make install -C ../apps/nxdvrmonitor
+		check_result
+
+		./build-hls.sh
+		./build-mp4.sh
+		./build-rtp.sh
 	fi
 
 	popd > /dev/null
@@ -636,7 +665,7 @@ function build_filesystem()
 			echo '//////////////////////////'
 			echo '// copy BlackBox Solution '
 			cp -v $BLACKBOX_SOLUTION_DIR/lib/*.so $FILESYSTEM_DIR/buildroot/out/rootfs/usr/lib/
-			cp -v $BLACKBOX_SOLUTION_DIR/bin/* $FILESYSTEM_DIR/buildroot/out/rootfs/usr/bin/
+			cp -rfv $BLACKBOX_SOLUTION_DIR/bin/* $FILESYSTEM_DIR/buildroot/out/rootfs/root/
 		fi
 
 		pushd . > /dev/null
@@ -648,6 +677,7 @@ function build_filesystem()
 			sudo rm -rf mnt
 		fi
 
+		chmod 755 ./*.sh
 		./mk_ramfs.sh -r rootfs -s ${RAMDISK_SIZE}
 
 		popd > /dev/null

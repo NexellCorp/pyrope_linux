@@ -120,7 +120,7 @@ static int32_t gstApiMajor = 0, gstApiMinor = 0, gstApiRevision = 0;
 static int32_t gstContainer = CONTAINER_TYPE_TS;
 static int32_t gstTestEvent	= false;
 
-static int32_t gstPrviewChannel = 0;
+static int32_t gstPreviewChannel = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -1179,23 +1179,23 @@ int main( int32_t argc, char *argv[] )
 	mediaConfig.videoConfig[0].nSrcHeight	= 1080;
 	mediaConfig.videoConfig[0].nFps			= 30;
 #else
-	mediaConfig.videoConfig[0].nPort 		= DVR_CAMERA_VIP1;
-	mediaConfig.videoConfig[0].nSrcWidth	= 1280;
-	mediaConfig.videoConfig[0].nSrcHeight	= 720;
-	mediaConfig.videoConfig[0].nFps			= 30;
-#endif
-#else
 	mediaConfig.videoConfig[0].nPort 		= DVR_CAMERA_MIPI;
 	mediaConfig.videoConfig[0].nSrcWidth	= 1024;
 	mediaConfig.videoConfig[0].nSrcHeight	= 768;
 	mediaConfig.videoConfig[0].nFps			= 15;
+#endif
+#else
+	mediaConfig.videoConfig[0].nPort 		= DVR_CAMERA_VIP1;
+	mediaConfig.videoConfig[0].nSrcWidth	= 1280;
+	mediaConfig.videoConfig[0].nSrcHeight	= 720;
+	mediaConfig.videoConfig[0].nFps			= 30;
 #endif
 	mediaConfig.videoConfig[0].bExternProc	= false;
 	mediaConfig.videoConfig[0].nDstWidth	= !mediaConfig.videoConfig[0].bExternProc ? mediaConfig.videoConfig[0].nSrcWidth : 1920;
 	mediaConfig.videoConfig[0].nDstHeight	= !mediaConfig.videoConfig[0].bExternProc ? mediaConfig.videoConfig[0].nSrcHeight : 1080;
 
 #ifdef CAMERA_TYPE_FHD
-	mediaConfig.videoConfig[0].nBitrate		= 12000000;
+	mediaConfig.videoConfig[0].nBitrate		= 10000000;
 #else
 	mediaConfig.videoConfig[0].nBitrate		= 7000000;	// 3M( ), 7M(middle), 12M(MAX)
 #endif
@@ -1262,7 +1262,7 @@ int main( int32_t argc, char *argv[] )
 	displayConfig.nHeight	= 720;
 #else
 	displayConfig.bEnable	= true;
-	displayConfig.nChannel	= gstPrviewChannel;
+	displayConfig.nChannel	= gstPreviewChannel;
 	displayConfig.nModule	= 0;
 	displayConfig.nX		= 0;
 	displayConfig.nY		= 0;

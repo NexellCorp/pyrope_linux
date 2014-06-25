@@ -32,7 +32,8 @@
 #define	NEW_SCHED_PRIORITY	25
 #define MAX_VID_QCOUNT		64
 
-#define	DUMP_H264			1
+#define AUD_TEST			0
+#define	DUMP_H264			0
 
 #if( DUMP_H264 )
 #define		H264_DUMP_FILENAME	"/mnt/mmc/dump_video01.h264"
@@ -400,35 +401,53 @@ int32_t CNX_H264Encoder::EncodeVideo( CNX_VideoSample *pInSample, CNX_MuxerSampl
 		{
 			unsigned char *encBuffer = NULL;
 			unsigned char *seqBuffer = NULL;
+#if( AUD_TEST )
 			unsigned char *audBuffer = NULL;
 			unsigned char audTemp[6] = { 0x00, 0x00, 0x00, 0x01, 0x09, 0x10 };
+#endif
 
+#if( AUD_TEST )
 			int32_t encSize = 0, seqSize = 0, audSize = 0;
+#else			
+			int32_t encSize = 0, seqSize = 0;
+#endif			
 
 #if 1		// move to "MP4 Muxer" / "TS Muxer"
 
+#if( AUD_TEST )
 			if( m_EncInfo.enableAUDelimiter ) {
 				audSize = sizeof(audTemp);
 				audBuffer = (unsigned char *)malloc( audSize );
 				memcpy( audBuffer, audTemp, audSize );
 			}
+#endif
 
 			if(encOut.isKey) {
 				seqBuffer = (unsigned char *)malloc( MAX_SEQ_BUF_SIZE );
 				NX_VidEncGetSeqInfo( m_hEnc, seqBuffer, &seqSize );
 			}
 #endif			
+
+#if( AUD_TEST )
 			encSize = encOut.bufSize + seqSize + audSize;
+#else			
+			encSize = encOut.bufSize + seqSize;
+#endif			
 			encBuffer = (unsigned char*) malloc( encSize );
 			
+#if( AUD_TEST )
 			if( NULL != audBuffer ) {
 				memcpy( encBuffer, audBuffer, audSize );
 				free(audBuffer);
 				audBuffer = NULL;
 			}
-
+#endif
 			if( NULL != seqBuffer ) {
+#if( AUD_TEST )
 				memcpy( encBuffer + audSize, seqBuffer, seqSize );
+#else				
+				memcpy( encBuffer, seqBuffer, seqSize );
+#endif				
 				free(seqBuffer);
 				seqBuffer = NULL;
 				
@@ -440,7 +459,11 @@ int32_t CNX_H264Encoder::EncodeVideo( CNX_VideoSample *pInSample, CNX_MuxerSampl
 				// printf(")\n");
 
 			}
+#if( AUD_TEST )			
 			memcpy( encBuffer + seqSize + audSize, encOut.outBuf, encOut.bufSize );
+#else			
+			memcpy( encBuffer + seqSize, encOut.outBuf, encOut.bufSize );
+#endif			
 
 			pOutSample->SetOwner( this );
 			pOutSample->SetBuffer( encBuffer, encSize );

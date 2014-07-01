@@ -48,7 +48,6 @@ static void Move2MenuTop( void )
 
 static void BlackBoxCapture( void )
 {
-	printf("Capture!\n");
 	DvrCapture();
 }
 

@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <nx_dsp.h>
 #include <INX_Mp4Manager.h>
 
 static INX_Mp4Manager *pMp4Manager = NULL;
@@ -216,6 +217,8 @@ int main(void)
 	printf("##################################################################################\n");
 
 	register_signal();
+
+	NX_DspVideoSetPriority( DISPLAY_MODULE_MLC0, 0 );
 
 	pMp4Manager->Init();
 	pMp4Manager->RegisterNotifyCallback( cbNotifier );

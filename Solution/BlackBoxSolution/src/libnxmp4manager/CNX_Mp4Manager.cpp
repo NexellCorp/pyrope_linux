@@ -37,7 +37,8 @@
 
 //------------------------------------------------------------------------------
 static Mp4ManagerConfig defConfig = {
-	2, 1024, 768, 30, 
+	0, 1024, 768, 30, 6000000,
+	false,
 	0, 0, 1024, 768
 };
 
@@ -74,8 +75,10 @@ int32_t CNX_Mp4Manager::BuildFilter( void )
 	m_pVrFilter			= new CNX_VRFilter();
 	m_pAvcEncFilter 	= new CNX_H264Encoder();
 
-	// m_pAudCapFilter		= new CNX_AudCaptureFilter();
-	// m_pAacEncFilter		= new CNX_AacEncoder();
+	if( m_Mp4MuxerConfig.audioTrack ) {
+		m_pAudCapFilter		= new CNX_AudCaptureFilter();
+		m_pAacEncFilter		= new CNX_AacEncoder();
+	}
 
 	m_pMp4MuxerFilter	= new CNX_Mp4MuxerFilter();
 
@@ -146,7 +149,7 @@ int32_t CNX_Mp4Manager::SetConfig( Mp4ManagerConfig *pConfig )
 	m_VidEncConfig.width		= pConfig->width;
 	m_VidEncConfig.height		= pConfig->height;
 	m_VidEncConfig.fps			= pConfig->fps;
-	m_VidEncConfig.bitrate		= 1000000;
+	m_VidEncConfig.bitrate		= pConfig->bitrate;
 	m_VidEncConfig.codec		= MP4_CODEC_TYPE_H264;
 
 	m_AudCapConfig.channels		= 2;
@@ -159,13 +162,13 @@ int32_t CNX_Mp4Manager::SetConfig( Mp4ManagerConfig *pConfig )
 	m_AudEncConfig.codec		= MP4_CODEC_TYPE_AAC;
 
 	m_Mp4MuxerConfig.videoTrack	= 1;
-	m_Mp4MuxerConfig.audioTrack	= 0;
+	m_Mp4MuxerConfig.audioTrack	= pConfig->bAudEnable;
 	m_Mp4MuxerConfig.textTrack	= 0;
 	
 	m_Mp4MuxerConfig.trackConfig[0].width		= pConfig->width;
 	m_Mp4MuxerConfig.trackConfig[0].height		= pConfig->height;
 	m_Mp4MuxerConfig.trackConfig[0].frameRate	= pConfig->fps;
-	m_Mp4MuxerConfig.trackConfig[0].bitrate		= 1000000;
+	m_Mp4MuxerConfig.trackConfig[0].bitrate		= pConfig->bitrate;
 	m_Mp4MuxerConfig.trackConfig[0].codecType	= MP4_CODEC_TYPE_H264;
 
 	m_Mp4MuxerConfig.trackConfig[1].channel		= 2;
@@ -261,7 +264,7 @@ int32_t CNX_Mp4Manager::Stop( void )
 		SAFE_STOP_FILTER( m_pMp4MuxerFilter );
 		SAFE_STOP_FILTER( m_pNotifier );
 
-		// if( m_pVrFilter )		m_pVrFilter->EnableRender( false );
+		if( m_pVrFilter )		m_pVrFilter->EnableRender( false );
 		if( m_pMp4MuxerFilter )	m_pMp4MuxerFilter->EnableMp4Muxing( false );
 
 		m_bRun = false;

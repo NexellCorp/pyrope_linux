@@ -32,8 +32,8 @@
 
 #ifdef __cplusplus
 
-#define MAX_JPEG_HEADER_SIZE		(4 * 1024)
-#define MAX_JPEG_BUFFER				4
+#define MAX_JPG_HEADER_SIZE		(4 * 1024)
+#define MAX_JPG_BUFFER			4
 
 typedef NX_VID_ENC_INIT_PARAM		ENC_INFO;
 
@@ -46,7 +46,7 @@ public:
 		, m_JpegQuality( 100 )
 		, m_pNotify( NULL )
 	{
-		m_pSemIn	= new CNX_Semaphore(MAX_JPEG_BUFFER, 0);
+		m_pSemIn	= new CNX_Semaphore(MAX_JPG_BUFFER, 0);
 
 		m_bThreadExit 	= false;
 		pthread_create( &this->m_hThread, NULL, this->ThreadMain, this );
@@ -126,7 +126,7 @@ protected:
 		ENC_INFO			jpegEncInfo;
 		NX_VID_ENC_OUT		jpegEncOut;
 		int32_t 			jpegHeaderSize = 0;
-		uint8_t				jpegHeader[MAX_JPEG_HEADER_SIZE];
+		uint8_t				jpegHeader[MAX_JPG_HEADER_SIZE];
 
 		memset( &jpegEncInfo, 0x00, sizeof(jpegEncInfo) );
 		jpegEncInfo.width			= pVideoMemory->imgWidth;

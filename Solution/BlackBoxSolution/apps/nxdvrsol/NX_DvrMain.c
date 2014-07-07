@@ -49,6 +49,7 @@
 #include <nx_graphictools.h>
 #include <nx_audio.h>
 #include <nx_gpio.h>
+#include <nx_dsp.h>
 
 // #define VEHICLE_TEST
 // #define DEMO
@@ -1111,6 +1112,8 @@ int main( int32_t argc, char *argv[] )
 
 	CMD_MESSAGE cmd; 
 
+	NX_DspVideoSetPriority( DISPLAY_MODULE_MLC0, 0 );
+
 	// Core Dump Debug
 	//echo "1" > /proc/sys/kernel/core_uses_pid;echo "/mnt/mmc/core.%e" > /proc/sys/kernel/core_pattern;ulimit -c 99999999
 	system("echo \"1\" > /proc/sys/kernel/core_uses_pid");
@@ -1172,7 +1175,12 @@ int main( int32_t argc, char *argv[] )
 	}
 
 
-#ifndef BOARD_TYPE_LINX
+#ifndef BOARD_TYPE_LYNX
+	mediaConfig.videoConfig[0].nPort 		= DVR_CAMERA_VIP1;
+	mediaConfig.videoConfig[0].nSrcWidth	= 1280;
+	mediaConfig.videoConfig[0].nSrcHeight	= 720;
+	mediaConfig.videoConfig[0].nFps			= 30;
+#else
 #ifdef CAMERA_TYPE_FHD
 	mediaConfig.videoConfig[0].nPort 		= DVR_CAMERA_MIPI;
 	mediaConfig.videoConfig[0].nSrcWidth	= 1920;
@@ -1183,12 +1191,7 @@ int main( int32_t argc, char *argv[] )
 	mediaConfig.videoConfig[0].nSrcWidth	= 1024;
 	mediaConfig.videoConfig[0].nSrcHeight	= 768;
 	mediaConfig.videoConfig[0].nFps			= 15;
-#endif
-#else
-	mediaConfig.videoConfig[0].nPort 		= DVR_CAMERA_VIP1;
-	mediaConfig.videoConfig[0].nSrcWidth	= 1280;
-	mediaConfig.videoConfig[0].nSrcHeight	= 720;
-	mediaConfig.videoConfig[0].nFps			= 30;
+#endif	
 #endif
 	mediaConfig.videoConfig[0].bExternProc	= false;
 	mediaConfig.videoConfig[0].nDstWidth	= !mediaConfig.videoConfig[0].bExternProc ? mediaConfig.videoConfig[0].nSrcWidth : 1920;

@@ -25,6 +25,9 @@ typedef struct tagMp4ManagerConfig {
 	int32_t 		width;
 	int32_t			height;
 	int32_t			fps;
+	int32_t			bitrate;
+
+	int32_t			bAudEnable;
 
 	int32_t			dspLeft;
 	int32_t			dspTop;

@@ -81,7 +81,8 @@ public:
 	int			m_nPlayIndex;
 	bool		GetFileList(CString strDrive);
 	bool		OpenFile( CString strFileName );
-	
+	bool		m_bPlay;
+
 	void		UpdateProgress( void );
 	void		UpdateDuration( unsigned long current, unsigned long duration );
 

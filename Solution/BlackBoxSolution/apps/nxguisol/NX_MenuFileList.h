@@ -25,5 +25,8 @@
 CNX_BaseObject	*GetMenuFileListHandle( SDL_Surface *pSurface, TTF_Font *pFont );
 void 			ReleaseMenuFileListHandle( CNX_BaseObject *pBaseWindow );
 
+void 			FileListNormal(void);
+void			FileListEvent(void);
+
 #endif	// __NX_MENUFILELIST_H__
 

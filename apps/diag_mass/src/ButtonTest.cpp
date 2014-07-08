@@ -11,7 +11,6 @@
 #include <utils.h>
 
 #define	EVENT_DEV_NAME	"/dev/input/event0"
-#define KEY_CAPTURE		234
 
 
 CButtonTest::CButtonTest()

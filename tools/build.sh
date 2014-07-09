@@ -29,7 +29,7 @@ RESULT_DIR=$TOP/pyrope/result
 BOOT_PARTITION_SIZE=67108864
 
 # Kbyte default:11,264, 16384, 24576, 32768, 49152, 
-if [ ${CMD_V_UBOOT_CLEAN} = "blackbox" ]; then
+if [ ${BUILD_NAME} == "blackbox" ]; then
 	RAMDISK_SIZE=11264
 else
 	RAMDISK_SIZE=53248

@@ -16,6 +16,10 @@ extern "C"{
 #define	NX_DTAG			""
 #endif
 
+#ifdef ANDROID
+#define	LOG_TAG		NX_DTAG
+#endif
+
 #if defined(__linux) || defined(linux) || defined(ANDROID) || defined(__LINUX__)
 	#if defined(__KERNEL__)
 		#include <linux/kernel.h>
@@ -42,8 +46,17 @@ extern "C"{
 	#else
 		#define	NX_DbgMsg( COND, MSG )	do{ if(COND){ nx_print_msg(NX_DTAG); nx_print_msg MSG; } }while(0)
 	#endif
+#if 0
+	#define	FUNC_IN()				do{ nx_print_msg("%s() In\n",  __func__); }while(0)
+	#define	FUNC_OUT()				do{ nx_print_msg("%s() Out\n", __func__); }while(0)
+#else
+	#define	FUNC_IN()				do{}while(0)
+	#define	FUNC_OUT()				do{}while(0)
+#endif
 #else
 	#define	NX_DbgMsg( COND, MSG )	do{}while(0)
+	#define	FUNC_IN()				
+	#define	FUNC_OUT()				
 #endif
 
 #ifdef ANDROID

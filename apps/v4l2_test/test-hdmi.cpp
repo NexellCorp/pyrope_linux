@@ -22,10 +22,8 @@
 
 #include <nxp-v4l2.h>
 
-//#define DEFAULT_WIDTH  640
-//#define DEFAULT_HEIGHT 480
-#define DEFAULT_WIDTH  800
-#define DEFAULT_HEIGHT 600
+#define DEFAULT_WIDTH  1920
+#define DEFAULT_HEIGHT 1080
 
 #define MAX_BUFFER_COUNT 4
 
@@ -160,8 +158,10 @@ static void draw_color_bar(uint32_t *buf, int width, int height, uint32_t color1
 #define COLOR_OTHER5    0xffff77ff
 #define COLOR_OTHER6    0xff11ff22
 
-// # ./test 1280 720
 // # ./test 1920 1080
+// # ./test 1280 720
+// # ./test 720 576
+// # ./test 720 480
 int main(int argc, char *argv[])
 {
     int ion_fd = ion_open();
@@ -196,10 +196,28 @@ int main(int argc, char *argv[])
 
     CHECK_COMMAND(v4l2_init(&s));
     CHECK_COMMAND(v4l2_link(nxp_v4l2_mlc1, nxp_v4l2_hdmi));
-    if (width == 1280)
-        CHECK_COMMAND(v4l2_set_preset(nxp_v4l2_hdmi, V4L2_DV_720P60));
-    else
-        CHECK_COMMAND(v4l2_set_preset(nxp_v4l2_hdmi, V4L2_DV_1080P60));
+
+    uint32_t preset;
+    switch (height) {
+    case 1080:
+        preset = V4L2_DV_1080P60;
+        break;
+    case 720:
+        preset = V4L2_DV_720P60;
+        break;
+    case 576:
+        preset = V4L2_DV_576P50;
+        break;
+    case 480:
+        preset = V4L2_DV_480P60;
+        break;
+    default:
+        printf("not supported format: %dx%d\n", width, height);
+        printf("HDMI Supported Format: 1920x1080, 1280x720, 720x576, 720x480\n");
+        return -1;
+    }
+    CHECK_COMMAND(v4l2_set_preset(nxp_v4l2_hdmi, preset));
+
     // CHECK_COMMAND(v4l2_set_format(nxp_v4l2_clipper0, width, height, format));
     // CHECK_COMMAND(v4l2_set_crop(nxp_v4l2_clipper0, 0, 0, width, height));
     // CHECK_COMMAND(v4l2_set_format(nxp_v4l2_sensor0, width, height, V4L2_MBUS_FMT_YUYV8_2X8));
@@ -208,10 +226,7 @@ int main(int argc, char *argv[])
     // CHECK_COMMAND(v4l2_set_format(nxp_v4l2_mlc0_rgb, width, height, V4L2_PIX_FMT_RGB565));
     // CHECK_COMMAND(v4l2_set_crop(nxp_v4l2_mlc0_rgb, 0, 0, width, height));
     CHECK_COMMAND(v4l2_set_format(nxp_v4l2_mlc1_rgb, width, height, V4L2_PIX_FMT_RGB32));
-    if (height == 800)
-        CHECK_COMMAND(v4l2_set_crop(nxp_v4l2_mlc1_rgb, 0, 0, 1280, 720));
-    else
-        CHECK_COMMAND(v4l2_set_crop(nxp_v4l2_mlc1_rgb, 0, 0, width, height));
+    CHECK_COMMAND(v4l2_set_crop(nxp_v4l2_mlc1_rgb, 0, 0, width, height));
 
     // if (width > 1280 || height > 800)
     //     CHECK_COMMAND(v4l2_set_crop(nxp_v4l2_mlc0_video, 0, 0, 1280, 800));

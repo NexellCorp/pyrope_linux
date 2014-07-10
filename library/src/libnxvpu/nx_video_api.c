@@ -102,6 +102,8 @@ NX_VID_ENC_HANDLE NX_VidEncOpen( int codecType )
 	memset( hEnc, 0, sizeof(struct NX_VIDEO_ENC_INFO) );
 	memset( &openArg, 0, sizeof(openArg) );
 
+	FUNC_IN();
+
 	//	Open Device Driver
 	hEnc->hEncDrv = open(DEV_NAME, O_RDWR);
 	if( hEnc->hEncDrv < 0 )
@@ -146,6 +148,8 @@ NX_VID_ENC_HANDLE NX_VidEncOpen( int codecType )
 	hEnc->instIndex = openArg.instIndex;
 	hEnc->codecMode = codecType;
 	hEnc->refChromaInterleave = RECON_CHROMA_INTERLEAVED;
+
+	FUNC_OUT();
 	return hEnc;
 
 ERROR_EXIT:
@@ -163,6 +167,7 @@ ERROR_EXIT:
 NX_VID_RET NX_VidEncClose( NX_VID_ENC_HANDLE hEnc )
 {
 	int ret;
+	FUNC_IN();
 	if( !hEnc )
 	{
 		NX_ErrMsg( ("Invalid encoder handle or driver handle!!!\n") );
@@ -188,6 +193,7 @@ NX_VID_RET NX_VidEncClose( NX_VID_ENC_HANDLE hEnc )
 
 	free( hEnc );
 
+	FUNC_OUT();
 	return 0;
 }
 
@@ -199,6 +205,9 @@ NX_VID_RET NX_VidEncInit( NX_VID_ENC_HANDLE hEnc, NX_VID_ENC_INIT_PARAM *pParam 
 	VPU_ENC_SEQ_ARG seqArg;
 	VPU_ENC_SET_FRAME_ARG frameArg;
 	VPU_ENC_GET_HEADER_ARG *pHdrArg = &hEnc->seqInfo;
+
+	FUNC_IN();
+
 	if( !hEnc )
 	{
 		NX_ErrMsg( ("Invalid encoder handle or driver handle!!!\n") );
@@ -313,6 +322,7 @@ NX_VID_RET NX_VidEncInit( NX_VID_ENC_HANDLE hEnc, NX_VID_ENC_INIT_PARAM *pParam 
 
 	hEnc->isInitialized = 1;
 
+	FUNC_OUT();
 ERROR_EXIT:
 	return ret;
 }
@@ -320,6 +330,7 @@ ERROR_EXIT:
 
 NX_VID_RET NX_VidEncGetSeqInfo( NX_VID_ENC_HANDLE hEnc, unsigned char* seqBuf, int *seqBufSize )
 {
+	FUNC_IN();
 	if( !hEnc )
 	{
 		NX_ErrMsg( ("Invalid encoder handle or driver handle!!!\n") );
@@ -347,6 +358,7 @@ NX_VID_RET NX_VidEncGetSeqInfo( NX_VID_ENC_HANDLE hEnc, unsigned char* seqBuf, i
 	memcpy( seqBuf, hEnc->seqInfo.avcHeader.spsData, hEnc->seqInfo.avcHeader.spsSize );
 	memcpy( seqBuf+hEnc->seqInfo.avcHeader.spsSize, hEnc->seqInfo.avcHeader.ppsData, hEnc->seqInfo.avcHeader.ppsSize );
 	*seqBufSize = hEnc->seqInfo.avcHeader.spsSize + hEnc->seqInfo.avcHeader.ppsSize;
+	FUNC_OUT();
 	return 0;
 }
 
@@ -355,6 +367,7 @@ NX_VID_RET NX_VidEncEncodeFrame( NX_VID_ENC_HANDLE hEnc, NX_VID_MEMORY_HANDLE hI
 {
 	int ret;
 	VPU_ENC_RUN_FRAME_ARG runArg;
+	FUNC_IN();
 	if( !hEnc )
 	{
 		NX_ErrMsg( ("Invalid encoder handle or driver handle!!!\n") );
@@ -390,6 +403,7 @@ NX_VID_RET NX_VidEncEncodeFrame( NX_VID_ENC_HANDLE hEnc, NX_VID_MEMORY_HANDLE hI
 	pEncOut->outBuf = runArg.outStreamAddr;
 
 //	NX_DbgMsg( DBG_ENC_OUT, ("Encoder Output : Success(outputSize = %d, isKey=%d)\n", pEncOut->bufSize, pEncOut->isKey) );
+	FUNC_OUT();
 	return 0;
 }
 
@@ -409,6 +423,7 @@ NX_VID_RET NX_VidEncJpegGetHeader( NX_VID_ENC_HANDLE hEnc, unsigned char *jpgHea
 {
 	int ret;
 	VPU_ENC_GET_HEADER_ARG *pHdrArg = (VPU_ENC_GET_HEADER_ARG *)calloc(sizeof(VPU_ENC_GET_HEADER_ARG), 1);
+	FUNC_IN();
 	ret = ioctl( hEnc->hEncDrv, IOCTL_VPU_JPG_GET_HEADER, pHdrArg );
 	printf("pHdrArg->jpgHeader.headerSize = %d\n", pHdrArg->jpgHeader.headerSize);
 	if( ret < 0 )
@@ -420,6 +435,7 @@ NX_VID_RET NX_VidEncJpegGetHeader( NX_VID_ENC_HANDLE hEnc, unsigned char *jpgHea
 		memcpy( jpgHeader, pHdrArg->jpgHeader.jpegHeader, pHdrArg->jpgHeader.headerSize );
 		*headerSize = pHdrArg->jpgHeader.headerSize;
 	}
+	FUNC_OUT();
 	return ret;
 }
 
@@ -427,6 +443,7 @@ NX_VID_RET NX_VidEncJpegRunFrame( NX_VID_ENC_HANDLE hEnc, NX_VID_MEMORY_HANDLE h
 {
 	int ret;
 	VPU_ENC_RUN_FRAME_ARG runArg;
+	FUNC_IN();
 	if( !hEnc )
 	{
 		NX_ErrMsg( ("Invalid encoder handle or driver handle!!!\n") );
@@ -453,6 +470,7 @@ NX_VID_RET NX_VidEncJpegRunFrame( NX_VID_ENC_HANDLE hEnc, NX_VID_MEMORY_HANDLE h
 	pEncOut->height = hEnc->height;
 	pEncOut->bufSize = runArg.outStreamSize;
 	pEncOut->outBuf = runArg.outStreamAddr;
+	FUNC_OUT();
 	return 0;
 }
 
@@ -513,6 +531,7 @@ NX_VID_DEC_HANDLE NX_VidDecOpen( int codecType, unsigned int mp4Class, int optio
 	int ret;
 	VPU_OPEN_ARG openArg;
 	int workBufSize = WORK_BUF_SIZE;
+	FUNC_IN();
 	//	Create Context
 	NX_VID_DEC_HANDLE hDec = (NX_VID_DEC_HANDLE)malloc( sizeof(struct NX_VIDEO_DEC_INFO) );
 
@@ -598,6 +617,7 @@ NX_VID_DEC_HANDLE NX_VidDecOpen( int codecType, unsigned int mp4Class, int optio
 
 	DecoderFlushTimeStamp(hDec);
 
+	FUNC_OUT();
 	return hDec;
 ERROR_EXIT:
 	if( hDec->hDecDrv > 0 )
@@ -620,6 +640,7 @@ ERROR_EXIT:
 NX_VID_RET NX_VidDecClose( NX_VID_DEC_HANDLE hDec )
 {
 	int ret;
+	FUNC_IN();
 	if( !hDec )
 	{
 		NX_ErrMsg( ("Invalid encoder handle or driver handle!!!\n") );
@@ -644,6 +665,7 @@ NX_VID_RET NX_VidDecClose( NX_VID_DEC_HANDLE hDec )
 
 	free( hDec );
 
+	FUNC_OUT();
 	return 0;
 }
 
@@ -654,6 +676,7 @@ NX_VID_RET NX_VidDecInit(NX_VID_DEC_HANDLE hDec, NX_VID_SEQ_IN *seqIn, NX_VID_SE
 	VPU_DEC_SEQ_INIT_ARG seqArg;
 	VPU_DEC_REG_FRAME_ARG frameArg;
 
+	FUNC_IN();
 	memset( &seqArg, 0, sizeof(seqArg) );
 	memset( &frameArg, 0, sizeof(frameArg) );
 
@@ -763,6 +786,7 @@ NX_VID_RET NX_VidDecInit(NX_VID_DEC_HANDLE hDec, NX_VID_SEQ_IN *seqIn, NX_VID_SE
 	}
 
 	hDec->isInitialized = 1;
+	FUNC_OUT();
 	return ret;
 
 ERROR_EXIT:
@@ -822,6 +846,7 @@ NX_VID_RET NX_VidDecDecodeFrame( NX_VID_DEC_HANDLE hDec, NX_VID_DEC_IN *pDecIn, 
 	int ret;
 	VPU_DEC_DEC_FRAME_ARG decArg;
 
+	FUNC_IN();
 	//	Initialize Encoder
 	if( !hDec->isInitialized  )
 	{
@@ -894,12 +919,14 @@ NX_VID_RET NX_VidDecDecodeFrame( NX_VID_DEC_HANDLE hDec, NX_VID_DEC_IN *pDecIn, 
 	}
 
 	NX_RelMsg( 0, ("NX_VidDecDecodeFrame() Resol:%dx%d, picType=%d, imgIdx = %d\n", pDecOut->width, pDecOut->height, pDecOut->picType, pDecOut->outImgIdx) );
+	FUNC_OUT();
 	return 0;
 }
 
 NX_VID_RET NX_VidDecFlush( NX_VID_DEC_HANDLE hDec )
 {
 	int ret;
+	FUNC_IN();
 	if( !hDec->isInitialized  )
 	{
 		NX_ErrMsg( ("%s Line(%d) : Not initialized!!!\n", __func__, __LINE__));
@@ -914,12 +941,14 @@ NX_VID_RET NX_VidDecFlush( NX_VID_DEC_HANDLE hDec )
 
 	DecoderFlushTimeStamp( hDec );
 
+	FUNC_OUT();
 	return 0;
 }
 
 NX_VID_RET NX_VidDecClrDspFlag( NX_VID_DEC_HANDLE hDec, NX_VID_MEMORY_HANDLE hFrameBuf, int frameIdx )
 {
 	int ret;
+	FUNC_IN();
 	VPU_DEC_CLR_DSP_FLAG_ARG clrFlagArg;
 	if( !hDec->isInitialized  )
 	{
@@ -943,6 +972,7 @@ NX_VID_RET NX_VidDecClrDspFlag( NX_VID_DEC_HANDLE hDec, NX_VID_MEMORY_HANDLE hFr
 		return -1;
 	}
 
+	FUNC_OUT();
 	return 0;
 }
 

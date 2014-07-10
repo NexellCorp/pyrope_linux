@@ -23,6 +23,10 @@
 #include <mach/devices.h>
 #include <linux/clk.h>
 
+#ifdef CONFIG_NEXELL_DFS_BCLK
+#include <mach/nxp-dfs-bclk.h>
+#endif
+
 //----------------------------------------------------------------------------
 //								Global Variables
 
@@ -62,6 +66,9 @@ static int nx_vpu_open( struct inode *inode, struct file *flip )
 	if( gstCurNumInstance == 0 )
 	{
 		//	H/W Power On
+#ifdef CONFIG_NEXELL_DFS_BCLK
+        bclk_get(BCLK_USER_MPEG);
+#endif
 		NX_VPU_Clock( 1 );
 		NX_VpuInit( gstFirmVirAddress, gstFirmPhyAddress );
 #ifdef ENABLE_CLOCK_GATING
@@ -114,6 +121,9 @@ static int nx_vpu_close( struct inode *inode, struct file *filp )
 		NX_VPU_Clock( 0 );
 #endif
 		NX_DbgMsg(1, ("End of power saving!!!\n"));
+#ifdef CONFIG_NEXELL_DFS_BCLK
+        bclk_put(BCLK_USER_MPEG);
+#endif
 	}
 #endif
 
@@ -233,7 +243,7 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 				ret = -1;
 				break;
 			}
-			
+
 			if( 0 != copy_from_user( &seqArg, (void*)arg, sizeof(seqArg) ) )
 			{
 				NX_ErrMsg(("IOCTL_VPU_ENC_SET_SEQ_PARAM : copy_from_user failed!!\n"));
@@ -266,7 +276,7 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 				ret = -1;
 				break;
 			}
-			
+
 			if( 0 != copy_from_user( &frmArg, (void*)arg, sizeof(frmArg) ) )
 			{
 				NX_ErrMsg(("IOCTL_VPU_ENC_SET_FRAME_BUF : copy_from_user failed!!\n"));
@@ -299,7 +309,7 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 				ret = -1;
 				break;
 			}
-			
+
 			if( 0 != copy_from_user( &hdrArg, (void*)arg, sizeof(hdrArg) ) )
 			{
 				NX_ErrMsg(("IOCTL_VPU_ENC_SET_FRAME_BUF : copy_from_user failed!!\n"));
@@ -333,7 +343,7 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 				ret = -1;
 				break;
 			}
-			
+
 			if( 0 != copy_from_user( &runArg, (void*)arg, sizeof(runArg) ) )
 			{
 				NX_ErrMsg(("IOCTL_VPU_ENC_RUN_FRAME : copy_from_user failed!!\n"));

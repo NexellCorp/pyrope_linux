@@ -7,7 +7,10 @@
 
 //------------------------------------------------------------------------------
  -. Revision History
-   2014.06.16
+   2014.07.14 ( v1.0.11 )
+     Support Real Time Protocol(RTP).
+
+   2014.06.16 ( v1.0.10 )
      Support HDMI output.
    
    2014.05.23
@@ -38,7 +41,7 @@
      First Release.
 
  -. Last Revision Number
-    libnxdvr : 1.0.10
+    libnxdvr : 1.0.11
 
 
 //------------------------------------------------------------------------------
@@ -56,7 +59,7 @@ Solution
    |             |
    |             +-- nxmp4encsol  : simple MP4 encoding test application
    |             |
-   |             +-- nxrtpsol     : simple RTP test application ( Not yet )
+   |             +-- nxrtpsol     : simple RTP test application
    |
    +-- bin                        : build result & resource files
    |

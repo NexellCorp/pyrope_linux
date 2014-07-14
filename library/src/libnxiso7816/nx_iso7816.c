@@ -117,22 +117,22 @@ static ISO7816_HANDLE _OpenISO7816( int port )
 	{
 		uint32_t *tieoff;
 		uint32_t virAddr = iomem_map(ISO7816_TIEOFF_REG_PHY, ISO7816_TIEOFF_REG_SIZE);
-#if (DATA_UART_PORT == 0)
+#if (HW_UART_PORT == 0)
 		tieoff = (uint32_t*)( virAddr + (TIEOFFREG04 - ISO7816_TIEOFF_REG_PHY) );
 		*tieoff |= 0x700000;
-#elif(DATA_UART_PORT == 1)
+#elif(HW_UART_PORT == 1)
 		tieoff = (uint32_t*)( virAddr + (TIEOFFREG04 - ISO7816_TIEOFF_REG_PHY) );
 		*tieoff |= 0x3800000;
-#elif(DATA_UART_PORT == 2)
+#elif(HW_UART_PORT == 2)
 		tieoff = (uint32_t*)( virAddr + (TIEOFFREG04 - ISO7816_TIEOFF_REG_PHY) );
 		*tieoff |= 0x1c000000;
-#elif(DATA_UART_PORT == 3)
+#elif(HW_UART_PORT == 3)
 		tieoff = (uint32_t*)( virAddr + (TIEOFFREG04 - ISO7816_TIEOFF_REG_PHY) );
 		*tieoff |= 0xe0000000;
-#elif(DATA_UART_PORT == 4)
+#elif(HW_UART_PORT == 4)
 		tieoff = (uint32_t*)( virAddr + (TIEOFFREG05 - ISO7816_TIEOFF_REG_PHY) );
 		*tieoff |= 0x38;
-#elif(DATA_UART_PORT == 5)
+#elif(HW_UART_PORT == 5)
 		tieoff = (uint32_t*)( virAddr + (TIEOFFREG05 - ISO7816_TIEOFF_REG_PHY) );
 		*tieoff |= 0x7;
 #endif

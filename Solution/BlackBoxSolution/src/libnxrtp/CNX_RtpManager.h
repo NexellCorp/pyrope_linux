@@ -24,9 +24,6 @@
 #include <CNX_VIPFilter.h>
 #include <CNX_VRFilter.h>
 #include <CNX_H264Encoder.h>
-#include <CNX_AudCaptureFilter.h>
-#include <CNX_AacEncoder.h>
-#include <CNX_TsMuxerFilter.h>
 #include <CNX_RTPFilter.h>
 #include <NX_FilterConfigTypes.h>
 
@@ -60,22 +57,12 @@ private:
 	CNX_VIPFilter			*m_pVipFilter;
 	CNX_VRFilter			*m_pVrFilter;
 	CNX_H264Encoder			*m_pAvcEncFilter;
-
-	CNX_AudCaptureFilter	*m_pAudCapFilter;
-	CNX_AacEncoder			*m_pAacEncFilter;
-
-	CNX_TsMuxerFilter 		*m_pTsMuxerFilter;
 	CNX_RTPFilter 			*m_pRtpFilter;
 
 	// Configuration
 	NX_VIP_CONFIG			m_VipConfig;
 	NX_VIDRENDER_CONFIG		m_VidRenderConfig;
 	NX_VIDENC_CONFIG		m_VidEncConfig;
-
-	NX_AUDCAPTURE_CONFIG	m_AudCapConfig;
-	NX_AUDENC_CONFIG		m_AudEncConfig;
-
-	NX_TSMUXER_CONFIG		m_TsMuxerConfig;
 	NX_RTP_CONFIG			m_RtpConfig;
 
 private:

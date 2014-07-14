@@ -10,17 +10,28 @@ include ../../../../build.env
 INCLUDE += -I./ -I$(TOPDIR)/include
 INCLUDE += -I$(LIBSDIR)/include
 
+INCLUDE += -I$(TOPDIR)/include/live555/liveMedia
+INCLUDE += -I$(TOPDIR)/include/live555/groupsock
+INCLUDE += -I$(TOPDIR)/include/live555/BasicUsageEnvironment
+INCLUDE += -I$(TOPDIR)/include/live555/UsageEnvironment
+
 LIBRARY	+= -L$(TOPDIR)/lib
 LIBRARY += -L$(LIBSDIR)/lib
-LIBRARY += -lnxrtp -lnxtsmux
+LIBRARY += -lnxrtp
 LIBRARY += -lnxvmem -lnxvip -lnxdsp -lnxv4l2 -lnxvpu
 LIBRARY	+= -lstdc++ -lpthread -lasound
+
+LIBRARY += -I$(TOPDIR)/lib/live555/liveMedia
+LIBRARY += -I$(TOPDIR)/lib/live555/groupsock
+LIBRARY += -I$(TOPDIR)/lib/live555/BasicUsageEnvironment
+LIBRARY += -I$(TOPDIR)/lib/live555/UsageEnvironment
+
 
 ######################################################################
 # Target
 CPPOBJS	+= NX_RtpMain.o
 
-TARGET 	:= nxrtpsoll
+TARGET 	:= nxrtpsol
 CPPFLAGS += -g
 
 ######################################################################

@@ -350,14 +350,14 @@ public:
 		pthread_mutex_destroy( &m_hSampleQLock );
 	};
 public:
-	virtual void	PushSample( CNX_Sample *pSample )
+	virtual int32_t	PushSample( CNX_Sample *pSample )
 	{
 		pthread_mutex_lock( &m_hSampleQLock );
 
 		if( m_iQueueDepth <= m_iSampleCount ) {
 			// printf("%s(): SampleQueue is full.\n", __func__);
 			pthread_mutex_unlock( &m_hSampleQLock );
-			return ;
+			return false;
 		}
 
 		m_pSamplePool[m_iTailIndex] = pSample;
@@ -365,16 +365,17 @@ public:
 		m_iSampleCount++;
 
 		pthread_mutex_unlock( &m_hSampleQLock );
+		return true;
 	}
 
-	virtual void	PopSample( CNX_Sample **ppSample )
+	virtual int32_t	PopSample( CNX_Sample **ppSample )
 	{
 		pthread_mutex_lock( &m_hSampleQLock );
 
 		if( m_iSampleCount <= 0 ) {
 			// printf("%s(): SampleQueue is empty.\n", __func__);
 			pthread_mutex_unlock( &m_hSampleQLock );
-			return ;
+			return false;
 		}
 
 		*ppSample = m_pSamplePool[m_iHeadIndex];
@@ -382,6 +383,7 @@ public:
 		m_iSampleCount--;
 
 		pthread_mutex_unlock( &m_hSampleQLock );
+		return true;
 	}
 	virtual int32_t	IsReady( void )
 	{

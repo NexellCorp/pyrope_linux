@@ -1,6 +1,7 @@
 ifndef	TOPDIR
 TOPDIR	:= ../..
 endif
+
 ########################################################################
 # Get Linux Build Enviornment:
 include ../../../../build.env
@@ -16,13 +17,19 @@ INCLUDE		+= -I./
 INCLUDE		+= -I$(LIBSDIR)/include
 INCLUDE		+= -I$(TOPDIR)/include
 INCLUDE		+= -I../libnxfilters
+INCLUDE 	+= -I$(TOPDIR)/include/live555/liveMedia
+INCLUDE 	+= -I$(TOPDIR)/include/live555/groupsock
+INCLUDE 	+= -I$(TOPDIR)/include/live555/BasicUsageEnvironment
+INCLUDE 	+= -I$(TOPDIR)/include/live555/UsageEnvironment
 
 LIBRARY		+= -L$(LIBSDIR)/lib
 LIBRARY		+= -L$(TOPDIR)/lib
-LIBRARY		+= -L../libnxfilters/ -lnxfilters
-LIBRARY		+= -lnxaacenc
-LIBRARY		+= -lnxmp4mux
+LIBRARY		+= -L../libnxfilters
+LIBRARY 	+= -L$(TOPDIR)/lib/live555
+
+LIBRARY		+= -lnxfilters
 LIBRARY 	+= -lnxvmem -lnxvip -lnxdsp -lnxv4l2 -lnxvpu
+LIBRARY 	+= -lliveMedia -lgroupsock -lBasicUsageEnvironment -lUsageEnvironment
 LIBRARY		+= -lstdc++ -lpthread -lasound
 
 ######################################################################
@@ -34,6 +41,7 @@ LIBNAME := libnxrtp
 
 SO_NAME	:= $(LIBNAME).so
 TARGET	:= $(LIBNAME).so
+
 ######################################################################
 # Build
 OBJS	:= $(COBJS) $(CPPOBJS)

@@ -55,6 +55,9 @@ static int32_t gstMotionEnable		= true;
 static int32_t gstAudioEnable		= true;
 static int32_t gstUserDataEnable	= false;
 
+static pthread_mutex_t	g_hJpegLock;
+static int32_t gstJpegDone;
+
 int32_t cbGetNormalFileName( uint8_t *buf, uint32_t bufSize )
 {
 	time_t eTime;
@@ -200,6 +203,9 @@ int32_t cbNotifier( uint32_t eventCode, uint8_t *pEventData, uint32_t dataSize )
 			printf("[%s] : Jpeg file writing done. ( %s )\n", __func__, pEventData);
 			DvrFileManagerPush( g_hCaptureFileManager, (char*)pEventData );
 		}
+		pthread_mutex_lock( &g_hJpegLock );
+		gstJpegDone = true;
+		pthread_mutex_unlock( &g_hJpegLock );
 		break;
 	case DVR_NOTIFY_MOTION :
 		if( g_hDvr )	NX_DvrEvent( g_hDvr );
@@ -245,12 +251,12 @@ static void DvrSetConfigure( void )
 	gstMediaConfig.videoConfig[0].nCodec		= DVR_CODEC_H264;
 	
 	gstMediaConfig.videoConfig[1].nPort			= DVR_CAMERA_VIP0;
-	gstMediaConfig.videoConfig[1].nSrcWidth		= 720;
-	gstMediaConfig.videoConfig[1].nSrcHeight	= 480;
+	gstMediaConfig.videoConfig[1].nSrcWidth		= 1024;
+	gstMediaConfig.videoConfig[1].nSrcHeight	= 768;
 	gstMediaConfig.videoConfig[1].bExternProc	= false;
 	gstMediaConfig.videoConfig[1].nDstWidth		= gstMediaConfig.videoConfig[1].nSrcWidth;
 	gstMediaConfig.videoConfig[1].nDstHeight	= gstMediaConfig.videoConfig[1].nSrcHeight;
-	gstMediaConfig.videoConfig[1].nFps			= 30;
+	gstMediaConfig.videoConfig[1].nFps			= 15;
 	gstMediaConfig.videoConfig[1].nBitrate		= 5000000;
 	gstMediaConfig.videoConfig[1].nCodec		= DVR_CODEC_H264;
 	
@@ -294,6 +300,11 @@ static void DvrSetConfigure( void )
 
 void DvrStart( void )
 {
+	pthread_mutex_init( &g_hJpegLock, NULL );
+	pthread_mutex_lock( &g_hJpegLock );
+	gstJpegDone = true;
+	pthread_mutex_unlock( &g_hJpegLock );	
+
 	DvrSetConfigure( );
 
 	g_hNormalFileManager	= DvrFileManagerInit( (const char*)"/mnt/mmc/normal", 50, "ts" );
@@ -362,10 +373,19 @@ void DvrStop( void )
 	if( g_hAudio ) 				NX_AudioStop( g_hAudio, false );
 	if( g_hAudio ) 				NX_AudioDeinit( g_hAudio );
 	if( g_hAudio ) 				g_hAudio = NULL;
+
+	pthread_mutex_destroy( &g_hJpegLock );
 }
 
 void DvrCapture( void )
 {
+	pthread_mutex_lock( &g_hJpegLock );
+	int32_t jpegDone = gstJpegDone;
+	pthread_mutex_unlock( &g_hJpegLock );
+	if( !jpegDone )
+		return;
+
+	gstJpegDone = false;
 	if( g_hAudio)	NX_AudioPlay( g_hAudio, "/root/wav/capture.wav" );
 	if( g_hDvr )	NX_DvrCapture( g_hDvr, 0 );
 }

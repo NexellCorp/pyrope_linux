@@ -50,6 +50,12 @@ typedef enum {
 } NX_DVR_CONTAINER_TYPE;
 
 typedef enum {
+	DVR_NETWORK_NONE,
+	DVR_NETWORK_HLS,
+	DVR_NETWORK_RTP,
+} NX_DVR_NETWORK_TYPE;
+
+typedef enum {
 	DVR_NOTIFY_NORALWIRTHING_DONE	= 0x1001,
 	DVR_NOTIFY_EVENTWRITING_DONE	= 0x1002,
 	DVR_NOTIFY_JPEGWRITING_DONE		= 0x1003,
@@ -92,6 +98,13 @@ typedef struct tag_NX_DVR_HLS_CONFIG {
 	uint8_t					SegmentRootDir[256];	// Segment root directory
 } NX_DVR_HLS_CONFIG;
 
+typedef struct tag_NX_DVR_RTP_CONFIG {
+	uint32_t				nPort;
+	uint32_t 				nSessionNum;
+	uint32_t				nConnectNum;
+	uint8_t					sessionName[4][256];
+} NX_DVR_RTP_CONFIG;
+
 typedef struct tag_NX_DVR_MD_CONFIG {
 	uint32_t				nMdThreshold;			// Internal motion detect threshold
 	uint32_t				nMdSensitivity;			// Internal motion detect sensitivity
@@ -113,9 +126,10 @@ typedef struct tag_NX_DVR_RECORD_CONFIG {
 	uint32_t				nNormalDuration;		// normal file duration
 	uint32_t				nEventDuration;			// event file duration ( after event action )
 	uint32_t				nEventBufferDuration;	// event file duration ( before event action ) :: total event duration = nEventBufferDuration + nEventDuration
-	// Blackbox Optional Configuration (HLS Service)
-	uint32_t				bHlsEnable;				// hls enable
+	// Blackbox Optional Configuration (Network Service)
+	NX_DVR_NETWORK_TYPE		networkType;			// network type
 	NX_DVR_HLS_CONFIG		hlsConfig;				// hls config
+	NX_DVR_RTP_CONFIG		rtpConfig;				// rtp config
 	// Blackbox Optional Configuration (Motion Detection)
 	uint32_t				bMdEnable[4];			// motion detect enable
 	NX_DVR_MD_CONFIG 		mdConfig[4];			// motion detect internal config

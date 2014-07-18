@@ -21,8 +21,15 @@
 #define __CNX_RTPFILTER_H__
 
 #include <CNX_BaseFilter.h>
+#include "CNX_DynamicRTSPServer.h"
+
+#include "NX_FilterConfigTypes.h"
+
+#include <queue>
 
 #ifdef __cplusplus
+
+class CNX_LiveSource;
 
 class CNX_RTPFilter
 	: public CNX_BaseFilter
@@ -33,7 +40,7 @@ public:
 
 public:
 	//------------------------------------------------------------------------
-	virtual void		Init( void );
+	virtual void		Init( NX_RTP_CONFIG *pConfig );
 	virtual void		Deinit( void );
 	//------------------------------------------------------------------------
 	//	Override from CNX_BaseFilter
@@ -43,7 +50,7 @@ public:
 
 	virtual	int32_t		Run( void );
 	virtual	int32_t		Stop( void );
-
+	
 protected:
 	//------------------------------------------------------------------------
 	virtual void		AllocateMemory( void );
@@ -57,27 +64,48 @@ protected:
 	static 	void*		ThreadMain( void *arg );
 
 private:
+			int32_t		CreateSample( CNX_Sample *pSrcSample, CNX_Sample *pDstSample );
+			int32_t		DestorySample( CNX_Sample *pSample );
+			
+public:
+			int32_t		SetSourceInstance( CNX_LiveSource *pLiveSource, int32_t type );
+			int32_t		ClearSourceInstance( CNX_LiveSource *pLiveSource );
+			int32_t		ConnectIsReady( void );
+
+private:
 	//------------------------------------------------------------------------
 	//	Filter status
 	//------------------------------------------------------------------------
-	int32_t				m_bInit;
-	int32_t				m_bRun;
-	CNX_Semaphore		*m_pSemIn;
+	int32_t					m_bInit;
+	int32_t					m_bRun;
+
+	pthread_mutex_t			m_hLock;
+	
 	//------------------------------------------------------------------------
 	//	Thread
 	//------------------------------------------------------------------------
-	int32_t				m_bThreadExit;
-	pthread_t			m_hThread;
-	//------------------------------------------------------------------------
-	//	RTP
-	//------------------------------------------------------------------------
-	
-	//------------------------------------------------------------------------
-	//	Input / Output Buffer
-	//------------------------------------------------------------------------
-	enum { MAX_BUFFER = 32 };
+	int32_t					m_bThreadExit;
+	pthread_t				m_hThread;
 
-	CNX_SampleQueue		m_SampleInQueue;
+	//------------------------------------------------------------------------
+	//	RTP / RTSP
+	//------------------------------------------------------------------------
+	NX_RTP_CONFIG			m_RtpConfig;
+
+	TaskScheduler			*m_pScheduler;
+	UsageEnvironment		*m_pEnv;
+	RTSPServer				*m_pRtspServer;
+	portNumBits 			m_iRtspPortNum;
+
+	char	 				m_iWatchFlag;
+
+	CNX_LiveSource			*m_pLiveSource[MAX_SESSION_NUM];
+	uint32_t 				m_CurStreamType;
+	int32_t					m_nCurConnectNum;
+	int32_t					m_nMaxConnectNum;
+
+	int32_t					m_nMaxSessionNum;
+		
 };
 
 #endif //	__cplusplus

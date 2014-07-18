@@ -26,6 +26,7 @@
 #include <unistd.h>
 
 #include <INX_HlsManager.h>
+#include <nx_dsp.h>
 
 static INX_HlsManager *pHlsManager = NULL;
 
@@ -91,8 +92,9 @@ int main(void)
 
 	register_signal();
 	
+	NX_DspVideoSetPriority( DISPLAY_MODULE_MLC0, 0 );
+	
 	pHlsManager->Init( &hlsConfig );
-
 	pHlsManager->Start();
 
 	while(1)

@@ -117,10 +117,10 @@ typedef struct tag_NX_TSMUXER_TRACK_CONFIG
 
 typedef struct tag_NX_TSMUXER_CONFIG
 {
-	uint32_t					videoTrack;		// max 4EA
-	uint32_t					audioTrack;		// max 1EA
-	uint32_t					textTrack;		// max 1EA
-	uint32_t					codecType[MAX_VID_NUM + MAX_AUD_NUM + MAX_TXT_NUM];
+	uint32_t		videoTrack;		// max 4EA
+	uint32_t		audioTrack;		// max 1EA
+	uint32_t		textTrack;		// max 1EA
+	uint32_t		codecType[MAX_VID_NUM + MAX_AUD_NUM + MAX_TXT_NUM];
 } NX_TSMUXER_CONFIG;
 
 typedef struct tag_NX_HLS_CONFIG
@@ -134,7 +134,10 @@ typedef struct tag_NX_HLS_CONFIG
 
 typedef struct tag_NX_RTP_CONFIG
 {
-
+	uint32_t		port;
+	uint32_t 		sessionNum;				// videoNumber
+	uint32_t		connectNum;
+	uint8_t 		sessionName[MAX_VID_NUM][255];
 } NX_RTP_CONFIG;
 
 //----------------------------------------------------------------------------

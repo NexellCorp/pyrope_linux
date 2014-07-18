@@ -51,6 +51,7 @@ class CNX_TsMuxerFilter;
 class CNX_FileWriter;
 class CNX_SimpleFileWriter;
 class CNX_HLSFilter;
+class CNX_RTPFilter;
 class CNX_MotionDetectFilter;
 
 enum {
@@ -112,7 +113,7 @@ public:
 	int32_t SetCapture( int32_t channel );
 	int32_t SetPreview( int32_t channel );
 	int32_t SetPreviewHdmi( int32_t channel );
-
+	
 	int32_t ChangeMode( NX_DVR_ENCODE_TYPE mode );
 	// Control Function ( Not Implemetation )
 	//int32_t SetDisplay( int32_t channel );
@@ -200,6 +201,7 @@ private:
 	CNX_FileWriter			*m_pFileWriter;
 #endif
 	CNX_HLSFilter			*m_pHlsFilter;
+	CNX_RTPFilter			*m_pRtpFilter;
 
 	// Configuration
 	NX_VIP_CONFIG			m_VipConfig[MAX_VID_NUM];
@@ -221,6 +223,7 @@ private:
 	NX_BUFFERING_CONFIG		m_BufferingConfig;
 
 	NX_HLS_CONFIG			m_HlsConfig;
+	NX_RTP_CONFIG			m_RtpConfig;
 
 private:
 	int32_t					m_bInit;
@@ -238,6 +241,7 @@ private:
 	int32_t					m_NormalDuration, m_EventDuration, m_EventBufferDuration;
 	uint32_t				m_DisplayEnable;
 	uint32_t				m_HlsEnable;
+	uint32_t				m_RtpEnable;
 	uint32_t				m_MdEnable[MAX_VID_NUM];
 
 	int32_t					m_bThreadExit;

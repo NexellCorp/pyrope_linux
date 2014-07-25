@@ -289,8 +289,19 @@ public:
 		return m_pVideoMemory;
 	}
 
+	virtual void	SetVideoMemoryIndex( int32_t index )
+	{
+		m_iVideoMemroyIndex = index;
+	}
+
+	virtual int32_t	GetVideoMemoryIndex( void )
+	{
+		return m_iVideoMemroyIndex;
+	}
+
 private:
 	NX_VID_MEMORY_INFO	*m_pVideoMemory;
+	int32_t				m_iVideoMemroyIndex;
 
 private:
 	CNX_VideoSample (const CNX_VideoSample &Ref);

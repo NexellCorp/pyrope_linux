@@ -63,6 +63,9 @@ void NX_FreeMemory( NX_MEMORY_HANDLE handle );
 NX_VID_MEMORY_HANDLE NX_VideoAllocateMemory( int align, int width, int height, int memMap, int fourCC );
 void NX_FreeVideoMemory( NX_VID_MEMORY_HANDLE handle );
 
+//	For Interlace Camera 3 plane only
+NX_VID_MEMORY_HANDLE NX_VideoAllocateMemory2( int align, int width, int height, int memMap, int fourCC );
+
 
 #ifdef	__cplusplus
 };

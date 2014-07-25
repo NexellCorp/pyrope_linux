@@ -88,6 +88,7 @@ void CNX_H264Encoder::Init( NX_VIDENC_CONFIG *pConfig )
 		m_EncInfo.width			= pConfig->width;
 		m_EncInfo.height		= pConfig->height;
 		m_EncInfo.gopSize		= pConfig->fps / 2;		// Group of picture ( key frame interval )
+
 		m_EncInfo.bitrate		= pConfig->bitrate;
 		m_EncInfo.fpsNum		= pConfig->fps;
 		m_EncInfo.fpsDen		= 1;
@@ -101,6 +102,10 @@ void CNX_H264Encoder::Init( NX_VIDENC_CONFIG *pConfig )
 
 		m_EncInfo.enableAUDelimiter = false;
 		
+		// For Test..
+		m_EncInfo.gopSize		= 100;		// Group of picture ( key frame interval )
+		m_EncInfo.maxQScale		= 40;
+
 		NxDbgMsg( NX_DBG_INFO, (TEXT("width=%d, height=%d, bitrate=%d, fps=%d\n"), m_EncInfo.width, m_EncInfo.height, m_EncInfo.bitrate, m_EncInfo.fpsNum / m_EncInfo.fpsDen) );
 
 		NX_VidEncInit( m_hEnc, &m_EncInfo );

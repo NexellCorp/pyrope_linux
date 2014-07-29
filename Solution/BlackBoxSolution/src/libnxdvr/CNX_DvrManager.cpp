@@ -37,6 +37,7 @@
 #include <CNX_FileWriter.h>
 #include <CNX_SimpleFileWriter.h>
 #include <CNX_HLSFilter.h>
+#include <CNX_RTPFilter.h>
 
 #include "CNX_DvrNotify.h"
 #include "CNX_DvrManager.h"
@@ -84,6 +85,7 @@ CNX_DvrManager::CNX_DvrManager()
 	, m_pTsMuxerFilter( NULL )
 	, m_pFileWriter( NULL )
 	, m_pHlsFilter( NULL )
+	, m_pRtpFilter( NULL )
 	, m_bInit( false )
 	, m_bRun( false )
 	, m_nMode( DVR_ENCODE_NORMAL )
@@ -99,8 +101,6 @@ CNX_DvrManager::CNX_DvrManager()
 	, m_NormalDuration( 0 )
 	, m_EventDuration( 0 )
 	, m_EventBufferDuration( 0 )
-	// , m_CurTime( 0 )
-	// , m_PrvTime( 0 )
 	, m_bThreadExit( false )
 	, NormalFileNameCallbackFunc( NULL )
 	, EventFileNameCallbackFunc( NULL )
@@ -206,6 +206,9 @@ int32_t CNX_DvrManager::BuildFilter( void )
 		
 		if( m_HlsEnable )
 			m_pHlsFilter		= new CNX_HLSFilter();
+
+		if( m_RtpEnable )
+			m_pRtpFilter		= new CNX_RTPFilter();
 	}
 
 	// Filter Connect
@@ -273,19 +276,34 @@ int32_t CNX_DvrManager::BuildFilter( void )
 
 	if( m_Container == DVR_CONTAINER_MP4 )
 	{
-		SAFE_CONNECT_FILTER( m_pInterleaverFilter,	m_pBufferingFilter );
-		SAFE_CONNECT_FILTER( m_pBufferingFilter,	m_pMp4MuxerFilter );
+		if( !m_RtpEnable ) {
+			SAFE_CONNECT_FILTER( m_pInterleaverFilter,	m_pBufferingFilter );
+			SAFE_CONNECT_FILTER( m_pBufferingFilter,	m_pMp4MuxerFilter );
+		}
+		else {
+			SAFE_CONNECT_FILTER( m_pInterleaverFilter, 	m_pRtpFilter );
+			SAFE_CONNECT_FILTER( m_pRtpFilter,			m_pBufferingFilter );
+			SAFE_CONNECT_FILTER( m_pBufferingFilter,	m_pMp4MuxerFilter );	
+		}
 	}
 	else if (m_Container == DVR_CONTAINER_TS )
 	{
+		if( !m_HlsEnable && !m_RtpEnable ) {
+			SAFE_CONNECT_FILTER( m_pInterleaverFilter,	m_pTsMuxerFilter );
+			SAFE_CONNECT_FILTER( m_pTsMuxerFilter,		m_pBufferingFilter );
+			SAFE_CONNECT_FILTER( m_pBufferingFilter,	m_pFileWriter );
+		}
+
 		if( m_HlsEnable ) {
 			SAFE_CONNECT_FILTER( m_pInterleaverFilter,	m_pTsMuxerFilter );
 			SAFE_CONNECT_FILTER( m_pTsMuxerFilter,		m_pHlsFilter );
 			SAFE_CONNECT_FILTER( m_pHlsFilter,			m_pBufferingFilter );
 			SAFE_CONNECT_FILTER( m_pBufferingFilter,	m_pFileWriter );
 		}
-		else {
-			SAFE_CONNECT_FILTER( m_pInterleaverFilter,	m_pTsMuxerFilter );
+
+		if( m_RtpEnable ) {
+			SAFE_CONNECT_FILTER( m_pInterleaverFilter,	m_pRtpFilter );
+			SAFE_CONNECT_FILTER( m_pRtpFilter,			m_pTsMuxerFilter );
 			SAFE_CONNECT_FILTER( m_pTsMuxerFilter,		m_pBufferingFilter );
 			SAFE_CONNECT_FILTER( m_pBufferingFilter,	m_pFileWriter );
 		}
@@ -346,6 +364,7 @@ int32_t CNX_DvrManager::BuildFilter( void )
 		if( m_pTsMuxerFilter )		m_pTsMuxerFilter->Init( &m_TsMuxerConfig );
 		if( m_pFileWriter )			m_pFileWriter->Init();
 		if( m_pHlsFilter )			m_pHlsFilter->Init( &m_HlsConfig );
+		if( m_pRtpFilter )			m_pRtpFilter->Init( &m_RtpConfig );
 	}
 
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
@@ -363,7 +382,8 @@ int32_t	CNX_DvrManager::SetConfig( NX_DVR_MEDIA_CONFIG *pMediaConfig, NX_DVR_REC
 	m_VideoCodec	= pMediaConfig->videoConfig[0].nCodec;
 	m_AudioCodec	= pMediaConfig->audioConfig.nCodec;
 	m_Container		= pMediaConfig->nContainer;
-	m_HlsEnable		= pRecordConfig->bHlsEnable;
+	m_HlsEnable		= pRecordConfig->networkType == DVR_NETWORK_HLS ? 1 : 0;
+	m_RtpEnable		= pRecordConfig->networkType == DVR_NETWORK_RTP ? 1 : 0;
 	m_DisplayEnable	= pDisplayConfig->bEnable;
 	m_DisplayChannel = pDisplayConfig->nChannel;
 
@@ -482,6 +502,16 @@ int32_t	CNX_DvrManager::SetConfig( NX_DVR_MEDIA_CONFIG *pMediaConfig, NX_DVR_REC
 		strcpy( (char*)m_HlsConfig.SegmentRoot,		(char*)pRecordConfig->hlsConfig.SegmentRootDir );
 		m_HlsConfig.SegmentDuration = pRecordConfig->hlsConfig.nSegmentDuration;
 		m_HlsConfig.SegmentNumber	= pRecordConfig->hlsConfig.nSegmentNumber;
+	}
+
+	if( m_RtpEnable ) {
+		m_RtpConfig.port 		= pRecordConfig->rtpConfig.nPort;
+		m_RtpConfig.sessionNum 	= pRecordConfig->rtpConfig.nSessionNum;
+		m_RtpConfig.connectNum 	= pRecordConfig->rtpConfig.nConnectNum;
+
+		for( uint32_t i = 0; i < m_RtpConfig.sessionNum; i++ ) {
+			strcpy( (char*)m_RtpConfig.sessionName[i],	(char*)pRecordConfig->rtpConfig.sessionName[i] );	
+		}
 	}
 
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
@@ -789,6 +819,7 @@ int32_t CNX_DvrManager::Deinit( void )
 			SAFE_DEINIT_FILTER( m_pTsMuxerFilter );
 			SAFE_DEINIT_FILTER( m_pFileWriter );
 			SAFE_DEINIT_FILTER( m_pHlsFilter );
+			SAFE_DEINIT_FILTER( m_pRtpFilter );
 		}
 
 		// Filter Delete
@@ -819,6 +850,7 @@ int32_t CNX_DvrManager::Deinit( void )
 			SAFE_DELETE_FILTER( m_pTsMuxerFilter );
 			SAFE_DELETE_FILTER( m_pFileWriter );
 			SAFE_DELETE_FILTER( m_pHlsFilter );
+			SAFE_DELETE_FILTER( m_pRtpFilter );
 		}
 	}
 
@@ -856,6 +888,7 @@ int32_t CNX_DvrManager::Start( NX_DVR_ENCODE_TYPE encodeType )
 			SAFE_START_FILTER( m_pTsMuxerFilter );
 			SAFE_START_FILTER( m_pMp4MuxerFilter );
 			SAFE_START_FILTER( m_pHlsFilter );
+			SAFE_START_FILTER( m_pRtpFilter );
 			SAFE_START_FILTER( m_pInterleaverFilter );
 		}
 
@@ -930,6 +963,7 @@ int32_t CNX_DvrManager::Stop( void )
 		{
 			SAFE_STOP_FILTER( m_pInterleaverFilter );
 			SAFE_STOP_FILTER( m_pHlsFilter );
+			SAFE_STOP_FILTER( m_pRtpFilter );
 			SAFE_STOP_FILTER( m_pTsMuxerFilter );
 			SAFE_STOP_FILTER( m_pMp4MuxerFilter );
 			SAFE_STOP_FILTER( m_pBufferingFilter );
@@ -1029,7 +1063,8 @@ int32_t CNX_DvrManager::SetPreviewHdmi( int32_t channel )
 
 	// a. Check rendering channel
 	if( channel >= m_VideoNum ) {
-		NxDbgMsg( NX_DBG_ERR, (TEXT("Overrange rendering number.\n")) );
+		NxDbgMsg( NX_DBG_ERR, (TEXT("Over-range rendering number.\n")) );
+		NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 		return -1;
 	}
 

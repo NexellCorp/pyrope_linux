@@ -13,11 +13,12 @@
 #include <ion.h>
 #include <linux/ion.h>
 #include <linux/nxp_ion.h>
-#include "nx_alloc_mem.h"
-#include "nx_fourcc.h"
+#include <nx_alloc_mem.h>
+#include <nx_fourcc.h>
 
 #ifdef ANDROID
-#include "ion-private.h"
+#include <ion-private.h>
+#include <gralloc_priv.h>
 #endif
 
 //#define	EN_MULTIPLE_PLANE
@@ -277,7 +278,10 @@ Error_Exit:
 	return handle;
 }
 
-NX_VID_MEMORY_HANDLE NX_VideoAllocateMemory2( int align, int width, int height, int stride, int memMap, int fourCC )
+//
+//	For Interlace Camera
+//
+NX_VID_MEMORY_HANDLE NX_VideoAllocateMemory2( int align, int width, int height, int memMap, int fourCC )
 {
 	int lWidth, lHeight;
 	int cWidth, cHeight;
@@ -291,13 +295,13 @@ NX_VID_MEMORY_HANDLE NX_VideoAllocateMemory2( int align, int width, int height, 
 		goto Error_Exit;
 	}
 
-	lWidth = stride;
+	lWidth = ALIGN(width, 64);
 	lHeight = ALIGN(height, 16);
 
 	switch( fourCC )
 	{
 		case FOURCC_MVS0:
-			cWidth = lWidth/2;
+			cWidth = ALIGN(lWidth/2, 64);
 			cHeight = lHeight/2;
 			break;
 		case FOURCC_MVS2:
@@ -373,3 +377,34 @@ void NX_FreeVideoMemory( NX_VID_MEMORY_HANDLE handle )
 		free(handle);
 	}
 }
+
+#ifdef ANDROID
+
+int NX_PrivateHandleToVideoMemory( struct private_handle_t const *handle, NX_VID_MEMORY_INFO *memInfo )
+{
+	int ion_fd, ret, vstride;
+
+	vstride = ALIGN(handle->height, 16);
+
+	ion_fd = ion_open();
+    ret = ion_get_phys(ion_fd, handle->share_fd, (long unsigned int *)&memInfo->luPhyAddr);
+
+	if( ret <0 || ion_fd < 0 )
+	{
+		return -1;
+	}
+
+	memset(memInfo, 0, sizeof(NX_VID_MEMORY_INFO));
+	memInfo->fourCC    = FOURCC_MVS0;
+	memInfo->imgWidth  = handle->width;
+	memInfo->imgHeight = handle->height;
+	memInfo->cbPhyAddr = memInfo->luPhyAddr + handle->stride * vstride;
+	memInfo->crPhyAddr = memInfo->cbPhyAddr + ALIGN((handle->stride>>1),16) * ALIGN((vstride>>1),16);
+	memInfo->luStride  = handle->stride;
+	memInfo->cbStride  = 
+	memInfo->crStride  = handle->stride >> 1;;
+	close( ion_fd );
+	return 0;
+}
+
+#endif

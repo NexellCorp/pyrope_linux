@@ -73,10 +73,11 @@ int shell_main(char *filename)
 {
 	char cmd[MAX_STRING_SIZE];
 	
-	int volume = 5;
-	int mic = 5;
+	int volume, mic;
 
-	hAudio = NX_AudioInit();
+	hAudio	= NX_AudioInit();
+	volume	= NX_AudioGetVolume(hAudio, AUDIO_TYPE_PLAYBACK);
+	mic		= NX_AudioGetVolume(hAudio, AUDIO_TYPE_CAPTURE);
 
 	print_usage();
 
@@ -111,20 +112,18 @@ int shell_main(char *filename)
 			if( volume > 100 ) {
 				volume = 100;
 			}
-			printf("volume = %d %%\n", volume);
 				
 			NX_AudioSetVolume(hAudio, AUDIO_TYPE_PLAYBACK, volume);
-			printf("GetVolume = %d %%\n", NX_AudioGetVolume(hAudio, AUDIO_TYPE_PLAYBACK));
+			printf("Expected Audio Volume(%d), Real Audio Volume(%d)\n", volume, NX_AudioGetVolume(hAudio, AUDIO_TYPE_PLAYBACK));
 		}
 		else if( !strcmp(cmd, "dn") ) {
 			volume -= 5;
 			if( volume < 0 ) {
 				volume = 0;
 			}
-			printf("volume = %d %%\n", volume);
 
 			NX_AudioSetVolume(hAudio, AUDIO_TYPE_PLAYBACK, volume);
-			printf("GetVolume = %d %%\n", NX_AudioGetVolume(hAudio, AUDIO_TYPE_PLAYBACK));
+			printf("Expected Audio Volume(%d), Real Audio Volume(%d)\n", volume, NX_AudioGetVolume(hAudio, AUDIO_TYPE_PLAYBACK));
 		}
 		else if( !strcmp(cmd, "a") ) {
 			mic += 5;
@@ -132,7 +131,7 @@ int shell_main(char *filename)
 				mic = 100;
 			}
 			NX_AudioSetVolume(hAudio, AUDIO_TYPE_CAPTURE, mic);
-			printf("MIC GetVolume = %d %%\n", NX_AudioGetVolume(hAudio, AUDIO_TYPE_CAPTURE));
+			printf("Expected MIC Volume(%d), Real MIC Volume(%d)\n", mic, NX_AudioGetVolume(hAudio, AUDIO_TYPE_CAPTURE));
 		}
 		else if( !strcmp(cmd, "d") ) {
 			mic -= 5;
@@ -140,7 +139,7 @@ int shell_main(char *filename)
 				mic = 0;
 			}
 			NX_AudioSetVolume(hAudio, AUDIO_TYPE_CAPTURE, mic);
-			printf("MIC GetVolume = %d %%\n", NX_AudioGetVolume(hAudio, AUDIO_TYPE_CAPTURE));
+			printf("Expected MIC Volume(%d), Real MIC Volume(%d)\n", mic, NX_AudioGetVolume(hAudio, AUDIO_TYPE_CAPTURE));
 		}
 		else {
 			printf("Unknwon Command!\n");

@@ -49,12 +49,13 @@
 #include <nx_graphictools.h>
 #include <nx_audio.h>
 #include <nx_gpio.h>
+#include <nx_dsp.h>
 
 // #define VEHICLE_TEST
 // #define DEMO
 
 #define BOARD_TYPE_LYNX
-// #define CAMERA_TYPE_FHD
+#define CAMERA_TYPE_FHD
 
 // #define DISABLE_AUDIO
 
@@ -108,7 +109,7 @@ static int32_t gstNoConsole = false;
 static int32_t gstVideoChannel = 1;
 static int32_t gstAudioEnable = false;
 static int32_t gstUserDataEnable = false;
-static int32_t gstHlsEnable = false;
+static int32_t gstNetworkType = false;
 
 #ifdef DEMO
 static int32_t gstMotionEnable = true;
@@ -120,7 +121,7 @@ static int32_t gstApiMajor = 0, gstApiMinor = 0, gstApiRevision = 0;
 static int32_t gstContainer = CONTAINER_TYPE_TS;
 static int32_t gstTestEvent	= false;
 
-static int32_t gstPrviewChannel = 0;
+static int32_t gstPreviewChannel = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -1062,7 +1063,7 @@ void DvrPrintConfig( NX_DVR_MEDIA_CONFIG *pMediaConfig )
 	printf("   Video Channel : %d channel\n", gstVideoChannel);
 	printf("   Audio         : %s\n", gstAudioEnable ? "enable" : "disable");
 	printf("   UserData      : %s\n", gstUserDataEnable ? "enable" : "disable" );
-	printf("   HLS           : %s\n", gstHlsEnable ? "enable" : "disable" );
+	printf("   Network       : %s\n", (gstNetworkType == DVR_NETWORK_HLS) ? "HLS enable" : (gstNetworkType == DVR_NETWORK_RTP) ? "RTP enable" : "disable" );
 	printf("   Motion Detect : %s\n", gstMotionEnable ? "enable" : "disable" );
 	
 	{
@@ -1111,6 +1112,8 @@ int main( int32_t argc, char *argv[] )
 
 	CMD_MESSAGE cmd; 
 
+	NX_DspVideoSetPriority( DISPLAY_MODULE_MLC0, 0 );
+
 	// Core Dump Debug
 	//echo "1" > /proc/sys/kernel/core_uses_pid;echo "/mnt/mmc/core.%e" > /proc/sys/kernel/core_pattern;ulimit -c 99999999
 	system("echo \"1\" > /proc/sys/kernel/core_uses_pid");
@@ -1122,7 +1125,7 @@ int main( int32_t argc, char *argv[] )
 	memset( dir_top, 0x00, sizeof(dir_top) );
 	sprintf( (char*)dir_top, "%s", DIRECTORY_TOP );
 
-	while( -1 != (opt = getopt(argc, argv, "umhnbeat:c:"))  )
+	while( -1 != (opt = getopt(argc, argv, "umhn:beat:c:"))  )
 	{
 		switch(opt)
 		{
@@ -1136,7 +1139,14 @@ int main( int32_t argc, char *argv[] )
 			gstAudioEnable = true;
 			break;
 		case 'n':
-			gstHlsEnable = true;
+			if( atoi( optarg ) == 1 )
+				gstNetworkType = DVR_NETWORK_HLS;
+			else if( atoi( optarg ) == 2 )
+				gstNetworkType = DVR_NETWORK_RTP;
+			else {
+				printf("Incorrect argument. (1 or 2)\n");
+				goto END;
+			}
 			break;
 		case 'e':
 			gstTestEvent = true;
@@ -1172,32 +1182,32 @@ int main( int32_t argc, char *argv[] )
 	}
 
 
-#ifndef BOARD_TYPE_LINX
+#ifndef BOARD_TYPE_LYNX
+	mediaConfig.videoConfig[0].nPort 		= DVR_CAMERA_VIP1;
+	mediaConfig.videoConfig[0].nSrcWidth	= 1280;
+	mediaConfig.videoConfig[0].nSrcHeight	= 720;
+	mediaConfig.videoConfig[0].nFps			= 30;
+#else
 #ifdef CAMERA_TYPE_FHD
 	mediaConfig.videoConfig[0].nPort 		= DVR_CAMERA_MIPI;
 	mediaConfig.videoConfig[0].nSrcWidth	= 1920;
 	mediaConfig.videoConfig[0].nSrcHeight	= 1080;
 	mediaConfig.videoConfig[0].nFps			= 30;
 #else
-	mediaConfig.videoConfig[0].nPort 		= DVR_CAMERA_VIP1;
-	mediaConfig.videoConfig[0].nSrcWidth	= 1280;
-	mediaConfig.videoConfig[0].nSrcHeight	= 720;
-	mediaConfig.videoConfig[0].nFps			= 30;
-#endif
-#else
 	mediaConfig.videoConfig[0].nPort 		= DVR_CAMERA_MIPI;
 	mediaConfig.videoConfig[0].nSrcWidth	= 1024;
 	mediaConfig.videoConfig[0].nSrcHeight	= 768;
 	mediaConfig.videoConfig[0].nFps			= 15;
+#endif	
 #endif
 	mediaConfig.videoConfig[0].bExternProc	= false;
 	mediaConfig.videoConfig[0].nDstWidth	= !mediaConfig.videoConfig[0].bExternProc ? mediaConfig.videoConfig[0].nSrcWidth : 1920;
 	mediaConfig.videoConfig[0].nDstHeight	= !mediaConfig.videoConfig[0].bExternProc ? mediaConfig.videoConfig[0].nSrcHeight : 1080;
 
 #ifdef CAMERA_TYPE_FHD
-	mediaConfig.videoConfig[0].nBitrate		= 12000000;
+	mediaConfig.videoConfig[0].nBitrate		= 10000000;
 #else
-	mediaConfig.videoConfig[0].nBitrate		= 7000000;	// 3M( ), 7M(middle), 12M(MAX)
+	mediaConfig.videoConfig[0].nBitrate		= 5000000;	// 3M( ), 7M(middle), 12M(MAX)
 #endif
 
 	mediaConfig.videoConfig[0].nCodec		= DVR_CODEC_H264;
@@ -1209,14 +1219,14 @@ int main( int32_t argc, char *argv[] )
 	mediaConfig.videoConfig[1].nFps			= 30;
 #else
 	mediaConfig.videoConfig[1].nPort		= DVR_CAMERA_VIP0;
-	mediaConfig.videoConfig[1].nSrcWidth	= 720;
+	mediaConfig.videoConfig[1].nSrcWidth	= 640;
 	mediaConfig.videoConfig[1].nSrcHeight	= 480;
 	mediaConfig.videoConfig[1].nFps			= 15;
 #endif	
 	mediaConfig.videoConfig[1].bExternProc	= false;
 	mediaConfig.videoConfig[1].nDstWidth	= !mediaConfig.videoConfig[1].bExternProc ? mediaConfig.videoConfig[1].nSrcWidth : 720;
 	mediaConfig.videoConfig[1].nDstHeight	= !mediaConfig.videoConfig[1].bExternProc ? mediaConfig.videoConfig[1].nSrcHeight : 480;
-	mediaConfig.videoConfig[1].nBitrate		= 7000000;
+	mediaConfig.videoConfig[1].nBitrate		= 5000000;
 	mediaConfig.videoConfig[1].nCodec		= DVR_CODEC_H264;
 	
 	mediaConfig.textConfig.nBitrate			= 3000000;
@@ -1235,12 +1245,21 @@ int main( int32_t argc, char *argv[] )
 	recordConfig.nEventDuration				= 10000;
 	recordConfig.nEventBufferDuration		= 10000;
 
-	recordConfig.bHlsEnable					= gstHlsEnable;
+	recordConfig.networkType				= gstNetworkType;
+
+	// HLS Configuration
 	recordConfig.hlsConfig.nSegmentDuration = 10;
 	recordConfig.hlsConfig.nSegmentNumber	= 3;
 	sprintf( (char*)recordConfig.hlsConfig.MetaFileName,	"test.m3u8" );
 	sprintf( (char*)recordConfig.hlsConfig.SegmentFileName,	"segment" );
 	sprintf( (char*)recordConfig.hlsConfig.SegmentRootDir,	"/www" );
+
+	// RTP Configuration
+	recordConfig.rtpConfig.nPort			= 554;
+	recordConfig.rtpConfig.nSessionNum		= gstVideoChannel;
+	recordConfig.rtpConfig.nConnectNum		= 2;
+	sprintf( (char*)recordConfig.rtpConfig.sessionName[0],	"video0" );
+	sprintf( (char*)recordConfig.rtpConfig.sessionName[1],	"video1" );
 
 	recordConfig.bMdEnable[0]				= gstMotionEnable;
 	recordConfig.mdConfig[0].nMdThreshold	= 100;
@@ -1262,7 +1281,7 @@ int main( int32_t argc, char *argv[] )
 	displayConfig.nHeight	= 720;
 #else
 	displayConfig.bEnable	= true;
-	displayConfig.nChannel	= gstPrviewChannel;
+	displayConfig.nChannel	= gstPreviewChannel;
 	displayConfig.nModule	= 0;
 	displayConfig.nX		= 0;
 	displayConfig.nY		= 0;
@@ -1314,12 +1333,12 @@ int main( int32_t argc, char *argv[] )
 					gstVideoChannel		= 1;
 					gstAudioEnable		= true;
 					gstUserDataEnable	= false;
-					gstHlsEnable		= true;
+					gstNetworkType		= DVR_NETWORK_HLS;
 
 					mediaConfig.nVideoChannel	= gstVideoChannel;
 					mediaConfig.bEnableAudio	= gstAudioEnable;
 					mediaConfig.bEnableUserData = gstUserDataEnable;
-					recordConfig.bHlsEnable		= gstHlsEnable;
+					recordConfig.networkType	= gstNetworkType;
 
 					mediaConfig.videoConfig[0].nBitrate	= 4000000;
 					mediaConfig.videoConfig[1].nBitrate	= 4000000;
@@ -1328,12 +1347,12 @@ int main( int32_t argc, char *argv[] )
 					gstVideoChannel		= 2;
 					gstAudioEnable		= true;
 					gstUserDataEnable	= true;
-					gstHlsEnable		= false;
+					gstNetworkType		= false;
 
 					mediaConfig.nVideoChannel	= gstVideoChannel;
 					mediaConfig.bEnableAudio	= gstAudioEnable;
 					mediaConfig.bEnableUserData = gstUserDataEnable;
-					recordConfig.bHlsEnable		= gstHlsEnable;					
+					recordConfig.networkType	= gstNetworkType;					
 
 					mediaConfig.videoConfig[0].nBitrate	= 7000000;
 					mediaConfig.videoConfig[1].nBitrate	= 7000000;

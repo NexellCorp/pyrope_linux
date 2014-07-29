@@ -19,7 +19,7 @@ KERNEL_DIR=$TOP/kernel/kernel-3.4.39
 MODULES_DIR=$TOP/pyrope/modules
 APPLICATION_DIR=$TOP/pyrope/apps
 LIBRARY_DIR=$TOP/pyrope/library
-BLACKBOX_SOLUTION_DIR=$TOP/pyrope/solution/BlackBoxSolution
+BLACKBOX_SOLUTION_DIR=$TOP/pyrope/Solution/BlackBoxSolution
 
 FILESYSTEM_DIR=$TOP/pyrope/fs
 TOOLS_DIR=$TOP/pyrope/tools
@@ -29,10 +29,10 @@ RESULT_DIR=$TOP/pyrope/result
 BOOT_PARTITION_SIZE=67108864
 
 # Kbyte default:11,264, 16384, 24576, 32768, 49152, 
-if [ ${CMD_V_UBOOT_CLEAN} = "blackbox" ]; then
+if [ ${BUILD_NAME} == "blackbox" ]; then
 	RAMDISK_SIZE=11264
 else
-	RAMDISK_SIZE=49152
+	RAMDISK_SIZE=53248
 fi
 
 RAMDISK_FILE=$FILESYSTEM_DIR/buildroot/out/ramdisk.gz
@@ -292,6 +292,9 @@ function build_application()
 		echo '# libnxtypefind '
 		echo '#########################################################'
 		cd $LIBRARY_DIR/src/libnxtypefind
+		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			make clean
+		fi	
 		make -sw
 		check_result
 		make install -sw
@@ -303,6 +306,9 @@ function build_application()
 		echo '# libion '
 		echo '#########################################################'
 		cd $LIBRARY_DIR/src/libion
+		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			make clean
+		fi	
 		make -sw
 		check_result
 		make install -sw
@@ -314,6 +320,9 @@ function build_application()
 		echo '# libnxmalloc '
 		echo '#########################################################'
 		cd $LIBRARY_DIR/src/libnxmalloc
+		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			make clean
+		fi	
 		make -sw
 		check_result
 		make install -sw
@@ -325,6 +334,9 @@ function build_application()
 		echo '# libnxadc '
 		echo '#########################################################'
 		cd $LIBRARY_DIR/src/libnxadc
+		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			make clean
+		fi	
 		make -sw
 		check_result
 		make install -sw
@@ -336,6 +348,9 @@ function build_application()
 		echo '# libnxaudio '
 		echo '#########################################################'
 		cd $LIBRARY_DIR/src/libnxaudio
+		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			make clean
+		fi	
 		make -sw
 		check_result
 		make install -sw
@@ -347,6 +362,9 @@ function build_application()
 		echo '# libnxgpio '
 		echo '#########################################################'
 		cd $LIBRARY_DIR/src/libnxgpio
+		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			make clean
+		fi	
 		make -sw
 		check_result
 		make install -sw
@@ -358,6 +376,9 @@ function build_application()
 		echo '# libnxgraphictools '
 		echo '#########################################################'
 		cd $LIBRARY_DIR/src/libnxgraphictools
+		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			make clean
+		fi	
 		make -sw
 		check_result
 		make install -sw
@@ -369,6 +390,9 @@ function build_application()
 		echo '# libnxmovieplayer '
 		echo '#########################################################'
 		cd $LIBRARY_DIR/src/libnxmovieplayer
+		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			make clean
+		fi	
 		make -sw
 		check_result
 		make install -sw
@@ -380,6 +404,9 @@ function build_application()
 		echo '# libnxnmeaparser '
 		echo '#########################################################'
 		cd $LIBRARY_DIR/src/libnxnmeaparser
+		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			make clean
+		fi	
 		make -sw
 		check_result
 		make install -sw
@@ -391,6 +418,9 @@ function build_application()
 		echo '# libnxscaler '
 		echo '#########################################################'
 		cd $LIBRARY_DIR/src/libnxscaler
+		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			make clean
+		fi	
 		make -sw
 		check_result
 		make install -sw
@@ -402,6 +432,9 @@ function build_application()
 		echo '# libnxv4l2 '
 		echo '#########################################################'
 		cd $LIBRARY_DIR/src/libnxv4l2
+		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			make clean
+		fi	
 		make -sw
 		check_result
 		make install -sw
@@ -413,6 +446,9 @@ function build_application()
 		echo '# libnxvpu '
 		echo '#########################################################'
 		cd $LIBRARY_DIR/src/libnxvpu
+		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			make clean
+		fi	
 		make -sw
 		check_result
 		make install -sw
@@ -424,6 +460,9 @@ function build_application()
 		echo '# libnxuevent '
 		echo '#########################################################'
 		cd $LIBRARY_DIR/src/libnxuevent
+		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			make clean
+		fi	
 		make -sw
 		check_result
 		make install -sw
@@ -436,6 +475,9 @@ function build_application()
 		echo '# adc_test '
 		echo '#########################################################'
 		cd $APPLICATION_DIR/adc_test
+		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			make clean
+		fi	
 		make -sw
 		check_result
 	fi
@@ -446,6 +488,9 @@ function build_application()
 		echo '# audio_test '
 		echo '#########################################################'
 		cd $APPLICATION_DIR/audio_test
+		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			make clean
+		fi	
 		make -sw
 		check_result
 	fi
@@ -456,6 +501,22 @@ function build_application()
 		echo '# gpio_test '
 		echo '#########################################################'
 		cd $APPLICATION_DIR/gpio_test
+		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			make clean
+		fi	
+		make -sw
+		check_result
+	fi
+
+	if [ -d $APPLICATION_DIR/typefind_app ]; then
+		echo ''
+		echo '#########################################################'
+		echo '# typefind_app '
+		echo '#########################################################'
+		cd $APPLICATION_DIR/typefind_app
+		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			make clean
+		fi	
 		make -sw
 		check_result
 	fi
@@ -466,6 +527,9 @@ function build_application()
 		echo '# movie_player_app '
 		echo '#########################################################'
 		cd $APPLICATION_DIR/movie_player_app
+		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			make clean
+		fi	
 		make -sw
 		check_result
 	fi
@@ -476,6 +540,9 @@ function build_application()
 		echo '# nmea_test '
 		echo '#########################################################'
 		cd $APPLICATION_DIR/nmea_test
+		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			make clean
+		fi	
 		make -sw
 		check_result
 	fi
@@ -486,6 +553,9 @@ function build_application()
 		echo '# transcoding_example '
 		echo '#########################################################'
 		cd $APPLICATION_DIR/transcoding_example
+		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			make clean
+		fi	
 		make -sw
 		check_result
 	fi
@@ -496,6 +566,9 @@ function build_application()
 		echo '# v4l2_test '
 		echo '#########################################################'
 		cd $APPLICATION_DIR/v4l2_test
+		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			make clean
+		fi	
 		make -sw
 		check_result
 	fi
@@ -506,6 +579,9 @@ function build_application()
 		echo '# vpu_test '
 		echo '#########################################################'
 		cd $APPLICATION_DIR/vpu_test
+		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			make clean
+		fi	
 		make -sw
 		check_result
 	fi
@@ -515,15 +591,44 @@ function build_application()
 		echo '#########################################################'
 		echo '# BlackBox Solution '
 		echo '#########################################################'
-		cd $BLACKBOX_SOLUTION_DIR
+		cd $BLACKBOX_SOLUTION_DIR/build
 		chmod 755 ./*.sh
 		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			##./clean-blackbox.sh
+			make distclean -C ../src/libnxfilters
+			make distclean -C ../src/libnxdvr
+			make distclean -C ../apps/nxdvrsol
+			make distclean -C ../apps/nxguisol
+			make distclean -C ../apps/nxdvrmonitor
+
+			./clean-hls.sh
 			./clean-mp4.sh
-			./clean-blackbox.sh
+			./clean-rtp.sh
 		fi
-		./build-mp4.sh
-		./build-blackbox.sh
+		##./build-blackbox.sh
+		make -j8 -C ../src/libnxfilters || exit $?
+		make install -C ../src/libnxfilters
 		check_result
+
+		make -j8 -C ../src/libnxdvr || exit $?
+		make install -C ../src/libnxdvr
+		check_result
+
+		make -j8 -C ../apps/nxdvrsol || exit $?
+		make install -C ../apps/nxdvrsol
+		check_result
+
+		make -j8 -C ../apps/nxguisol || exit $?
+		make install -C ../apps/nxguisol
+		check_result
+
+		make -j8 -C ../apps/nxdvrmonitor || exit $?
+		make install -C ../apps/nxdvrmonitor
+		check_result
+
+		./build-hls.sh
+		./build-mp4.sh
+		./build-rtp.sh
 	fi
 
 	popd > /dev/null
@@ -558,6 +663,7 @@ function build_filesystem()
 			echo '// copy adc_test '
 			cd $APPLICATION_DIR/adc_test/
 			cp -v adc_test $FILESYSTEM_DIR/buildroot/out/rootfs/usr/bin/
+			check_result
 		fi
 
 		if [ -d $APPLICATION_DIR/audio_test ]; then
@@ -565,6 +671,7 @@ function build_filesystem()
 			echo '// copy audio_test '
 			cd $APPLICATION_DIR/audio_test/
 			cp -v audio_test $FILESYSTEM_DIR/buildroot/out/rootfs/usr/bin/
+			check_result
 		fi
 
 		if [ -d $APPLICATION_DIR/gpio_test ]; then
@@ -572,6 +679,7 @@ function build_filesystem()
 			echo '// copy gpio_test '
 			cd $APPLICATION_DIR/gpio_test/
 			cp -v gpio_test $FILESYSTEM_DIR/buildroot/out/rootfs/usr/bin/
+			check_result
 		fi
 
 		if [ -d $APPLICATION_DIR/movie_player_app ]; then
@@ -579,6 +687,7 @@ function build_filesystem()
 			echo '// copy movie_player_app '
 			cd $APPLICATION_DIR/movie_player_app/
 			cp -v movieplayer_app $FILESYSTEM_DIR/buildroot/out/rootfs/usr/bin/
+			check_result
 		fi
 
 		if [ -d $APPLICATION_DIR/nmea_test ]; then
@@ -586,6 +695,7 @@ function build_filesystem()
 			echo '// copy nmea_test '
 			cd $APPLICATION_DIR/nmea_test/
 			cp -v nmea_test $FILESYSTEM_DIR/buildroot/out/rootfs/usr/bin/
+			check_result
 		fi
 
 		if [ -d $APPLICATION_DIR/transcoding_example ]; then
@@ -593,6 +703,7 @@ function build_filesystem()
 			echo '// copy transcoding_example '
 			cd $APPLICATION_DIR/transcoding_example/
 			cp -v trans_test2 $FILESYSTEM_DIR/buildroot/out/rootfs/usr/bin/
+			check_result
 		fi
 
 		if [ -d $APPLICATION_DIR/typefind_app ]; then
@@ -600,6 +711,7 @@ function build_filesystem()
 			echo '// copy typefind_app '
 			cd $APPLICATION_DIR/typefind_app/
 			cp -v typefind_app $FILESYSTEM_DIR/buildroot/out/rootfs/usr/bin/
+			check_result
 		fi
 
 		if [ -d $APPLICATION_DIR/v4l2_test ]; then
@@ -607,6 +719,7 @@ function build_filesystem()
 			echo '// copy v4l2_test '
 			cd $APPLICATION_DIR/v4l2_test/
 			cp -v camera_test csi_test decimator_test hdmi_test $FILESYSTEM_DIR/buildroot/out/rootfs/usr/bin/
+			check_result
 		fi
 
 		if [ -d $APPLICATION_DIR/vpu_test ]; then
@@ -614,6 +727,7 @@ function build_filesystem()
 			echo '// copy vpu_test '
 			cd $APPLICATION_DIR/vpu_test/
 			cp -v dec_test enc_test jpg_test trans_test $FILESYSTEM_DIR/buildroot/out/rootfs/usr/bin/
+			check_result
 		fi
 
 			echo ''
@@ -625,18 +739,20 @@ function build_filesystem()
 			echo '//////////////////////////'
 			echo '// copy lib '
 			cp -v $LIBRARY_DIR/lib/*.so $FILESYSTEM_DIR/buildroot/out/rootfs/usr/lib/
+			check_result
 
 			echo ''
 			echo '//////////////////////////'
 			echo '// copy coda960 '
 			cp -v $MODULES_DIR/coda960/nx_vpu.ko $FILESYSTEM_DIR/buildroot/out/rootfs/root/
+			check_result
 			echo ''
 
 		if [ -d $BLACKBOX_SOLUTION_DIR ]; then
 			echo '//////////////////////////'
 			echo '// copy BlackBox Solution '
 			cp -v $BLACKBOX_SOLUTION_DIR/lib/*.so $FILESYSTEM_DIR/buildroot/out/rootfs/usr/lib/
-			cp -v $BLACKBOX_SOLUTION_DIR/bin/* $FILESYSTEM_DIR/buildroot/out/rootfs/usr/bin/
+			cp -rfv $BLACKBOX_SOLUTION_DIR/bin/* $FILESYSTEM_DIR/buildroot/out/rootfs/root/
 		fi
 
 		pushd . > /dev/null
@@ -648,6 +764,7 @@ function build_filesystem()
 			sudo rm -rf mnt
 		fi
 
+		chmod 755 ./*.sh
 		./mk_ramfs.sh -r rootfs -s ${RAMDISK_SIZE}
 
 		popd > /dev/null
@@ -658,8 +775,11 @@ function build_filesystem()
 		echo "# copy image"
 		echo '#########################################################'
 		cp -v ${UBOOT_DIR}/u-boot.bin ${RESULT_DIR}
+		check_result
 		cp -v ${KERNEL_DIR}/arch/arm/boot/uImage ${RESULT_DIR}
+		check_result
 		cp -v ${RAMDISK_FILE} ${RESULT_DIR}/ramdisk.gz
+		check_result
 
 		if [ -d /home/share/tftpboot ]; then
 			cp -v ${KERNEL_DIR}/arch/arm/boot/uImage /home/share/tftpboot/

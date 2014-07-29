@@ -28,7 +28,9 @@
 #include <nx_dsp.h>
 
 #include <NX_DvrConfig.h>
+
 #include "NX_MenuTop.h"
+#include "NX_MenuFileList.h"
 
 static CNX_BaseWindow 	*gstWnd			= NULL;
 static CNX_TextBox		*gstTxtTitle	= NULL;
@@ -57,6 +59,9 @@ static void Move2MenuBlackBox( void )
 static void Move2Player( void )
 {
 	CNX_BaseWindow *pWnd = (CNX_BaseWindow*)GetMenuFileListHandle( gstSurface, gstFont );
+
+	FileListNormal();
+
 	pWnd->EventLoop();
 }
 

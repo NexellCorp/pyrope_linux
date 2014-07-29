@@ -23,10 +23,17 @@ INCLUDE		+= -I./
 INCLUDE		+= -I$(LIBSDIR)/include
 INCLUDE		+= -I$(TOPDIR)/include
 
+INCLUDE 	+= -I$(TOPDIR)/include/live555/liveMedia
+INCLUDE 	+= -I$(TOPDIR)/include/live555/groupsock
+INCLUDE 	+= -I$(TOPDIR)/include/live555/BasicUsageEnvironment
+INCLUDE 	+= -I$(TOPDIR)/include/live555/UsageEnvironment
+
 ######################################################################
 # Target
+# Test Component
+
 # Common modules
-CPPOBJS		:= NX_FilterSysApi.o NX_DbgMsg.o
+CPPOBJS		+= NX_FilterSysApi.o NX_DbgMsg.o
 
 # Video modules
 CPPOBJS		+= CNX_VIPFilter.o
@@ -49,9 +56,13 @@ CPPOBJS		+= CNX_UserDataFilter.o
 CPPOBJS 	+= CNX_TextOverlayFilter.o
 CPPOBJS		+= CNX_ImageEffectFilter.o
 # Etc Module (Network, MotionDetect, ...)
+CPPOBJS		+= CNX_DynamicRTSPServer.o
 CPPOBJS		+= CNX_RTPFilter.o
 CPPOBJS		+= CNX_HLSFilter.o
 CPPOBJS		+= CNX_MotionDetectFilter.o
+#Transcoding module
+CPPOBJS		+= codec_info.o media_reader.o
+CPPOBJS		+= CNX_VideoDecoder.o
 
 LIBNAME 	:= libnxfilters
 TARGET		:= $(LIBNAME).a

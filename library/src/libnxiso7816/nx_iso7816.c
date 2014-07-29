@@ -62,6 +62,7 @@ typedef struct ISO7816_INFO *ISO7816_HANDLE;
 #define	ISO7816_TIEOFF_REG_PHY		0xC0011000
 #define	ISO7816_TIEOFF_REG_SIZE		0x00001000
 
+#define TIEOFFREG04					0xC0011010
 #define TIEOFFREG05					0xC0011014
 
 struct ISO7816_INFO {
@@ -114,10 +115,27 @@ static ISO7816_HANDLE _OpenISO7816( int port )
 	//	Set TIE-OFF Register for ISO7816
 	//
 	{
-		uint32_t *tieoff05;
+		uint32_t *tieoff;
 		uint32_t virAddr = iomem_map(ISO7816_TIEOFF_REG_PHY, ISO7816_TIEOFF_REG_SIZE);
-		tieoff05 = (uint32_t*)( virAddr + (TIEOFFREG05 - ISO7816_TIEOFF_REG_PHY) );
-		*tieoff05 |= 0x7;
+#if (HW_UART_PORT == 0)
+		tieoff = (uint32_t*)( virAddr + (TIEOFFREG04 - ISO7816_TIEOFF_REG_PHY) );
+		*tieoff |= 0x700000;
+#elif(HW_UART_PORT == 1)
+		tieoff = (uint32_t*)( virAddr + (TIEOFFREG04 - ISO7816_TIEOFF_REG_PHY) );
+		*tieoff |= 0x3800000;
+#elif(HW_UART_PORT == 2)
+		tieoff = (uint32_t*)( virAddr + (TIEOFFREG04 - ISO7816_TIEOFF_REG_PHY) );
+		*tieoff |= 0x1c000000;
+#elif(HW_UART_PORT == 3)
+		tieoff = (uint32_t*)( virAddr + (TIEOFFREG04 - ISO7816_TIEOFF_REG_PHY) );
+		*tieoff |= 0xe0000000;
+#elif(HW_UART_PORT == 4)
+		tieoff = (uint32_t*)( virAddr + (TIEOFFREG05 - ISO7816_TIEOFF_REG_PHY) );
+		*tieoff |= 0x38;
+#elif(HW_UART_PORT == 5)
+		tieoff = (uint32_t*)( virAddr + (TIEOFFREG05 - ISO7816_TIEOFF_REG_PHY) );
+		*tieoff |= 0x7;
+#endif
 		iomem_free( virAddr, ISO7816_TIEOFF_REG_SIZE );
 	}
 

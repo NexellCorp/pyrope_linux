@@ -95,7 +95,23 @@ static int32_t CreateFileList( const char *dir )
 	return !m_FileCnt;
 }
 
-static void FileListNormal(void)
+static void FileListPlay( void )
+{
+	uint8_t FilePath[256];
+	uint8_t *fileName = NULL;
+	
+	fileName = gstLstFile->GetCurItemString();
+	memset(FilePath, 0x00, sizeof(FilePath));
+	if (m_FileListType == LIST_TYPE_NORMAL) sprintf((char*)FilePath, "/mnt/mmc/normal/%s", fileName);
+	else sprintf((char*)FilePath, "/mnt/mmc/event/%s", fileName);
+
+	PlayerStart((char*)FilePath);
+
+	CNX_BaseWindow *pWnd = (CNX_BaseWindow*)GetMenuPlayerHandle( gstSurface, gstFont );
+	pWnd->EventLoop();
+}
+
+void FileListNormal(void)
 {
 	printf("Build Normal List!\n");
 
@@ -114,7 +130,7 @@ static void FileListNormal(void)
 	gstLstFile->Update();
 }
 
-static void FileListEvent( void )
+void FileListEvent( void )
 {
 	printf("Build Event List!\n");
 
@@ -131,22 +147,6 @@ static void FileListEvent( void )
 	gstLstFile->SetPageItemNum( 10 );
 	gstLstFile->SetCurItem(0);
 	gstLstFile->Update();
-}
-
-static void FileListPlay( void )
-{
-	uint8_t FilePath[256];
-	uint8_t *fileName = NULL;
-	
-	fileName = gstLstFile->GetCurItemString();
-	memset(FilePath, 0x00, sizeof(FilePath));
-	if (m_FileListType == LIST_TYPE_NORMAL) sprintf((char*)FilePath, "/mnt/mmc/normal/%s", fileName);
-	else sprintf((char*)FilePath, "/mnt/mmc/event/%s", fileName);
-
-	PlayerStart((char*)FilePath);
-
-	CNX_BaseWindow *pWnd = (CNX_BaseWindow*)GetMenuPlayerHandle( gstSurface, gstFont );
-	pWnd->EventLoop();
 }
 
 void FileListNextPlay(void)
@@ -284,8 +284,6 @@ static void BuildMenuFileList( void )
 	attr.focusBgColor		= SDL_MapRGB(gstSurface->format, 0x00, 0x00, 0xFF);
 	attr.focusLineColor		= SDL_MapRGB(gstSurface->format, 0x00, 0x00, 0x00);
 	gstLstFile->Create( &attr );
-
-	FileListNormal();
 }
 
 CNX_BaseObject *GetMenuFileListHandle( SDL_Surface *pSurface, TTF_Font *pFont )

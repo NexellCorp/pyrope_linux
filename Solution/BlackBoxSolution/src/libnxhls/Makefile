@@ -1,6 +1,7 @@
 ifndef	TOPDIR
 TOPDIR	:= ../..
 endif
+
 ########################################################################
 # Get Linux Build Enviornment:
 include ../../../../build.env
@@ -34,6 +35,7 @@ LIBNAME := libnxhls
 
 SO_NAME	:= $(LIBNAME).so
 TARGET	:= $(LIBNAME).so
+
 ######################################################################
 # Build
 OBJS	:= $(COBJS) $(CPPOBJS)

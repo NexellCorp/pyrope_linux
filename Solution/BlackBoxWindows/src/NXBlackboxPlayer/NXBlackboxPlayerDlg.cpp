@@ -241,6 +241,9 @@ void CNXBlackboxPlayerDlg::Initialize( void )
 	m_LineChart.SetPos(0, 0 + LINECHART_DRAW_MARGIN);
 	m_LineChart.SetPos(1, 0 + LINECHART_DRAW_MARGIN);
 	m_LineChart.SetPos(2, 0 + LINECHART_DRAW_MARGIN);
+
+	// Initalize flags
+	m_bPlay = false;
 }
 
 
@@ -803,6 +806,17 @@ bool CNXBlackboxPlayerDlg::LoadMap( void )
 		return false;
 	}
 
+	// Reference to System Top directory ( C:\ ) :: for debugging
+	strPath.Format( L"%s/%s", MAP_PATH_DEBUG, MAP_NAME );
+	if( file.Open((LPCTSTR)strPath, CFile::modeRead) )
+	{
+		file.Close();
+		m_ExplorerMap.Navigate( L"file://" + strPath, NULL, NULL, NULL, NULL );
+		::ShowWindow( m_ExplorerMap.GetSafeHwnd(), SW_HIDE );
+		return true;;
+	}
+
+	// Reference to Installation Directory
 	LONG IResult = RegOpenKeyEx( HKEY_LOCAL_MACHINE, strReg + strExe, 0, KEY_READ, &hKey );
 	if( ERROR_SUCCESS == IResult )
 	{
@@ -816,23 +830,12 @@ bool CNXBlackboxPlayerDlg::LoadMap( void )
 	strPath.Replace(L"\\", L"/");
 	strPath.AppendFormat(MAP_NAME);
 	
-	// Reference to Installratin Directory
 	if( file.Open( (LPCTSTR)strPath, CFile::modeRead) )
 	{
 		file.Close();
 		m_ExplorerMap.Navigate( L"file://" + strPath, NULL, NULL, NULL, NULL );
 		::ShowWindow( m_ExplorerMap.GetSafeHwnd(), SW_HIDE );
 		return true;
-	}
-
-	// Reference to System Top directory ( C:\ ) :: for debugging
-	strPath.Format( L"%s/%s", MAP_PATH_DEBUG, MAP_NAME );
-	if( file.Open((LPCTSTR)strPath, CFile::modeRead) )
-	{
-		file.Close();
-		m_ExplorerMap.Navigate( L"file://" + strPath, NULL, NULL, NULL, NULL );
-		::ShowWindow( m_ExplorerMap.GetSafeHwnd(), SW_HIDE );
-		return true;;
 	}
 
 	AfxMessageBox(L"Unable to load map.");
@@ -961,8 +964,20 @@ void CNXBlackboxPlayerDlg::OnBnClickedBtnPlay()
 	//	Step 1. Play/Pause
 	if( m_pPlayer )
 	{
-		m_pPlayer->Play();
-		SetTimer( TIMER_PROGRESS, 400, NULL );
+		if( m_bPlay == false ) {
+			m_pPlayer->Play();
+			SetTimer( TIMER_PROGRESS, 400, NULL );
+			GetDlgItem(IDC_BTN_PLAY)->SetWindowTextW(L"Pause");
+			GetDlgItem(IDC_BTN_PLAY)->Invalidate(false);
+			m_bPlay = true;
+		}
+		else {
+			m_pPlayer->Pause();
+			KillTimer( TIMER_PROGRESS );
+			GetDlgItem(IDC_BTN_PLAY)->SetWindowTextW(L"Play");
+			GetDlgItem(IDC_BTN_PLAY)->Invalidate(false);
+			m_bPlay = false;
+		}
 	}
 }
 
@@ -978,6 +993,7 @@ void CNXBlackboxPlayerDlg::OnBnClickedBtnStop()
 		m_pPlayer->Stop();
 		m_pPlayer->Close();
 		KillTimer( TIMER_PROGRESS );
+		m_bPlay = false;
 	}
 }
 

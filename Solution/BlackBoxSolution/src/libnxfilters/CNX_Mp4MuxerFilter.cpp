@@ -349,8 +349,8 @@ int32_t CNX_Mp4MuxerFilter::MuxEncodedSample( CNX_MuxerSample *pSample )
 		bufSize = pSample->GetActualDataLength();
 
 		if( m_bTrackStart[trackID] ) {
-			//if( trackID == 0)
-				NxDbgMsg( NX_DBG_VBS, ("[TRACK][%02d] : PTS = %lld, totlaDuration = %lld\n", trackID, PTS, m_TrackInfo[trackID].totalDuration) );
+			// if( trackID == 0)
+			// 	NxDbgMsg( NX_DBG_VBS, ("[TRACK][%02d] : PTS = %lld, totlaDuration = %lld\n", trackID, PTS, m_TrackInfo[trackID].totalDuration) );
 			duration = PTS - m_TrackInfo[trackID].totalDuration;
 			NxMP4MuxPutData( 
 				m_hMp4Mux, 

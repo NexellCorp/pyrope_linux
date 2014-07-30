@@ -48,8 +48,8 @@
 
 #ifndef ANDROID
 #if 1
-#define ALOGD(x...) 
-#define ALOGE(x...) 
+#define ALOGD(x...)
+#define ALOGE(x...)
 #else
 #define ALOGD(x...) do { \
         fprintf(stderr, x); \
@@ -171,6 +171,8 @@ public:
     int streamOff(int id);
     int getTimeStamp(int id, long long *timestamp);
     int setPreset(int id, uint32_t preset);
+    int getDeviceFD(char *name);
+    int getDeviceFD(int id);
 
 private: // data
     /* media device fd */
@@ -317,6 +319,24 @@ int V4l2NexellPrivate::enumEntities()
     }
 
     return ret;
+}
+
+int V4l2NexellPrivate::getDeviceFD(char *name)
+{
+    V4l2NexellPrivate::DeviceInfo *info = getDevice(name);
+    if (info != NULL && info->Device != NULL) {
+        return info->Device->getFD();
+    }
+    return -1;
+}
+
+int V4l2NexellPrivate::getDeviceFD(int id)
+{
+    V4l2NexellPrivate::DeviceInfo *info = getDevice(id);
+    if (info != NULL && info->Device != NULL) {
+        return info->Device->getFD();
+    }
+    return -1;
 }
 
 V4l2NexellPrivate::DeviceInfo *V4l2NexellPrivate::getDevice(char *name)

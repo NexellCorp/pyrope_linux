@@ -33,7 +33,7 @@ CNX_VRFilter::CNX_VRFilter( void )
 	, m_pPrevVideoSample( NULL )
 {
 	memset( &m_DisplayInfo, 0x00, sizeof(DISPLAY_INFO) );
-	pthread_mutex_init( &m_hEnableLock, NULL );
+	pthread_mutex_init( &m_hLock, NULL );
 }
 
 //------------------------------------------------------------------------------
@@ -42,7 +42,7 @@ CNX_VRFilter::~CNX_VRFilter( void )
 	if( true == m_bInit )
 		Deinit();
 
-	pthread_mutex_destroy( &m_hEnableLock );
+	pthread_mutex_destroy( &m_hLock );
 }
 
 //------------------------------------------------------------------------------
@@ -89,12 +89,6 @@ void	CNX_VRFilter::Deinit( void )
 	if( true == m_bInit )
 	{
 		if( m_bRun )	Stop();
-
-		if( m_hDsp ) {
-			NX_DspStreamControl( m_hDsp, false );
-			NX_DspClose( m_hDsp );
-			m_hDsp = NULL;			
-		}
 		m_bInit = false;
 	}
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
@@ -103,23 +97,22 @@ void	CNX_VRFilter::Deinit( void )
 //------------------------------------------------------------------------------
 int32_t	CNX_VRFilter::Receive( CNX_Sample *pSample )
 {
+	CNX_AutoLock lock( &m_hLock );
+
 	CNX_VideoSample *pVideoSample = (CNX_VideoSample *)pSample;
 	NX_ASSERT( NULL != pVideoSample );
 
-	pthread_mutex_lock( &m_hEnableLock );
 	pVideoSample->Lock();
 	if( m_bEnable || m_bEnableHdmi ) {
-		if( m_hDsp ){
-			NX_DspQueueBuffer( m_hDsp, pVideoSample->GetVideoMemory() );
-			NX_DspDequeueBuffer( m_hDsp );
-		}
+		if( m_hDsp ) NX_DspQueueBuffer( m_hDsp, pVideoSample->GetVideoMemory() );
 	}
-	pthread_mutex_unlock( &m_hEnableLock );
 
 	Deliver( pSample );
 
-	if( m_pPrevVideoSample )
+	if( m_pPrevVideoSample ) {
+		if( m_hDsp ) NX_DspDequeueBuffer( m_hDsp );
 		m_pPrevVideoSample->Unlock();
+	}
 	
 	m_pPrevVideoSample = pVideoSample;
 
@@ -135,6 +128,8 @@ int32_t	CNX_VRFilter::ReleaseSample( CNX_Sample *pSample )
 //------------------------------------------------------------------------------
 int32_t	CNX_VRFilter::Run( void )
 {
+	CNX_AutoLock lock( &m_hLock );
+
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	if( false == m_bRun ) {
 		m_bRun = true;
@@ -146,12 +141,22 @@ int32_t	CNX_VRFilter::Run( void )
 //------------------------------------------------------------------------------
 int32_t	CNX_VRFilter::Stop( void )
 {
+	CNX_AutoLock lock( &m_hLock );
+
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	if( true == m_bRun ) {
 		m_bRun = false;
 		
-		if( m_pPrevVideoSample )
+		if( m_hDsp ) {
+			NX_DspStreamControl( m_hDsp, false );
+			NX_DspClose( m_hDsp );
+			m_hDsp = NULL;			
+		}
+
+		if( m_pPrevVideoSample ) {
 			m_pPrevVideoSample->Unlock();
+			m_pPrevVideoSample = NULL;
+		}
 	}
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return true;
@@ -160,10 +165,11 @@ int32_t	CNX_VRFilter::Stop( void )
 //------------------------------------------------------------------------------
 int32_t CNX_VRFilter::EnableRender( uint32_t enable )
 {
+	CNX_AutoLock lock( &m_hLock );
+
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	NxDbgMsg( NX_DBG_INFO, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnable)?"Enable":"Disable", (enable)?"Enable":"Disable") );
 
-	pthread_mutex_lock( &m_hEnableLock );
 	if( enable ) {
 		if( !m_hDsp ) {
 			m_hDsp = NX_DspInit( &m_DisplayInfo );
@@ -175,10 +181,14 @@ int32_t CNX_VRFilter::EnableRender( uint32_t enable )
 			NX_DspStreamControl( m_hDsp, false );
 			NX_DspClose( m_hDsp );
 			m_hDsp = NULL;
+		}
+		
+		if( m_pPrevVideoSample ) {
+			m_pPrevVideoSample->Unlock();
+			m_pPrevVideoSample = NULL;
 		}		
 	}
 	m_bEnable = enable;
-	pthread_mutex_unlock( &m_hEnableLock );
 
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return true;	
@@ -187,6 +197,8 @@ int32_t CNX_VRFilter::EnableRender( uint32_t enable )
 //------------------------------------------------------------------------------
 int32_t CNX_VRFilter::EnableHdmiRender( uint32_t enable )
 {
+	CNX_AutoLock lock( &m_hLock );
+
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	NxDbgMsg( NX_DBG_INFO, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnableHdmi)?"Enable":"Disable", (enable)?"Enable":"Disable") );
 
@@ -205,7 +217,6 @@ int32_t CNX_VRFilter::EnableHdmiRender( uint32_t enable )
 	dspInfo.dspSrcRect.right	= dspInfo.dspDstRect.right	= 1920;
 	dspInfo.dspSrcRect.bottom	= dspInfo.dspDstRect.bottom	= 1080;
 
-	pthread_mutex_lock( &m_hEnableLock );
 	if( enable ) {
 		if( !m_hDsp ) {
 			m_hDsp = NX_DspInit( &dspInfo );
@@ -217,10 +228,14 @@ int32_t CNX_VRFilter::EnableHdmiRender( uint32_t enable )
 			NX_DspStreamControl( m_hDsp, false );
 			NX_DspClose( m_hDsp );
 			m_hDsp = NULL;
+		}
+
+		if( m_pPrevVideoSample ) {
+			m_pPrevVideoSample->Unlock();
+			m_pPrevVideoSample = NULL;
 		}		
 	}
 	m_bEnableHdmi = enable;
-	pthread_mutex_unlock( &m_hEnableLock );
 
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return true;	

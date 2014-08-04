@@ -62,7 +62,7 @@ protected:
 	int32_t				m_bRun;
 	int32_t				m_bEnable;
 	int32_t				m_bEnableHdmi;
-	pthread_mutex_t		m_hEnableLock;
+	pthread_mutex_t		m_hLock;
 	//------------------------------------------------------------------------
 	//	Display
 	//------------------------------------------------------------------------

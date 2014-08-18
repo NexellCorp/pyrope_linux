@@ -489,7 +489,7 @@ int32_t	CNX_DvrManager::SetConfig( NX_DVR_MEDIA_CONFIG *pMediaConfig, NX_DVR_REC
 	
 	m_InterleaverConfig.channel	= m_VideoNum + m_AudioNum + m_TextNum;
 
-	m_BufferingConfig.bufferedTime = (int32_t)((float)pRecordConfig->nEventDuration / (float)1000);
+	m_BufferingConfig.bufferedTime = (int32_t)((float)pRecordConfig->nEventBufferDuration / (float)1000);
 
 	// Record Config
 	m_NormalDuration		= pRecordConfig->nNormalDuration;

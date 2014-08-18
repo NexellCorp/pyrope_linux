@@ -32,7 +32,7 @@ BOOT_PARTITION_SIZE=67108864
 if [ ${BUILD_NAME} == "blackbox" ]; then
 	RAMDISK_SIZE=11264
 else
-	RAMDISK_SIZE=53248
+	RAMDISK_SIZE=56320
 fi
 
 RAMDISK_FILE=$FILESYSTEM_DIR/buildroot/out/ramdisk.gz
@@ -270,6 +270,39 @@ function build_kernel_configcopy()
 	popd > /dev/null
 }
 
+function build_partial_app()
+{
+	if [ -d $1 ]; then
+		echo ''
+		echo '#########################################################'
+		echo "# $1 "
+		echo '#########################################################'
+		cd $1
+		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			make clean
+		fi	
+		make -sw
+		check_result
+	fi
+}
+
+function build_partial_lib()
+{
+	if [ -d $1 ]; then
+		echo ''
+		echo '#########################################################'
+		echo "# $1 "
+		echo '#########################################################'
+		cd $1
+		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
+			make clean
+		fi	
+		make -sw
+		check_result
+		make install -sw
+	fi
+}
+
 function build_application()
 {
 	echo ''
@@ -281,311 +314,39 @@ function build_application()
 	echo '#'
 	echo '#########################################################'
 	echo '#########################################################'
-
+	
 	sleep 1.5
 
 	pushd . > /dev/null
 
-	if [ -d $LIBRARY_DIR/src/libnxtypefind ]; then
-		echo ''
-		echo '#########################################################'
-		echo '# libnxtypefind '
-		echo '#########################################################'
-		cd $LIBRARY_DIR/src/libnxtypefind
-		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
-			make clean
-		fi	
-		make -sw
-		check_result
-		make install -sw
-	fi
+	build_partial_lib $LIBRARY_DIR/src/libnxtypefind
+	build_partial_lib $LIBRARY_DIR/src/libcec
+	build_partial_lib $LIBRARY_DIR/src/libion
+	build_partial_lib $LIBRARY_DIR/src/libnxmalloc
+	build_partial_lib $LIBRARY_DIR/src/libnxadc
+	build_partial_lib $LIBRARY_DIR/src/libnxaudio
+	build_partial_lib $LIBRARY_DIR/src/libnxgpio
+	build_partial_lib $LIBRARY_DIR/src/libnxgraphictools
+	build_partial_lib $LIBRARY_DIR/src/libnxmovieplayer
+	build_partial_lib $LIBRARY_DIR/src/libnxnmeaparser
+	build_partial_lib $LIBRARY_DIR/src/libnxscaler
+	build_partial_lib $LIBRARY_DIR/src/libnxv4l2
+	build_partial_lib $LIBRARY_DIR/src/libnxvpu
+	build_partial_lib $LIBRARY_DIR/src/libnxuevent
 
-	if [ -d $LIBRARY_DIR/src/libion ]; then
-		echo ''
-		echo '#########################################################'
-		echo '# libion '
-		echo '#########################################################'
-		cd $LIBRARY_DIR/src/libion
-		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
-			make clean
-		fi	
-		make -sw
-		check_result
-		make install -sw
-	fi	
+	build_partial_app $APPLICATION_DIR/adc_test
+	build_partial_app $APPLICATION_DIR/audio_test
+	build_partial_app $APPLICATION_DIR/cec_test
+	build_partial_app $APPLICATION_DIR/fb_test
+	build_partial_app $APPLICATION_DIR/gpio_test
+	build_partial_app $APPLICATION_DIR/typefind_app
+	build_partial_app $APPLICATION_DIR/movie_player_app
+	build_partial_app $APPLICATION_DIR/nmea_test
+	build_partial_app $APPLICATION_DIR/spi_test
+	build_partial_app $APPLICATION_DIR/transcoding_example
+	build_partial_app $APPLICATION_DIR/v4l2_test
+	build_partial_app $APPLICATION_DIR/vpu_test
 
-	if [ -d $LIBRARY_DIR/src/libnxmalloc ]; then
-		echo ''
-		echo '#########################################################'
-		echo '# libnxmalloc '
-		echo '#########################################################'
-		cd $LIBRARY_DIR/src/libnxmalloc
-		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
-			make clean
-		fi	
-		make -sw
-		check_result
-		make install -sw
-	fi
-
-	if [ -d $LIBRARY_DIR/src/libnxadc ]; then
-		echo ''
-		echo '#########################################################'
-		echo '# libnxadc '
-		echo '#########################################################'
-		cd $LIBRARY_DIR/src/libnxadc
-		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
-			make clean
-		fi	
-		make -sw
-		check_result
-		make install -sw
-	fi	
-
-	if [ -d $LIBRARY_DIR/src/libnxaudio ]; then
-		echo ''
-		echo '#########################################################'
-		echo '# libnxaudio '
-		echo '#########################################################'
-		cd $LIBRARY_DIR/src/libnxaudio
-		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
-			make clean
-		fi	
-		make -sw
-		check_result
-		make install -sw
-	fi	
-
-	if [ -d $LIBRARY_DIR/src/libnxgpio ]; then
-		echo ''
-		echo '#########################################################'
-		echo '# libnxgpio '
-		echo '#########################################################'
-		cd $LIBRARY_DIR/src/libnxgpio
-		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
-			make clean
-		fi	
-		make -sw
-		check_result
-		make install -sw
-	fi	
-
-	if [ -d $LIBRARY_DIR/src/libnxgraphictools ]; then
-		echo ''
-		echo '#########################################################'
-		echo '# libnxgraphictools '
-		echo '#########################################################'
-		cd $LIBRARY_DIR/src/libnxgraphictools
-		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
-			make clean
-		fi	
-		make -sw
-		check_result
-		make install -sw
-	fi
-
-	if [ -d $LIBRARY_DIR/src/libnxmovieplayer ]; then
-		echo ''
-		echo '#########################################################'
-		echo '# libnxmovieplayer '
-		echo '#########################################################'
-		cd $LIBRARY_DIR/src/libnxmovieplayer
-		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
-			make clean
-		fi	
-		make -sw
-		check_result
-		make install -sw
-	fi
-
-	if [ -d $LIBRARY_DIR/src/libnxnmeaparser ]; then
-		echo ''
-		echo '#########################################################'
-		echo '# libnxnmeaparser '
-		echo '#########################################################'
-		cd $LIBRARY_DIR/src/libnxnmeaparser
-		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
-			make clean
-		fi	
-		make -sw
-		check_result
-		make install -sw
-	fi	
-
-	if [ -d $LIBRARY_DIR/src/libnxscaler ]; then
-		echo ''
-		echo '#########################################################'
-		echo '# libnxscaler '
-		echo '#########################################################'
-		cd $LIBRARY_DIR/src/libnxscaler
-		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
-			make clean
-		fi	
-		make -sw
-		check_result
-		make install -sw
-	fi
-	
-	if [ -d $LIBRARY_DIR/src/libnxv4l2 ]; then
-		echo ''
-		echo '#########################################################'
-		echo '# libnxv4l2 '
-		echo '#########################################################'
-		cd $LIBRARY_DIR/src/libnxv4l2
-		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
-			make clean
-		fi	
-		make -sw
-		check_result
-		make install -sw
-	fi	
-
-	if [ -d $LIBRARY_DIR/src/libnxvpu ]; then
-		echo ''
-		echo '#########################################################'
-		echo '# libnxvpu '
-		echo '#########################################################'
-		cd $LIBRARY_DIR/src/libnxvpu
-		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
-			make clean
-		fi	
-		make -sw
-		check_result
-		make install -sw
-	fi
-	
-	if [ -d $LIBRARY_DIR/src/libnxuevent ]; then
-		echo ''
-		echo '#########################################################'
-		echo '# libnxuevent '
-		echo '#########################################################'
-		cd $LIBRARY_DIR/src/libnxuevent
-		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
-			make clean
-		fi	
-		make -sw
-		check_result
-		make install -sw
-	fi
-
-
-	if [ -d $APPLICATION_DIR/adc_test ]; then
-		echo ''
-		echo '#########################################################'
-		echo '# adc_test '
-		echo '#########################################################'
-		cd $APPLICATION_DIR/adc_test
-		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
-			make clean
-		fi	
-		make -sw
-		check_result
-	fi
-
-	if [ -d $APPLICATION_DIR/audio_test ]; then
-		echo ''
-		echo '#########################################################'
-		echo '# audio_test '
-		echo '#########################################################'
-		cd $APPLICATION_DIR/audio_test
-		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
-			make clean
-		fi	
-		make -sw
-		check_result
-	fi
-
-	if [ -d $APPLICATION_DIR/gpio_test ]; then
-		echo ''
-		echo '#########################################################'
-		echo '# gpio_test '
-		echo '#########################################################'
-		cd $APPLICATION_DIR/gpio_test
-		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
-			make clean
-		fi	
-		make -sw
-		check_result
-	fi
-
-	if [ -d $APPLICATION_DIR/typefind_app ]; then
-		echo ''
-		echo '#########################################################'
-		echo '# typefind_app '
-		echo '#########################################################'
-		cd $APPLICATION_DIR/typefind_app
-		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
-			make clean
-		fi	
-		make -sw
-		check_result
-	fi
-
-	if [ -d $APPLICATION_DIR/movie_player_app ]; then
-		echo ''
-		echo '#########################################################'
-		echo '# movie_player_app '
-		echo '#########################################################'
-		cd $APPLICATION_DIR/movie_player_app
-		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
-			make clean
-		fi	
-		make -sw
-		check_result
-	fi
-
-	if [ -d $APPLICATION_DIR/nmea_test ]; then
-		echo ''
-		echo '#########################################################'
-		echo '# nmea_test '
-		echo '#########################################################'
-		cd $APPLICATION_DIR/nmea_test
-		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
-			make clean
-		fi	
-		make -sw
-		check_result
-	fi
-
-	if [ -d $APPLICATION_DIR/transcoding_example ]; then
-		echo ''
-		echo '#########################################################'
-		echo '# transcoding_example '
-		echo '#########################################################'
-		cd $APPLICATION_DIR/transcoding_example
-		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
-			make clean
-		fi	
-		make -sw
-		check_result
-	fi
-	
-	if [ -d $APPLICATION_DIR/v4l2_test ]; then
-		echo ''
-		echo '#########################################################'
-		echo '# v4l2_test '
-		echo '#########################################################'
-		cd $APPLICATION_DIR/v4l2_test
-		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
-			make clean
-		fi	
-		make -sw
-		check_result
-	fi
-
-	if [ -d $APPLICATION_DIR/vpu_test ]; then
-		echo ''
-		echo '#########################################################'
-		echo '# vpu_test '
-		echo '#########################################################'
-		cd $APPLICATION_DIR/vpu_test
-		if [ ${CMD_V_APPLICATION_CLEAN} = "yes" ]; then
-			make clean
-		fi	
-		make -sw
-		check_result
-	fi
-	
 	if [ -d $BLACKBOX_SOLUTION_DIR ]; then
 		echo ''
 		echo '#########################################################'
@@ -634,6 +395,16 @@ function build_application()
 	popd > /dev/null
 }
 
+function copy_app()
+{
+	if [ -d $1 ]; then
+		echo '//////////////////////////////////////////////////////////////////////////////'
+		echo "// copy $1 "
+		cp -v $1/$2 $FILESYSTEM_DIR/buildroot/out/rootfs/usr/bin/
+		check_result
+	fi
+}
+
 function build_filesystem()
 {
 	echo ''
@@ -657,62 +428,16 @@ function build_filesystem()
 	fi
 
 	if [ -d $FILESYSTEM_DIR/buildroot/out/rootfs ]; then
-
-		if [ -d $APPLICATION_DIR/adc_test ]; then
-			echo '//////////////////////////////////////////////////////////////////////////////'
-			echo '// copy adc_test '
-			cd $APPLICATION_DIR/adc_test/
-			cp -v adc_test $FILESYSTEM_DIR/buildroot/out/rootfs/usr/bin/
-			check_result
-		fi
-
-		if [ -d $APPLICATION_DIR/audio_test ]; then
-			echo '//////////////////////////'
-			echo '// copy audio_test '
-			cd $APPLICATION_DIR/audio_test/
-			cp -v audio_test $FILESYSTEM_DIR/buildroot/out/rootfs/usr/bin/
-			check_result
-		fi
-
-		if [ -d $APPLICATION_DIR/gpio_test ]; then
-			echo '//////////////////////////'
-			echo '// copy gpio_test '
-			cd $APPLICATION_DIR/gpio_test/
-			cp -v gpio_test $FILESYSTEM_DIR/buildroot/out/rootfs/usr/bin/
-			check_result
-		fi
-
-		if [ -d $APPLICATION_DIR/movie_player_app ]; then
-			echo '//////////////////////////'
-			echo '// copy movie_player_app '
-			cd $APPLICATION_DIR/movie_player_app/
-			cp -v movieplayer_app $FILESYSTEM_DIR/buildroot/out/rootfs/usr/bin/
-			check_result
-		fi
-
-		if [ -d $APPLICATION_DIR/nmea_test ]; then
-			echo '//////////////////////////'
-			echo '// copy nmea_test '
-			cd $APPLICATION_DIR/nmea_test/
-			cp -v nmea_test $FILESYSTEM_DIR/buildroot/out/rootfs/usr/bin/
-			check_result
-		fi
-
-		if [ -d $APPLICATION_DIR/transcoding_example ]; then
-			echo '//////////////////////////'
-			echo '// copy transcoding_example '
-			cd $APPLICATION_DIR/transcoding_example/
-			cp -v trans_test2 $FILESYSTEM_DIR/buildroot/out/rootfs/usr/bin/
-			check_result
-		fi
-
-		if [ -d $APPLICATION_DIR/typefind_app ]; then
-			echo '//////////////////////////'
-			echo '// copy typefind_app '
-			cd $APPLICATION_DIR/typefind_app/
-			cp -v typefind_app $FILESYSTEM_DIR/buildroot/out/rootfs/usr/bin/
-			check_result
-		fi
+		copy_app $APPLICATION_DIR/adc_test adc_test
+		copy_app $APPLICATION_DIR/audio_test audio_test
+		copy_app $APPLICATION_DIR/cec_test cec_test
+		copy_app $APPLICATION_DIR/fb_test fb_test
+		copy_app $APPLICATION_DIR/gpio_test gpio_test
+		copy_app $APPLICATION_DIR/nmea_test nmea_test
+		copy_app $APPLICATION_DIR/spi_test spi_test
+		copy_app $APPLICATION_DIR/typefind_app typefind_app
+		copy_app $APPLICATION_DIR/movie_player_app movieplayer_app
+		copy_app $APPLICATION_DIR/transcoding_example trans_test2
 
 		if [ -d $APPLICATION_DIR/v4l2_test ]; then
 			echo '//////////////////////////'
@@ -721,7 +446,7 @@ function build_filesystem()
 			cp -v camera_test csi_test decimator_test hdmi_test $FILESYSTEM_DIR/buildroot/out/rootfs/usr/bin/
 			check_result
 		fi
-
+		
 		if [ -d $APPLICATION_DIR/vpu_test ]; then
 			echo '//////////////////////////'
 			echo '// copy vpu_test '

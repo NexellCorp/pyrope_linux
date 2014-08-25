@@ -7,6 +7,10 @@
 
 //------------------------------------------------------------------------------
  -. Revision History
+   2014.08.25 ( v1.0.12 )
+     Support MP4 Container. ( bug fixed )
+     Bug fixed nxmp4encsol. ( Start / Stop Bug )
+
    2014.07.14 ( v1.0.11 )
      Support Real Time Protocol(RTP).
 
@@ -18,7 +22,7 @@
 
    2014.04.21 
      Stable Filter solution. ( Various Bug Fixed )
-	 Broken data bug fixed (Text Overlay / TS Stream)
+	   Broken data bug fixed (Text Overlay / TS Stream)
      Add Micom Senario.
 
    2014.02.18
@@ -41,7 +45,7 @@
      First Release.
 
  -. Last Revision Number
-    libnxdvr : 1.0.11
+    libnxdvr : 1.0.12
 
 
 //------------------------------------------------------------------------------

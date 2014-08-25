@@ -58,21 +58,6 @@ typedef struct {
 	unsigned char	pps_data  [NX_MAX_NUM_PPS][NX_MAX_PPS_SIZE];
 } NX_AVCC_TYPE;
 
-
-static void dumpdata( void *data, int len, const char *msg )
-{
-	int i=0;
-	unsigned char *byte = (unsigned char *)data;
-	printf("Dump Data : %s", msg);
-	for( i=0 ; i<len ; i ++ )
-	{
-		if( i%32 == 0 )	printf("\n\t");
-		printf("%.2x", byte[i] );
-		if( i%4 == 3 ) printf(" ");
-	}
-	printf("\n");
-}
-
 static int NX_ParseSpsPpsFromAVCC( unsigned char *extraData, int extraDataSize, NX_AVCC_TYPE *avcCInfo )
 {
 	int pos = 0;

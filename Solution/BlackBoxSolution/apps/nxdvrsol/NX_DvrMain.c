@@ -55,7 +55,7 @@
 // #define DEMO
 
 #define BOARD_TYPE_LYNX
-#define CAMERA_TYPE_FHD
+//#define CAMERA_TYPE_FHD
 
 // #define DISABLE_AUDIO
 
@@ -100,7 +100,7 @@ static uint8_t dir_event[256]	= {0x00, };
 static uint8_t dir_capture[256]	= {0x00, };
 
 static pthread_mutex_t	gstModeLock; 
-static int32_t			gDvrMode 	= DVR_MODE_NORMAL;
+static int32_t			gDvrMode 	= DVR_MODE_NORMAL;	// DVR_MODE_NORMAL / DVR_MODE_MOTION
 
 static uint8_t gstSdNode[64];
 
@@ -118,7 +118,7 @@ static int32_t gstMotionEnable = false;
 #endif
 
 static int32_t gstApiMajor = 0, gstApiMinor = 0, gstApiRevision = 0;
-static int32_t gstContainer = CONTAINER_TYPE_TS;
+static int32_t gstContainer = CONTAINER_TYPE_TS;		// CONTAINER_TYPE_MP4 / CONTAINER_TYPE_TS
 static int32_t gstTestEvent	= false;
 
 static int32_t gstPreviewChannel = 0;
@@ -248,7 +248,7 @@ static void ExitApp( void )
 			printf("Fail, umount..\n");
 			break;
 		}
-		printf("[%d]Retry umount..\n", pendCnt);
+		printf("[%d] Retry umount..\n", pendCnt);
 	}
 }
 
@@ -1464,7 +1464,7 @@ int main( int32_t argc, char *argv[] )
 						printf("Fail, umount..\n");
 						break;
 					}
-					printf("[%d]Retry umount..\n", pendCnt);
+					printf("[%d] Retry umount..\n", pendCnt);
 				}
 				break;
 

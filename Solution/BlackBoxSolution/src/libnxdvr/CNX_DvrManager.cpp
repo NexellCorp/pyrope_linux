@@ -593,6 +593,7 @@ void CNX_DvrManager::StartNormalWriting( void )
 	}
 	if( m_pBufferingFilter ) 	m_pBufferingFilter->ChangeBufferingMode( BUFFERING_MODE_BOTH );
 	if( m_pFileWriter ) 		m_pFileWriter->RegFileNameCallback( NormalFileNameCallbackFunc );
+	if( m_pMp4MuxerFilter )		m_pMp4MuxerFilter->RegFileNameCallback( NormalFileNameCallbackFunc );
 	if( m_pBufferingFilter )	m_pBufferingFilter->StartFile();
 	
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
@@ -605,6 +606,7 @@ void CNX_DvrManager::StartMotionWriting( void )
 	
 	if( m_pBufferingFilter )	m_pBufferingFilter->ChangeBufferingMode( BUFFERING_MODE_EVENT_ONLY );
 	if( m_pFileWriter ) 		m_pFileWriter->RegFileNameCallback( EventFileNameCallbackFunc );
+	if( m_pMp4MuxerFilter )		m_pMp4MuxerFilter->RegFileNameCallback( EventFileNameCallbackFunc );
 	for( int32_t i = 0; i < m_VideoNum; i++) {
 		if( m_MdEnable[i] )		m_pMdFilter[i]->EnableMotionDetect( m_MdEnable[i] );
 	}
@@ -626,6 +628,7 @@ void CNX_DvrManager::ChangeNormalWriting( void )
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	
 	if( m_pFileWriter )			m_pFileWriter->RegFileNameCallback( NormalFileNameCallbackFunc );
+	if( m_pMp4MuxerFilter )		m_pMp4MuxerFilter->RegFileNameCallback( NormalFileNameCallbackFunc );
 	if( m_pBufferingFilter )	m_pBufferingFilter->ChangeFile();
 	
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
@@ -637,6 +640,7 @@ void CNX_DvrManager::ChangeEventWriting( void )
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	
 	if( m_pFileWriter )			m_pFileWriter->RegFileNameCallback( EventFileNameCallbackFunc );
+	if( m_pMp4MuxerFilter )		m_pMp4MuxerFilter->RegFileNameCallback( EventFileNameCallbackFunc );
 	if( m_pBufferingFilter )	m_pBufferingFilter->PopBufferdData( true );
 	
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
@@ -662,12 +666,14 @@ void CNX_DvrManager::ThreadLoop( void )
 	{
 		// a. Get timestamp of filter. ( for file split )
 		if( prvTime == 0 ) {
-			if( m_pFileWriter ) curTime = prvTime = m_pBufferingFilter->GetTimeStamp();
+			if( m_pFileWriter ) 	curTime = prvTime = m_pBufferingFilter->GetTimeStamp();
+			if( m_pMp4MuxerFilter ) curTime = prvTime = m_pBufferingFilter->GetTimeStamp();
 			usleep(10000);
 			continue;
 		}
 		else {
-			if( m_pFileWriter ) curTime = m_pBufferingFilter->GetTimeStamp();
+			if( m_pFileWriter ) 	curTime = m_pBufferingFilter->GetTimeStamp();
+			if( m_pMp4MuxerFilter ) curTime = m_pBufferingFilter->GetTimeStamp();
 		}
 
 		// b. Change State machine at Specific case.
@@ -884,9 +890,9 @@ int32_t CNX_DvrManager::Start( NX_DVR_ENCODE_TYPE encodeType )
 		{
 			SAFE_START_FILTER( m_pNotifier );
 			SAFE_START_FILTER( m_pFileWriter );
+			SAFE_START_FILTER( m_pMp4MuxerFilter );
 			SAFE_START_FILTER( m_pBufferingFilter );
 			SAFE_START_FILTER( m_pTsMuxerFilter );
-			SAFE_START_FILTER( m_pMp4MuxerFilter );
 			SAFE_START_FILTER( m_pHlsFilter );
 			SAFE_START_FILTER( m_pRtpFilter );
 			SAFE_START_FILTER( m_pInterleaverFilter );
@@ -965,9 +971,9 @@ int32_t CNX_DvrManager::Stop( void )
 			SAFE_STOP_FILTER( m_pHlsFilter );
 			SAFE_STOP_FILTER( m_pRtpFilter );
 			SAFE_STOP_FILTER( m_pTsMuxerFilter );
-			SAFE_STOP_FILTER( m_pMp4MuxerFilter );
 			SAFE_STOP_FILTER( m_pBufferingFilter );
 			SAFE_STOP_FILTER( m_pFileWriter );
+			SAFE_STOP_FILTER( m_pMp4MuxerFilter );
 			SAFE_STOP_FILTER( m_pNotifier );
 		}
 

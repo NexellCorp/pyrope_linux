@@ -195,6 +195,9 @@ int32_t CNX_DvrManager::BuildFilter( void )
 	
 	if( m_Container == DVR_CONTAINER_MP4 ) {
 		m_pMp4MuxerFilter		= new CNX_Mp4MuxerFilter();
+		
+		if( m_RtpEnable )
+			m_pRtpFilter		= new CNX_RTPFilter();
 	}
 	else if( m_Container == DVR_CONTAINER_TS ) {
 		m_pTsMuxerFilter		= new CNX_TsMuxerFilter();

@@ -781,10 +781,10 @@ static void Usage( void )
 	printf("   -h                     : Show usage.\n");
 	printf("   -b                     : No command line.\n");
 	printf("   -a                     : Audio enable.\n");
-	printf("   -n                     : Network streaming enable.(HLS)\n");
 	printf("   -e                     : Test event task. ( 100sec cycle )\n");
 	printf("   -u                     : Userdata enable.\n");
 	printf("   -m                     : Motion detection enable.\n");
+	printf("   -n [network type]      : Network streaming enable.( 1:HLS or 2:RTP )\n");
 	printf("   -t [stoage positon]    : Storage Position.\n");
 	printf("   -c [encoding channel]  : Encoding Channel.( 1 or 2 )\n");
 
@@ -795,7 +795,7 @@ static void Usage( void )
 	printf("   audio status           : disable.\n");
 	printf("   userdata status        : disable.\n");
 	printf("   motion detection       : disable.\n");
-	printf("   network streaming(hls) : disable.\n");
+	printf("   network streaming      : disable.\n");
 
 
 	printf("\n");

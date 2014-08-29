@@ -28,6 +28,8 @@
 #include <nx_dsp.h>
 #include <INX_Mp4Manager.h>
 
+uint32_t cbNotifier( uint32_t eventCode, uint8_t *pEventData, uint32_t dataSize );
+
 static INX_Mp4Manager *pMp4Manager = NULL;
 
 // Signal Handler
@@ -141,10 +143,14 @@ static int32_t shell_main( void )
 			{
 				char fileName[1024];
 				sprintf(fileName, "%s", cmd[1] );
+				pMp4Manager->Init();
+				pMp4Manager->RegisterNotifyCallback( cbNotifier );
 				pMp4Manager->Start( fileName );
 			}
 			else
 			{
+				pMp4Manager->Init();
+				pMp4Manager->RegisterNotifyCallback( cbNotifier );
 				pMp4Manager->Start( NULL );
 			}
 
@@ -152,6 +158,7 @@ static int32_t shell_main( void )
 		else if( !strcmp( cmd[0], "stop") ) {
 			printf("Stop.\n");
 			pMp4Manager->Stop();
+			pMp4Manager->Deinit();
 		}
 		else if( !strcmp( cmd[0], "capture") ) {
 			printf("Capture.\n");
@@ -216,13 +223,9 @@ int main(void)
 	printf("COPYRIGHT@2013 NEXELL CO. ALL RIGHT RESERVED.\n");
 	printf("##################################################################################\n");
 
-	register_signal();
-
 	NX_DspVideoSetPriority( DISPLAY_MODULE_MLC0, 0 );
-
-	pMp4Manager->Init();
-	pMp4Manager->RegisterNotifyCallback( cbNotifier );
-
+	
+	register_signal();
 	shell_main();
 
 	if( pMp4Manager )

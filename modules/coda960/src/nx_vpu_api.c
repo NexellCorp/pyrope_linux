@@ -1745,19 +1745,33 @@ static int FillBuffer(NX_VPU_INST_HANDLE handle, unsigned char *stream, int size
 	// printk("%s, StreamBuffer(Addr=x0%08x, size=%d), InBuffer(Addr=x0%08x, size=%d) vWriteOffset = %d, vReadOffset = %d\n",
 	// 	__func__, pDecInfo->strmBufVirAddr, pDecInfo->strmBufSize, stream, size, vWriteOffset, vReadOffset );
 
+	if( bufSize < vWriteOffset || bufSize < vReadOffset )
+	{
+		printk("%s, StreamBuffer(Addr=x0%08x, size=%d), InBuffer(Addr=x0%08x, size=%d) vWriteOffset = %d, vReadOffset = %d\n",
+			__func__, pDecInfo->strmBufVirAddr, pDecInfo->strmBufSize, stream, size, vWriteOffset, vReadOffset );
+		return -1;
+	}
+
 	if( (bufSize - vWriteOffset) > size )
 	{
 		//	Just Memory Copy
-		NX_DrvMemcpy( (unsigned char*)(pDecInfo->strmBufVirAddr + vWriteOffset), stream, size );
+		//NX_DrvMemcpy( (unsigned char*)(pDecInfo->strmBufVirAddr + vWriteOffset), stream, size );
 		//printk("vWriteOffset=%d, vReadOffset = %d\n", vWriteOffset, vReadOffset );
+		if( copy_from_user( (unsigned char*)(pDecInfo->strmBufVirAddr + vWriteOffset), stream, size ) )
+			return -1;
 		vWriteOffset += size;
 	}
 	else
 	{
 		//	Memory Copy
 		int remain = bufSize - vWriteOffset;
-		NX_DrvMemcpy( (unsigned char*)(pDecInfo->strmBufVirAddr + vWriteOffset), stream, remain );
-		NX_DrvMemcpy( (unsigned char*)(pDecInfo->strmBufVirAddr), stream+remain, size-remain );
+		//NX_DrvMemcpy( (unsigned char*)(pDecInfo->strmBufVirAddr + vWriteOffset), stream, remain );
+		//NX_DrvMemcpy( (unsigned char*)(pDecInfo->strmBufVirAddr), stream+remain, size-remain    );
+
+		if( copy_from_user( (unsigned char*)(pDecInfo->strmBufVirAddr + vWriteOffset), stream, remain ) )
+			return -1;
+		if( copy_from_user( (unsigned char*)(pDecInfo->strmBufVirAddr), stream+remain, size-remain    ) )
+			return -1;
 		vWriteOffset = size-remain;
 	}
 	pDecInfo->writePos = vWriteOffset + pDecInfo->strmBufPhyAddr;

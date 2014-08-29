@@ -272,3 +272,9 @@ int v4l2_set_preset(int id, uint32_t preset)
 {
     return _priv->setPreset(id, preset);
 }
+
+int v4l2_get_device_fd(int id)
+{
+     return _priv->getDeviceFD(id);
+}
+

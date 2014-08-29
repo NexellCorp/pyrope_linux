@@ -278,7 +278,10 @@ Error_Exit:
 	return handle;
 }
 
-NX_VID_MEMORY_HANDLE NX_VideoAllocateMemory2( int align, int width, int height, int stride, int memMap, int fourCC )
+//
+//	For Interlace Camera
+//
+NX_VID_MEMORY_HANDLE NX_VideoAllocateMemory2( int align, int width, int height, int memMap, int fourCC )
 {
 	int lWidth, lHeight;
 	int cWidth, cHeight;
@@ -292,13 +295,13 @@ NX_VID_MEMORY_HANDLE NX_VideoAllocateMemory2( int align, int width, int height, 
 		goto Error_Exit;
 	}
 
-	lWidth = stride;
+	lWidth = ALIGN(width, 64);
 	lHeight = ALIGN(height, 16);
 
 	switch( fourCC )
 	{
 		case FOURCC_MVS0:
-			cWidth = lWidth/2;
+			cWidth = ALIGN(lWidth/2, 64);
 			cHeight = lHeight/2;
 			break;
 		case FOURCC_MVS2:

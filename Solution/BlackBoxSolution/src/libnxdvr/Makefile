@@ -18,6 +18,8 @@ BUILD_INFO_FILE		:= NX_DvrManagerBuildInfo.h
 
 ######################################################################
 # Build options
+
+# Prevent: "warning: creating a DT_TEXTREL in object"
 CFLAGS		+= -fpic -DARM_11
 CPPFLAGS	+= -fpic -DARM_11
 
@@ -25,13 +27,21 @@ INCLUDE		+= -I./
 INCLUDE		+= -I$(LIBSDIR)/include
 INCLUDE		+= -I$(TOPDIR)/include
 INCLUDE		+= -I../libnxfilters
+INCLUDE 	+= -I$(TOPDIR)/include/live555/liveMedia
+INCLUDE 	+= -I$(TOPDIR)/include/live555/groupsock
+INCLUDE 	+= -I$(TOPDIR)/include/live555/BasicUsageEnvironment
+INCLUDE 	+= -I$(TOPDIR)/include/live555/UsageEnvironment
 
 LIBRARY		+= -L$(LIBSDIR)/lib
 LIBRARY		+= -L$(TOPDIR)/lib
-LIBRARY		+= -L../libnxfilters/ -lnxfilters
+LIBRARY		+= -L../libnxfilters
+LIBRARY 	+= -L$(TOPDIR)/lib/live555
+
+LIBRARY		+= -lnxfilters
 LIBRARY		+= -lnxaacenc -lnxmp3enc
 LIBRARY		+= -lnxmp4mux -lnxtsmux
 LIBRARY 	+= -lnxvmem -lnxvip -lnxdsp -lnxv4l2 -lnxvpu
+LIBRARY 	+= -lliveMedia -lgroupsock -lBasicUsageEnvironment -lUsageEnvironment
 LIBRARY		+= -lstdc++ -lpthread -lasound
 
 ######################################################################

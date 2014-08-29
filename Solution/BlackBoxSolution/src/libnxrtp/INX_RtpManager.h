@@ -27,6 +27,9 @@ typedef struct tagNX_RTP_MRG_CONFIG {
 	uint32_t	nWidth;
 	uint32_t	nHeight;
 	uint32_t	nFps;
+	uint32_t	nBitrate;
+	uint32_t	nDspWidth;
+	uint32_t	nDspHeight;
 } NX_RTP_MGR_CONFIG;
 
 class INX_RtpManager

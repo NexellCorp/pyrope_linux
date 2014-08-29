@@ -7,7 +7,14 @@
 
 //------------------------------------------------------------------------------
  -. Revision History
-   2014.06.16
+   2014.08.25 ( v1.0.12 )
+     Support MP4 Container. ( bug fixed )
+     Bug fixed nxmp4encsol. ( Start / Stop Bug )
+
+   2014.07.14 ( v1.0.11 )
+     Support Real Time Protocol(RTP).
+
+   2014.06.16 ( v1.0.10 )
      Support HDMI output.
    
    2014.05.23
@@ -15,7 +22,7 @@
 
    2014.04.21 
      Stable Filter solution. ( Various Bug Fixed )
-	 Broken data bug fixed (Text Overlay / TS Stream)
+	   Broken data bug fixed (Text Overlay / TS Stream)
      Add Micom Senario.
 
    2014.02.18
@@ -38,7 +45,7 @@
      First Release.
 
  -. Last Revision Number
-    libnxdvr : 1.0.10
+    libnxdvr : 1.0.12
 
 
 //------------------------------------------------------------------------------
@@ -56,7 +63,7 @@ Solution
    |             |
    |             +-- nxmp4encsol  : simple MP4 encoding test application
    |             |
-   |             +-- nxrtpsol     : simple RTP test application ( Not yet )
+   |             +-- nxrtpsol     : simple RTP test application
    |
    +-- bin                        : build result & resource files
    |

@@ -90,6 +90,7 @@ protected:
 	//------------------------------------------------------------------------
 	//	File Handling
 	//------------------------------------------------------------------------
+	enum { WRITING_MODE_NORMAL, WRITING_MODE_EVENT };
 	enum {
 		MAX_NUM_MEDIA_SAMPLES	= 32,
 		NUM_WRITE_UNIT			= 32,
@@ -97,19 +98,20 @@ protected:
 	};
 
 	int32_t				m_OutFd;
-
 	//------------------------------------------------------------------------
 	//	Buffer & Samples
 	//------------------------------------------------------------------------
 	uint8_t				m_FileName[1024];
 
-	uint8_t				*m_pSampleBuf[MAX_NUM_MEDIA_SAMPLES];
+	uint8_t				*m_pStreamBuffer[MAX_NUM_MEDIA_SAMPLES];
 	CNX_BufferQueue		m_StreamQueue;
 	CNX_BufferQueue		m_WriterQueue;
 	CNX_Semaphore		*m_pSemWriter;
 
 	uint8_t				*m_CurWriteBuffer;
 	int32_t 			m_CurWritePos;
+
+	int32_t 			m_WritingMode;
 	//------------------------------------------------------------------------
 	//	Statistics Infomation
 	//------------------------------------------------------------------------

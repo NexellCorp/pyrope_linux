@@ -30,15 +30,23 @@
 #include <NX_DbgMsg.h>
 
 #if( 0 )
-#define NxDbgColorMsg(A, B) do {										\
-								if( gNxFilterDebugLevel>=A ) {			\
-									printf("\033[1;37;41m%s", NX_DTAG);	\
-									DEBUG_PRINT B;						\
-									printf("\033[0m\r\n");				\
-								}										\
-							} while(0)
+#define NxDbgColorMsg(A, B) 	do {										\
+									if( gNxFilterDebugLevel>=A ) {			\
+										printf("\033[1;37;41m%s", NX_DTAG);	\
+										DEBUG_PRINT B;						\
+										printf("\033[0m\r\n");				\
+									}										\
+								} while(0)
+
+#define NxDbgPushPopMsg(A, B)	do{									\
+									if( gNxFilterDebugLevel>=A ) {	\
+										DEBUG_PRINT(NX_DTAG);		\
+										DEBUG_PRINT B;				\
+									}								\
+								}while(0)
 #else
-#define NxDbgColorMsg(A, B) do {} while(0)
+#define NxDbgColorMsg(A, B) 	do {} while(0)
+#define NxDbgPushPopMsg(A, B)	do {} while(0)
 #endif
 
 #define	NEW_SCHED_POLICY	SCHED_RR
@@ -51,8 +59,8 @@
 CNX_BufferingFilter::CNX_BufferingFilter()
 	: m_bInit( false )
 	, m_bRun( false )
-	, m_hThread( 0x00 )
 	, m_bThreadExit( true )
+	, m_hThread( 0x00 )
 	, m_EventBufferedTime( 10 )
 	, m_EventCount( 0 )
 	, m_EventHead( 0 )
@@ -359,6 +367,7 @@ int32_t	CNX_BufferingFilter::PushStream( CNX_MuxerSample *pSample )
 		if( m_EventCount >= m_EventBufferedTime ) {
 			PopStream();
 		}
+
 		// 4. Buffered Queue push. (1sec unit)
 		while( m_StreamQueue.IsReady() )
 		{
@@ -372,9 +381,10 @@ int32_t	CNX_BufferingFilter::PushStream( CNX_MuxerSample *pSample )
 		}
 		m_EventHead = (m_EventHead + 1) % (m_EventBufferedTime + 1);
 		m_EventCount++;
-		// NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s(): Head( %d ), Tail( %d ), Count( %d )\n"), __func__, m_EventHead, m_EventTail, m_EventCount) );
-	
-		m_PrvTimeStamp = m_CurTimeStamp;		
+
+		m_PrvTimeStamp = m_CurTimeStamp;
+
+		NxDbgPushPopMsg( NX_DBG_DEBUG, (TEXT("%s(): Head( %d ), Tail( %d ), Count( %d )\n"), __func__, m_EventHead, m_EventTail, m_EventCount) );
 	}
 
 	// Gathering sample ( for 1sec unit )
@@ -396,7 +406,9 @@ int32_t	CNX_BufferingFilter::PopStream( void )
 	}
 	m_EventTail = (m_EventTail + 1) % (m_EventBufferedTime + 1);
 	m_EventCount--;
-	// NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s(): Head( %d ), Tail( %d ), Count( %d )\n"), __func__, m_EventHead, m_EventTail, m_EventCount) );
+
+	NxDbgPushPopMsg( NX_DBG_DEBUG, (TEXT("%s(): Head( %d ), Tail( %d ), Count( %d )\n"), __func__, m_EventHead, m_EventTail, m_EventCount) );
+
 	return true;
 }
 
@@ -419,7 +431,8 @@ int32_t	CNX_BufferingFilter::PopStreamAll( void )
 		}
 		m_EventTail = (m_EventTail + 1) % (m_EventBufferedTime + 1);
 		m_EventCount--;
-		// NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s(): Head( %d ), Tail( %d ), Count( %d )\n"), __func__, m_EventHead, m_EventTail, m_EventCount) );
+
+		NxDbgPushPopMsg( NX_DBG_DEBUG, (TEXT("%s(): Head( %d ), Tail( %d ), Count( %d )\n"), __func__, m_EventHead, m_EventTail, m_EventCount) );
 	}
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return true;

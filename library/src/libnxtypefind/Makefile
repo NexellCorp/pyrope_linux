@@ -48,9 +48,7 @@ install:
 	install -m 644 $(TARGET) $(LIB_INSTALL)
 
 clean:
-	@find $(OBJTREE) -type f \
-		\( -name '*.o'	-o -name $(LIBNAME).a -o -name '*.map' \
-		-o -name '.depend' \) -print | xargs rm -f
+	rm -f *.o *.a *.so *.so.* .depend
 
 distclean: clean
 	rm -f $(LIB_INSTALL)/$(LIBNAME).a

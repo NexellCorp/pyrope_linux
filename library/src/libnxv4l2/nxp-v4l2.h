@@ -111,6 +111,7 @@ int v4l2_streamon(int id);
 int v4l2_streamoff(int id);
 int v4l2_get_timestamp(int id, long long *timestamp);
 int v4l2_set_preset(int id, uint32_t preset);
+int v4l2_get_device_fd(int id);
 
 #ifndef ANDROID
 #ifdef __cplusplus

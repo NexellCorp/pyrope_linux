@@ -55,7 +55,7 @@
 // #define DEMO
 
 #define BOARD_TYPE_LYNX
-#define CAMERA_TYPE_FHD
+//#define CAMERA_TYPE_FHD
 
 // #define DISABLE_AUDIO
 
@@ -100,7 +100,7 @@ static uint8_t dir_event[256]	= {0x00, };
 static uint8_t dir_capture[256]	= {0x00, };
 
 static pthread_mutex_t	gstModeLock; 
-static int32_t			gDvrMode 	= DVR_MODE_NORMAL;
+static int32_t			gDvrMode 	= DVR_MODE_NORMAL;	// DVR_MODE_NORMAL / DVR_MODE_MOTION
 
 static uint8_t gstSdNode[64];
 
@@ -118,7 +118,7 @@ static int32_t gstMotionEnable = false;
 #endif
 
 static int32_t gstApiMajor = 0, gstApiMinor = 0, gstApiRevision = 0;
-static int32_t gstContainer = CONTAINER_TYPE_TS;
+static int32_t gstContainer = CONTAINER_TYPE_TS;		// CONTAINER_TYPE_MP4 / CONTAINER_TYPE_TS
 static int32_t gstTestEvent	= false;
 
 static int32_t gstPreviewChannel = 0;
@@ -248,7 +248,7 @@ static void ExitApp( void )
 			printf("Fail, umount..\n");
 			break;
 		}
-		printf("[%d]Retry umount..\n", pendCnt);
+		printf("[%d] Retry umount..\n", pendCnt);
 	}
 }
 
@@ -781,10 +781,10 @@ static void Usage( void )
 	printf("   -h                     : Show usage.\n");
 	printf("   -b                     : No command line.\n");
 	printf("   -a                     : Audio enable.\n");
-	printf("   -n                     : Network streaming enable.(HLS)\n");
 	printf("   -e                     : Test event task. ( 100sec cycle )\n");
 	printf("   -u                     : Userdata enable.\n");
 	printf("   -m                     : Motion detection enable.\n");
+	printf("   -n [network type]      : Network streaming enable.( 1:HLS or 2:RTP )\n");
 	printf("   -t [stoage positon]    : Storage Position.\n");
 	printf("   -c [encoding channel]  : Encoding Channel.( 1 or 2 )\n");
 
@@ -795,7 +795,7 @@ static void Usage( void )
 	printf("   audio status           : disable.\n");
 	printf("   userdata status        : disable.\n");
 	printf("   motion detection       : disable.\n");
-	printf("   network streaming(hls) : disable.\n");
+	printf("   network streaming      : disable.\n");
 
 
 	printf("\n");
@@ -1464,7 +1464,7 @@ int main( int32_t argc, char *argv[] )
 						printf("Fail, umount..\n");
 						break;
 					}
-					printf("[%d]Retry umount..\n", pendCnt);
+					printf("[%d] Retry umount..\n", pendCnt);
 				}
 				break;
 

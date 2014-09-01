@@ -88,6 +88,7 @@ void CNX_H264Encoder::Init( NX_VIDENC_CONFIG *pConfig )
 		m_EncInfo.width			= pConfig->width;
 		m_EncInfo.height		= pConfig->height;
 		m_EncInfo.gopSize		= pConfig->fps / 2;		// Group of picture ( key frame interval )
+
 		m_EncInfo.bitrate		= pConfig->bitrate;
 		m_EncInfo.fpsNum		= pConfig->fps;
 		m_EncInfo.fpsDen		= 1;

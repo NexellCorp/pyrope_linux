@@ -60,6 +60,9 @@ CPPOBJS		+= CNX_DynamicRTSPServer.o
 CPPOBJS		+= CNX_RTPFilter.o
 CPPOBJS		+= CNX_HLSFilter.o
 CPPOBJS		+= CNX_MotionDetectFilter.o
+#Transcoding module
+CPPOBJS		+= codec_info.o media_reader.o
+CPPOBJS		+= CNX_VideoDecoder.o
 
 LIBNAME 	:= libnxfilters
 TARGET		:= $(LIBNAME).a

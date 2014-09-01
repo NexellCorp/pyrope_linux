@@ -34,9 +34,11 @@ RESC_OBJS	:=
 
 CAM_OBJS	:= test-cam.o
 
+CAM_INTERLACE_OBJS := test-cam-interlace-hdmi.o
+
 COBJS	:= 
 
-CPPOBJS	:= $(CSI_OBJS) $(DECI_OBJS) $(HDMI_OBJS) $(RESC_OBJS) $(CAM_OBJS)
+CPPOBJS	:= $(CSI_OBJS) $(DECI_OBJS) $(HDMI_OBJS) $(RESC_OBJS) $(CAM_OBJS) $(CAM_INTERLACE_OBJS)
 
 CFLAGS	+= -g
 
@@ -45,12 +47,13 @@ DECIAPP := decimator_test
 CSIAPP  := csi_test
 HDMIAPP := hdmi_test
 RESCAPP := resc_test
+CAMINTERLACEAPP := camera-interlace-hdmi-test
 
 ######################################################################
 # Build
 OBJS	:= $(COBJS) $(CPPOBJS)
 
-all: $(CSIAPP) $(DECIAPP) $(HDMIAPP) $(CAMAPP)
+all: $(CSIAPP) $(DECIAPP) $(HDMIAPP) $(CAMAPP) $(CAMINTERLACEAPP)
 
 $(DECIAPP):	depend $(OBJS)
 	$(CC) $(CPPFLAGS) $(DECI_OBJS) -o $@ $(LIBRARY)
@@ -66,6 +69,9 @@ $(RESCAPP):	depend $(OBJS)
 
 $(CAMAPP):	depend $(OBJS)
 	$(CC) $(CPPFLAGS) $(CAM_OBJS) -o $@ $(LIBRARY)
+
+$(CAMINTERLACEAPP):	depend $(OBJS)
+	$(CC) $(CPPFLAGS) $(CAM_INTERLACE_OBJS) -o $@ $(LIBRARY)
 
 clean:
 	rm -f $(DECIAPP) $(HDMIAPP) $(CSIAPP) $(RESCAPP) *.o .depend

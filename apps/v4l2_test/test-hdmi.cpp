@@ -36,7 +36,7 @@
     } while (0)
 
 
-unsigned int get_size(int format, int num, int width, int height)
+static unsigned int get_size(int format, int num, int width, int height)
 {
     int size;
 
@@ -73,7 +73,7 @@ unsigned int get_size(int format, int num, int width, int height)
     return size;
 }
 
-int alloc_buffers(int ion_fd, int count, struct nxp_vid_buffer *bufs, int width, int height, int format)
+static int alloc_buffers(int ion_fd, int count, struct nxp_vid_buffer *bufs, int width, int height, int format)
 {
     int ret;
     int size;
@@ -121,7 +121,29 @@ int alloc_buffers(int ion_fd, int count, struct nxp_vid_buffer *bufs, int width,
     return 0;
 }
 
-#define V4L2_CID_CAMERA_MODE_CHANGE     (V4L2_CTRL_CLASS_CAMERA | 0x1003)
+static bool is_preset_support(int id, uint32_t preset)
+{
+    int i = 0;
+    int ret;
+    int fd = v4l2_get_device_fd(id);
+    if (fd < 0) {
+        fprintf(stderr, "%s: can't get fd for %d\n", __func__, id);
+        return false;
+    }
+    struct v4l2_dv_enum_preset enum_preset;
+    do {
+        memset(&enum_preset, 0, sizeof(struct v4l2_dv_enum_preset));
+        enum_preset.index = i;
+        ret = ioctl(fd, VIDIOC_ENUM_DV_PRESETS, &enum_preset);
+        i++;
+        if (ret < 0)
+            break;
+        if (enum_preset.preset == preset)
+            return true;
+    } while (1);
+
+    return false;
+}
 
 static void draw_color_bar(uint32_t *buf, int width, int height, uint32_t color1, uint32_t color2, uint32_t color3)
 {
@@ -168,9 +190,10 @@ int main(int argc, char *argv[])
     int width;
     int height;
     int format = V4L2_PIX_FMT_YUV420M;
-    // int format = V4L2_PIX_FMT_YUV422P;
-    // int format = V4L2_PIX_FMT_YUV444;
-    // int format = V4L2_PIX_FMT_YUYV;
+    //int format = V4L2_PIX_FMT_YUV420;
+    //int format = V4L2_PIX_FMT_YUV422P;
+    //int format = V4L2_PIX_FMT_YUV444;
+    //int format = V4L2_PIX_FMT_YUYV;
     if (ion_fd < 0) {
         fprintf(stderr, "can't open ion!!!\n");
         return -EINVAL;
@@ -204,6 +227,7 @@ int main(int argc, char *argv[])
         break;
     case 720:
         preset = V4L2_DV_720P60;
+        //preset = V4L2_DV_720P50;
         break;
     case 576:
         preset = V4L2_DV_576P50;
@@ -216,53 +240,19 @@ int main(int argc, char *argv[])
         printf("HDMI Supported Format: 1920x1080, 1280x720, 720x576, 720x480\n");
         return -1;
     }
+
+    if (!is_preset_support(nxp_v4l2_hdmi, preset)) {
+        fprintf(stderr, "preset %d is not supported\n", preset);
+        return -1;
+    }
+
     CHECK_COMMAND(v4l2_set_preset(nxp_v4l2_hdmi, preset));
 
-    // CHECK_COMMAND(v4l2_set_format(nxp_v4l2_clipper0, width, height, format));
-    // CHECK_COMMAND(v4l2_set_crop(nxp_v4l2_clipper0, 0, 0, width, height));
-    // CHECK_COMMAND(v4l2_set_format(nxp_v4l2_sensor0, width, height, V4L2_MBUS_FMT_YUYV8_2X8));
-    // CHECK_COMMAND(v4l2_set_format(nxp_v4l2_mlc0_video, width, height, format));
-    // CHECK_COMMAND(v4l2_set_format(nxp_v4l2_mlc1_video, width, height, format));
-    // CHECK_COMMAND(v4l2_set_format(nxp_v4l2_mlc0_rgb, width, height, V4L2_PIX_FMT_RGB565));
-    // CHECK_COMMAND(v4l2_set_crop(nxp_v4l2_mlc0_rgb, 0, 0, width, height));
     CHECK_COMMAND(v4l2_set_format(nxp_v4l2_mlc1_rgb, width, height, V4L2_PIX_FMT_RGB32));
     CHECK_COMMAND(v4l2_set_crop(nxp_v4l2_mlc1_rgb, 0, 0, width, height));
 
-    // if (width > 1280 || height > 800)
-    //     CHECK_COMMAND(v4l2_set_crop(nxp_v4l2_mlc0_video, 0, 0, 1280, 800));
-    // else
-    //     CHECK_COMMAND(v4l2_set_crop(nxp_v4l2_mlc0_video, 0, 0, width, height));
-
-    // if (width > 1024 || height > 768) {
-    //     printf("set sensor mode to capture\n");
-    //     CHECK_COMMAND(v4l2_set_ctrl(nxp_v4l2_sensor0, V4L2_CID_CAMERA_MODE_CHANGE, 1));
-    // } else {
-    //     printf("set sensor mode to preview\n");
-    //     CHECK_COMMAND(v4l2_set_ctrl(nxp_v4l2_sensor0, V4L2_CID_CAMERA_MODE_CHANGE, 0));
-    // }
-
-    // CHECK_COMMAND(v4l2_set_crop(nxp_v4l2_mlc1_video, 0, 0, 720, 480));
-#if 0
-    CHECK_COMMAND(v4l2_set_ctrl(nxp_v4l2_mlc0_video, V4L2_CID_MLC_VID_PRIORITY, 0));
-    CHECK_COMMAND(v4l2_set_ctrl(nxp_v4l2_mlc1_video, V4L2_CID_MLC_VID_PRIORITY, 3));
-#else
-    // CHECK_COMMAND(v4l2_set_ctrl(nxp_v4l2_mlc0_video, V4L2_CID_MLC_VID_PRIORITY, 0));
-    // CHECK_COMMAND(v4l2_set_ctrl(nxp_v4l2_mlc1_video, V4L2_CID_MLC_VID_PRIORITY, 0));
-    // CHECK_COMMAND(v4l2_set_ctrl(nxp_v4l2_mlc0_video, V4L2_CID_MLC_VID_COLORKEY, 0x0));
-    // CHECK_COMMAND(v4l2_set_ctrl(nxp_v4l2_mlc1_video, V4L2_CID_MLC_VID_COLORKEY, 0x0));
-#endif
-    // CHECK_COMMAND(v4l2_reqbuf(nxp_v4l2_clipper0, MAX_BUFFER_COUNT));
-    // CHECK_COMMAND(v4l2_reqbuf(nxp_v4l2_mlc0_video, MAX_BUFFER_COUNT));
-    // CHECK_COMMAND(v4l2_reqbuf(nxp_v4l2_mlc1_video, MAX_BUFFER_COUNT));
-    // CHECK_COMMAND(v4l2_reqbuf(nxp_v4l2_mlc0_rgb, MAX_BUFFER_COUNT));
     CHECK_COMMAND(v4l2_reqbuf(nxp_v4l2_mlc1_rgb, MAX_BUFFER_COUNT));
 
-    // printf("alloc video\n");
-    // struct nxp_vid_buffer bufs[MAX_BUFFER_COUNT];
-    // CHECK_COMMAND(alloc_buffers(ion_fd, MAX_BUFFER_COUNT, bufs, width, height, format));
-    // printf("vid_buf: %p, %p, %p, %p\n", bufs[0].virt[0], bufs[1].virt[0], bufs[2].virt[0], bufs[3].virt[0]);
-
-    printf("alloc rgb\n");
     struct nxp_vid_buffer rgb_bufs[MAX_BUFFER_COUNT];
     CHECK_COMMAND(alloc_buffers(ion_fd, MAX_BUFFER_COUNT, rgb_bufs, width, height, V4L2_PIX_FMT_RGB32));
     printf("rgb_buf: %p:%d, %p:%d, %p:%d, %p:%d\n",
@@ -270,26 +260,10 @@ int main(int argc, char *argv[])
             rgb_bufs[1].virt[0], rgb_bufs[1].sizes[0],
             rgb_bufs[2].virt[0], rgb_bufs[2].sizes[0],
             rgb_bufs[3].virt[0], rgb_bufs[3].sizes[0]);
-#if 0
-    memset(rgb_bufs[0].virt[0], 0xff, rgb_bufs[0].sizes[0]);
-    memset(rgb_bufs[1].virt[0], 0x00, rgb_bufs[1].sizes[0]);
-    memset(rgb_bufs[2].virt[0], 0x19, rgb_bufs[2].sizes[0]);
-    memset(rgb_bufs[3].virt[0], 0xbb, rgb_bufs[3].sizes[0]);
-#else
     draw_color_bar((uint32_t *)rgb_bufs[0].virt[0], width, height, COLOR_RED, COLOR_GREEN, COLOR_BLUE);
     draw_color_bar((uint32_t *)rgb_bufs[1].virt[0], width, height, COLOR_WHITE, COLOR_WB, COLOR_BLACK);
     draw_color_bar((uint32_t *)rgb_bufs[2].virt[0], width, height, COLOR_OTHER1, COLOR_OTHER2, COLOR_OTHER3);
     draw_color_bar((uint32_t *)rgb_bufs[3].virt[0], width, height, COLOR_OTHER4, COLOR_OTHER5, COLOR_OTHER6);
-#endif
-
-    // int i;
-    // for (i = 0; i < MAX_BUFFER_COUNT; i++) {
-    //     struct nxp_vid_buffer *buf = &bufs[i];
-    //     printf("buf plane num: %d\n", buf->plane_num);
-    //     CHECK_COMMAND(v4l2_qbuf(nxp_v4l2_clipper0, buf->plane_num, i, buf, -1, NULL));
-    // }
-
-    // CHECK_COMMAND(v4l2_streamon(nxp_v4l2_clipper0));
 
     int out_index = 0;
     int out_dq_index = 0;
@@ -300,12 +274,7 @@ int main(int argc, char *argv[])
     struct nxp_vid_buffer *rgb_buf;
     int capture_index = 0;
     while (true) {
-        // struct nxp_vid_buffer *buf = &bufs[capture_index];
-        // CHECK_COMMAND(v4l2_dqbuf(nxp_v4l2_clipper0, buf->plane_num, &capture_index, NULL));
-        // CHECK_COMMAND(v4l2_qbuf(nxp_v4l2_mlc0_video, buf->plane_num, out_index, buf, -1, NULL));
-        // CHECK_COMMAND(v4l2_qbuf(nxp_v4l2_mlc1_video, 1, out_index, buf, -1, NULL));
         rgb_buf = &rgb_bufs[out_index];
-        // CHECK_COMMAND(v4l2_qbuf(nxp_v4l2_mlc0_rgb, rgb_buf->plane_num, out_index, rgb_buf, -1, NULL));
         CHECK_COMMAND(v4l2_qbuf(nxp_v4l2_mlc1_rgb, 1, out_index, rgb_buf, -1, NULL));
 
         out_q_count++;
@@ -313,28 +282,17 @@ int main(int argc, char *argv[])
         out_index %= MAX_BUFFER_COUNT;
 
         if (!started_out) {
-            // CHECK_COMMAND(v4l2_streamon(nxp_v4l2_mlc0_video));
-            // CHECK_COMMAND(v4l2_streamon(nxp_v4l2_mlc1_video));
-            // CHECK_COMMAND(v4l2_streamon(nxp_v4l2_mlc0_rgb));
             CHECK_COMMAND(v4l2_streamon(nxp_v4l2_mlc1_rgb));
             started_out = true;
         }
 
         if (out_q_count >= MAX_BUFFER_COUNT) {
-            // CHECK_COMMAND(v4l2_dqbuf(nxp_v4l2_mlc0_video, buf->plane_num, &out_dq_index, NULL));
-            // CHECK_COMMAND(v4l2_dqbuf(nxp_v4l2_mlc1_video, 1, &out_dq_index, NULL));
-            // CHECK_COMMAND(v4l2_dqbuf(nxp_v4l2_mlc0_rgb, buf->plane_num, &out_dq_index, NULL));
             CHECK_COMMAND(v4l2_dqbuf(nxp_v4l2_mlc1_rgb, 1, &out_dq_index, NULL));
             out_q_count--;
         }
-
-        // CHECK_COMMAND(v4l2_qbuf(nxp_v4l2_clipper0, buf->plane_num, capture_index, buf, -1, NULL));
     }
 
-    // CHECK_COMMAND(v4l2_streamoff(nxp_v4l2_mlc0_video));
-    // CHECK_COMMAND(v4l2_streamoff(nxp_v4l2_mlc1_video));
     CHECK_COMMAND(v4l2_streamoff(nxp_v4l2_mlc1_rgb));
-    // CHECK_COMMAND(v4l2_streamoff(nxp_v4l2_clipper0));
 
     v4l2_exit();
     close(ion_fd);

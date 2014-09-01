@@ -1099,7 +1099,7 @@ int dec_main( int argc, char *argv[] )
 	dspInfo.dspDstRect.right = dspWidth+dspX;
 	dspInfo.dspDstRect.bottom = dspHeight+dspY;
 	hDsp = NX_DspInit( &dspInfo );
-	NX_DspVideoSetPriority(hDsp, 0);
+	NX_DspVideoSetPriority(0, 0);
 	if( hDsp == NULL )
 	{
 		printf("Display Failed!!!\n");

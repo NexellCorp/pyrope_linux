@@ -47,6 +47,7 @@ CNX_FileWriter::CNX_FileWriter()
 	, m_OutFd( -1 )
 	, m_CurWriteBuffer( NULL )
 	, m_CurWritePos( 0 )
+	, m_WritingMode( WRITING_MODE_NORMAL )
 {
 	m_pSemWriter	= new CNX_Semaphore( MAX_BUFFER_QCOUNT, 0 );
 	m_pStatistics	= new CNX_Statistics();
@@ -57,7 +58,7 @@ CNX_FileWriter::CNX_FileWriter()
 
 	for( int32_t i = 0; i < MAX_NUM_MEDIA_SAMPLES; i++ )
 	{
-		m_pSampleBuf[i] = NULL;
+		m_pStreamBuffer[i] = NULL;
 	}
 }
 
@@ -126,10 +127,14 @@ int32_t	CNX_FileWriter::Receive( CNX_Sample *pSample )
 				m_pNotify->EventNotify( 0xF003, m_FileName, strlen((char*)m_FileName) + 1 );
 		}
 		
-		if( flags == FLAGS_WRITING_NORMAL_START )
+		if( flags == FLAGS_WRITING_NORMAL_START ) {
 			NxDbgMsg( NX_DBG_INFO, (TEXT("Create Normal File( %d ) : %s\n"), m_OutFd, m_FileName) );
-		if( flags == FLAGS_WRITING_EVENT_START )
+			m_WritingMode = WRITING_MODE_NORMAL;
+		}
+		if( flags == FLAGS_WRITING_EVENT_START ) {
 			NxDbgMsg( NX_DBG_INFO, (TEXT("Create Event File( %d ) : %s\n"), m_OutFd, m_FileName) );
+			m_WritingMode = WRITING_MODE_EVENT;
+		}
 
 		pSample->Unlock();
 		return true;
@@ -165,12 +170,14 @@ int32_t	CNX_FileWriter::Receive( CNX_Sample *pSample )
 
 			// b-4. notifier
 			if( flags == FLAGS_WRITING_NORMAL_STOP ) {
-				if( m_pNotify ) 
+				if( m_pNotify ) {
 					m_pNotify->EventNotify( 0x1001, m_FileName, strlen((char*)m_FileName) + 1 );
+				}
 			}
 			if( flags == FLAGS_WRITING_EVENT_STOP ) {
-				if( m_pNotify ) 
+				if( m_pNotify ) {
 					m_pNotify->EventNotify( 0x1002, m_FileName, strlen((char*)m_FileName) + 1 );
+				}
 			}
 		}
 
@@ -220,10 +227,14 @@ int32_t	CNX_FileWriter::Receive( CNX_Sample *pSample )
 
 	// a.check start dummy sample.
 	if( flags == FLAGS_WRITING_NORMAL_START || flags == FLAGS_WRITING_EVENT_START ) {
-		if( flags == FLAGS_WRITING_NORMAL_START )
+		if( flags == FLAGS_WRITING_NORMAL_START ) {
 			NxDbgMsg( NX_DBG_INFO, (TEXT("Create Normal File : %s\n"), m_FileName) );
-		if( flags == FLAGS_WRITING_EVENT_START )
+			m_WritingMode = WRITING_MODE_NORMAL;
+		}
+		if( flags == FLAGS_WRITING_EVENT_START ) {
 			NxDbgMsg( NX_DBG_INFO, (TEXT("Create Event File : %s\n"), m_FileName) );
+			m_WritingMode = WRITING_MODE_EVENT;
+		}
 	}
 	// b.check stop dummy sample.
 	else if( flags == FLAGS_WRITING_NORMAL_STOP || flags == FLAGS_WRITING_EVENT_STOP ) {
@@ -291,9 +302,9 @@ void CNX_FileWriter::AllocateBuffer( void )
 	m_StreamQueue.Reset();
 	for( int32_t i=0; i< NUM_WRITE_UNIT ; i++ )
 	{
-		m_pSampleBuf[i] = new uint8_t[SIZE_WRITE_UNIT];
-		NX_ASSERT(m_pSampleBuf[i]);
-		m_StreamQueue.Push(m_pSampleBuf[i], 0);
+		m_pStreamBuffer[i] = new uint8_t[SIZE_WRITE_UNIT];
+		NX_ASSERT(m_pStreamBuffer[i]);
+		m_StreamQueue.Push(m_pStreamBuffer[i], 0);
 	}
 	
 	m_WriterQueue.Reset();
@@ -311,7 +322,7 @@ void CNX_FileWriter::FreeBuffer( void )
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	for( int32_t i=0; i< NUM_WRITE_UNIT ; i++ )
 	{
-		delete []m_pSampleBuf[i];
+		delete []m_pStreamBuffer[i];
 	}	
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 }
@@ -398,6 +409,14 @@ void	CNX_FileWriter::ThreadLoop(void)
 	}
 	if( m_OutFd >= 0 ) {
 		close( m_OutFd );
+		if( m_WritingMode == WRITING_MODE_NORMAL) {
+			if( m_pNotify ) 
+				m_pNotify->EventNotify( 0x1001, m_FileName, strlen((char*)m_FileName) + 1 );
+		}
+		if( m_WritingMode == WRITING_MODE_EVENT) {
+			if( m_pNotify ) 
+				m_pNotify->EventNotify( 0x1002, m_FileName, strlen((char*)m_FileName) + 1 );
+		}
 		m_OutFd = -1;
 	}
 
@@ -417,12 +436,12 @@ void*	CNX_FileWriter::ThreadMain(void*arg)
 //------------------------------------------------------------------------------
 int32_t CNX_FileWriter::GetFileNameFromCallback( void )
 {
-	// user define file name.
+	// user define filename.
 	if( FileNameCallbackFunc ) {		
 		uint32_t bufSize = 0;
 		FileNameCallbackFunc( m_FileName, bufSize );
 	}
-	// default file name.
+	// default filename.
 	else {
 		time_t eTime;
 		struct tm *eTm;

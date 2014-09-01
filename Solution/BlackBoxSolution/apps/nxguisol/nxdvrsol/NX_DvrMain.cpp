@@ -272,7 +272,7 @@ static void DvrSetConfigure( void )
 	gstRecordConfig.nEventDuration				= 10000;
 	gstRecordConfig.nEventBufferDuration		= 10000;
 
-	gstRecordConfig.bHlsEnable					= gDvrConfig.bHls;
+	gstRecordConfig.networkType					= gDvrConfig.bHls ? DVR_NETWORK_HLS : DVR_NETWORK_NONE;
 	gstRecordConfig.hlsConfig.nSegmentDuration 	= 10;
 	gstRecordConfig.hlsConfig.nSegmentNumber	= 3;
 	sprintf( (char*)gstRecordConfig.hlsConfig.MetaFileName,	"test.m3u8" );

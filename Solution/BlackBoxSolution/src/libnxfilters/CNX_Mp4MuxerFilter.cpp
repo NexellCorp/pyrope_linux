@@ -39,6 +39,26 @@
 	((unsigned int)(unsigned char)(ch2) << 16) | ((unsigned int)(unsigned char)(ch3) << 24 ))
 #endif 
 
+#if(0)
+static void dumpdata( void *data, int len, const char *msg )
+{
+	int i=0;
+	unsigned char *byte = (unsigned char *)data;
+	printf("Dump Data : %s", msg);
+	for( i=0 ; i<len ; i ++ )
+	{
+		if( i!=0 && i%32 == 0 ) printf("\n\t");
+		printf("%.2x", byte[i] );
+		if( i%4 == 3 ) printf(" ");
+	}
+	printf("\n");
+}
+#else
+static void dumpdata( void *data, int len, const char *msg )
+{
+}
+#endif
+
 //------------------------------------------------------------------------------
 CNX_Mp4MuxerFilter::CNX_Mp4MuxerFilter( void )
 	: m_bInit( false )
@@ -50,7 +70,8 @@ CNX_Mp4MuxerFilter::CNX_Mp4MuxerFilter( void )
 	, m_bStartMuxing( 0 )
 	, m_MuxStartTime( 0 )
 	, m_OutFd( 0 )
-	, m_nWritingMode( WRITING_MODE_NORMAL )
+	, m_Flags( FLAGS_WRITING_NONE )
+	, m_WritingMode( WRITING_MODE_NORMAL )
 {
 	for( int32_t i = 0; i < NUM_STRM_BUFFER; i++ )
 		m_pStreamBuffer[i] = NULL;
@@ -60,8 +81,10 @@ CNX_Mp4MuxerFilter::CNX_Mp4MuxerFilter( void )
 	m_pSemStream = new CNX_Semaphore( NUM_STRM_BUFFER, 0 );
 	NX_ASSERT( m_pSemStream );
 
-	m_pSemFile = new CNX_Semaphore( NUM_STRM_BUFFER, 0 );
-	NX_ASSERT( m_pSemFile );
+	m_pSemWriter = new CNX_Semaphore( NUM_STRM_BUFFER, 0 );
+	NX_ASSERT( m_pSemWriter );
+
+	memset( m_FileName, 0x00, sizeof(m_FileName) );
 
 	AllocateMemory();
 }
@@ -77,8 +100,8 @@ CNX_Mp4MuxerFilter::~CNX_Mp4MuxerFilter( void )
 	if( m_pSemStream )
 		delete m_pSemStream;
 
-	if( m_pSemFile )
-		delete m_pSemFile;
+	if( m_pSemWriter )
+		delete m_pSemWriter;
 
 	for(i = 0; i < m_MP4Config.videoTrack + m_MP4Config.audioTrack + m_MP4Config.textTrack; i++ )
 		delete []m_pTrackTempBuf[i];
@@ -136,20 +159,61 @@ int32_t	CNX_Mp4MuxerFilter::Receive( CNX_Sample *pSample )
 {
 	CNX_AutoLock lock (&m_hWriteLock );
 	pSample->Lock();
+	
+#if(0)
+	static long long _prevtime = 0;
+	if( ((long long)((CNX_MuxerSample*)pSample)->GetTimeStamp() - _prevtime) < 0 && _prevtime != 0) {
+		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): TimeStamp is not correct.\n"), __func__) );
+		pSample->Unlock();
+		return false;
+	}
+	_prevtime = ((CNX_MuxerSample*)pSample)->GetTimeStamp();	
+#endif
 
-	//static long long _prevtime = 0;
-	//if( ((long long)((CNX_MuxerSample*)pSample)->GetTimeStamp() - _prevtime) < 0 && _prevtime != 0) {
-	//	printf("[Warnning] Timestamp is not correct.\n");
-	//	pSample->Unlock();
-	//	return false;
-	//}
-	//_prevtime = ((CNX_MuxerSample*)pSample)->GetTimeStamp();	
+#if(0)
+	if( m_bEnableMux )
+	{
+		return MuxEncodedSample((CNX_MuxerSample *)pSample);
+	}
+	pSample->Unlock();
+#else
+	m_Flags = ((CNX_MediaSample*)pSample)->GetFlags();
+
+	// a.check start dummy sample.
+	if( m_Flags == FLAGS_WRITING_NORMAL_START || m_Flags == FLAGS_WRITING_EVENT_START ) {
+		// Muxer Enable
+		m_bEnableMux = true;
+		SetMuxConfig();
+		StartMuxing();
+		
+		if( m_Flags == FLAGS_WRITING_NORMAL_START ) {
+			NxDbgMsg( NX_DBG_INFO, (TEXT("Create Normal File( %d ) : %s\n"), m_OutFd, m_FileName) );
+			m_WritingMode = WRITING_MODE_NORMAL;
+		}
+		else if( m_Flags == FLAGS_WRITING_EVENT_START ) {
+			NxDbgMsg( NX_DBG_INFO, (TEXT("Create Event File( %d ) : %s\n"), m_OutFd, m_FileName) );
+			m_WritingMode = WRITING_MODE_EVENT;
+		}
+
+		pSample->Unlock();
+		return true;
+	}
+	// b.check stop dummy sample.
+	else if( m_Flags == FLAGS_WRITING_NORMAL_STOP || m_Flags == FLAGS_WRITING_EVENT_STOP ) {
+		// Muxer Disable
+		m_bEnableMux = false;
+		StopMuxing();
+
+		pSample->Unlock();
+		return true;
+	}
 
 	if( m_bEnableMux )
 	{
 		return MuxEncodedSample((CNX_MuxerSample *)pSample);
 	}
 	pSample->Unlock();
+#endif	
 	return true;
 }
 
@@ -192,7 +256,7 @@ void CNX_Mp4MuxerFilter::AllocateMemory( void )
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	for( int32_t i = 0; i < NUM_STRM_BUFFER; i++ )
 	{
-		m_pStreamBuffer[i] = new uint8_t[SIZE_STRM_BUFFER];
+		m_pStreamBuffer[i] = new uint8_t[SIZE_WRITE_UNIT];
 		NX_ASSERT( m_pStreamBuffer[i] );
 		//NxDbgMsg( NX_DBG_DEBUG, (TEXT("Alloc Memory = %d, %p\n"), i, m_pStreamBuffer[i]) );
 		if( m_pStreamBuffer[i] == NULL ) {
@@ -224,38 +288,38 @@ void CNX_Mp4MuxerFilter::FreeMemory( void )
 //------------------------------------------------------------------------------
 void	CNX_Mp4MuxerFilter::ThreadLoop(void)
 {
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+
 	uint8_t* buf;
 	int32_t size;
 
-	NxDbgMsg( NX_DBG_VBS, ("%s IN\n", __func__) );
-	//	File Writing
 	while( !m_bThreadExit )
 	{
-		if( m_pSemFile->Pend() )
+		if( m_pSemWriter->Pend() )
 		{
 			break;
 		}
-		while( m_FileQueue.GetSampleCount() > 0 )
+		while( m_WriterQueue.GetSampleCount() > 0 )
 		{
-			m_FileQueue.Pop( (void**)&buf, &size );
+			m_WriterQueue.Pop( (void**)&buf, &size );
 
-			if( m_OutFd ) {
+			if( m_OutFd > 0) {
 				int32_t ret = write( m_OutFd, buf, size );
+
+				// static int writeCnt = 0;
+				// NxDbgMsg( NX_DBG_VBS, ("Write Buffer (Address = %p, Write Count = %d)\n", buf, ++writeCnt) );
 
 				if( 0 > ret ) {
 					if( m_pNotify )
 						m_pNotify->EventNotify( 0xF004, m_FileName, strlen((char*)m_FileName) + 1 );			
 				}				
 			}
-			//{
-			//	static int writeCnt = 0;
-			//	NxDbgMsg( DBG_VBS, ("Write Buffer : Address:%p Write Count = %d\n", buf, ++writeCnt) );
-			//}
-			m_StreamQueue.Push( buf, SIZE_STRM_BUFFER );
+			m_StreamQueue.Push( buf, SIZE_WRITE_UNIT );
 			m_pSemStream->Post();
 		}
 	}
-	NxDbgMsg( NX_DBG_VBS, ("%s OUT\n", __func__) );
+
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 }
 
 //------------------------------------------------------------------------------
@@ -272,8 +336,8 @@ void CNX_Mp4MuxerFilter::FileWriter( void *pObj, unsigned char *pBuffer, int buf
 	CNX_Mp4MuxerFilter *pMux = (CNX_Mp4MuxerFilter *)pObj;
 	if( pMux ){
 		if( bufSize > 0 ){
-			pMux->m_FileQueue.Push( pBuffer, bufSize );
-			pMux->m_pSemFile->Post();
+			pMux->m_WriterQueue.Push( pBuffer, bufSize );
+			pMux->m_pSemWriter->Post();
 		}
 	}
 }
@@ -286,8 +350,10 @@ int32_t CNX_Mp4MuxerFilter::GetBuffer( void *pObj, unsigned char **pBuffer, int 
 	{
 		pMux->m_pSemStream->Pend();
 		pMux->m_StreamQueue.Pop( (void**)pBuffer, bufSize );
-		//static int getBuffCnt = 0;
-		//NxDbgMsg( DBG_VBS, ("GetBuffer : Address=%p, getBuffCnt = %d\n", *pBuffer,  ++getBuffCnt));
+
+		// static int getBuffCnt = 0;
+		// NxDbgMsg( NX_DBG_VBS, ("GetBuffer (Address = %p, getBuffCnt = %d)\n", *pBuffer,  ++getBuffCnt));
+
 		return 0;
 	}
 	return -1;
@@ -337,7 +403,7 @@ int32_t CNX_Mp4MuxerFilter::MuxEncodedSample( CNX_MuxerSample *pSample )
 
 	//	Delete Previeous Samples
 	if( m_MuxStartTime > PTS ){
-		printf("Drop Sample (%12lld, %12lld)\n", m_MuxStartTime, PTS );
+		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Drop Sample (%12lld, %12lld)\n"), __func__, m_MuxStartTime, PTS) );
 		pSample->Unlock();
 		return false;
 		PTS = m_TrackInfo[trackID].totalDuration;
@@ -373,30 +439,20 @@ int32_t CNX_Mp4MuxerFilter::MuxEncodedSample( CNX_MuxerSample *pSample )
 						}
 					}
 					else {
-						//printf("Video Dsi Info (trackID = %d, size = %d) : ", trackID, MAX_VID_DSI_SIZE);
-						//for( i = 0; i < MAX_VID_DSI_SIZE; i++ )
-						//{
-						//	printf("0x%02x ", m_TrackDsiInfo[trackID][i]);
-						//}
-						//printf("\n");
+						dumpdata( m_TrackDsiInfo[trackID], MAX_VID_DSI_SIZE, "Video Dsi\n\t" );
 						NxMp4MuxSetDsiInfo( m_hMp4Mux, m_TrackDsiInfo[trackID], MAX_VID_DSI_SIZE, trackID );	
 					}
 					m_bTrackStart[trackID] = true;
 				} 
 				else {
-					//printf("[Warnning] Is not keyframe.\n");
+					//NxDbgMsg( NX_DBG_WARN, (TEXT("%s(): is not keyframe\n"), __func__));
 					return true;
 				}
 
 			}
 			else if( trackID < m_MP4Config.videoTrack + m_MP4Config.audioTrack ) {	// audio track
 				if( CODEC_AAC == m_MP4Config.trackConfig[trackID].codecType ) {
-					//printf("Audio Dsi Info (trackID = %d, size = %d) : ", trackID, MAX_AUD_DSI_SIZE);
-					//for( i = 0; i < MAX_AUD_DSI_SIZE; i++ )
-					//{
-					//	printf("0x%02x ", m_TrackDsiInfo[trackID][i]);
-					//}
-					//printf("\n");
+					dumpdata( m_TrackDsiInfo[trackID], MAX_VID_DSI_SIZE, "Audio Dsi\n\t" );
 					NxMp4MuxSetDsiInfo( m_hMp4Mux, m_TrackDsiInfo[trackID], MAX_AUD_DSI_SIZE, trackID );
 				}
 				m_bTrackStart[trackID] = true;
@@ -431,10 +487,10 @@ int32_t CNX_Mp4MuxerFilter::SetMuxConfig( void )
 	m_pSemStream->Init();
 	for( i = 0; i < NUM_STRM_BUFFER; i++ )
 	{
-		m_StreamQueue.Push( m_pStreamBuffer[i], SIZE_STRM_BUFFER );
+		m_StreamQueue.Push( m_pStreamBuffer[i], SIZE_WRITE_UNIT );
 		m_pSemStream->Post();
 	}
-	m_FileQueue.Reset();
+	m_WriterQueue.Reset();
 
 	for( i = 0; i < m_MP4Config.videoTrack + m_MP4Config.audioTrack + m_MP4Config.textTrack; i++ )
 	{
@@ -450,7 +506,8 @@ int32_t CNX_Mp4MuxerFilter::SetMuxConfig( void )
 
 	unlink( (char*)m_FileName );
 	m_OutFd = open( (char*)m_FileName, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0777 );
-	printf("Create File( %d ) : %s\n", m_OutFd, m_FileName);
+	// printf("Create File( %d ) : %s\n", m_OutFd, m_FileName);
+
 	if( m_OutFd < 0) {
 		if( m_pNotify )
 			m_pNotify->EventNotify( 0xF003, m_FileName, strlen((char*)m_FileName) + 1 );
@@ -504,31 +561,32 @@ int32_t CNX_Mp4MuxerFilter::SetMuxConfig( void )
 	return true;
 }
 
-
+//------------------------------------------------------------------------------
 int32_t CNX_Mp4MuxerFilter::StartMuxing( void )
 {
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	m_bStartMuxing = false;
 	m_bThreadExit  = false;
 	if( 0 > pthread_create( &this->m_hThread, NULL, this->ThreadMain, this ) )
 	{
-		NX_TRACE(("CNX_Mp4MuxerFilter::%s: Fail, Create Thread\n", __FUNCTION__));
+		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __func__) );
 		return false;
 	}
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t	CNX_Mp4MuxerFilter::StopMuxing( void )
 {
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+
 	uint32_t FileSize, FilePos;
-	NxDbgMsg( NX_DBG_VBS, ("%s IN\n", __func__) );
-	{
-		//CNX_AutoLock lock (&m_hWriteLock );
-		NxMP4MuxUpdateInfo(m_hMp4Mux, &FilePos, &FileSize);
-		NxMP4MuxClose(m_hMp4Mux);
-	}
+	NxMP4MuxUpdateInfo(m_hMp4Mux, &FilePos, &FileSize);
+	NxMP4MuxClose(m_hMp4Mux);
+	
 	m_bThreadExit = true;
-	m_pSemFile->Post();
+	m_pSemWriter->Post();
 	pthread_join( m_hThread, NULL );
 
 	//	Finalize MP4 File
@@ -544,20 +602,31 @@ int32_t	CNX_Mp4MuxerFilter::StopMuxing( void )
 
 		close( m_OutFd );
 		m_OutFd = 0;
-
-		if( m_nWritingMode == WRITING_MODE_NORMAL ) {
+		
+		if( m_Flags == FLAGS_WRITING_NORMAL_STOP ) {
 			if( m_pNotify ) 
 				m_pNotify->EventNotify( 0x1001, m_FileName, strlen((char*)m_FileName) + 1 );
 		}
-		else {
+		else if( m_Flags == FLAGS_WRITING_EVENT_STOP ) {
 			if( m_pNotify ) 
 				m_pNotify->EventNotify( 0x1002, m_FileName, strlen((char*)m_FileName) + 1 );
+		}	
+		else if( m_Flags == FLAGS_WRITING_NONE ) {
+			if( m_WritingMode == WRITING_MODE_NORMAL )	{
+				if( m_pNotify ) 
+					m_pNotify->EventNotify( 0x1001, m_FileName, strlen((char*)m_FileName) + 1 );
+			}
+			else if( m_WritingMode == WRITING_MODE_EVENT ) {
+				if( m_pNotify ) 
+					m_pNotify->EventNotify( 0x1002, m_FileName, strlen((char*)m_FileName) + 1 );
+			}
 		}
+
+		memset( m_FileName, 0x00, sizeof(m_FileName) );
 	}
+
 	m_hThread = 0x00;
-
-	NxDbgMsg( NX_DBG_VBS, ("%s OUT\n", __func__) );
-
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return true;
 }
 
@@ -568,6 +637,7 @@ int32_t	CNX_Mp4MuxerFilter::StopMuxing( void )
 int32_t CNX_Mp4MuxerFilter::SetFileName( const char *fileName )
 {
 	NxDbgMsg( NX_DBG_INFO, ("Set file name : %s\n", fileName) );
+	memset( m_FileName, 0x00, sizeof(m_FileName) );
 	strcpy( (char*)m_FileName, fileName );
 	return true;
 }
@@ -577,14 +647,12 @@ int32_t CNX_Mp4MuxerFilter::EnableMp4Muxing( bool enable )
 {
 	CNX_AutoLock lock ( &m_hWriteLock );
 	NxDbgMsg( NX_DBG_INFO, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnableMux)?"Enable":"Disable", (enable)?"Enable":"Disable") );
-	if( !m_bRun )
-	{
+	if( !m_bRun ) {
 		m_bEnableMux = enable;
 		return true;
 	}
 
-	if( enable )
-	{
+	if( enable ) {
 		//	Diable --> Enable
 		if( !m_bEnableMux ){
 			m_bEnableMux = enable;
@@ -596,7 +664,6 @@ int32_t CNX_Mp4MuxerFilter::EnableMp4Muxing( bool enable )
 		if( m_bEnableMux ){
 			m_bEnableMux = enable;
 			StopMuxing();
-			memset( m_FileName, 0x00, sizeof(m_FileName) );
 		}
 	}
 	return true;
@@ -608,12 +675,8 @@ int32_t CNX_Mp4MuxerFilter::SetDsiInfo( uint32_t trackID, uint8_t *dsiInfo, int3
 	memset( m_TrackDsiInfo[trackID], 0x00, MAX_VID_DSI_SIZE );
 	memcpy( m_TrackDsiInfo[trackID], dsiInfo, dsiSize );
 
-	//NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s(): DSI Infomation( TrackID = %d, size = %d ) :: "), __func__, trackID, dsiSize) );
-	//for(int32_t i = 0; i < dsiSize; i++)
-	//{
-	//	printf( "0x%02x ", m_TrackDsiInfo[trackID][i] );
-	//}
-	//NxDbgMsg( NX_DBG_DEBUG, (TEXT("\n")) );
+	// NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s(): DSI Infomation( TrackID = %d, size = %d ) :: "), __func__, trackID, dsiSize) );
+	// dumpdata( m_TrackDsiInfo[trackID], MAX_VID_DSI_SIZE, "" );
 
 	return true;
 }
@@ -630,24 +693,22 @@ int32_t CNX_Mp4MuxerFilter::RegFileNameCallback( int32_t (*cbFunc)(uint8_t *, ui
 }
 
 //------------------------------------------------------------------------------
-void CNX_Mp4MuxerFilter::GetFileNameFromCallback( void )
+int32_t CNX_Mp4MuxerFilter::GetFileNameFromCallback( void )
 {
-	// user define filename
+	// user define filename.
 	if( FileNameCallbackFunc ) {
 		uint32_t bufSize = 0;
-		if( !FileNameCallbackFunc(m_FileName, bufSize) ) {
-			// Error!
-		}
-	// default filename
-	} else {
+		FileNameCallbackFunc(m_FileName, bufSize);
+	}
+	// default filename.
+	else {
 		time_t eTime;
 		struct tm *eTm;
 
 		time( &eTime );
-		//eTm = gmtime( &eTime );
 		eTm = localtime( &eTime );
-
 		sprintf((char*)m_FileName, "clip_%04d%02d%02d_%02d%02d%02d.mp4",
 			eTm->tm_year + 1900, eTm->tm_mon + 1, eTm->tm_mday, eTm->tm_hour, eTm->tm_min, eTm->tm_sec );
 	}
+	return 0;
 }

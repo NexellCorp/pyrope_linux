@@ -87,7 +87,7 @@ public:
 			int32_t		SetDsiInfo( uint32_t trackID, uint8_t *dsiInfo, int32_t dsiSize );
 
 			int32_t		RegFileNameCallback( int32_t (*cbFunc)(uint8_t *, uint32_t) );
-			void		GetFileNameFromCallback( void );
+			int32_t		GetFileNameFromCallback( void );
 			
 private:
 	//------------------------------------------------------------------------
@@ -96,7 +96,7 @@ private:
 	int32_t				m_bInit;
 	int32_t				m_bRun;
 	CNX_Semaphore		*m_pSemStream;
-	CNX_Semaphore		*m_pSemFile;
+	CNX_Semaphore		*m_pSemWriter;
 	//------------------------------------------------------------------------
 	//	Thread
 	//------------------------------------------------------------------------
@@ -124,17 +124,20 @@ private:
 	//	Input / Output Buffer (File Handling)
 	//------------------------------------------------------------------------
 	enum { WRITING_MODE_NORMAL, WRITING_MODE_EVENT };
-	enum { NUM_STRM_BUFFER = 8, SIZE_STRM_BUFFER = 1024*1024 };
+	enum { NUM_STRM_BUFFER = 8, SIZE_WRITE_UNIT = 1024*1024 };
 
 	int32_t				m_OutFd;
 
 	CNX_BufferQueue		m_StreamQueue;
-	CNX_BufferQueue		m_FileQueue;
+	CNX_BufferQueue		m_WriterQueue;
 	
 	uint8_t				*m_pStreamBuffer[NUM_STRM_BUFFER];
 	uint8_t				*m_pTrackTempBuf[MAX_VID_NUM + MAX_AUD_NUM + MAX_TXT_NUM];
 	uint8_t				m_FileName[MAX_FILE_NAME_SIZE];
-	int32_t				m_nWritingMode;
+	uint8_t				m_PrvFileName[MAX_FILE_NAME_SIZE];
+	
+	int32_t				m_Flags;
+	int32_t 			m_WritingMode;
 	//------------------------------------------------------------------------
 	//	Writer Mutex Lock
 	//------------------------------------------------------------------------

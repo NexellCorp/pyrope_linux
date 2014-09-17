@@ -170,30 +170,13 @@ int main(int argc, char *argv[])
     CHECK_COMMAND(v4l2_init(&s));
     CHECK_COMMAND(v4l2_set_format(clipper_id, width, height, format));
     CHECK_COMMAND(v4l2_set_crop(clipper_id, 0, 0, width, height));
-    // for sp0838 601
-    if (module == 1)
-        CHECK_COMMAND(v4l2_set_format(sensor_id, 640, 480, V4L2_MBUS_FMT_YUYV8_2X8));
-    else
-        CHECK_COMMAND(v4l2_set_format(sensor_id, width, height, V4L2_MBUS_FMT_YUYV8_2X8));
+    CHECK_COMMAND(v4l2_set_format(sensor_id, width, height, V4L2_MBUS_FMT_YUYV8_2X8));
     CHECK_COMMAND(v4l2_set_format(video_id, width, height, format));
 
-    if (width > 1280 || height > 800)
-        CHECK_COMMAND(v4l2_set_crop(video_id, 0, 0, 1280, 800));
-    else
-        CHECK_COMMAND(v4l2_set_crop(video_id, 0, 0, width, height));
-
-    // disable source crop
-    CHECK_COMMAND(v4l2_set_crop_with_pad(video_id, 2, 0, 0, 0, 0));
-
-#if 0
-    if (width > 1024 || height > 768) {
-        printf("set sensor mode to capture\n");
-        CHECK_COMMAND(v4l2_set_ctrl(sensor_id, V4L2_CID_CAMERA_MODE_CHANGE, 1));
-    } else {
-        printf("set sensor mode to preview\n");
-        CHECK_COMMAND(v4l2_set_ctrl(sensor_id, V4L2_CID_CAMERA_MODE_CHANGE, 0));
-    }
-#endif
+    // setting destination position
+    CHECK_COMMAND(v4l2_set_crop(video_id, 0, 0, width, height));
+    // setting source crop
+    CHECK_COMMAND(v4l2_set_crop_with_pad(video_id, 2, 10, 10, 320, 240));
 
     CHECK_COMMAND(v4l2_set_ctrl(video_id, V4L2_CID_MLC_VID_PRIORITY, 0));
     CHECK_COMMAND(v4l2_set_ctrl(video_id, V4L2_CID_MLC_VID_COLORKEY, 0x0));
@@ -222,7 +205,7 @@ int main(int argc, char *argv[])
     unsigned short *prgb_data;
     struct nxp_vid_buffer *rgb_buf;
     int capture_index = 0;
-    int count = 10000;
+    int count = 1000;
     if (argc >= 5)
         count = atoi(argv[3]);
     while (count >= 0) {
@@ -247,6 +230,23 @@ int main(int argc, char *argv[])
 
         CHECK_COMMAND(v4l2_qbuf(clipper_id, buf->plane_num, capture_index, buf, -1, NULL));
         count--;
+
+        // change source crop
+        if (count == 100)
+            CHECK_COMMAND(v4l2_set_crop_with_pad(video_id, 2, 10, 10, 100, 100));
+        else if (count == 200)
+            CHECK_COMMAND(v4l2_set_crop_with_pad(video_id, 2, 10, 10, 200, 200));
+        else if (count == 300)
+            CHECK_COMMAND(v4l2_set_crop_with_pad(video_id, 2, 10, 10, 300, 300));
+        else if (count == 400)
+            CHECK_COMMAND(v4l2_set_crop_with_pad(video_id, 2, 10, 10, 400, 400));
+        else if (count == 500)
+            CHECK_COMMAND(v4l2_set_crop_with_pad(video_id, 2, 10, 10, 500, 500));
+        else if (count == 600)
+            CHECK_COMMAND(v4l2_set_crop_with_pad(video_id, 2, 10, 10, 600, 600));
+        else if (count == 900)
+            CHECK_COMMAND(v4l2_set_crop_with_pad(video_id, 2, 0, 0, 0, 0));
+
     }
 
     CHECK_COMMAND(v4l2_streamoff(video_id));

@@ -36,9 +36,11 @@ CAM_OBJS	:= test-cam.o
 
 CAM_INTERLACE_OBJS := test-cam-interlace-hdmi.o
 
+CAM_VIDEO_SOURCE_CROP_OBJS := test-cam-video-out-source-crop.o
+
 COBJS	:= 
 
-CPPOBJS	:= $(CSI_OBJS) $(DECI_OBJS) $(HDMI_OBJS) $(RESC_OBJS) $(CAM_OBJS) $(CAM_INTERLACE_OBJS)
+CPPOBJS	:= $(CSI_OBJS) $(DECI_OBJS) $(HDMI_OBJS) $(RESC_OBJS) $(CAM_OBJS) $(CAM_INTERLACE_OBJS) $(CAM_VIDEO_SOURCE_CROP_OBJS)
 
 CFLAGS	+= -g
 
@@ -48,12 +50,13 @@ CSIAPP  := csi_test
 HDMIAPP := hdmi_test
 RESCAPP := resc_test
 CAMINTERLACEAPP := camera-interlace-hdmi-test
+CAMVIDEOOUTSOURCECROPAPP := camera-video-out-source-crop-test
 
 ######################################################################
 # Build
 OBJS	:= $(COBJS) $(CPPOBJS)
 
-all: $(CSIAPP) $(DECIAPP) $(HDMIAPP) $(CAMAPP) $(CAMINTERLACEAPP)
+all: $(CSIAPP) $(DECIAPP) $(HDMIAPP) $(CAMAPP) $(CAMINTERLACEAPP) $(CAMVIDEOOUTSOURCECROPAPP)
 
 $(DECIAPP):	depend $(OBJS)
 	$(CC) $(CPPFLAGS) $(DECI_OBJS) -o $@ $(LIBRARY)
@@ -72,6 +75,9 @@ $(CAMAPP):	depend $(OBJS)
 
 $(CAMINTERLACEAPP):	depend $(OBJS)
 	$(CC) $(CPPFLAGS) $(CAM_INTERLACE_OBJS) -o $@ $(LIBRARY)
+
+$(CAMVIDEOOUTSOURCECROPAPP):	depend $(OBJS)
+	$(CC) $(CPPFLAGS) $(CAM_VIDEO_SOURCE_CROP_OBJS) -o $@ $(LIBRARY)
 
 clean:
 	rm -f $(DECIAPP) $(HDMIAPP) $(CSIAPP) $(RESCAPP) *.o .depend

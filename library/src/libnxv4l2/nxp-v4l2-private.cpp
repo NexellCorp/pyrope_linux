@@ -1288,6 +1288,7 @@ int V4l2NexellPrivate::setCrop(int id, int l, int t, int w, int h, int pad)
         return -EINVAL;
     }
 
+    //printf("%s: id %d, pad %d, %d:%d-%d%d\n", __func__, id, pad, l, t, w, h);
 #if 1
     /* for M2M, set,getCrop involves output */
     if (!pInfo->isM2M())

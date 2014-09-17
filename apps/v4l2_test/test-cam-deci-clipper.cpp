@@ -119,7 +119,9 @@ int alloc_buffers(int ion_fd, int count, struct nxp_vid_buffer *bufs, int width,
     return 0;
 }
 
-// # ./test module w h
+#define V4L2_CID_CAMERA_MODE_CHANGE     (V4L2_CTRL_CLASS_CAMERA | 0x1003)
+
+// # ./test w h
 int main(int argc, char *argv[])
 {
     int ion_fd = ion_open();
@@ -127,6 +129,7 @@ int main(int argc, char *argv[])
     int height;
     int module = 0;
     int clipper_id = nxp_v4l2_clipper0;
+    int decimator_id = nxp_v4l2_decimator0;
     int sensor_id = nxp_v4l2_sensor0;
     int video_id = nxp_v4l2_mlc0_video;
     int format = V4L2_PIX_FMT_YUV420M;
@@ -139,11 +142,11 @@ int main(int argc, char *argv[])
     }
 
     if (argc >= 4) {
-        module = atoi(argv[1]);
-        width = atoi(argv[2]);
-        height = atoi(argv[3]);
+        width = atoi(argv[1]);
+        height = atoi(argv[2]);
+        module = atoi(argv[3]);
     } else {
-        printf("usage: ./test module width height\n");
+        printf("usage: ./test width height module\n");
         return 0;
     }
 
@@ -155,11 +158,13 @@ int main(int argc, char *argv[])
         s.useDecimator0 = true;
         clipper_id = nxp_v4l2_clipper0;
         sensor_id = nxp_v4l2_sensor0;
+        decimator_id = nxp_v4l2_decimator0;
     } else {
         s.useClipper1 = true;
         s.useDecimator1 = true;
         clipper_id = nxp_v4l2_clipper1;
         sensor_id = nxp_v4l2_sensor1;
+        decimator_id = nxp_v4l2_decimator1;
     }
     s.useMlc0Video = true;
 
@@ -169,20 +174,33 @@ int main(int argc, char *argv[])
     CHECK_COMMAND(v4l2_set_format(clipper_id, width, height, format));
     CHECK_COMMAND(v4l2_set_crop(clipper_id, 0, 0, width, height));
 
-    CHECK_COMMAND(v4l2_set_format(sensor_id, width, height, V4L2_MBUS_FMT_YUYV8_2X8));
+    CHECK_COMMAND(v4l2_set_format(decimator_id, width, height, format));
+    CHECK_COMMAND(v4l2_set_crop(decimator_id, 0, 0, width, height));
+    // for sp0838 601
+    if (module == 1)
+        CHECK_COMMAND(v4l2_set_format(sensor_id, 640, 480, V4L2_MBUS_FMT_YUYV8_2X8));
+    else
+        CHECK_COMMAND(v4l2_set_format(sensor_id, width, height, V4L2_MBUS_FMT_YUYV8_2X8));
     CHECK_COMMAND(v4l2_set_format(video_id, width, height, format));
 
-    CHECK_COMMAND(v4l2_set_crop(video_id, 0, 0, width, height));
+    if (width > 1280 || height > 800)
+        CHECK_COMMAND(v4l2_set_crop(video_id, 0, 0, 1280, 800));
+    else
+        CHECK_COMMAND(v4l2_set_crop(video_id, 0, 0, width, height));
 
     CHECK_COMMAND(v4l2_set_ctrl(video_id, V4L2_CID_MLC_VID_PRIORITY, 0));
     CHECK_COMMAND(v4l2_set_ctrl(video_id, V4L2_CID_MLC_VID_COLORKEY, 0x0));
     CHECK_COMMAND(v4l2_reqbuf(clipper_id, MAX_BUFFER_COUNT));
+    CHECK_COMMAND(v4l2_reqbuf(decimator_id, MAX_BUFFER_COUNT));
     CHECK_COMMAND(v4l2_reqbuf(video_id, MAX_BUFFER_COUNT));
 
     printf("alloc video\n");
     struct nxp_vid_buffer bufs[MAX_BUFFER_COUNT];
     CHECK_COMMAND(alloc_buffers(ion_fd, MAX_BUFFER_COUNT, bufs, width, height, format));
     printf("vid_buf: %p, %p, %p, %p\n", bufs[0].virt[0], bufs[1].virt[0], bufs[2].virt[0], bufs[3].virt[0]);
+
+    struct nxp_vid_buffer decimator_bufs[MAX_BUFFER_COUNT];
+    CHECK_COMMAND(alloc_buffers(ion_fd, MAX_BUFFER_COUNT, decimator_bufs, width, height, format));
 
     int i;
     for (i = 0; i < MAX_BUFFER_COUNT; i++) {
@@ -191,7 +209,14 @@ int main(int argc, char *argv[])
         CHECK_COMMAND(v4l2_qbuf(clipper_id, buf->plane_num, i, buf, -1, NULL));
     }
 
-    CHECK_COMMAND(v4l2_streamon(clipper_id));
+    for (i = 0; i < MAX_BUFFER_COUNT; i++) {
+        struct nxp_vid_buffer *buf = &decimator_bufs[i];
+        printf("buf plane num: %d\n", buf->plane_num);
+        CHECK_COMMAND(v4l2_qbuf(decimator_id, buf->plane_num, i, buf, -1, NULL));
+    }
+
+    //CHECK_COMMAND(v4l2_streamon(clipper_id));
+    CHECK_COMMAND(v4l2_streamon(decimator_id));
 
     int out_index = 0;
     int out_dq_index = 0;
@@ -201,13 +226,17 @@ int main(int argc, char *argv[])
     unsigned short *prgb_data;
     struct nxp_vid_buffer *rgb_buf;
     int capture_index = 0;
-    int count = 10000;
+    int clipper_index = 0;
+    int count = 1000;
+
+    bool clipper_on = false;
+
     if (argc >= 5)
         count = atoi(argv[3]);
     while (count >= 0) {
-        struct nxp_vid_buffer *buf = &bufs[capture_index];
-        CHECK_COMMAND(v4l2_dqbuf(clipper_id, buf->plane_num, &capture_index, NULL));
-        // printf("====>capture_index: %d\n", capture_index);
+        struct nxp_vid_buffer *buf = &decimator_bufs[capture_index];
+
+        CHECK_COMMAND(v4l2_dqbuf(decimator_id, buf->plane_num, &capture_index, NULL));
         CHECK_COMMAND(v4l2_qbuf(video_id, buf->plane_num, out_index, buf, -1, NULL));
 
         out_q_count++;
@@ -224,11 +253,24 @@ int main(int argc, char *argv[])
             out_q_count--;
         }
 
-        CHECK_COMMAND(v4l2_qbuf(clipper_id, buf->plane_num, capture_index, buf, -1, NULL));
+        //CHECK_COMMAND(v4l2_qbuf(clipper_id, buf->plane_num, capture_index, buf, -1, NULL));
+        CHECK_COMMAND(v4l2_qbuf(decimator_id, buf->plane_num, capture_index, buf, -1, NULL));
         count--;
+
+        if (count == 900) {
+            CHECK_COMMAND(v4l2_streamon(clipper_id));
+            clipper_on = true;
+        }
+
+        if (clipper_on) {
+            buf = &bufs[clipper_index];
+            CHECK_COMMAND(v4l2_dqbuf(clipper_id, buf->plane_num, &clipper_index, NULL));
+            CHECK_COMMAND(v4l2_qbuf(clipper_id, buf->plane_num, clipper_index, buf, -1, NULL));
+        }
     }
 
     CHECK_COMMAND(v4l2_streamoff(video_id));
+    CHECK_COMMAND(v4l2_streamoff(decimator_id));
     CHECK_COMMAND(v4l2_streamoff(clipper_id));
 
     v4l2_exit();

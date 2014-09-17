@@ -119,12 +119,15 @@ int alloc_buffers(int ion_fd, int count, struct nxp_vid_buffer *bufs, int width,
     return 0;
 }
 
-// # ./test module w h
+#define V4L2_CID_CAMERA_MODE_CHANGE     (V4L2_CTRL_CLASS_CAMERA | 0x1003)
+
+// # ./test module w h clipper_width clipper_height
 int main(int argc, char *argv[])
 {
     int ion_fd = ion_open();
     int width;
     int height;
+    int crop_width, crop_height;
     int module = 0;
     int clipper_id = nxp_v4l2_clipper0;
     int sensor_id = nxp_v4l2_sensor0;
@@ -138,12 +141,14 @@ int main(int argc, char *argv[])
         return -EINVAL;
     }
 
-    if (argc >= 4) {
+    if (argc >= 6) {
         module = atoi(argv[1]);
         width = atoi(argv[2]);
         height = atoi(argv[3]);
+        crop_width = atoi(argv[4]);
+        crop_height = atoi(argv[5]);
     } else {
-        printf("usage: ./test module width height\n");
+        printf("usage: ./cam-clipper-crop-test module width height crop_width crop_height\n");
         return 0;
     }
 
@@ -152,12 +157,10 @@ int main(int argc, char *argv[])
 
     if (module == 0) {
         s.useClipper0 = true;
-        s.useDecimator0 = true;
         clipper_id = nxp_v4l2_clipper0;
         sensor_id = nxp_v4l2_sensor0;
     } else {
         s.useClipper1 = true;
-        s.useDecimator1 = true;
         clipper_id = nxp_v4l2_clipper1;
         sensor_id = nxp_v4l2_sensor1;
     }
@@ -167,22 +170,23 @@ int main(int argc, char *argv[])
 
     CHECK_COMMAND(v4l2_init(&s));
     CHECK_COMMAND(v4l2_set_format(clipper_id, width, height, format));
-    CHECK_COMMAND(v4l2_set_crop(clipper_id, 0, 0, width, height));
+    CHECK_COMMAND(v4l2_set_crop(clipper_id, 0, 0, crop_width, crop_height));
+    // for sp0838 601
+    if (module == 1)
+        CHECK_COMMAND(v4l2_set_format(sensor_id, 640, 480, V4L2_MBUS_FMT_YUYV8_2X8));
+    else
+        CHECK_COMMAND(v4l2_set_format(sensor_id, width, height, V4L2_MBUS_FMT_YUYV8_2X8));
+    CHECK_COMMAND(v4l2_set_format(video_id, crop_width, crop_height, format));
 
-    CHECK_COMMAND(v4l2_set_format(sensor_id, width, height, V4L2_MBUS_FMT_YUYV8_2X8));
-    CHECK_COMMAND(v4l2_set_format(video_id, width, height, format));
-
-    CHECK_COMMAND(v4l2_set_crop(video_id, 0, 0, width, height));
+    CHECK_COMMAND(v4l2_set_crop(video_id, 0, 0, crop_width, crop_height));
 
     CHECK_COMMAND(v4l2_set_ctrl(video_id, V4L2_CID_MLC_VID_PRIORITY, 0));
     CHECK_COMMAND(v4l2_set_ctrl(video_id, V4L2_CID_MLC_VID_COLORKEY, 0x0));
     CHECK_COMMAND(v4l2_reqbuf(clipper_id, MAX_BUFFER_COUNT));
     CHECK_COMMAND(v4l2_reqbuf(video_id, MAX_BUFFER_COUNT));
 
-    printf("alloc video\n");
     struct nxp_vid_buffer bufs[MAX_BUFFER_COUNT];
-    CHECK_COMMAND(alloc_buffers(ion_fd, MAX_BUFFER_COUNT, bufs, width, height, format));
-    printf("vid_buf: %p, %p, %p, %p\n", bufs[0].virt[0], bufs[1].virt[0], bufs[2].virt[0], bufs[3].virt[0]);
+    CHECK_COMMAND(alloc_buffers(ion_fd, MAX_BUFFER_COUNT, bufs, crop_width, crop_height, format));
 
     int i;
     for (i = 0; i < MAX_BUFFER_COUNT; i++) {
@@ -207,7 +211,6 @@ int main(int argc, char *argv[])
     while (count >= 0) {
         struct nxp_vid_buffer *buf = &bufs[capture_index];
         CHECK_COMMAND(v4l2_dqbuf(clipper_id, buf->plane_num, &capture_index, NULL));
-        // printf("====>capture_index: %d\n", capture_index);
         CHECK_COMMAND(v4l2_qbuf(video_id, buf->plane_num, out_index, buf, -1, NULL));
 
         out_q_count++;

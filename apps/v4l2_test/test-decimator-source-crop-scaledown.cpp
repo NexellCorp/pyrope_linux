@@ -24,12 +24,15 @@
 
 #include "common.cpp"
 
-// # ./test module w h
+// # ./test module w h crop_width crop_height scale_width scale_height video_width video_height [option: loop count]
 int main(int argc, char *argv[])
 {
     int ion_fd = ion_open();
     int width;
     int height;
+    int crop_width, crop_height;
+    int scale_width, scale_height;
+    int video_width, video_height;
     int format = V4L2_PIX_FMT_YUV420M;
     int decimator_id = nxp_v4l2_decimator0;
     int sensor_id = nxp_v4l2_sensor0;
@@ -41,15 +44,21 @@ int main(int argc, char *argv[])
         return -EINVAL;
     }
 
-    if (argc >= 3) {
+    if (argc >= 10) {
         module = atoi(argv[1]);
         width = atoi(argv[2]);
         height = atoi(argv[3]);
+        crop_width = atoi(argv[4]);
+        crop_height = atoi(argv[5]);
+        scale_width = atoi(argv[6]);
+        scale_height = atoi(argv[7]);
+        video_width = atoi(argv[8]);
+        video_height = atoi(argv[9]);
     } else {
-        printf("usage: ./test module width height\n");
+        printf("usage: ./test module width height crop_width crop_height scale_width, scale_height, video_width, video_height [option: loop count]\n");
         return 0;
     }
-    printf("module %d, width %d, height %d\n", module, width, height);
+    printf("module %d, WxH %dx%d, CRxCH %dx%d, SWxSH %dx%d, VWxVH\n", module, width, height, crop_width, crop_height, scale_width, scale_height, video_width, video_height);
 
     struct V4l2UsageScheme s;
     memset(&s, 0, sizeof(s));
@@ -66,27 +75,27 @@ int main(int argc, char *argv[])
     s.useMlc0Video = true;
 
     CHECK_COMMAND(v4l2_init(&s));
-    CHECK_COMMAND(v4l2_set_format(decimator_id, width, height, format));
-    CHECK_COMMAND(v4l2_set_crop(decimator_id, 0, 0, width, height));
     CHECK_COMMAND(v4l2_set_format(sensor_id, width, height, V4L2_MBUS_FMT_YUYV8_2X8));
-    CHECK_COMMAND(v4l2_set_format(video_id, width, height, format));
-
-    CHECK_COMMAND(v4l2_set_crop(video_id, 0, 0, width, height));
+    CHECK_COMMAND(v4l2_set_format(decimator_id, width, height, format));
+    CHECK_COMMAND(v4l2_set_crop_with_pad(decimator_id, 2, 0, 0, crop_width, crop_height));
+    CHECK_COMMAND(v4l2_set_crop(decimator_id, 0, 0, scale_width, scale_height));
+    CHECK_COMMAND(v4l2_set_format(video_id, scale_width, scale_height, format));
+    CHECK_COMMAND(v4l2_set_crop(video_id, 0, 0, video_width, video_height));
 
     CHECK_COMMAND(v4l2_set_ctrl(video_id, V4L2_CID_MLC_VID_PRIORITY, 0));
     CHECK_COMMAND(v4l2_set_ctrl(video_id, V4L2_CID_MLC_VID_COLORKEY, 0x0));
     CHECK_COMMAND(v4l2_reqbuf(decimator_id, MAX_BUFFER_COUNT));
     CHECK_COMMAND(v4l2_reqbuf(video_id, MAX_BUFFER_COUNT));
 
-    printf("alloc video\n");
+    //printf("alloc video\n");
     struct nxp_vid_buffer bufs[MAX_BUFFER_COUNT];
-    CHECK_COMMAND(alloc_buffers(ion_fd, MAX_BUFFER_COUNT, bufs, width, height, format));
-    printf("vid_buf: %p, %p, %p, %p\n", bufs[0].virt[0], bufs[1].virt[0], bufs[2].virt[0], bufs[3].virt[0]);
+    CHECK_COMMAND(alloc_buffers(ion_fd, MAX_BUFFER_COUNT, bufs, crop_width, crop_height, format));
+    //printf("vid_buf: %p, %p, %p, %p\n", bufs[0].virt[0], bufs[1].virt[0], bufs[2].virt[0], bufs[3].virt[0]);
 
     int i;
     for (i = 0; i < MAX_BUFFER_COUNT; i++) {
         struct nxp_vid_buffer *buf = &bufs[i];
-        printf("buf plane num: %d\n", buf->plane_num);
+        //printf("buf plane num: %d\n", buf->plane_num);
         CHECK_COMMAND(v4l2_qbuf(decimator_id, buf->plane_num, i, buf, -1, NULL));
     }
 
@@ -98,8 +107,8 @@ int main(int argc, char *argv[])
     bool started_out = false;
     int capture_index = 0;
     int count = 1000;
-    if (argc >= 5) {
-        count = atoi(argv[4]);
+    if (argc >= 11) {
+        count = atoi(argv[10]);
     }
     while (count >= 0) {
         struct nxp_vid_buffer *buf = &bufs[capture_index];

@@ -119,7 +119,10 @@ void CCameraTest::ThreadProc()
 		pos = (pos + 1)%CAP_BUFFERS;
 	}
 
-	//NX_DspVideoSetPriority( 0, 2 );
+	for( int i=0; i<CAP_BUFFERS ; i++ )
+	{
+		NX_FreeVideoMemory(hMem[i]);
+	}
 
 	NX_DspClose( hDsp );
 	NX_VipClose( hVip );

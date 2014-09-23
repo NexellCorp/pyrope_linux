@@ -22,6 +22,10 @@ private:
 		return (void*)0xDEADBEEF;
 	}
 	void ThreadProc();
+	
+	int HDMIOpen();
+	void HDMIClose();
+	int HDMIDisplay();
 
 private:
 	bool			m_bIsConnected;
@@ -29,6 +33,11 @@ private:
 	bool			m_bRunning;
 	pthread_t		m_hThread;
 	pthread_mutex_t	m_hMutex;
+
+	int ion_fd;
+	bool started_out;
+	int out_q_count;
+	int out_index;
 };
 
 #endif // !__HDMITEST_H__

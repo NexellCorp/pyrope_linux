@@ -110,7 +110,7 @@ int32_t main( void )
 
 	register_signal();
 
-	NX_DspVideoSetPriority( DISPLAY_MODULE_MLC0, 1 );
+	NX_DspVideoSetPriority( DISPLAY_MODULE_MLC0, 2 );
 	NX_DspSetColorKey( DISPLAY_MODULE_MLC0, 0x090909 );
 
 	// Read Configuration

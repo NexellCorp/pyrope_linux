@@ -69,9 +69,9 @@ int main(void)
 	NX_HLS_MGR_CONFIG 	hlsConfig;
 
 	memset( &hlsConfig, 0x00, sizeof(NX_HLS_MGR_CONFIG) );
-	hlsConfig.nPort				= 0;
-	hlsConfig.nWidth			= 640;
-	hlsConfig.nHeight			= 480;
+	hlsConfig.nPort				= 3;
+	hlsConfig.nWidth			= 1024;
+	hlsConfig.nHeight			= 768;
 	hlsConfig.nFps				= 30;
 
 	hlsConfig.nSegmentDuration	= 10;

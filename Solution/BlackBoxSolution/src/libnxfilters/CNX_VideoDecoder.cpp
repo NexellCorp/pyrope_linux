@@ -115,7 +115,7 @@ int32_t CNX_VideoDecoder::ReleaseSample( CNX_Sample *pSample )
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_VideoDecoder::Run()
+int32_t CNX_VideoDecoder::Run( void )
 {
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	if( m_bRun == false ) {
@@ -135,7 +135,7 @@ int32_t CNX_VideoDecoder::Run()
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_VideoDecoder::Stop()
+int32_t CNX_VideoDecoder::Stop( void )
 {
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	if( true == m_bRun ) {
@@ -166,7 +166,7 @@ void CNX_VideoDecoder::ThreadLoop( void )
 	int64_t prvTimeStamp = 0;
 #endif
 
-	NX_VID_RET 			vidRet;
+	VID_ERROR_E 		vidRet;
 	NX_VID_SEQ_IN 		seqIn;
 	NX_VID_SEQ_OUT 		seqOut;
 	NX_VID_DEC_IN 		decIn;
@@ -196,7 +196,7 @@ void CNX_VideoDecoder::ThreadLoop( void )
 			seqIn.disableOutReorder = 0;
 
 			vidRet = NX_VidDecInit( m_hDec, &seqIn, &seqOut );
-			if( vidRet == VID_NEED_MORE_BUF ) {
+			if( vidRet == VID_ERR_NEED_MORE_BUF ) {
 				NxDbgMsg( NX_DBG_ERR, (TEXT("VPU Initialize Failed!!!\n")) );
 				break;
 			}
@@ -217,8 +217,8 @@ void CNX_VideoDecoder::ThreadLoop( void )
 #endif
 		vidRet = NX_VidDecDecodeFrame( m_hDec, &decIn, &decOut );
 
-		if( vidRet == VID_NEED_MORE_BUF ) {
-			NxDbgMsg( NX_DBG_ERR, (TEXT("VID_NEED_MORE_BUF NX_VidDecDecodeFrame.\n")) );
+		if( vidRet == VID_ERR_NEED_MORE_BUF ) {
+			NxDbgMsg( NX_DBG_ERR, (TEXT("VID_ERR_NEED_MORE_BUF NX_VidDecDecodeFrame.\n")) );
 			m_pSemOut->Post();
 			continue;
 		}
@@ -307,7 +307,7 @@ int32_t CNX_VideoDecoder::SetFileName( uint8_t *pFileName )
 		mp4Class = 0;
 		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): vpuCodecType = %d, mp4Class = %d\n"), __func__, vpuCodecType, mp4Class) );
 
-		if( NULL == (m_hDec = NX_VidDecOpen(vpuCodecType, mp4Class, 0)) ) {
+		if( NULL == (m_hDec = NX_VidDecOpen((VID_TYPE_E)vpuCodecType, mp4Class, 0, NULL)) ) {
 			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): NX_VidDecOpen(%d) failed!!!\n"), __func__, vpuCodecType) );
 			goto ErrorExit;
 		}		

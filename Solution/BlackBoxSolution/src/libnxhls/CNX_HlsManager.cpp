@@ -121,88 +121,56 @@ void CNX_HlsManager::SetNotifier( void )
 //------------------------------------------------------------------------------
 int32_t CNX_HlsManager::SetConfig( NX_HLS_MGR_CONFIG *pConfig )
 {
-#if(1)
-	m_VipConfig.port			= pConfig->nPort;
-	m_VipConfig.width			= pConfig->nWidth;
-	m_VipConfig.height			= pConfig->nHeight;
-	m_VipConfig.fps				= pConfig->nFps;
+	memset( &m_VipConfig, 0x00, sizeof(m_VipConfig) );
+	m_VipConfig.port				= pConfig->nPort;
+	m_VipConfig.width				= pConfig->nWidth;
+	m_VipConfig.height				= pConfig->nHeight;
+	m_VipConfig.fps					= pConfig->nFps;
 
-	m_VidRenderConfig.port 		= 0;
-	m_VidRenderConfig.width		= pConfig->nWidth;
-	m_VidRenderConfig.height 	= pConfig->nHeight;
-	m_VidRenderConfig.top		= 0;
-	m_VidRenderConfig.left		= 0;
-	m_VidRenderConfig.right		= pConfig->nWidth;
-	m_VidRenderConfig.bottom	= pConfig->nHeight;
+	memset( &m_VidRenderConfig, 0x00, sizeof(m_VidRenderConfig) );
+	m_VidRenderConfig.port 			= 0;
+	m_VidRenderConfig.width			= pConfig->nWidth;
+	m_VidRenderConfig.height 		= pConfig->nHeight;
+	m_VidRenderConfig.cropLeft		= 0;
+	m_VidRenderConfig.cropTop		= 0;
+	m_VidRenderConfig.cropRight		= pConfig->nWidth;
+	m_VidRenderConfig.cropBottom	= pConfig->nHeight;
+	m_VidRenderConfig.dspLeft		= 0;
+	m_VidRenderConfig.dspTop		= 0;
+	m_VidRenderConfig.dspRight		= pConfig->nWidth;
+	m_VidRenderConfig.dspBottom		= pConfig->nHeight;
 
-	m_VidEncConfig.width		= pConfig->nWidth;
-	m_VidEncConfig.height		= pConfig->nHeight;
-	m_VidEncConfig.fps			= pConfig->nFps;
-	m_VidEncConfig.bitrate		= 3000000;
-	m_VidEncConfig.codec		= 0x21;
+	memset( &m_VidEncConfig, 0x00, sizeof(m_VidEncConfig) );
+	m_VidEncConfig.width			= pConfig->nWidth;
+	m_VidEncConfig.height			= pConfig->nHeight;
+	m_VidEncConfig.fps				= pConfig->nFps;
+	m_VidEncConfig.bitrate			= 3000000;
+	m_VidEncConfig.codec			= 0x21;
 
-	m_AudCapConfig.channels		= 2;
-	m_AudCapConfig.frequency	= 48000;
-	m_AudCapConfig.samples		= 1152;
+	memset( &m_AudCapConfig, 0x00, sizeof(m_AudCapConfig) );
+	m_AudCapConfig.channels			= 2;
+	m_AudCapConfig.frequency		= 48000;
+	m_AudCapConfig.samples			= 1152;
 
-	m_AudEncConfig.channels		= 2;
-	m_AudEncConfig.frequency	= 48000;
-	m_AudEncConfig.bitrate		= 128000;
-	m_AudEncConfig.codec		= 0x40;
+	memset( &m_AudEncConfig, 0x00, sizeof(m_AudEncConfig) );
+	m_AudEncConfig.channels			= 2;
+	m_AudEncConfig.frequency		= 48000;
+	m_AudEncConfig.bitrate			= 128000;
+	m_AudEncConfig.codec			= 0x40;
 
-	m_TsMuxerConfig.videoTrack	= 1;
-	m_TsMuxerConfig.audioTrack	= 1;
-	m_TsMuxerConfig.textTrack	= 0;
-	m_TsMuxerConfig.codecType[0]= STREAM_TYPE_H264;
-
-	strcpy( (char*)m_HlsConfig.MetaFileName,(char*)pConfig->pMetaFileName );
-	strcpy( (char*)m_HlsConfig.SegmentName, (char*)pConfig->pSegmentFileName );
-	strcpy( (char*)m_HlsConfig.SegmentRoot, (char*)pConfig->pSegmentRoot );
-
-	m_HlsConfig.SegmentDuration = pConfig->nSegmentDuration;
-	m_HlsConfig.SegmentNumber	= pConfig->nSegmentNumber;
-#else
-	m_VipConfig.port			= 2;
-	m_VipConfig.width			= 1024;
-	m_VipConfig.height			= 768;
-	m_VipConfig.fps				= 30;
-
-	m_VidRenderConfig.port 		= 0;
-	m_VidRenderConfig.width		= 1024;
-	m_VidRenderConfig.height 	= 768;
-	m_VidRenderConfig.top		= 0;
-	m_VidRenderConfig.left		= 0;
-	m_VidRenderConfig.right		= 1024;
-	m_VidRenderConfig.bottom	= 768;
-
-	m_VidEncConfig.width		= 1024;
-	m_VidEncConfig.height		= 768;
-	m_VidEncConfig.fps			= 30;
-	m_VidEncConfig.bitrate		= 1000000;
-	m_VidEncConfig.codec		= 0x21;
-
-	m_AudCapConfig.channels		= 2;
-	m_AudCapConfig.frequency	= 48000;
-	m_AudCapConfig.samples		= 1152;
-
-	m_AudEncConfig.channels		= 2;
-	m_AudEncConfig.frequency	= 48000;
-	m_AudEncConfig.bitrate		= 128000;
-	m_AudEncConfig.codec		= 0x40;
-
+	memset( &m_TsMuxerConfig, 0x00, sizeof(m_TsMuxerConfig) );
 	m_TsMuxerConfig.videoTrack		= 1;
-	m_TsMuxerConfig.audioTrack		= 0;
+	m_TsMuxerConfig.audioTrack		= 1;
 	m_TsMuxerConfig.textTrack		= 0;
 	m_TsMuxerConfig.codecType[0]	= STREAM_TYPE_H264;
 
-	strcpy((char*)m_HlsConfig.MetaFileName, "test.m3u8");
-	strcpy((char*)m_HlsConfig.SegmentName, "segment");
-	strcpy((char*)m_HlsConfig.SegmentRoot, "/www");
+	memset( &m_HlsConfig, 0x00, sizeof(m_HlsConfig) );
+	strcpy( (char*)m_HlsConfig.MetaFileName,(char*)pConfig->pMetaFileName );
+	strcpy( (char*)m_HlsConfig.SegmentName, (char*)pConfig->pSegmentFileName );
+	strcpy( (char*)m_HlsConfig.SegmentRoot, (char*)pConfig->pSegmentRoot );
+	m_HlsConfig.SegmentDuration = pConfig->nSegmentDuration;
+	m_HlsConfig.SegmentNumber	= pConfig->nSegmentNumber;
 
-	m_HlsConfig.SegmentDuration = 10;
-	m_HlsConfig.SegmentNumber = 3;
-#endif
-	
 	return 0;
 }
 

@@ -61,7 +61,8 @@ public:
 	virtual int32_t	Stop( void ) = 0;
 	
 	virtual int32_t Capture( char *pFileName ) = 0;
-	
+	virtual int32_t EnableRender( int32_t enable ) = 0;
+
 	virtual int32_t	RegisterNotifyCallback( uint32_t (*cbNotify)(uint32_t, uint8_t*, uint32_t) ) = 0;
 };
 

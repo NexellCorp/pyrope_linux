@@ -616,6 +616,9 @@ void shell_usage( void )
 	printf("| help                        : help                             |\n");
 	printf("| event                       : occur event                      |\n");
 	printf("| capture [channel]           : jpeg capture                     |\n");
+	printf("| dsp [enable]                : display enable                   |\n");
+	printf("| crop [L] [T] [L] [B]        : source image display crop        |\n");
+	printf("| pos [L] [T] [L] [B]         : change display position          |\n");
 	printf("| lcd [channel]               : lcd preview channel              |\n");
 	printf("| hdmi [channel]              : hdmi preview channel             |\n");
 	printf("| dbg [debug_level]           : change debug level( 0 - 5)       |\n");
@@ -695,6 +698,50 @@ void *DvrShellThread( void *arg )
 				}
 				else {
 					printf("unknown argument. ( 0 or 1 )\n");
+				}
+			}
+			else if( !strcasecmp( cmd[0], "dsp") ) {
+				if( !strcasecmp( cmd[1], "0" ) || !strcasecmp( cmd[1], "1" ) ) {
+					NX_DVR_DISPLAY_CONFIG dspConf;
+					memset( &dspConf, 0x00, sizeof(dspConf) );
+					dspConf.bEnable	= atoi(cmd[1]);
+
+					NX_DvrSetDisplay( g_hDvr, &dspConf );
+				}
+				else {
+					printf("unknown argument. ( 0 or 1 )\n");	
+				}
+			}
+			else if( !strcasecmp( cmd[0], "crop") ) {
+				if( cmdCnt == 5 ) {
+					NX_DVR_DISPLAY_CONFIG dspConf;
+					memset( &dspConf, 0x00, sizeof(dspConf) );
+					dspConf.bEnable				= true;
+					dspConf.cropRect.nLeft 		= atoi(cmd[1]);
+					dspConf.cropRect.nTop		= atoi(cmd[2]);
+					dspConf.cropRect.nRight 	= atoi(cmd[3]);
+					dspConf.cropRect.nBottom	= atoi(cmd[4]);
+
+					NX_DvrSetDisplay( g_hDvr, &dspConf );
+				}
+				else {
+					printf("unknwon argument.\n");
+				}
+			}
+			else if( !strcasecmp( cmd[0], "pos") ) {
+				if( cmdCnt == 5 ) {
+					NX_DVR_DISPLAY_CONFIG dspConf;
+					memset( &dspConf, 0x00, sizeof(dspConf) );
+					dspConf.bEnable				= true;
+					dspConf.dspRect.nLeft 		= atoi(cmd[1]);
+					dspConf.dspRect.nTop		= atoi(cmd[2]);
+					dspConf.dspRect.nRight 		= atoi(cmd[3]);
+					dspConf.dspRect.nBottom		= atoi(cmd[4]);
+
+					NX_DvrSetDisplay( g_hDvr, &dspConf );
+				}
+				else {
+					printf("unknwon argument.\n");
 				}
 			}
 			else if( !strcasecmp( cmd[0], "lcd") ) {
@@ -1272,21 +1319,29 @@ int main( int32_t argc, char *argv[] )
 	recordConfig.mdConfig[1].nMdSampingFrame= 1;
 
 #ifndef BOARD_TYPE_LYNX
-	displayConfig.bEnable	= false;
-	displayConfig.nChannel	= 0;
-	displayConfig.nModule	= 0;
-	displayConfig.nX		= 0;
-	displayConfig.nY		= 0;
-	displayConfig.nWidth	= 1280;
-	displayConfig.nHeight	= 720;
+	displayConfig.bEnable			= false;
+	displayConfig.nChannel			= 0;
+	displayConfig.nModule			= 0;
+	displayConfig.cropRect.nLeft	= 0;
+	displayConfig.cropRect.nTop		= 0;
+	displayConfig.cropRect.nRight	= 640;
+	displayConfig.cropRect.nBottom	= 480;
+	displayConfig.dspRect.nLeft		= 0;
+	displayConfig.dspRect.nTop		= 0;
+	displayConfig.dspRect.nRight	= 640;
+	displayConfig.dspRect.nBottom	= 480;
 #else
-	displayConfig.bEnable	= true;
-	displayConfig.nChannel	= gstPreviewChannel;
-	displayConfig.nModule	= 0;
-	displayConfig.nX		= 0;
-	displayConfig.nY		= 0;
-	displayConfig.nWidth	= 1024;
-	displayConfig.nHeight	= 720;
+	displayConfig.bEnable			= true;
+	displayConfig.nChannel			= gstPreviewChannel;
+	displayConfig.nModule			= 0;
+	displayConfig.cropRect.nLeft	= 0;
+	displayConfig.cropRect.nTop		= 0;
+	displayConfig.cropRect.nRight	= 640;
+	displayConfig.cropRect.nBottom	= 480;
+	displayConfig.dspRect.nLeft		= 0;
+	displayConfig.dspRect.nTop		= 0;
+	displayConfig.dspRect.nRight	= 640;
+	displayConfig.dspRect.nBottom	= 480;
 #endif
 
 #ifndef DISABLE_AUDIO

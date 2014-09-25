@@ -72,14 +72,15 @@ int32_t CNX_TranscodingManager::BuildFilter( void )
 	if( m_pVidRender )	m_pVidRender->Connect( m_pEncoder );
 	if( m_pEncoder )	m_pEncoder->Connect( m_pMp4Muxer );
 
-	if( m_pDecoder ) {
-		int32_t width = 0, height = 0;
-		int32_t fpsNum = 0, fpsDen = 0, fps = 0;
+	int32_t width = 0, height = 0;
+	int32_t fpsNum = 0, fpsDen = 0, fps = 0;
 
+	if( m_pDecoder ) {
 		m_pDecoder->Init();
 		m_pDecoder->SetFileName( m_pInFileName );
 		m_pDecoder->GetVideoResolution( &width, &height );
 		fps = m_pDecoder->GetVideoFramerate( &fpsNum, &fpsDen );
+		
 		if( fps > (int32_t)m_VidEncConfig.fps ) {
 			m_pDecoder->SetFrameDown( m_VidEncConfig.fps );
 		}
@@ -94,7 +95,14 @@ int32_t CNX_TranscodingManager::BuildFilter( void )
 		m_Mp4MuxerConfig.trackConfig[0].height	= height;
 	}		
 
-	if( m_pVidRender )	m_pVidRender->Init( &m_VidRenderConfig );
+	if( m_pVidRender ) {
+		if( width && height ) {
+			m_VidRenderConfig.cropRight		= width;
+			m_VidRenderConfig.cropBottom	= height;
+		}
+		m_pVidRender->Init( &m_VidRenderConfig );
+	}
+
 	if( m_pEncoder )	m_pEncoder->Init( &m_VidEncConfig );
 	
 	if( m_pMp4Muxer ) {
@@ -134,21 +142,25 @@ int32_t CNX_TranscodingManager::SetConfig( NX_TRANSCODING_MGR_CONFIG *pConfig )
 	if( pConfig->pOutFileName ) m_pOutFileName = pConfig->pOutFileName; 
 
 	memset( &m_VidRenderConfig, 0x00, sizeof(m_VidRenderConfig) );
-	m_VidRenderConfig.port 		= 0;
-	m_VidRenderConfig.top		= 0;
-	m_VidRenderConfig.left		= 0;
-	m_VidRenderConfig.right		= 1024;
-	m_VidRenderConfig.bottom	= 768;
+	m_VidRenderConfig.port 			= 0;
+	m_VidRenderConfig.cropLeft		= 0;
+	m_VidRenderConfig.cropTop		= 0;
+	m_VidRenderConfig.cropRight		= 1024;
+	m_VidRenderConfig.cropBottom	= 768;
+	m_VidRenderConfig.dspLeft		= 0;
+	m_VidRenderConfig.dspTop		= 0;
+	m_VidRenderConfig.dspRight		= 1024;
+	m_VidRenderConfig.dspBottom		= 768;
 
 	memset( &m_VidEncConfig, 0x00, sizeof(m_VidEncConfig) );
-	m_VidEncConfig.fps			= pConfig->nEncFps;
-	m_VidEncConfig.bitrate		= pConfig->nEncBitrate;
-	m_VidEncConfig.codec		= 0x21;
+	m_VidEncConfig.fps				= pConfig->nEncFps;
+	m_VidEncConfig.bitrate			= pConfig->nEncBitrate;
+	m_VidEncConfig.codec			= 0x21;
 
 	memset( &m_Mp4MuxerConfig, 0x00, sizeof(m_Mp4MuxerConfig) );
-	m_Mp4MuxerConfig.videoTrack	= 1;
-	m_Mp4MuxerConfig.audioTrack	= 0;
-	m_Mp4MuxerConfig.textTrack	= 0;
+	m_Mp4MuxerConfig.videoTrack		= 1;
+	m_Mp4MuxerConfig.audioTrack		= 0;
+	m_Mp4MuxerConfig.textTrack		= 0;
 
 	m_Mp4MuxerConfig.trackConfig[0].frameRate	= pConfig->nEncFps;
 	m_Mp4MuxerConfig.trackConfig[0].bitrate		= pConfig->nEncBitrate;

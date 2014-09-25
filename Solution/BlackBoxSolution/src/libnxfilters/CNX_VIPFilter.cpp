@@ -115,7 +115,7 @@ void CNX_VIPFilter::Init( NX_VIP_CONFIG *pConfig )
 
 		m_hVip = NX_VipInit( &m_VipInfo );
 
-		AllocateBuffer(m_VipInfo.width, m_VipInfo.height, 256, 256, NUM_ALLOC_BUFFER, m_FourCC);
+		AllocateBuffer( m_VipInfo.width, m_VipInfo.height, 256, 256, NUM_ALLOC_BUFFER, m_FourCC );
 		m_bInit = true;
 	}
 

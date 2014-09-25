@@ -111,18 +111,14 @@ public:
 
 	int32_t SetEvent( void );
 	int32_t SetCapture( int32_t channel );
+	int32_t SetDisplay( NX_DVR_DISPLAY_CONFIG *pDisplayConfig );
 	int32_t SetPreview( int32_t channel );
 	int32_t SetPreviewHdmi( int32_t channel );
 	
 	int32_t ChangeMode( NX_DVR_ENCODE_TYPE mode );
 	// Control Function ( Not Implemetation )
-	//int32_t SetDisplay( int32_t channel );
+	
 	//int32_t GetStatisctics( void );
-
-	//int32_t SetVideoLayerEnable( void );
-
-	//int32_t GetVideoLayerPriority( void );
-	//int32_t SetVideoLayerPriority( void );
 
 	// Callback Function
 	int32_t RegisterGetFileNameCallback( 
@@ -139,7 +135,7 @@ public:
 		int32_t (*cbRearTextOverlay)	(uint8_t*, uint32_t*, uint32_t*, uint32_t*)
 	);
 	int32_t RegisterNotifyCallback(
-		int32_t (*cbNotify)			(uint32_t, uint8_t*, uint32_t)
+		int32_t (*cbNotify)				(uint32_t, uint8_t*, uint32_t)
 	);
 	int32_t RegisterImageEffectCallback( 
 		int32_t (*cbFrontImageEffect)	(NX_VID_MEMORY_INFO *, NX_VID_MEMORY_INFO *),

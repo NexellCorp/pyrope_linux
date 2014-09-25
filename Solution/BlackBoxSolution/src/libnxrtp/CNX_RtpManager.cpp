@@ -103,31 +103,35 @@ void CNX_RtpManager::SetNotifier( void )
 int32_t CNX_RtpManager::SetConfig( NX_RTP_MGR_CONFIG *pConfig )
 {
 	memset( &m_VipConfig, 0x00, sizeof(m_VipConfig) );
-	m_VipConfig.port			= pConfig->nPort;
-	m_VipConfig.width			= pConfig->nWidth;
-	m_VipConfig.height			= pConfig->nHeight;
-	m_VipConfig.fps				= pConfig->nFps;
+	m_VipConfig.port				= pConfig->nPort;
+	m_VipConfig.width				= pConfig->nWidth;
+	m_VipConfig.height				= pConfig->nHeight;
+	m_VipConfig.fps					= pConfig->nFps;
 
 	memset( &m_VidRenderConfig, 0x00, sizeof(m_VidRenderConfig) );
-	m_VidRenderConfig.port 		= 0;
-	m_VidRenderConfig.width		= pConfig->nWidth;
-	m_VidRenderConfig.height 	= pConfig->nHeight;
-	m_VidRenderConfig.top		= 0;
-	m_VidRenderConfig.left		= 0;
-	m_VidRenderConfig.right		= pConfig->nDspWidth;
-	m_VidRenderConfig.bottom	= pConfig->nDspHeight;
+	m_VidRenderConfig.port 			= 0;
+	m_VidRenderConfig.width			= pConfig->nWidth;
+	m_VidRenderConfig.height 		= pConfig->nHeight;
+	m_VidRenderConfig.cropLeft		= 0;
+	m_VidRenderConfig.cropTop		= 0;
+	m_VidRenderConfig.cropRight		= pConfig->nWidth;
+	m_VidRenderConfig.cropBottom	= pConfig->nHeight;
+	m_VidRenderConfig.dspLeft		= 0;
+	m_VidRenderConfig.dspTop		= 0;
+	m_VidRenderConfig.dspRight		= pConfig->nDspWidth;
+	m_VidRenderConfig.dspBottom		= pConfig->nDspHeight;
 
 	memset( &m_VidEncConfig, 0x00, sizeof(m_VidEncConfig) );
-	m_VidEncConfig.width		= pConfig->nWidth;
-	m_VidEncConfig.height		= pConfig->nHeight;
-	m_VidEncConfig.fps			= pConfig->nFps;
-	m_VidEncConfig.bitrate		= pConfig->nBitrate;
-	m_VidEncConfig.codec		= 0x21;
+	m_VidEncConfig.width			= pConfig->nWidth;
+	m_VidEncConfig.height			= pConfig->nHeight;
+	m_VidEncConfig.fps				= pConfig->nFps;
+	m_VidEncConfig.bitrate			= pConfig->nBitrate;
+	m_VidEncConfig.codec			= 0x21;
 
 	memset( &m_RtpConfig, 0x00, sizeof(m_RtpConfig) );
-	m_RtpConfig.port			= 554;
-	m_RtpConfig.sessionNum		= 1;
-	m_RtpConfig.connectNum		= 2;
+	m_RtpConfig.port				= 554;
+	m_RtpConfig.sessionNum			= 1;
+	m_RtpConfig.connectNum			= 2;
 	sprintf((char*)m_RtpConfig.sessionName[0], "video0");
 	sprintf((char*)m_RtpConfig.sessionName[1], "video1");
 	

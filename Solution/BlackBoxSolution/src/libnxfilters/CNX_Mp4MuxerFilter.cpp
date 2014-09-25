@@ -584,10 +584,11 @@ int32_t	CNX_Mp4MuxerFilter::StopMuxing( void )
 	uint32_t FileSize, FilePos;
 	NxMP4MuxUpdateInfo(m_hMp4Mux, &FilePos, &FileSize);
 	NxMP4MuxClose(m_hMp4Mux);
-	
+
 	m_bThreadExit = true;
 	m_pSemWriter->Post();
 	pthread_join( m_hThread, NULL );
+	m_hThread = 0x00;
 
 	//	Finalize MP4 File
 	if( m_OutFd > 0){
@@ -625,7 +626,6 @@ int32_t	CNX_Mp4MuxerFilter::StopMuxing( void )
 		memset( m_FileName, 0x00, sizeof(m_FileName) );
 	}
 
-	m_hThread = 0x00;
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return true;
 }

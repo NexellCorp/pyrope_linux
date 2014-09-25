@@ -133,37 +133,41 @@ void CNX_Mp4Manager::SetNotifier( void )
 //------------------------------------------------------------------------------
 int32_t CNX_Mp4Manager::SetConfig( Mp4ManagerConfig *pConfig )
 {
-	m_VipConfig.port			= pConfig->port;
-	m_VipConfig.width			= pConfig->width;
-	m_VipConfig.height			= pConfig->height;
-	m_VipConfig.fps				= pConfig->fps;
+	m_VipConfig.port				= pConfig->port;
+	m_VipConfig.width				= pConfig->width;
+	m_VipConfig.height				= pConfig->height;
+	m_VipConfig.fps					= pConfig->fps;
 
-	m_VidRenderConfig.port 		= 0;
-	m_VidRenderConfig.width		= pConfig->width;
-	m_VidRenderConfig.height 	= pConfig->height;
-	m_VidRenderConfig.left		= pConfig->dspLeft;
-	m_VidRenderConfig.top		= pConfig->dspTop;
-	m_VidRenderConfig.right		= pConfig->dspRight;
-	m_VidRenderConfig.bottom	= pConfig->dspBottom;
+	m_VidRenderConfig.port 			= 0;
+	m_VidRenderConfig.width			= pConfig->width;
+	m_VidRenderConfig.height 		= pConfig->height;
+	m_VidRenderConfig.cropLeft		= pConfig->dspLeft;
+	m_VidRenderConfig.cropTop		= pConfig->dspTop;
+	m_VidRenderConfig.cropRight		= pConfig->dspRight;
+	m_VidRenderConfig.cropBottom	= pConfig->dspBottom;
+	m_VidRenderConfig.dspLeft		= pConfig->dspLeft;
+	m_VidRenderConfig.dspTop		= pConfig->dspTop;
+	m_VidRenderConfig.dspRight		= pConfig->dspRight;
+	m_VidRenderConfig.dspBottom		= pConfig->dspBottom;
 
-	m_VidEncConfig.width		= pConfig->width;
-	m_VidEncConfig.height		= pConfig->height;
-	m_VidEncConfig.fps			= pConfig->fps;
-	m_VidEncConfig.bitrate		= pConfig->bitrate;
-	m_VidEncConfig.codec		= MP4_CODEC_TYPE_H264;
+	m_VidEncConfig.width			= pConfig->width;
+	m_VidEncConfig.height			= pConfig->height;
+	m_VidEncConfig.fps				= pConfig->fps;
+	m_VidEncConfig.bitrate			= pConfig->bitrate;
+	m_VidEncConfig.codec			= MP4_CODEC_TYPE_H264;
 
-	m_AudCapConfig.channels		= 2;
-	m_AudCapConfig.frequency	= 48000;
-	m_AudCapConfig.samples		= FRAME_SIZE_AAC;
+	m_AudCapConfig.channels			= 2;
+	m_AudCapConfig.frequency		= 48000;
+	m_AudCapConfig.samples			= FRAME_SIZE_AAC;
 
-	m_AudEncConfig.channels		= 2;
-	m_AudEncConfig.frequency	= 48000;
-	m_AudEncConfig.bitrate		= 128000;
-	m_AudEncConfig.codec		= MP4_CODEC_TYPE_AAC;
+	m_AudEncConfig.channels			= 2;
+	m_AudEncConfig.frequency		= 48000;
+	m_AudEncConfig.bitrate			= 128000;
+	m_AudEncConfig.codec			= MP4_CODEC_TYPE_AAC;
 
-	m_Mp4MuxerConfig.videoTrack	= 1;
-	m_Mp4MuxerConfig.audioTrack	= pConfig->bAudEnable;
-	m_Mp4MuxerConfig.textTrack	= 0;
+	m_Mp4MuxerConfig.videoTrack		= 1;
+	m_Mp4MuxerConfig.audioTrack		= pConfig->bAudEnable;
+	m_Mp4MuxerConfig.textTrack		= 0;
 	
 	m_Mp4MuxerConfig.trackConfig[0].width		= pConfig->width;
 	m_Mp4MuxerConfig.trackConfig[0].height		= pConfig->height;
@@ -293,6 +297,19 @@ int32_t CNX_Mp4Manager::Capture( char *pFileName )
 		ret = -1;
 	}
 	return ret;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_Mp4Manager::EnableRender( int32_t enable )
+{
+	CNX_AutoLock lock( &m_hLock );
+
+	if( m_bRun )
+	{
+		if( m_pVrFilter )	m_pVrFilter->EnableRender( enable ? 1 : 0);
+	}
+	
+	return 0;
 }
 
 //------------------------------------------------------------------------------

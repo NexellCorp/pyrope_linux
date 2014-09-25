@@ -67,13 +67,13 @@ static void register_signal(void)
 static void Usage( void )
 {
 	printf("Nexell Transcoding Test Application. ( Filter Base )\n");
-	printf("Decoding -> Preview -> Encoding(H264) -> FileWriting(MP4)");
+	printf("Decoding -> Preview -> Encoding(H264) -> FileWriting(MP4)\n");
 	printf("Usage :\n");
 	printf("   -h              : Show usage.\n");
 	printf("   -i [filename]   : Input filename. (mandatory)\n");
 	printf("   -o [filename]   : Output filename.\n");
 	printf("   -f [framerate]  : Encoding framereate. default 30fps.\n");
-	printf("   -b [bitrate]    : Encoding bitrate(Mbps). default 10M");
+	printf("   -b [bitrate]    : Encoding bitrate(Mbps). default 10M.\n");
 }
 
 int32_t main( int32_t argc, char *argv[] )
@@ -81,7 +81,7 @@ int32_t main( int32_t argc, char *argv[] )
 	int32_t opt;
 	
 	char *pInFileName = NULL, *pOutFileName = NULL;
-	int32_t fps = 60;
+	int32_t fps = 30;
 	int32_t bitreate = 10000000;
 
 	while( -1 != (opt=getopt(argc, argv, "hi:o:f:b:")) )

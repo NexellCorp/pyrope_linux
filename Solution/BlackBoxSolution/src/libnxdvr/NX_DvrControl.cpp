@@ -107,7 +107,9 @@ int32_t NX_DvrSetPreviewHdmi( NX_DVR_HANDLE hDvr, int32_t preview )
 //------------------------------------------------------------------------------
 int32_t NX_DvrSetDisplay( NX_DVR_HANDLE hDvr, NX_DVR_DISPLAY_CONFIG *pDisplayConfig )
 {
-	printf("Not yet..\n");
+	if( hDvr )
+		hDvr->SetDisplay( pDisplayConfig );
+	
 	return 0;
 }
 
@@ -184,14 +186,14 @@ int32_t NX_DvrGetAPIVersion( NX_DVR_HANDLE hDvr, int32_t *pMajor, int32_t *pMino
 }
 
 //------------------------------------------------------------------------------
-int32_t NX_DvrVideoLayerEnable( NX_DVR_HANDLE hDvr, uint32_t nEnable )
+int32_t NX_DvrGetStatistics( NX_DVR_HANDLE hDvr, NX_DVR_MEDIA_CONFIG *pMediaConfig )
 {
 	printf("Not yet..\n");
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t NX_DvrGetStatistics( NX_DVR_HANDLE hDvr, NX_DVR_MEDIA_CONFIG *pMediaConfig )
+int32_t NX_DvrVideoLayerEnable( NX_DVR_HANDLE hDvr, uint32_t nEnable )
 {
 	printf("Not yet..\n");
 	return 0;

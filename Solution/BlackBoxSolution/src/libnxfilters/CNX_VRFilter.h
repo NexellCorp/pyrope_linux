@@ -54,6 +54,9 @@ public:
 	//------------------------------------------------------------------------
 			int32_t	EnableRender( uint32_t enable );
 			int32_t EnableHdmiRender( uint32_t enable );
+			int32_t SetRenderCrop( DSP_IMG_RECT *pCropRect );
+			int32_t SetRenderPosition( DSP_IMG_RECT *pDspRect );
+			
 protected:
 	//------------------------------------------------------------------------
 	//	Filter status

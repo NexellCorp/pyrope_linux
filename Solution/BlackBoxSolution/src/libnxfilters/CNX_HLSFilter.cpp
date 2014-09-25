@@ -250,7 +250,7 @@ void CNX_HLSFilter::ThreadLoop(void)
 				writeSize = write( m_OutFd, pData, dataSize);
 
 				if( dataSize != writeSize ) {
-					NxDbgMsg( NX_DBG_ERR, (TEXT("write failed.(dstaSize = %d, writeSize = %d\n"), dataSize, writeSize) );
+					NxDbgMsg( NX_DBG_ERR, (TEXT("write failed.(dataSize = %d, writeSize = %d\n"), dataSize, writeSize) );
 				}
 			}
 		}

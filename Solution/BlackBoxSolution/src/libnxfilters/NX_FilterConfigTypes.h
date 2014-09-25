@@ -36,15 +36,23 @@ typedef struct tag_NX_VIP_CONFIG {
 //----------------------------------------------------------------------------
 typedef struct tag_NX_VIDRENDER_CONFIG
 {
-	int32_t		port;
-	// Source
-	int32_t		width;
-	int32_t		height;
-	// Target
-	int32_t		left;
-	int32_t		top;
-	int32_t		right;
-	int32_t		bottom;
+	int32_t		port;		// display port
+	
+	// Source Image
+	int32_t		width;		// source image width
+	int32_t		height;		// source image height
+
+	// Crop Region
+	int32_t		cropLeft;	// crop region left
+	int32_t		cropTop;	// crop region top
+	int32_t		cropRight;	// crop region right
+	int32_t		cropBottom;	// crop region bottom
+
+	// Display Region
+	int32_t		dspLeft;	// display region left
+	int32_t		dspTop;		// display region top
+	int32_t		dspRight;	// display region right
+	int32_t		dspBottom;	// display region bottom
 } NX_VIDRENDER_CONFIG;
 
 typedef struct tag_NX_VIDENC_CONFIG

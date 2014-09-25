@@ -81,27 +81,38 @@ void CNX_H264Encoder::Init( NX_VIDENC_CONFIG *pConfig )
 
 	if( false == m_bInit )
 	{
-		m_hEnc = NX_VidEncOpen( NX_AVC_ENC );
+		m_hEnc = NX_VidEncOpen( NX_AVC_ENC, NULL );
 
-		//	Clear All Encoder Variables
 		memset( &m_EncInfo, 0, sizeof(m_EncInfo) );
-		m_EncInfo.width			= pConfig->width;
-		m_EncInfo.height		= pConfig->height;
-		m_EncInfo.gopSize		= pConfig->fps / 2;		// Group of picture ( key frame interval )
 
-		m_EncInfo.bitrate		= pConfig->bitrate;
-		m_EncInfo.fpsNum		= pConfig->fps;
-		m_EncInfo.fpsDen		= 1;
-
-		m_EncInfo.enableRC		= 1;
-		m_EncInfo.enableSkip	= 0;
-		m_EncInfo.maxQScale		= 51;
-		//m_EncInfo.userQScale	= 21;
-		m_EncInfo.userQScale	= 10;
-		m_EncInfo.chromaInterleave = 0;
-
-		m_EncInfo.enableAUDelimiter = false;
+		m_EncInfo.width				= pConfig->width;
+		m_EncInfo.height			= pConfig->height;
+		m_EncInfo.gopSize			= pConfig->fps / 2;		// Group of pictures (key frame interval)
+		m_EncInfo.fpsNum			= pConfig->fps;
+		m_EncInfo.fpsDen			= 1;
 		
+		// rate control parameter
+		m_EncInfo.enableRC			= 1;
+		m_EncInfo.RCAlgorithm		= 1;					// 0:Hardware / 1:Nexell
+		m_EncInfo.bitrate			= pConfig->bitrate;
+		m_EncInfo.initialQp			= 10;
+		m_EncInfo.maximumQp			= 51;
+		m_EncInfo.disableSkip		= true;
+		
+		m_EncInfo.rcVbvSize			= 0;
+		
+		m_EncInfo.numIntraRefreshMbs= 0;
+		m_EncInfo.searchRange		= 2;	// 0 : 128 x 64, 1 : 64 x 32, 2 : 32 x 16, 3 : 16 x 16
+		m_EncInfo.chromaInterleave	= 0;
+		m_EncInfo.enableAUDelimiter	= false;
+		// m_EncInfo.RCDelay		=;	// Hardware Rate Control Algorithm
+		// m_EncInfo.gammaFactor	=;	// Hardware Rate Control Algorithm
+		// m_EncInfo.RcMode			=;	// N/A
+
+		// m_EncInfo.rotAngle		=;
+		// m_EncInfo.mirDirection	=;
+		// m_EncInfo.jpgQuality		=;
+
 		NxDbgMsg( NX_DBG_INFO, (TEXT("width=%d, height=%d, bitrate=%d, fps=%d\n"), m_EncInfo.width, m_EncInfo.height, m_EncInfo.bitrate, m_EncInfo.fpsNum / m_EncInfo.fpsDen) );
 
 		NX_VidEncInit( m_hEnc, &m_EncInfo );
@@ -388,7 +399,7 @@ void* CNX_H264Encoder::ThreadMain(void*arg)
 //	0 >  Ret : Error ( Ret = error code )
 int32_t CNX_H264Encoder::EncodeVideo( CNX_VideoSample *pInSample, CNX_MuxerSample *pOutSample )
 {
-	NX_VID_MEMORY_INFO	*pVideoBuffer = pInSample->GetVideoMemory();
+	NX_VID_ENC_IN	encIn;
 	NX_VID_ENC_OUT	encOut;
 
 	uint64_t timeStamp = pInSample->GetTimeStamp();
@@ -396,7 +407,13 @@ int32_t CNX_H264Encoder::EncodeVideo( CNX_VideoSample *pInSample, CNX_MuxerSampl
 	// static uint64_t maxInterval = 0;
 	// uint64_t interval = NX_GetTickCount();
 
-	if( !NX_VidEncEncodeFrame( m_hEnc, pVideoBuffer, &encOut) ) // encoding successful.
+	memset( &encIn, 0x00, sizeof(encIn) );
+	encIn.pImage		= pInSample->GetVideoMemory();
+	// encIn.timeStamp		= ;
+	// encIn.forcedIFrame	= ;
+	// encIn.quantParam		= ;
+
+	if( !NX_VidEncEncodeFrame( m_hEnc, &encIn, &encOut) ) // encoding successful.
 	{
 		if( encOut.bufSize > 0 ) 
 		{
@@ -423,7 +440,7 @@ int32_t CNX_H264Encoder::EncodeVideo( CNX_VideoSample *pInSample, CNX_MuxerSampl
 			}
 #endif
 
-			if(encOut.isKey) {
+			if(encOut.frameType) {
 				seqBuffer = (unsigned char *)malloc( MAX_SEQ_BUF_SIZE );
 				NX_VidEncGetSeqInfo( m_hEnc, seqBuffer, &seqSize );
 			}
@@ -471,7 +488,7 @@ int32_t CNX_H264Encoder::EncodeVideo( CNX_VideoSample *pInSample, CNX_MuxerSampl
 			pOutSample->SetDataType( m_PacketID );
 			pOutSample->SetTimeStamp( timeStamp );
 			pOutSample->SetActualDataLength( encSize );
-			pOutSample->SetSyncPoint( encOut.isKey );
+			pOutSample->SetSyncPoint( encOut.frameType );
 
 #if( DUMP_H264 )
 			if( outFp ) {

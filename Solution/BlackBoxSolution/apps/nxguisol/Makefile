@@ -12,7 +12,7 @@ INCLUDE += -I$(LIBSDIR)/include
 INCLUDE	+= -I./ -I./BaseComponent -I./nxdvrsol -I./nxplayersol
 
 LIBRARY	+= -L$(TOPDIR)/lib
-LIBRARY += -L$(LIBSDIR)/lib
+LIBRARY += -L$(LIBSDIR)/lib -L$(LIBSDIR)/lib/ratecontrol
 
 # Dvr Library
 LIBRARY += -lnxgraphictools -lEGL -lGLESv1_CM -lGLESv2 -lVR
@@ -22,7 +22,7 @@ LIBRARY += -lnxdvr -lnxnmeaparser -lnxaudio -lnxgpio -lnxadc
 LIBRARY += -lnxmovplayer -lnxtypefind
 
 # Common System Library
-LIBRARY += -lnxvip -lnxdsp -lnxv4l2 -lnxvpu -lnxvmem
+LIBRARY += -lnxvip -lnxdsp -lnxv4l2 -lnxvpu -lnxvidrc -lnxvmem
 
 LIBRARY	+= -lSDL -lSDL_ttf -lSDL_image
 LIBRARY += -lglib-2.0 -lgstreamer-0.10

@@ -11,10 +11,10 @@ INCLUDE += -I./ -I$(TOPDIR)/include
 INCLUDE += -I$(LIBSDIR)/include
 
 LIBRARY	+= -L$(TOPDIR)/lib
-LIBRARY += -L$(LIBSDIR)/lib
+LIBRARY += -L$(LIBSDIR)/lib -L$(LIBSDIR)/lib/ratecontrol
 LIBRARY += -lnxgraphictools -lEGL -lGLESv1_CM -lGLESv2 -lVR
 LIBRARY += -lnxdvr -lnxnmeaparser -lnxaudio -lnxgpio -lnxadc
-LIBRARY += -lion -lnxvmem -lnxvip -lnxdsp -lnxv4l2 -lnxvpu
+LIBRARY += -lion -lnxvmem -lnxvip -lnxdsp -lnxv4l2 -lnxvpu -lnxvidrc
 LIBRARY	+= -lstdc++ -lpthread -lasound
 
 ######################################################################

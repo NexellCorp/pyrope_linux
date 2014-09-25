@@ -289,13 +289,17 @@ static void DvrSetConfigure( void )
 	gstRecordConfig.mdConfig[1].nMdSensitivity	= 100;
 	gstRecordConfig.mdConfig[1].nMdSampingFrame	= 1;
 
-	gstDisplayConfig.bEnable	= true;
-	gstDisplayConfig.nChannel	= gDvrConfig.nPreview;
-	gstDisplayConfig.nModule	= 0;
-	gstDisplayConfig.nX			= 0;
-	gstDisplayConfig.nY			= 0;
-	gstDisplayConfig.nWidth		= 800;
-	gstDisplayConfig.nHeight	= 480;
+	gstDisplayConfig.bEnable			= true;
+	gstDisplayConfig.nChannel			= gDvrConfig.nPreview;
+	gstDisplayConfig.nModule			= 0;
+	gstDisplayConfig.cropRect.nLeft 	= 0;
+	gstDisplayConfig.cropRect.nTop		= 0;
+	gstDisplayConfig.cropRect.nRight 	= 800;
+	gstDisplayConfig.cropRect.nBottom 	= 400;
+	gstDisplayConfig.dspRect.nLeft 		= 0;
+	gstDisplayConfig.dspRect.nTop		= 0;
+	gstDisplayConfig.dspRect.nRight 	= 800;
+	gstDisplayConfig.dspRect.nBottom 	= 400;
 }
 
 void DvrStart( void )

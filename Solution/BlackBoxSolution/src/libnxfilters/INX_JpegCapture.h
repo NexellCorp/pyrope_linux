@@ -135,7 +135,7 @@ protected:
 		jpegEncInfo.mirDirection	= 0;
 		jpegEncInfo.jpgQuality		= m_JpegQuality;
 		
-		hJpegEnc = NX_VidEncOpen( NX_JPEG_ENC );
+		hJpegEnc = NX_VidEncOpen( NX_JPEG_ENC, NULL );
 		NX_VidEncInit( hJpegEnc, &jpegEncInfo );
 		
 		memset( jpegHeader, 0x00, sizeof(jpegHeader) );

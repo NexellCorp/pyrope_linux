@@ -39,7 +39,7 @@ public:
 
 public:
 	//------------------------------------------------------------------------
-	virtual void		Init();
+	virtual void		Init( void );
 	virtual void		Deinit( void );
 	//------------------------------------------------------------------------
 	//	Override from CNX_BaseFilter

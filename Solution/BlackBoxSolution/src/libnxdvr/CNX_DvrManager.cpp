@@ -155,10 +155,7 @@ int32_t CNX_DvrManager::BuildFilter( void )
 	{
 		m_pVipFilter[i]			= new CNX_VIPFilter();
 		m_pOverlayFilter[i]		= new CNX_TextOverlayFilter();
-		
-		if( m_DisplayEnable == true ) {
-			m_pVrFilter[i]		= new CNX_VRFilter();
-		}
+		m_pVrFilter[i]			= new CNX_VRFilter();
 		
 		if( m_VideoCodec == DVR_CODEC_H264) {
 			m_pAvcEncFilter[i]	= new CNX_H264Encoder();
@@ -221,42 +218,31 @@ int32_t CNX_DvrManager::BuildFilter( void )
 			SAFE_CONNECT_FILTER( m_pVipFilter[i],		m_pMdFilter[i] );
 			SAFE_CONNECT_FILTER( m_pMdFilter[i], 		m_pEffectFilter[i] );
 			SAFE_CONNECT_FILTER( m_pEffectFilter[i],	m_pOverlayFilter[i] );
+			SAFE_CONNECT_FILTER( m_pOverlayFilter[i],	m_pVrFilter[i] );
 		}
 		else if( m_ExternProc[i] && !m_MdEnable[i] ) {
 			SAFE_CONNECT_FILTER( m_pVipFilter[i],		m_pEffectFilter[i] );
 			SAFE_CONNECT_FILTER( m_pEffectFilter[i],	m_pOverlayFilter[i] );
+			SAFE_CONNECT_FILTER( m_pOverlayFilter[i],	m_pVrFilter[i] );
 		}
 		else if( !m_ExternProc[i] && m_MdEnable[i] ) {
 			SAFE_CONNECT_FILTER( m_pVipFilter[i],		m_pMdFilter[i] );
 			SAFE_CONNECT_FILTER( m_pMdFilter[i],		m_pOverlayFilter[i] );
+			SAFE_CONNECT_FILTER( m_pOverlayFilter[i],	m_pVrFilter[i] );
 		}
 		else if( !m_ExternProc[i] && !m_MdEnable[i] ) {
 			SAFE_CONNECT_FILTER( m_pVipFilter[i],		m_pOverlayFilter[i] );
-		}
-		
-		if( m_DisplayEnable == true ) {
 			SAFE_CONNECT_FILTER( m_pOverlayFilter[i],	m_pVrFilter[i] );
-			
-			if( m_VideoCodec == DVR_CODEC_H264 ) {
-				SAFE_CONNECT_FILTER( m_pVrFilter[i],		m_pAvcEncFilter[i] );
-				SAFE_CONNECT_FILTER( m_pAvcEncFilter[i],	m_pInterleaverFilter );
-			}
-			else if( m_VideoCodec == DVR_CODEC_MPEG4 ) {
-				// NOT IMPLEMENTATION
-				//SAFE_CONNECT_FILTER( m_pVrFilter[i],		m_pMp4EncFilter[i] );
-				//SAFE_CONNECT_FILTER( m_pMp4EncFilter[i],	m_pInterleaverFilter );
-			}
 		}
-		else {
-			if( m_VideoCodec == DVR_CODEC_H264 ) {
-				SAFE_CONNECT_FILTER( m_pOverlayFilter[i],	m_pAvcEncFilter[i] );
-				SAFE_CONNECT_FILTER( m_pAvcEncFilter[i],	m_pInterleaverFilter );
-			}
-			else if( m_VideoCodec == DVR_CODEC_MPEG4 ) {
-				// NOT IMPLEMENTATION
-				//SAFE_CONNECT_FILTER( m_pOverlayFilter[i],	m_pMp4EncFilter[i] );
-				//SAFE_CONNECT_FILTER( m_pMp4EncFilter[i],	m_pInterleaverFilter );
-			}
+
+		if( m_VideoCodec == DVR_CODEC_H264 ) {
+			SAFE_CONNECT_FILTER( m_pVrFilter[i],		m_pAvcEncFilter[i] );
+			SAFE_CONNECT_FILTER( m_pAvcEncFilter[i],	m_pInterleaverFilter );
+		}
+		else if( m_VideoCodec == DVR_CODEC_MPEG4 ) {
+			// NOT IMPLEMENTATION
+			//SAFE_CONNECT_FILTER( m_pVrFilter[i],		m_pMp4EncFilter[i] );
+			//SAFE_CONNECT_FILTER( m_pMp4EncFilter[i],	m_pInterleaverFilter );
 		}
 	}
 
@@ -407,13 +393,17 @@ int32_t	CNX_DvrManager::SetConfig( NX_DVR_MEDIA_CONFIG *pMediaConfig, NX_DVR_REC
 		m_EffectConfig[i].width			= pMediaConfig->videoConfig[i].nDstWidth;
 		m_EffectConfig[i].height		= pMediaConfig->videoConfig[i].nDstHeight;
 
+		m_VidRenderConfig[i].port 		= pDisplayConfig->nModule;
 		m_VidRenderConfig[i].width		= pMediaConfig->videoConfig[i].nDstWidth;
 		m_VidRenderConfig[i].height		= pMediaConfig->videoConfig[i].nDstHeight;
-		m_VidRenderConfig[i].port 		= pDisplayConfig->nModule;
-		m_VidRenderConfig[i].top		= pDisplayConfig->nX;
-		m_VidRenderConfig[i].left		= pDisplayConfig->nY;
-		m_VidRenderConfig[i].right		= pDisplayConfig->nWidth;
-		m_VidRenderConfig[i].bottom		= pDisplayConfig->nHeight;
+		m_VidRenderConfig[i].cropLeft	= pDisplayConfig->cropRect.nLeft;
+		m_VidRenderConfig[i].cropTop	= pDisplayConfig->cropRect.nTop;
+		m_VidRenderConfig[i].cropRight	= pDisplayConfig->cropRect.nRight;
+		m_VidRenderConfig[i].cropBottom	= pDisplayConfig->cropRect.nBottom;
+		m_VidRenderConfig[i].dspLeft	= pDisplayConfig->dspRect.nLeft;
+		m_VidRenderConfig[i].dspTop		= pDisplayConfig->dspRect.nTop;
+		m_VidRenderConfig[i].dspRight	= pDisplayConfig->dspRect.nRight;
+		m_VidRenderConfig[i].dspBottom	= pDisplayConfig->dspRect.nBottom;
 
 		m_VidEncConfig[i].width			= pMediaConfig->videoConfig[i].nDstWidth;
 		m_VidEncConfig[i].height		= pMediaConfig->videoConfig[i].nDstHeight;
@@ -876,7 +866,9 @@ int32_t CNX_DvrManager::Start( NX_DVR_ENCODE_TYPE encodeType )
 	if( m_bInit ) {
 		m_nMode = encodeType;
 
-		if( m_pVrFilter[m_DisplayChannel] )	m_pVrFilter[m_DisplayChannel]->EnableRender( true );
+		if( m_DisplayEnable ) {
+			if( m_pVrFilter[m_DisplayChannel] )	m_pVrFilter[m_DisplayChannel]->EnableRender( true );
+		}
 
 		for( int32_t i = 0; i < m_VideoNum; i++ ) 
 		{
@@ -1036,15 +1028,74 @@ int32_t CNX_DvrManager::SetCapture( int32_t channel )
 }
 
 //------------------------------------------------------------------------------
+#include <nx_dsp.h>
+
+int32_t CNX_DvrManager::SetDisplay( NX_DVR_DISPLAY_CONFIG *pDisplayConfig )
+{
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	CNX_AutoLock lock( &m_hLock );
+	
+	if( m_DisplayEnable != pDisplayConfig->bEnable ) {
+		m_DisplayEnable = pDisplayConfig->bEnable;
+		
+		if( !m_DisplayEnable ) {
+			if( m_pVrFilter[m_DisplayChannel] ) m_pVrFilter[m_DisplayChannel]->EnableRender( false );	
+			if( m_pVrFilter[m_DisplayChannel] ) m_pVrFilter[m_DisplayChannel]->EnableHdmiRender( false );
+		}
+		else {
+			if( m_pVrFilter[m_DisplayChannel] ) m_pVrFilter[m_DisplayChannel]->EnableRender( true );
+		}
+		goto END;
+	}
+
+	DSP_IMG_RECT cropRect, dspRect;
+
+	cropRect.left	= pDisplayConfig->cropRect.nLeft;
+	cropRect.top	= pDisplayConfig->cropRect.nTop;
+	cropRect.right	= pDisplayConfig->cropRect.nRight;
+	cropRect.bottom	= pDisplayConfig->cropRect.nBottom;
+		
+	dspRect.left	= pDisplayConfig->dspRect.nLeft;
+	dspRect.top		= pDisplayConfig->dspRect.nTop;
+	dspRect.right	= pDisplayConfig->dspRect.nRight;
+	dspRect.bottom	= pDisplayConfig->dspRect.nBottom;
+
+	if( !m_pVrFilter[m_DisplayChannel]->SetRenderCrop( &cropRect ) )
+	{
+		m_VidRenderConfig[m_DisplayChannel].cropLeft	= pDisplayConfig->cropRect.nLeft;
+		m_VidRenderConfig[m_DisplayChannel].cropTop		= pDisplayConfig->cropRect.nTop;
+		m_VidRenderConfig[m_DisplayChannel].cropRight	= pDisplayConfig->cropRect.nRight;
+		m_VidRenderConfig[m_DisplayChannel].cropBottom	= pDisplayConfig->cropRect.nBottom;		
+	}
+	
+	if( !m_pVrFilter[m_DisplayChannel]->SetRenderPosition( &dspRect ) )
+	{
+		m_VidRenderConfig[m_DisplayChannel].dspLeft		= pDisplayConfig->dspRect.nLeft;
+		m_VidRenderConfig[m_DisplayChannel].dspTop		= pDisplayConfig->dspRect.nTop;
+		m_VidRenderConfig[m_DisplayChannel].dspRight	= pDisplayConfig->dspRect.nRight;
+		m_VidRenderConfig[m_DisplayChannel].dspBottom	= pDisplayConfig->dspRect.nBottom;
+	}
+
+END:
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	return 0;
+}
+
+
+//------------------------------------------------------------------------------
 int32_t CNX_DvrManager::SetPreview( int32_t channel )
 {
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	CNX_AutoLock lock( &m_hLock );
 
+	if( !m_DisplayEnable ) {
+		goto END;
+	}
+
 	// a. Check rendering channel
 	if( channel >= m_VideoNum ) {
 		NxDbgMsg( NX_DBG_ERR, (TEXT("Overrange rendering number.\n")) );
-		return -1;
+		goto END;
 	}
 
 	// b. Disable rendering
@@ -1060,6 +1111,7 @@ int32_t CNX_DvrManager::SetPreview( int32_t channel )
 	// d. preview channel update
 	m_DisplayChannel = channel;
 
+END:
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return 0;
 }
@@ -1070,11 +1122,14 @@ int32_t CNX_DvrManager::SetPreviewHdmi( int32_t channel )
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	CNX_AutoLock lock( &m_hLock );
 
+	if( !m_DisplayEnable ) {
+		goto END;
+	}
+
 	// a. Check rendering channel
 	if( channel >= m_VideoNum ) {
-		NxDbgMsg( NX_DBG_ERR, (TEXT("Over-range rendering number.\n")) );
-		NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
-		return -1;
+		NxDbgMsg( NX_DBG_ERR, (TEXT("Overrange rendering number.\n")) );
+		goto END;
 	}
 
 	// b. Disable rendering
@@ -1090,6 +1145,7 @@ int32_t CNX_DvrManager::SetPreviewHdmi( int32_t channel )
 	// d. preview channel update
 	m_DisplayChannel = channel;
 
+END:
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return 0;
 }

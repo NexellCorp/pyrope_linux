@@ -68,11 +68,11 @@ int main(void)
 	NX_RTP_MGR_CONFIG 	rtpConfig;
 
 	memset( &rtpConfig, 0x00, sizeof(NX_RTP_MGR_CONFIG) );
-	rtpConfig.nPort				= 2;
-	rtpConfig.nWidth			= 1920;
-	rtpConfig.nHeight			= 1080;
+	rtpConfig.nPort				= 3;
+	rtpConfig.nWidth			= 1024;
+	rtpConfig.nHeight			= 768;
 	rtpConfig.nFps				= 30;
-	rtpConfig.nBitrate			= 10000000;
+	rtpConfig.nBitrate			= 5000000;
 	rtpConfig.nDspWidth			= 720;
 	rtpConfig.nDspHeight		= 480;
 
@@ -89,7 +89,6 @@ int main(void)
 	register_signal();
 	
 	pRtpManager->Init( &rtpConfig );
-
 	pRtpManager->Start();
 
 	while(1)

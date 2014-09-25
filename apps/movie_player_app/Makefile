@@ -14,6 +14,7 @@ LIBRARY += -lglib-2.0 -lgstreamer-0.10
 LIBRARY += -L$(LIBSDIR)/lib -lnxmovplayer
 LIBRARY += -L$(LIBSDIR)/lib -lnxtypefind
 LIBRARY += -L$(LIBSDIR)/lib -lnxuevent
+LIBRARY += -L$(LIBSDIR)/lib/ratecontrol -lnxvidrc
 
 ######################################################################
 # Target

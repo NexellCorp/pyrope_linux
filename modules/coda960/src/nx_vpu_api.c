@@ -19,7 +19,7 @@
 #if defined (CONFIG_ARCH_NXP5430)
 #include <mach/nxp5430.h>
 #endif
-#if defined (CONFIG_ARCH_NXP4430)
+#if defined (CONFIG_ARCH_NXP4330)
 #include <mach/nxp4330.h>
 #endif
 #include <mach/devices.h>
@@ -242,7 +242,7 @@ void NX_VPU_HwOn(void)
 	nxp_soc_peri_reset_enter(RESET_ID_CODA_A);			//	61
 	nxp_soc_peri_reset_enter(RESET_ID_CODA_P);			//	62
 #endif
-#if defined (CONFIG_ARCH_NXP4430)
+#if defined (CONFIG_ARCH_NXP4330)
 	//	H/W Reset
 	nxp_soc_rsc_enter(RESET_ID_CODA_C);			//	63
 	nxp_soc_rsc_enter(RESET_ID_CODA_A);			//	61
@@ -277,7 +277,7 @@ void NX_VPU_HwOn(void)
 	nxp_soc_peri_reset_exit(RESET_ID_CODA_A);			//	61
 	nxp_soc_peri_reset_exit(RESET_ID_CODA_C);			//	63
 #endif
-#if defined (CONFIG_ARCH_NXP4430)
+#if defined (CONFIG_ARCH_NXP4330)
 	//	Release Reset
 	nxp_soc_rsc_exit(RESET_ID_CODA_P);			//	62
 	nxp_soc_rsc_exit(RESET_ID_CODA_A);			//	61
@@ -306,7 +306,7 @@ void NX_VPU_HWOff(void)
 		nxp_soc_peri_reset_enter(RESET_ID_CODA_A);			//	61
 		nxp_soc_peri_reset_enter(RESET_ID_CODA_P);			//	62
 #endif
-#if defined (CONFIG_ARCH_NXP4430)
+#if defined (CONFIG_ARCH_NXP4330)
 		//	H/W Reset
 		nxp_soc_rsc_enter(RESET_ID_CODA_C);			//	63
 		nxp_soc_rsc_enter(RESET_ID_CODA_A);			//	61

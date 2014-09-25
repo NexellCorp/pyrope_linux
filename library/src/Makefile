@@ -7,7 +7,6 @@ DIR		:=
 # Build options
 
 # Multi Media Libraries
-DIR += libmulti2
 DIR += libion
 DIR += libnxmalloc
 DIR += libnxv4l2
@@ -28,7 +27,6 @@ DIR += libnxgraphictools
 
 # I/O Wrapper
 DIR += libcec
-DIR += libmulti2
 DIR += libnxadc
 DIR += libnxgpio
 DIR += libnxpwm

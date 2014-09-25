@@ -22,6 +22,10 @@ MINOR = 1
 # Build options
 INCLUDE += -I./ -I./inc
 
+INCLUDE += -I$(KERNDIR)/include
+INCLUDE += -I$(LIBSDIR)/src/libion
+INCLUDE += -I$(LIBSDIR)/src/libnxv4l2
+
 LIBRARY	+= -lstdc++ -ldl -lpthread -lasound -lSDL -lSDL_ttf
 LIBRARY += -L$(LIB_INSTALL) -lnxvmem -lnxv4l2 -lnxdsp -lnxvip -lnxuevent
 

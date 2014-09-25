@@ -210,7 +210,7 @@ void NX_CVideoDecoderFilter::ThreadProc()
 	NX_CSample *pOutSample = NULL;
 	uint32_t *pOutBuf = NULL;
 
-	NX_VID_RET vidRet;
+	VID_ERROR_E vidRet;
 	NX_VID_DEC_IN decIn;
 	NX_VID_DEC_OUT decOut;
 
@@ -288,7 +288,7 @@ void NX_CVideoDecoderFilter::ThreadProc()
 
 			seqIn.enableUserData = 0;
 			seqIn.disableOutReorder = 0;
-			m_hCodec = NX_VidDecOpen(m_VpuCodecType, m_Mp4Class, 0);
+			m_hCodec = NX_VidDecOpen((VID_TYPE_E)m_VpuCodecType, m_Mp4Class, 0, NULL);
 
 #if VDFILEWRITE	//File Write
 			count++;
@@ -360,7 +360,7 @@ void NX_CVideoDecoderFilter::ThreadProc()
 #endif		
 
 
-		if (vidRet == VID_NEED_MORE_BUF)
+		if (vidRet == VID_ERR_NEED_MORE_BUF)
 		{
 			printf("VID_NEED_MORE_BUF NX_VidDecDecodeFrame\n");
 			continue;

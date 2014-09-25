@@ -14,8 +14,8 @@ LIBRARY += -L$(LIBSDIR)/lib -lnxfilter -lnxfilterhelp -lnxfiltermanager
 
 INCLUDE += -I./
 INCLUDE += -I../../library/include
-LIBRARY	+= -L../../library/lib 
-LIBRARY += -lnxvpu -lnxdsp -lnxvip -lnxv4l2 -lnxvmem
+LIBRARY	+= -L../../library/lib -L../../library/lib/ratecontrol
+LIBRARY += -lnxvpu -lnxdsp -lnxvip -lnxv4l2 -lnxvmem  -lnxvidrc
 
 LIBRARY += -L$(LIBSDIR)/lib -lnxuevent
 

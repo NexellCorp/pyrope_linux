@@ -9,7 +9,7 @@ INCLUDE += -I../../library/include
 LIBRARY	+= -L../../library/lib -L../../library/lib/ratecontrol 
 LIBRARY += -lnxvpu -lnxdsp -lnxvip -lnxv4l2 -lnxvmem -lnxvidrc
 LIBRARY += -L./theoraparser -ltheoraparser
-LIBRARY	+= -lavcodec -lavformat -lstdc++
+LIBRARY	+= -lavcodec -lavformat -lstdc++ -lm
 
 ######################################################################
 # Target

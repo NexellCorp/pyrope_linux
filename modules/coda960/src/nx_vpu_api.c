@@ -16,7 +16,12 @@
 #include <linux/pm.h>
 #include <linux/mutex.h>
 #include <mach/soc.h>
+#if defined (CONFIG_ARCH_NXP5430)
+#include <mach/nxp5430.h>
+#endif
+#if defined (CONFIG_ARCH_NXP4430)
 #include <mach/nxp4330.h>
+#endif
 #include <mach/devices.h>
 
 
@@ -122,6 +127,104 @@ static int swap_endian(unsigned char *data, int len);
 
 #define	POWER_PMU_VPU_MASK		0x00000002
 
+#if defined (CONFIG_ARCH_NXP5430)
+#define	TIEOFF_REG131			0xF001120C
+#define	VPU_ASYNCXUI1_CACTIVE	(1<<17)
+#define	VPU_ASYNCXUI1_CSYSACK	(1<<16)
+
+#define	VPU_ASYNCXUI0_CACTIVE	(1<<15)
+#define	VPU_ASYNCXUI0_CSYSACK	(1<<14)
+
+#define	TIEOFF_REG69			0xF0011114
+#define	VPU_ASYNCXUI1_CSYSREQ	(1<<4)
+#define	VPU_ASYNCXUI0_CSYSREQ	(1<<3)
+
+//
+//		Async XUI Power Down
+//
+//	Step 1. Waiting until CACTIVE to High
+//	Step 2. Set CSYSREQ to Low
+//	Step 3. Waiting until CSYSACK to Low
+static void NX_ASYNCXUI_PowerDown(void)
+{
+	int32_t tmpVal;
+	FUNCIN();
+
+	//	Apply To Async XUI 0
+
+	//	Step 1. Waiting until CACTIVE to High
+	do{
+		tmpVal = VpuReadReg(TIEOFF_REG131);
+	}while(!(tmpVal&VPU_ASYNCXUI0_CACTIVE));
+
+	//	Step 2. Set CSYSREQ to Low
+	tmpVal = VpuReadReg(TIEOFF_REG69);
+	tmpVal &= (~VPU_ASYNCXUI0_CSYSREQ);
+	VpuWriteReg(TIEOFF_REG69, tmpVal);
+
+	//	Step 3. Waiting until CSYSACK to Low
+	do{
+		tmpVal = VpuReadReg(TIEOFF_REG131);
+	}while(tmpVal&VPU_ASYNCXUI0_CSYSACK);
+
+
+	//	Apply To Async XUI 1
+
+	//	Step 1. Waiting until CACTIVE to High
+	do{
+		tmpVal = VpuReadReg(TIEOFF_REG131);
+	}while(!(tmpVal&VPU_ASYNCXUI1_CACTIVE));
+
+	//	Step 2. Set CSYSREQ to Low
+	tmpVal = VpuReadReg(TIEOFF_REG69);
+	tmpVal &= (~VPU_ASYNCXUI1_CSYSREQ);
+	VpuWriteReg(TIEOFF_REG69, tmpVal);
+
+	//	Step 3. Waiting until CSYSACK to Low
+	do{
+		tmpVal = VpuReadReg(TIEOFF_REG131);
+	}while(tmpVal&VPU_ASYNCXUI1_CSYSACK);
+	FUNCOUT();
+}
+
+//
+//		Async XUI Power Up
+//
+//	Step 1. Set CSYSREQ to High
+//	Step 2. Waiting until CSYSACK to High
+static void NX_ASYNCXUI_PowerUp(void)
+{
+	int32_t tmpVal;
+
+	FUNCIN();
+	//	Apply To Async XUI 0
+
+	//	Step 1. Set CSYSREQ to High
+	tmpVal = VpuReadReg(TIEOFF_REG69);
+	tmpVal |= VPU_ASYNCXUI0_CSYSREQ;
+	VpuWriteReg(TIEOFF_REG69, tmpVal);
+
+	//	Step 2. Waiting until CSYSACK to High
+	do{
+		tmpVal = VpuReadReg(TIEOFF_REG131);
+	}while(!(tmpVal&VPU_ASYNCXUI0_CSYSACK));
+
+	//	Apply To Async XUI 1
+
+	//	Step 1. Set CSYSREQ to High
+	tmpVal = VpuReadReg(TIEOFF_REG69);
+	tmpVal |= VPU_ASYNCXUI1_CSYSREQ;
+	VpuWriteReg(TIEOFF_REG69, tmpVal);
+
+	//	Step 2. Waiting until CSYSACK to High
+	do{
+		tmpVal = VpuReadReg(TIEOFF_REG131);
+	}while(!(tmpVal&VPU_ASYNCXUI1_CSYSACK));
+	FUNCOUT();
+}
+
+#endif
+
 void NX_VPU_HwOn(void)
 {
 	unsigned int tmpVal;
@@ -133,10 +236,18 @@ void NX_VPU_HwOn(void)
 		return;
 	}
 
+#if defined (CONFIG_ARCH_NXP5430)
+	//	H/W Reset
+	nxp_soc_peri_reset_enter(RESET_ID_CODA_C);			//	63
+	nxp_soc_peri_reset_enter(RESET_ID_CODA_A);			//	61
+	nxp_soc_peri_reset_enter(RESET_ID_CODA_P);			//	62
+#endif
+#if defined (CONFIG_ARCH_NXP4430)
 	//	H/W Reset
 	nxp_soc_rsc_enter(RESET_ID_CODA_C);			//	63
 	nxp_soc_rsc_enter(RESET_ID_CODA_A);			//	61
 	nxp_soc_rsc_enter(RESET_ID_CODA_P);			//	62
+#endif
 
 	VpuWriteReg( VPU_ALIVEGATE_REG,  0x3 );
 
@@ -159,10 +270,19 @@ void NX_VPU_HwOn(void)
 
 	NX_VPU_Clock( 1 );
 
+#if defined (CONFIG_ARCH_NXP5430)
+	NX_ASYNCXUI_PowerUp();
+	//	Release Reset
+	nxp_soc_peri_reset_exit(RESET_ID_CODA_P);			//	62
+	nxp_soc_peri_reset_exit(RESET_ID_CODA_A);			//	61
+	nxp_soc_peri_reset_exit(RESET_ID_CODA_C);			//	63
+#endif
+#if defined (CONFIG_ARCH_NXP4430)
 	//	Release Reset
 	nxp_soc_rsc_exit(RESET_ID_CODA_P);			//	62
 	nxp_soc_rsc_exit(RESET_ID_CODA_A);			//	61
 	nxp_soc_rsc_exit(RESET_ID_CODA_C);			//	63
+#endif
 
 	gstIsVPUOn = 1;
 
@@ -175,6 +295,24 @@ void NX_VPU_HWOff(void)
 	if( gstIsVPUOn )
 	{
 		unsigned int tmpVal;
+
+#if defined (CONFIG_ARCH_NXP5430)
+		NX_ASYNCXUI_PowerDown();
+#endif
+
+#if defined (CONFIG_ARCH_NXP5430)
+		//	H/W Reset
+		nxp_soc_peri_reset_enter(RESET_ID_CODA_C);			//	63
+		nxp_soc_peri_reset_enter(RESET_ID_CODA_A);			//	61
+		nxp_soc_peri_reset_enter(RESET_ID_CODA_P);			//	62
+#endif
+#if defined (CONFIG_ARCH_NXP4430)
+		//	H/W Reset
+		nxp_soc_rsc_enter(RESET_ID_CODA_C);			//	63
+		nxp_soc_rsc_enter(RESET_ID_CODA_A);			//	61
+		nxp_soc_rsc_enter(RESET_ID_CODA_P);			//	62
+#endif
+
 		NX_DbgMsg( DBG_POWER, ("NX_VPU_HWOff() ++\n") );
 
 		//	Enter Coda Reset State
@@ -1167,6 +1305,7 @@ static NX_VPU_RET VPU_EncSeqCommand(NX_VpuCodecInst *pInst)
 	}
 	VpuWriteReg(BIT_BIT_STREAM_CTRL, tmpData);
 
+#if (DBG_REGISTER)
 	{
 		int reg;
 		NX_DbgMsg( DBG_REGISTER, ("[SEQ_INIT_Reg]\n") );
@@ -1175,6 +1314,7 @@ static NX_VPU_RET VPU_EncSeqCommand(NX_VpuCodecInst *pInst)
 			NX_DbgMsg( DBG_REGISTER, ("[Addr = %3x]%x %x %x %x \n", reg, VpuReadReg(BIT_BASE + reg), VpuReadReg(BIT_BASE + reg + 4), VpuReadReg(BIT_BASE + reg + 8), VpuReadReg(BIT_BASE + reg + 12)) );
 		}
 	}
+#endif
 
 	VpuBitIssueCommand(pInst, SEQ_INIT);
 
@@ -1281,6 +1421,7 @@ static NX_VPU_RET VPU_EncSetFrameBufCommand(NX_VpuCodecInst *pInst)
         VpuWriteReg(CMD_SET_FRAME_DP_BUF_SIZE, pEncInfo->usbSampleDPSize);
     }
 
+#if (DBG_REGISTER)
 	{
 		int reg;
 		NX_DbgMsg( DBG_REGISTER, ("[ENC_SET_FRM_BUF_Reg]\n") );
@@ -1289,6 +1430,7 @@ static NX_VPU_RET VPU_EncSetFrameBufCommand(NX_VpuCodecInst *pInst)
 			NX_DbgMsg( DBG_REGISTER, ("[Addr = %3x]%x %x %x %x \n", reg, VpuReadReg(BIT_BASE + reg), VpuReadReg(BIT_BASE + reg + 4), VpuReadReg(BIT_BASE + reg + 8), VpuReadReg(BIT_BASE + reg + 12)) );
 		}
 	}
+#endif
 
 	VpuBitIssueCommand(pInst, SET_FRAME_BUF);
 	if( VPU_RET_OK != VPU_WaitVpuBusy(VPU_BUSY_CHECK_TIMEOUT, BIT_BUSY_FLAG) )
@@ -1348,6 +1490,7 @@ static NX_VPU_RET VPU_EncGetHeaderCommand(NX_VpuCodecInst *pInst, unsigned int h
 	VpuWriteReg(BIT_RD_PTR, pEncInfo->strmBufPhyAddr);
 	VpuWriteReg(BIT_WR_PTR, pEncInfo->strmBufPhyAddr);
 
+#if (DBG_REGISTER)
 	{
 		int reg;
 		NX_DbgMsg( DBG_REGISTER, ("[ENC_HEADER_Reg]\n") );
@@ -1356,6 +1499,7 @@ static NX_VPU_RET VPU_EncGetHeaderCommand(NX_VpuCodecInst *pInst, unsigned int h
 			NX_DbgMsg( DBG_REGISTER, ("[Addr = %3x]%x %x %x %x \n", reg, VpuReadReg(BIT_BASE + reg), VpuReadReg(BIT_BASE + reg + 4), VpuReadReg(BIT_BASE + reg + 8), VpuReadReg(BIT_BASE + reg + 12)) );
 		}
 	}
+#endif
 
 	VpuBitIssueCommand(pInst, ENCODE_HEADER);
 	if( VPU_RET_OK != VPU_WaitVpuBusy(VPU_BUSY_CHECK_TIMEOUT, BIT_BUSY_FLAG) )
@@ -1470,6 +1614,7 @@ static NX_VPU_RET VPU_EncOneFrameCommand( NX_VpuCodecInst *pInst, VPU_ENC_RUN_FR
 	val |= VPU_STREAM_ENDIAN;
 	VpuWriteReg(BIT_BIT_STREAM_CTRL, val);
 
+#if (DBG_REGISTER)
 	{
 		int reg;
 		NX_DbgMsg( DBG_REGISTER, ("[ENC_RUN_Reg]\n") );
@@ -1478,6 +1623,7 @@ static NX_VPU_RET VPU_EncOneFrameCommand( NX_VpuCodecInst *pInst, VPU_ENC_RUN_FR
 			NX_DbgMsg( DBG_REGISTER, ("[Addr = %3x]%x %x %x %x \n", reg, VpuReadReg(BIT_BASE + reg), VpuReadReg(BIT_BASE + reg + 4), VpuReadReg(BIT_BASE + reg + 8), VpuReadReg(BIT_BASE + reg + 12)) );
 		}
 	}
+#endif
 
 	VpuBitIssueCommand(pInst, PIC_RUN);
 
@@ -1859,7 +2005,7 @@ static int FillBuffer(NX_VPU_INST_HANDLE handle, unsigned char *stream, int size
 	if( bufSize < vWriteOffset || bufSize < vReadOffset )
 	{
 		printk("%s, StreamBuffer(Addr=x0%08x, size=%d), InBuffer(Addr=x0%08x, size=%d) vWriteOffset = %d, vReadOffset = %d\n",
-			__func__, pDecInfo->strmBufVirAddr, pDecInfo->strmBufSize, stream, size, vWriteOffset, vReadOffset );
+			__func__, pDecInfo->strmBufVirAddr, pDecInfo->strmBufSize, (int)stream, size, vWriteOffset, vReadOffset );
 		return -1;
 	}
 
@@ -2389,7 +2535,7 @@ static NX_VPU_RET VPU_DecRegisterFrameBufCommand( NX_VpuCodecInst *pInst, VPU_DE
 	FUNCIN();
 
 	NX_DrvMemset( frameAddr, 0, sizeof(frameAddr) );
-	NX_DrvMemset( colMvAddr, 0, sizeof(frameAddr) );
+	NX_DrvMemset( colMvAddr, 0, sizeof(colMvAddr) );
 
 	SetTiledMapType(VPU_LINEAR_FRAME_MAP, bufferStride, pInfo->cbcrInterleave);
 

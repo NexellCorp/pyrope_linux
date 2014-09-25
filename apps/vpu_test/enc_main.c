@@ -48,7 +48,7 @@ int main( int argc, char *argv[] )
 	int frameCnt = 0;
 	FILE *fdOut = NULL;
 
-	//	VIP 
+	//	VIP
 	VIP_HANDLE hVip;
 	VIP_INFO vipInfo;
 	//	Memory
@@ -70,12 +70,14 @@ int main( int argc, char *argv[] )
 	NX_VID_ENC_INIT_PARAM encInitParam;
 	unsigned char *seqBuffer = (unsigned char *)malloc( MAX_SEQ_BUF_SIZE );
 	NX_VID_ENC_HANDLE hEnc;
+	NX_VID_ENC_IN encIn;
 	NX_VID_ENC_OUT encOut;
 
 	long long totalSize = 0;
 	double bitRate = 0.;
 	long long vipTimeStamp;
 
+	int instanceIdx;
 
 	//	Set Image & Clipper Information
 	inWidth = 1024;
@@ -143,7 +145,7 @@ int main( int argc, char *argv[] )
 	hVip = NX_VipInit(&vipInfo);
 
 	//	Initialize Encoder
-	hEnc = NX_VidEncOpen( NX_AVC_ENC );
+	hEnc = NX_VidEncOpen( NX_AVC_ENC,  &instanceIdx);
 
 	memset( &encInitParam, 0, sizeof(encInitParam) );
 	encInitParam.width = cropW;
@@ -161,9 +163,9 @@ int main( int argc, char *argv[] )
 
 	//	Rate Control
 	encInitParam.enableRC = 1;		//	Enable Rate Control
-	encInitParam.enableSkip = 0;	//	Enable Skip
-	encInitParam.maxQScale = 51;	//	Max Qunatization Scale
-	encInitParam.userQScale = 10;	//	Default Encoder API ( enableRC == 0 )
+	encInitParam.disableSkip = 0;	//	Enable Skip
+	encInitParam.maximumQp = 51;	//	Max Qunatization Scale
+	encInitParam.initialQp = 10;	//	Default Encoder API ( enableRC == 0 )
 	encInitParam.enableAUDelimiter = 1;	//	Enable / Disable AU Delimiter
 
 	NX_VidEncInit( hEnc, &encInitParam );
@@ -205,7 +207,7 @@ int main( int argc, char *argv[] )
 				unsigned char *cbcr =(unsigned char*)pNV12Mem->cbVirAddr;
 				unsigned char *cb   =(unsigned char*)pPrevDsp->cbVirAddr;
 				unsigned char *cr   =(unsigned char*)pPrevDsp->crVirAddr;
-				//	Copy 
+				//	Copy
 				memcpy( (unsigned char*)pNV12Mem->luVirAddr, (unsigned char*)pPrevDsp->luVirAddr, cropW*cropH );
 				for( i=0 ; i<cropH/2 ; i++ )
 				{
@@ -215,18 +217,27 @@ int main( int argc, char *argv[] )
 						*cbcr++ = *cr++;
 					}
 				}
-				NX_VidEncEncodeFrame( hEnc, pNV12Mem, &encOut );
+
+				encIn.pImage = pNV12Mem;
 			}
 			else
 #endif
 			{
-				NX_VidEncEncodeFrame( hEnc, pPrevDsp, &encOut );
+				encIn.pImage = pPrevDsp;
 			}
+
+			encIn.timeStamp = 0;
+			encIn.forcedIFrame = 0;
+			encIn.forcedSkipFrame = 0;
+			encIn.quantParam = 25;
+
+			NX_VidEncEncodeFrame( hEnc, &encIn, &encOut );
+
 			if( fdOut && encOut.bufSize>0 )
 			{
 				//	Write Sequence Data
 				fwrite( encOut.outBuf, 1, encOut.bufSize, fdOut );
-				printf("FrameType = %d, size = %8d, ", encOut.isKey, encOut.bufSize);
+				printf("FrameType = %d, size = %8d, ", encOut.frameType, encOut.bufSize);
 				dumpdata( encOut.outBuf, 16, "" );
 				totalSize += encOut.bufSize;
 				bitRate = (double)totalSize/(double)frameCnt*.8;

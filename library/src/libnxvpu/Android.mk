@@ -13,7 +13,8 @@ LOCAL_SHARED_LIBRARIES :=	\
 	libion-nexell
 
 LOCAL_STATIC_LIBRARIES := \
-	libnxmalloc
+	libnxmalloc \
+	libnxvidrc
 
 LOCAL_C_INCLUDES := system/core/include/ion \
 					$(NX_PYROPE_INCLUDE) \

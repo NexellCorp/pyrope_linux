@@ -53,8 +53,12 @@ typedef struct {
 #define	ENABLE_MLC_SCALER
 #endif
 
-#define	LCD_WIDTH	1280
-#define	LCD_HEIGHT	800
+//	Pyxis
+#define	LCD_WIDTH	800
+#define	LCD_HEIGHT	1280
+//	Lynx
+//#define	LCD_WIDTH	1280
+//#define	LCD_HEIGHT	800
 
 #define	RCV_V2
 
@@ -133,7 +137,15 @@ static void dumpdata( void *data, int len, const char *msg );
 	*_p++ = (unsigned char)((_var)>>0);  
 
 
-
+static uint64_t NX_GetTickCount( void )
+{
+	uint64_t ret;
+	struct timeval	tv;
+	struct timezone	zv;
+	gettimeofday( &tv, &zv );
+	ret = ((uint64_t)tv.tv_sec)*1000000 + tv.tv_usec;
+	return ret;
+}
 
 FFMPEG_STREAM_READER *OpenMediaFile( const char *fileName )
 {
@@ -156,12 +168,14 @@ FFMPEG_STREAM_READER *OpenMediaFile( const char *fileName )
 
 	if ( avformat_open_input(&fmt_ctx, fileName, iformat, NULL) < 0 )
 	{
+		printf("avformat_open_input() Error \n");
 		return NULL;
 	}
 
 	/* fill the streams in the format context */
 	if ( av_find_stream_info(fmt_ctx) < 0)
 	{
+		printf("av_find_stream_info() Error \n");
 		av_close_input_file( fmt_ctx );
 		return NULL;
 	}
@@ -356,7 +370,7 @@ int GetSequenceInformation( FFMPEG_STREAM_READER *streamReader, AVStream *stream
         retSize += 4; // STRUCT_B_FRIST (LEVEL:3|CBR:1:RESERVE:4:HRD_BUFFER|24)
         PUT_LE32(pbHeader, stream->codec->bit_rate);
         retSize += 4; // hrd_rate
-		PUT_LE32(pbHeader, frameRate);            
+		PUT_LE32(pbHeader, frameRate);
         retSize += 4; // frameRate
 #else	//RCV_V1
         PUT_LE32(pbHeader, (0x85 << 24) | 0x00);
@@ -522,7 +536,7 @@ static int MakeRvStream( AVPacket *pkt, AVStream *stream, unsigned char *buffer,
 		offset += 4;
 	}
 
-	memcpy(buffer, pkt->data+(1+(cSlice*8)), nSlice);		
+	memcpy(buffer, pkt->data+(1+(cSlice*8)), nSlice);
 	size += nSlice;
 
 	//printf("size = %6d, nSlice = %6d, cSlice = %4d, pkt->size=%6d, frameNumber=%d\n", size, nSlice, cSlice, pkt->size, stream->codec->frame_number );
@@ -944,7 +958,7 @@ int dec_main( int argc, char *argv[] )
 	DISPLAY_INFO dspInfo;
 #endif
 	int vpuCodecType;
-	NX_VID_RET vidRet;
+	VID_ERROR_E vidRet;
 	NX_VID_SEQ_IN seqIn;
 	NX_VID_SEQ_OUT seqOut;
 	NX_VID_DEC_HANDLE hDec;
@@ -963,11 +977,15 @@ int dec_main( int argc, char *argv[] )
 	int seqNeedMoreBuffer = 0;
 	char *fileName = NULL;
 	char *dumpFileName;
+	char *outFileName = NULL;
 	int tmpSize;
+	int instanceIdx;
+	uint64_t startTime, endTime, totalTime = 0;
+	FILE *fpOut = NULL;
 
 	av_register_all();
 
-	while( -1 != (opt=getopt(argc, argv, "hf:p:d:")))
+	while( -1 != (opt=getopt(argc, argv, "hf:p:d:o:")))
 	{
 		switch( opt ){
 			case 'h':
@@ -984,6 +1002,9 @@ int dec_main( int argc, char *argv[] )
 			case 'd':
 				dumpMode = 1;
 				dumpFileName = strdup(optarg);
+				break;
+			case 'o':
+				outFileName = strdup(optarg);
 				break;
 			default:
 				break;
@@ -1022,6 +1043,8 @@ int dec_main( int argc, char *argv[] )
 		return 0;
 	}
 
+	fpOut = fopen( outFileName, "wb" );
+
 	vpuCodecType = CodecIdToVpuType( pReader->video_stream->codec->codec_id, pReader->video_stream->codec->codec_tag );
 	if( vpuCodecType < 0 )
 	{
@@ -1034,7 +1057,7 @@ int dec_main( int argc, char *argv[] )
 
 	printf("vpuCodecType = %d, mp4Class = %d\n", vpuCodecType, mp4Class );
 
-	hDec = NX_VidDecOpen(vpuCodecType, mp4Class, 0);
+	hDec = NX_VidDecOpen(vpuCodecType, mp4Class, 0, &instanceIdx);
 
 	if( hDec == NULL )
 	{
@@ -1130,6 +1153,8 @@ int dec_main( int argc, char *argv[] )
 					needKey = 0;
 				}
 				memset( &seqIn, 0, sizeof(seqIn) );
+				seqIn.addNumBuffers = 4;
+				seqIn.enablePostFilter = 0;
 				seqIn.seqInfo = streamBuffer;
 				seqIn.seqSize = readSize+seqSize;
 				seqIn.enableUserData = 0;
@@ -1144,6 +1169,8 @@ int dec_main( int argc, char *argv[] )
 					break;
 				}
 				memset( &seqIn, 0, sizeof(seqIn) );
+				seqIn.addNumBuffers = 4;
+				seqIn.enablePostFilter = 0;
 				seqIn.seqInfo = streamBuffer;
 				seqIn.seqSize = readSize;
 				seqIn.enableUserData = 0;
@@ -1164,6 +1191,24 @@ int dec_main( int argc, char *argv[] )
 				return -1;
 			}
 
+#if 0
+			printf("<<<<<<<<<<< Init_Info >>>>>>>>>>>>>> \n");
+			printf("minBuffers = %d \n", seqOut.minBuffers);
+			printf("numBuffers = %d \n", seqOut.numBuffers);
+			printf("width = %d \n", seqOut.width);
+			printf("height = %d \n", seqOut.height);
+			printf("frameBufDelay = %d \n", seqOut.frameBufDelay);
+			printf("isInterace = %d \n", seqOut.isInterlace);
+			printf("userDataNum = %d \n", seqOut.userDataNum);
+			printf("userDataSize = %d \n", seqOut.userDataSize);
+			printf("userDataBufFull = %d \n", seqOut.userDataBufFull);
+			printf("frameRateNum = %d \n", seqOut.frameRateNum);
+			printf("frameRateDen = %d \n", seqOut.frameRateDen);
+			printf("vp8ScaleWidth = %d \n", seqOut.vp8ScaleWidth);
+			printf("vp8ScaleHeight = %d \n", seqOut.vp8ScaleHeight);
+			printf("unsupportedFeature = %d \n", seqOut.unsupportedFeature);
+#endif
+
 			pos = 0;
 			bInit = 1;
 		}
@@ -1182,9 +1227,13 @@ int dec_main( int argc, char *argv[] )
 		decIn.strmSize = pos;
 		decIn.timeStamp = timeStamp;
 		decIn.eos = 0;
+
+		startTime = NX_GetTickCount();
 		vidRet = NX_VidDecDecodeFrame( hDec, &decIn, &decOut );
+		endTime = NX_GetTickCount();
+
 		pos = 0;
-		if( vidRet == VID_NEED_MORE_BUF )
+		if( vidRet == VID_NEED_STREAM )
 		{
 			printf("VID_NEED_MORE_BUF NX_VidDecDecodeFrame\n");
 			continue;
@@ -1195,7 +1244,10 @@ int dec_main( int argc, char *argv[] )
 			exit(-2);
 		}
 
-		printf("Frame[%5d]: size=%6d, DspIdx=%2d, DecIdx=%2d, InTimeStamp=%7lld, outTimeStamp=%7lld\n", frameCount, tmpSize, decOut.outImgIdx, decOut.outDecIdx, timeStamp, outTimeStamp );
+		printf("Frame[%5d]: size=%6d, DspIdx=%2d, DecIdx=%2d, InTimeStamp=%7lld, outTimeStamp=%7lld, time=%6lld \n", frameCount, tmpSize, decOut.outImgIdx, decOut.outDecIdx, timeStamp, decOut.timeStamp, (endTime-startTime));
+		printf("interlace = %d(%d), Reliable = %d, MultiResel = %d, upW = %d, upH = %d\n", decOut.isInterlace, decOut.topFieldFirst, decOut.outFrmReliable_0_100, decOut.multiResolution, decOut.upSampledWidth, decOut.upSampledHeight);
+
+		totalTime += (endTime-startTime);
 		frameCount ++;
 
 		if( decOut.outImgIdx >= 0  )
@@ -1208,6 +1260,33 @@ int dec_main( int argc, char *argv[] )
 				NX_DspDequeueBuffer( hDsp );
 			}
 #endif	//	ENABLE_DISPLAY
+
+			if( fpOut )
+			{
+				int h;
+				unsigned char *pbyImg = (unsigned char *)(decOut.outImg.luVirAddr);
+
+				for(h=0 ; h<decOut.height ; h++)
+				{
+					fwrite( pbyImg, 1, decOut.width, fpOut );
+					pbyImg += decOut.outImg.luStride;
+				}
+
+				pbyImg = (unsigned char *)(decOut.outImg.cbVirAddr);
+				for(h=0 ; h<decOut.height/2 ; h++)
+				{
+					fwrite( pbyImg, 1, decOut.width/2, fpOut );
+					pbyImg += decOut.outImg.cbStride;
+				}
+
+				pbyImg = (unsigned char *)(decOut.outImg.crVirAddr);
+				for(h=0 ; h<decOut.height/2 ; h++)
+				{
+					fwrite( pbyImg, 1, decOut.width/2, fpOut );
+					pbyImg += decOut.outImg.crStride;
+				}
+			}
+
 			outCount ++;
 			if( prevIdx != -1 )
 			{
@@ -1217,6 +1296,8 @@ int dec_main( int argc, char *argv[] )
 		}
 	}
 	NX_VidDecClose( hDec );
+
+	printf("Avg Time = %6lld (%6lld / %d) \n", totalTime / frameCount, totalTime, frameCount);
 
 #if (ENABLE_THEORA)
 	//	Intialize Theora Parser
@@ -1230,6 +1311,9 @@ int dec_main( int argc, char *argv[] )
 	NX_DspClose(hDsp);
 #endif
 
+	if ( fpOut )
+		fclose(fpOut);
+
 	return 0;
 }
 
@@ -1239,13 +1323,14 @@ int aging_main( int argc, char *argv[] )
 {
 	FFMPEG_STREAM_READER *pReader;
 	int vpuCodecType;
-	NX_VID_RET vidRet;
+	VID_ERROR_E vidRet;
 	NX_VID_SEQ_IN seqIn;
 	NX_VID_SEQ_OUT seqOut;
 	NX_VID_DEC_HANDLE hDec;
 	NX_VID_DEC_IN decIn;
 	NX_VID_DEC_OUT decOut;
 	int readSize;
+	int instanceIdx;
 	av_register_all();
 
 	while (1)
@@ -1280,7 +1365,7 @@ int aging_main( int argc, char *argv[] )
 		if( mp4Class == -1 )
 			mp4Class = codecIdToMp4Class( pReader->video_stream->codec->codec_id );
 
-		hDec = NX_VidDecOpen(vpuCodecType, mp4Class, 0);
+		hDec = NX_VidDecOpen(vpuCodecType, mp4Class, 0, &instanceIdx);
 		if( hDec == NULL )
 		{
 			printf("NX_VidDecOpen(%d) failed!!!\n", vpuCodecType);
@@ -1361,7 +1446,7 @@ int aging_main( int argc, char *argv[] )
 			decIn.eos = 0;
 			vidRet = NX_VidDecDecodeFrame( hDec, &decIn, &decOut );
 			pos = 0;
-			if( vidRet == VID_NEED_MORE_BUF )
+			if( vidRet == VID_NEED_STREAM )
 			{
 				frameCount ++;
 				printf("VID_NEED_MORE_BUF NX_VidDecDecodeFrame\n");

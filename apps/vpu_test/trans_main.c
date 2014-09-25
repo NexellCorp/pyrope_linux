@@ -96,22 +96,22 @@ static void dumpdata( void *data, int len, const char *msg );
 	*_p++ = (unsigned char)((_var)>>0);  \
 	*_p++ = (unsigned char)((_var)>>8);  \
 	*_p++ = (unsigned char)((_var)>>16); \
-	*_p++ = (unsigned char)((_var)>>24); 
+	*_p++ = (unsigned char)((_var)>>24);
 
 #define PUT_BE32(_p, _var) \
 	*_p++ = (unsigned char)((_var)>>24);  \
 	*_p++ = (unsigned char)((_var)>>16);  \
 	*_p++ = (unsigned char)((_var)>>8); \
-	*_p++ = (unsigned char)((_var)>>0); 
+	*_p++ = (unsigned char)((_var)>>0);
 
 #define PUT_LE16(_p, _var) \
 	*_p++ = (unsigned char)((_var)>>0);  \
-	*_p++ = (unsigned char)((_var)>>8);  
+	*_p++ = (unsigned char)((_var)>>8);
 
 
 #define PUT_BE16(_p, _var) \
 	*_p++ = (unsigned char)((_var)>>8);  \
-	*_p++ = (unsigned char)((_var)>>0);  
+	*_p++ = (unsigned char)((_var)>>0);
 
 
 
@@ -312,7 +312,7 @@ int GetSequenceInformation( FFMPEG_STREAM_READER *streamReader, AVStream *stream
 				return retSize;
 			default:
 				break;
-			
+
 		}
 	}
 	else if(  (codecId == CODEC_ID_WMV1) || (codecId == CODEC_ID_WMV2) || (codecId == CODEC_ID_WMV3) )
@@ -337,7 +337,7 @@ int GetSequenceInformation( FFMPEG_STREAM_READER *streamReader, AVStream *stream
         retSize += 4; // STRUCT_B_FRIST (LEVEL:3|CBR:1:RESERVE:4:HRD_BUFFER|24)
         PUT_LE32(pbHeader, stream->codec->bit_rate);
         retSize += 4; // hrd_rate
-		PUT_LE32(pbHeader, frameRate);            
+		PUT_LE32(pbHeader, frameRate);
         retSize += 4; // frameRate
 #else	//RCV_V1
         PUT_LE32(pbHeader, (0x85 << 24) | 0x00);
@@ -476,7 +476,7 @@ static int MakeRvStream( AVPacket *pkt, AVStream *stream, unsigned char *buffer,
 		offset += 4;
 	}
 
-	memcpy(buffer, pkt->data+(1+(cSlice*8)), nSlice);		
+	memcpy(buffer, pkt->data+(1+(cSlice*8)), nSlice);
 	size += nSlice;
 
 	//printf("size = %6d, nSlice = %6d, cSlice = %4d, pkt->size=%6d, frameNumber=%d\n", size, nSlice, cSlice, pkt->size, stream->codec->frame_number );
@@ -793,13 +793,14 @@ int transcoding( const char *inFileName, const char *outFileName )
 	DISPLAY_INFO dspInfo;
 #endif
 	int vpuCodecType;
-	NX_VID_RET vidRet;
+	VID_ERROR_E vidRet;
 	NX_VID_SEQ_IN seqIn;
 	NX_VID_SEQ_OUT seqOut;
 	NX_VID_DEC_HANDLE hDec;
 	NX_VID_DEC_IN decIn;
 	NX_VID_DEC_OUT decOut;
 	NX_VID_ENC_INIT_PARAM encInitParam;
+	int instanceIdx;
 	int seqSize = 0;
 	int bInit=0, pos=0;
 	int readSize, frameCount = 0, outCount=0;
@@ -820,6 +821,7 @@ int transcoding( const char *inFileName, const char *outFileName )
 
 	//	for Encoder
 	NX_VID_ENC_HANDLE hEnc;
+	NX_VID_ENC_IN encIn;
 	NX_VID_ENC_OUT encOut;
 	FILE *outFd = fopen(outFileName, "wb");
 
@@ -848,7 +850,7 @@ int transcoding( const char *inFileName, const char *outFileName )
 	if( mp4Class == (unsigned int)-1 )
 		mp4Class = codecIdToMp4Class( pReader->video_stream->codec->codec_id );
 
-	hDec = NX_VidDecOpen(vpuCodecType, mp4Class, 0);
+	hDec = NX_VidDecOpen(vpuCodecType, mp4Class, 0, &instanceIdx);
 	if( hDec == NULL )
 	{
 		printf("NX_VidDecOpen(%d) failed!!!\n", vpuCodecType);
@@ -864,7 +866,7 @@ int transcoding( const char *inFileName, const char *outFileName )
 
 	gettimeofday(&totStart, NULL);
 
-	hEnc = NX_VidEncOpen( NX_AVC_ENC );
+	hEnc = NX_VidEncOpen( NX_AVC_ENC, &instanceIdx );
 	memset( &encInitParam, 0, sizeof(encInitParam) );
 	encInitParam.width = pReader->video_stream->codec->coded_width;
 	encInitParam.height = pReader->video_stream->codec->coded_height;
@@ -872,11 +874,12 @@ int transcoding( const char *inFileName, const char *outFileName )
 	encInitParam.bitrate = 5000000;
 	encInitParam.fpsNum = 30;
 	encInitParam.fpsDen = 1;
+
 	//	Rate Control
 	encInitParam.enableRC = 1;		//	Enable Rate Control
-	encInitParam.enableSkip = 0;	//	Enable Skip
-	encInitParam.maxQScale = 51;	//	Max Qunatization Scale
-	encInitParam.userQScale = 23;	//	Default Encoder API ( enableRC == 0 )
+	encInitParam.disableSkip = 0;	//	Enable Skip
+	encInitParam.maximumQp = 51;	//	Max Qunatization Scale
+	encInitParam.initialQp = 23;	//	Default Encoder API ( enableRC == 0 )
 
 	NX_VidEncInit( hEnc, &encInitParam );
 	if( outFd )
@@ -1003,7 +1006,7 @@ int transcoding( const char *inFileName, const char *outFileName )
 		totalDecTime += (endTime.tv_sec - startTime.tv_sec)*1000000 + endTime.tv_usec - startTime.tv_usec;
 #endif
 		pos = 0;
-		if( vidRet == VID_NEED_MORE_BUF )
+		if( vidRet == VID_NEED_STREAM )
 		{
 			frameCount ++;
 			printf("VID_NEED_MORE_BUF\n");
@@ -1018,7 +1021,14 @@ int transcoding( const char *inFileName, const char *outFileName )
 		if( decOut.outImgIdx >= 0  )
 		{
 			gettimeofday( &startTime, NULL );
-			NX_VidEncEncodeFrame( hEnc, &decOut.outImg, &encOut );
+
+			encIn.pImage = &decOut.outImg;
+			encIn.timeStamp = 0;
+			encIn.forcedIFrame = 0;
+			encIn.forcedSkipFrame = 0;
+			encIn.quantParam = 25;
+
+			NX_VidEncEncodeFrame( hEnc, &encIn, &encOut );
 			if( outFd && encOut.bufSize>0 )
 			{
 				//	Write Sequence Data

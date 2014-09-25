@@ -104,6 +104,7 @@ int main( int argc, char *argv[] )
 	int rotAngle = 0;
 	int quality = 90;
 	int opt;
+	int instanceIdx;
 
 	long long vipTime;
 
@@ -194,7 +195,7 @@ int main( int argc, char *argv[] )
 
 #ifndef	DISPLAY_ONLY
 	//	Initialize Encoder
-	hEnc = NX_VidEncOpen( NX_JPEG_ENC );
+	hEnc = NX_VidEncOpen( NX_JPEG_ENC, &instanceIdx );
 
 	memset( &encInitParam, 0, sizeof(encInitParam) );
 	encInitParam.width = cropW;

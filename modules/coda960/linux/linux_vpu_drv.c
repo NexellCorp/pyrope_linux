@@ -147,6 +147,7 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 #ifdef ENABLE_CLOCK_GATING
 	NX_VPU_Clock(1);
 #endif
+
 	switch( cmd )
 	{
 	case IOCTL_VPU_OPEN_INSTANCE:
@@ -161,6 +162,7 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 				ret = -1;
 				break;
 			}
+
 			if( openArg.isEncoder )
 			{
 				if( gstCruEncInstance >= NX_MAX_VPU_ENC_INST )
@@ -181,6 +183,7 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 				}
 				vpuRet = NX_VpuDecOpen( &openArg, &nx_vpu_device->dev, &hInst );
 			}
+
 			if( (VPU_RET_OK!=vpuRet) || (0==hInst) )
 			{
 				NX_ErrMsg(("Cannot open VPU Instance( codecStd=%d, isEncoder=%d, hInst=%p )\n", openArg.codecStd, openArg.isEncoder, hInst));
@@ -204,6 +207,7 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 			}
 		}
 		break;
+
 	case IOCTL_VPU_CLOSE_INSTANCE:
 		{
 			if( !hInst )
@@ -240,32 +244,33 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 			if( !hInst )
 			{
 				NX_ErrMsg(("IOCTL_VPU_CLOSE_INSTANCE : Invalid Instance!!\n"));
-				ret = -1;
+				ret = VPU_RET_ERR_INST;
 				break;
 			}
 
 			if( 0 != copy_from_user( &seqArg, (void*)arg, sizeof(seqArg) ) )
 			{
 				NX_ErrMsg(("IOCTL_VPU_ENC_SET_SEQ_PARAM : copy_from_user failed!!\n"));
-				ret = -1;
+				ret = VPU_RET_ERROR;
 				break;
 			}
 
 			if( VPU_RET_OK != (vpuRet = NX_VpuEncSetSeqParam( hInst, &seqArg )) )
 			{
 				NX_ErrMsg(("NX_VpuEncSetSeqParam() failed.(ErrorCode=%d)\n", vpuRet));
-				ret = -1;
+				ret = vpuRet;
 				break;
 			}
 
 			if( 0 != copy_to_user( (void*)arg, &seqArg, sizeof(seqArg) ) )
 			{
 				NX_ErrMsg(("IOCTL_VPU_ENC_SET_SEQ_PARAM : copy_to_user failed!!\n"));
-				ret = -1;
+				ret = VPU_RET_ERROR;
 				break;
 			}
 		}
 		break;
+
 	case IOCTL_VPU_ENC_SET_FRAME_BUF:
 		{
 			NX_VPU_RET vpuRet;
@@ -273,32 +278,33 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 			if( !hInst )
 			{
 				NX_ErrMsg(("IOCTL_VPU_CLOSE_INSTANCE : Invalid Instance!!\n"));
-				ret = -1;
+				ret = VPU_RET_ERR_INST;
 				break;
 			}
 
 			if( 0 != copy_from_user( &frmArg, (void*)arg, sizeof(frmArg) ) )
 			{
 				NX_ErrMsg(("IOCTL_VPU_ENC_SET_FRAME_BUF : copy_from_user failed!!\n"));
-				ret = -1;
+				ret = VPU_RET_ERROR;
 				break;
 			}
 
 			if( VPU_RET_OK != (vpuRet = NX_VpuEncSetFrame( hInst, &frmArg )) )
 			{
 				NX_ErrMsg(("NX_VpuEncSetFrame() failed.(ErrorCode=%d)\n", vpuRet));
-				ret = -1;
+				ret = vpuRet;
 				break;
 			}
 
 			if( 0 != copy_to_user( (void*)arg, &frmArg, sizeof(frmArg) ) )
 			{
 				NX_ErrMsg(("IOCTL_VPU_ENC_SET_FRAME_BUF : copy_to_user failed!!\n"));
-				ret = -1;
+				ret = VPU_RET_ERROR;
 				break;
 			}
 		}
 		break;
+
 	case IOCTL_VPU_ENC_GET_HEADER:
 		{
 			NX_VPU_RET vpuRet;
@@ -306,28 +312,28 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 			if( !hInst )
 			{
 				NX_ErrMsg(("IOCTL_VPU_CLOSE_INSTANCE : Invalid Instance!!\n"));
-				ret = -1;
+				ret = VPU_RET_ERR_INST;
 				break;
 			}
 
 			if( 0 != copy_from_user( &hdrArg, (void*)arg, sizeof(hdrArg) ) )
 			{
 				NX_ErrMsg(("IOCTL_VPU_ENC_SET_FRAME_BUF : copy_from_user failed!!\n"));
-				ret = -1;
+				ret = VPU_RET_ERROR;
 				break;
 			}
 
 			if( VPU_RET_OK != (vpuRet = NX_VpuEncGetHeader( hInst, &hdrArg )) )
 			{
 				NX_ErrMsg(("NX_VpuEncGetHeader() failed.(ErrorCode=%d)\n", vpuRet));
-				ret = -1;
+				ret = vpuRet;
 				break;
 			}
 
 			if( 0 != copy_to_user( (void*)arg, &hdrArg, sizeof(hdrArg) ) )
 			{
 				NX_ErrMsg(("IOCTL_VPU_ENC_SET_FRAME_BUF : copy_to_user failed!!\n"));
-				ret = -1;
+				ret = VPU_RET_ERROR;
 				break;
 			}
 		}
@@ -340,33 +346,66 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 			if( !hInst )
 			{
 				NX_ErrMsg(("IOCTL_VPU_CLOSE_INSTANCE : Invalid Instance!!\n"));
-				ret = -1;
+				ret = VPU_RET_ERR_INST;
 				break;
 			}
 
 			if( 0 != copy_from_user( &runArg, (void*)arg, sizeof(runArg) ) )
 			{
 				NX_ErrMsg(("IOCTL_VPU_ENC_RUN_FRAME : copy_from_user failed!!\n"));
-				ret = -1;
+				ret = VPU_RET_ERROR;
 				break;
 			}
 
 			if( VPU_RET_OK != (vpuRet = NX_VpuEncRunFrame( hInst, &runArg )) )
 			{
 				NX_ErrMsg(("NX_VpuEncRunFrame() failed.(ErrorCode=%d)\n", vpuRet));
-				ret = -1;
+				ret = vpuRet;
 				break;
 			}
 
 			if( 0 != copy_to_user( (void*)arg, &runArg, sizeof(runArg) ) )
 			{
 				NX_ErrMsg(("IOCTL_VPU_ENC_RUN_FRAME : copy_to_user failed!!\n"));
-				ret = -1;
+				ret = VPU_RET_ERROR;
 				break;
 			}
 		}
 		break;
 
+	case IOCTL_VPU_ENC_CHG_PARAM:
+		{
+			NX_VPU_RET vpuRet;
+			static VPU_ENC_CHG_PARA_ARG chgArg;
+			if( !hInst )
+			{
+				NX_ErrMsg(("IOCTL_VPU_CLOSE_INSTANCE : Invalid Instance!!\n"));
+				ret = VPU_RET_ERR_INST;
+				break;
+			}
+
+			if( 0 != copy_from_user( &chgArg, (void*)arg, sizeof(chgArg) ) )
+			{
+				NX_ErrMsg(("IOCTL_VPU_ENC_CHG_PARAM : copy_from_user failed!!\n"));
+				ret = VPU_RET_ERROR;
+				break;
+			}
+
+			if( VPU_RET_OK != (vpuRet = NX_VpuEncChgParam( hInst, &chgArg )) )
+			{
+				NX_ErrMsg(("NX_VpuEncChgParam() failed.(ErrorCode=%d)\n", vpuRet));
+				ret = vpuRet;
+				break;
+			}
+
+			if( 0 != copy_to_user( (void*)arg, &chgArg, sizeof(chgArg) ) )
+			{
+				NX_ErrMsg(("IOCTL_VPU_ENC_CHG_PARAM : copy_to_user failed!!\n"));
+				ret = VPU_RET_ERROR;
+				break;
+			}
+		}
+		break;
 
 		//////////////////////////////////////////////////////////////////////
 		//
@@ -399,7 +438,6 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 					pbuf[ 8],pbuf[ 9],pbuf[10],pbuf[11], pbuf[12],pbuf[13],pbuf[14],pbuf[15]);
 			}
 
-
 			if( VPU_RET_OK != (vpuRet = NX_VpuDecSetSeqInfo( hInst, &seqArg )) )
 			{
 				NX_ErrMsg(("NX_VpuDecSetSeqInfo() failed.(ErrorCode=%d)\n", vpuRet));
@@ -414,6 +452,7 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 			}
 		}
 		break;
+
 	case IOCTL_VPU_DEC_REG_FRAME_BUF:
 		{
 			NX_VPU_RET vpuRet;

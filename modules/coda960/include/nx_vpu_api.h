@@ -49,13 +49,13 @@ enum {
 
 
 typedef enum {
-	VPU_BIT_CHG_GOP			= 0,		//	GOP
-	VPU_BIT_CHG_INTRAQP		= 1,		//	Intra Qp
-	VPU_BIT_CHG_BITRATE		= 2,		//	Bit Rate
-	VPU_BIT_CHG_FRAMERATE	= 3,		//	Frame Rate
-	VPU_BIT_CHG_INTRARF		= 4,		//	Intra Refresh
-	VPU_BIT_CHG_SLICEMOD	= 5,		//	Slice Mode
-	VPU_BIT_CHG_HECMODE		= 6,		//	HEC(Header Extenstion Code) Mode
+	VPU_BIT_CHG_GOP			= 1,		//	GOP
+	VPU_BIT_CHG_INTRAQP		= (1 << 1),		//	Intra Qp
+	VPU_BIT_CHG_BITRATE		= (1 << 2),		//	Bit Rate
+	VPU_BIT_CHG_FRAMERATE	= (1 << 3),		//	Frame Rate
+	VPU_BIT_CHG_INTRARF		= (1 << 4),		//	Intra Refresh
+	VPU_BIT_CHG_SLICEMOD	= (1 << 5),		//	Slice Mode
+	VPU_BIT_CHG_HECMODE		= (1 << 6),		//	HEC(Header Extenstion Code) Mode
 } NX_VPU_BIT_CHG_PARAM;
 
 
@@ -81,7 +81,7 @@ typedef enum {
     END_STREAM_RBSP,
     SPS_RBSP_MVC,
     PPS_RBSP_MVC,
-} AvcHeaderType;    
+} AvcHeaderType;
 
 
 
@@ -97,6 +97,7 @@ typedef enum {
 	VPU_RET_ERR_TIMEOUT	= -20,			//	VPU Wait Timeout
 	VPU_RET_ERR_MEM_ACCESS= -19,		//	Memory Access Violation
 
+	VPU_RET_ERR_CHG_PARAM = -6,			// 	VPU Not Changed
 	VPU_RET_ERR_WRONG_SEQ = -5,			//	Wrong Sequence
 	VPU_RET_ERR_PARAM	= -4,			//	VPU Invalid Parameter
 	VPU_RET_ERR_RUN		= -3,
@@ -129,7 +130,7 @@ typedef	struct {
 	unsigned int bufDbkCUse;
 	unsigned int bufOvlUse;
 	unsigned int bufBtpUse;
-	int bufSize;	
+	int bufSize;
 } SecAxiInfo;
 
 
@@ -175,7 +176,7 @@ typedef struct {
 	int alignedWidth;
 	int alignedHeight;
 	int seqInited;
-	int frameIdx;   
+	int frameIdx;
 	int format;
 
 	int rotationEnable;
@@ -205,7 +206,7 @@ typedef struct {
 
 typedef struct tagVpuEncInfo
 {
-	int codecStd;	//	Codec Standard	
+	int codecStd;	//	Codec Standard
 
 	//	input picture
 	int srcWidth;
@@ -215,12 +216,15 @@ typedef struct tagVpuEncInfo
 	int	encWidth;
 	int	encHeight;
 
-	//	
+	//
 	int gopSize;				//	GOP size
 	int bitRate;				//	Bitrate
-	int	frameRate;				//	framerate
+	int	frameRateNum;			//	framerate
+	int frameRateDen;
+
 	int rotateAngle;			//	0/90/180/270
 	int mirrorDirection;		//	0/1/2/3
+
 	int	sliceMode;
 	int	sliceSizeMode;
 	int	sliceSize;
@@ -230,6 +234,7 @@ typedef struct tagVpuEncInfo
 	int cbcrInterleaveRefFrame;	//	Reference Frame's CbCrInterleave
 	int frameEndian;
 
+	int frameQp;
 	int jpegQuality;
 
 	//
@@ -270,7 +275,7 @@ typedef struct tagVpuEncInfo
 	int mbInterval;
 	int rcIntraCostWeigth;
 	int	enableAutoSkip;			//	Auto Skip
-	int	initialDelay;			//	
+	int	initialDelay;			//
 	int	vbvBufSize;				//	VBV buffer size
 	int intraRefresh;
 
@@ -280,8 +285,6 @@ typedef struct tagVpuEncInfo
 		EncH263Param h263EncParam;
 		EncJpegInfo jpgEncInfo;
 	}EncCodecParam;
-
-	unsigned int numEncFrames;	//	encoding frame counter
 
 	//	Motion Estimation
 	int MEUseZeroPmv;
@@ -300,7 +303,7 @@ typedef struct {
 
 typedef struct tagVpuDecInfo
 {
-	int codecStd;	//	Codec Standard	
+	int codecStd;	//	Codec Standard
 
 	int width;
 	int height;
@@ -438,6 +441,7 @@ NX_VPU_RET	NX_VpuEncSetSeqParam( NX_VPU_INST_HANDLE handle, VPU_ENC_SEQ_ARG *seq
 NX_VPU_RET	NX_VpuEncSetFrame( NX_VPU_INST_HANDLE handle, VPU_ENC_SET_FRAME_ARG *frmArg );
 NX_VPU_RET	NX_VpuEncGetHeader( NX_VPU_INST_HANDLE handle, VPU_ENC_GET_HEADER_ARG *header );
 NX_VPU_RET	NX_VpuEncRunFrame( NX_VPU_INST_HANDLE handle, VPU_ENC_RUN_FRAME_ARG *runArg );
+NX_VPU_RET	NX_VpuEncChgParam( NX_VPU_INST_HANDLE handle, VPU_ENC_CHG_PARA_ARG *chgArg );
 
 
 //

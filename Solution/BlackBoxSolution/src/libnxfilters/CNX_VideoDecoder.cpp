@@ -190,9 +190,11 @@ void CNX_VideoDecoder::ThreadLoop( void )
 
 		if( !bInit ) {
 			memset( &seqIn, 0, sizeof(seqIn) );
-			seqIn.seqInfo = streamBuffer;
-			seqIn.seqSize = seqSize + size;
-			seqIn.enableUserData = 0;
+			seqIn.addNumBuffers		= 4;
+			seqIn.enablePostFilter	= 0;
+			seqIn.seqInfo			= streamBuffer;
+			seqIn.seqSize			= seqSize + size;
+			seqIn.enableUserData	= 0;
 			seqIn.disableOutReorder = 0;
 
 			vidRet = NX_VidDecInit( m_hDec, &seqIn, &seqOut );

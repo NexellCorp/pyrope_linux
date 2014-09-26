@@ -81,7 +81,7 @@ int32_t CNX_TranscodingManager::BuildFilter( void )
 		m_pDecoder->GetVideoResolution( &width, &height );
 		fps = m_pDecoder->GetVideoFramerate( &fpsNum, &fpsDen );
 		
-		if( fps > (int32_t)m_VidEncConfig.fps ) {
+		if( fps > (int32_t)m_VidEncConfig.fps && 0 < (int32_t)m_VidEncConfig.fps ) {
 			m_pDecoder->SetFrameDown( m_VidEncConfig.fps );
 		}
 
@@ -103,9 +103,17 @@ int32_t CNX_TranscodingManager::BuildFilter( void )
 		m_pVidRender->Init( &m_VidRenderConfig );
 	}
 
-	if( m_pEncoder )	m_pEncoder->Init( &m_VidEncConfig );
+	if( m_pEncoder ) {
+		if( !m_VidEncConfig.fps )
+			m_VidEncConfig.fps = fps;
+		
+		m_pEncoder->Init( &m_VidEncConfig );
+	}	
 	
 	if( m_pMp4Muxer ) {
+		if( !m_Mp4MuxerConfig.trackConfig[0].frameRate ) 
+			m_Mp4MuxerConfig.trackConfig[0].frameRate = fps;
+		
 		m_pMp4Muxer->Init( &m_Mp4MuxerConfig );
 		if( m_pOutFileName ) 
 			m_pMp4Muxer->SetFileName( (char*)m_pOutFileName );
@@ -145,8 +153,8 @@ int32_t CNX_TranscodingManager::SetConfig( NX_TRANSCODING_MGR_CONFIG *pConfig )
 	m_VidRenderConfig.port 			= 0;
 	m_VidRenderConfig.cropLeft		= 0;
 	m_VidRenderConfig.cropTop		= 0;
-	m_VidRenderConfig.cropRight		= 1024;
-	m_VidRenderConfig.cropBottom	= 768;
+	m_VidRenderConfig.cropRight		= 1024;		// Resetting BuildFilter()
+	m_VidRenderConfig.cropBottom	= 768;		// Resetting BuildFilter()
 	m_VidRenderConfig.dspLeft		= 0;
 	m_VidRenderConfig.dspTop		= 0;
 	m_VidRenderConfig.dspRight		= 1024;
@@ -211,6 +219,7 @@ int32_t CNX_TranscodingManager::Deinit( void )
 	return 0;	
 }
 
+//------------------------------------------------------------------------------
 int32_t CNX_TranscodingManager::Start()
 {
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
@@ -233,6 +242,7 @@ int32_t CNX_TranscodingManager::Start()
 	return 0;
 }
 
+//------------------------------------------------------------------------------
 int32_t CNX_TranscodingManager::Stop( void )
 {
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
@@ -255,6 +265,7 @@ int32_t CNX_TranscodingManager::Stop( void )
 	return 0;
 }
 
+//------------------------------------------------------------------------------
 int32_t CNX_TranscodingManager::RegisterNotifyCallback( uint32_t (*cbNotify)(uint32_t, uint8_t*, uint32_t) )
 {
 	CNX_AutoLock lock( &m_hLock );

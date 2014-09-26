@@ -72,7 +72,7 @@ static void Usage( void )
 	printf("   -h              : Show usage.\n");
 	printf("   -i [filename]   : Input filename. (mandatory)\n");
 	printf("   -o [filename]   : Output filename.\n");
-	printf("   -f [framerate]  : Encoding framereate. default 30fps.\n");
+	printf("   -f [framerate]  : Encoding framereate. default input-stream fps.\n");
 	printf("   -b [bitrate]    : Encoding bitrate(Mbps). default 10M.\n");
 }
 
@@ -81,8 +81,8 @@ int32_t main( int32_t argc, char *argv[] )
 	int32_t opt;
 	
 	char *pInFileName = NULL, *pOutFileName = NULL;
-	int32_t fps = 30;
-	int32_t bitreate = 10000000;
+	int32_t fps = 0;
+	int32_t bitrate = 10000000;
 
 	while( -1 != (opt=getopt(argc, argv, "hi:o:f:b:")) )
 	{
@@ -101,7 +101,7 @@ int32_t main( int32_t argc, char *argv[] )
 				fps = atoi( optarg );
 				break;
 			case 'b':
-				bitreate = atoi( optarg ) * 1000000;
+				bitrate = atoi( optarg ) * 1000000;
 				break;
 			default :
 				break;
@@ -120,7 +120,7 @@ int32_t main( int32_t argc, char *argv[] )
 	transcodingConfig.pInFileName 	= (uint8_t*)pInFileName;
 	transcodingConfig.pOutFileName	= (uint8_t*)pOutFileName;
 	transcodingConfig.nEncFps		= fps;
-	transcodingConfig.nEncBitrate 	= bitreate;
+	transcodingConfig.nEncBitrate 	= bitrate;
 
 	pTranscodingManager = GetTranscodingHandle();
 
@@ -130,12 +130,6 @@ int32_t main( int32_t argc, char *argv[] )
 	printf("Author     : Sung-won Jo\n");
 	printf("Mail       : doriya@nexell.co.kr\n");
 	printf("COPYRIGHT@2014 NEXELL CO. ALL RIGHT RESERVED.\n");
-	printf("##################################################################################\n");
-	printf("Result\n");
-	printf(" -. Input     : %s\n", pInFileName );
-	printf(" -. Output    : %s\n", pOutFileName ? pOutFileName : "./clip_xxxxxxxx_xxxxxx.mp4");
-	printf(" -. FrameRate : %d fps\n", fps);
-	printf(" -. Bitrate   : %d bps\n", bitreate);
 	printf("##################################################################################\n");
 
 	register_signal();

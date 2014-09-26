@@ -81,7 +81,7 @@ int32_t			NX_DspVideoSetPriority		( int32_t module, int32_t priority );
 int32_t			NX_DspVideoGetPriority		( int32_t module, int32_t *priority );
 
 int32_t			NX_DspSetColorKey			( int32_t module, int32_t colorkey );
-
+int32_t			NX_DspGetColorKey			( int32_t module, int32_t *colorkey );
 #ifdef __cplusplus
 }
 #endif

@@ -384,61 +384,53 @@ int32_t NX_DspVideoSetPosition( DISPLAY_HANDLE hDisplay, DSP_IMG_RECT *pRect )
 
 int32_t NX_DspVideoSetPriority( int32_t module, int32_t priority )
 {
-	V4L2_PRIVATE_HANDLE	hPrivate;
-	int32_t mlcId;
+	V4L2_PRIVATE_HANDLE	hPrivate = NULL;
+	int32_t mlcId, ret = 0;
 	
 	struct V4l2UsageScheme s;
 	memset(&s, 0, sizeof(s));
 
 	if( module == DISPLAY_MODULE_MLC0 ) {
 		s.useMlc0Video	= true;
-		s.useMlc1Video	= false;
-		
-		mlcId	= nxp_v4l2_mlc0_video;
+		mlcId = nxp_v4l2_mlc0_video;
 	}
 	else if( module == DISPLAY_MODULE_MLC1 ) {
 		s.useMlc0Video	= false;
-		s.useMlc1Video	= true;
-
-		mlcId	= nxp_v4l2_mlc1_video;
+		mlcId = nxp_v4l2_mlc1_video;
 	}
 	else {
 		return -1;
 	}
-	
+
 	if( NULL == (hPrivate = v4l2_init(&s)) ) {
 		printf("%s(): v4l2_init() failed.\n", __func__);
-		return -1;
+		ret = -1;
 	}
 	
-	if( 0 >  v4l2_set_ctrl( hPrivate, mlcId, V4L2_CID_MLC_VID_PRIORITY, priority ) ) {
+	if( 0 > v4l2_set_ctrl( hPrivate, mlcId, V4L2_CID_MLC_VID_PRIORITY, priority ) ) {
 		printf("%s(): v4l2_set_ctrl() failed.\n", __func__);
-		return -1;
+		ret = -1;
 	}
 	
 	if( hPrivate ) v4l2_exit(hPrivate);
-	return 0;
+	return ret;
 }
 
 int32_t NX_DspVideoGetPriority( int32_t module, int32_t *priority )
 {
-	V4L2_PRIVATE_HANDLE	hPrivate;
-	int32_t mlcId;
+	V4L2_PRIVATE_HANDLE	hPrivate = NULL;
+	int32_t mlcId, ret = 0;
 
 	struct V4l2UsageScheme s;
 	memset(&s, 0, sizeof(s));
 
 	if( module == DISPLAY_MODULE_MLC0 ) {
 		s.useMlc0Video	= true;
-		s.useMlc1Video	= false;
-		
-		mlcId	= nxp_v4l2_mlc0_video;
+		mlcId = nxp_v4l2_mlc0_video;
 	}
 	else if( module == DISPLAY_MODULE_MLC1 ) {
 		s.useMlc0Video	= false;
-		s.useMlc1Video	= true;
-
-		mlcId	= nxp_v4l2_mlc1_video;
+		mlcId = nxp_v4l2_mlc1_video;
 	}
 	else {
 		return -1;
@@ -446,37 +438,33 @@ int32_t NX_DspVideoGetPriority( int32_t module, int32_t *priority )
 	
 	if( NULL == (hPrivate = v4l2_init(&s)) ) {
 		printf("%s(): v4l2_init() failed.\n", __func__);
-		return -1;
+		ret = -1;
 	}
 	
-	if( 0 >  v4l2_get_ctrl( hPrivate, mlcId, V4L2_CID_MLC_VID_PRIORITY, priority ) ) {
-		printf("%s(): v4l2_set_ctrl() failed.\n", __func__);
-		return -1;
+	if( 0 > v4l2_get_ctrl( hPrivate, mlcId, V4L2_CID_MLC_VID_PRIORITY, priority ) ) {
+		printf("%s(): v4l2_get_ctrl() failed.\n", __func__);
+		ret = -1;
 	}
 	
 	if( hPrivate ) v4l2_exit(hPrivate);
-	return 0;	
+	return ret;	
 }
 
 int32_t NX_DspSetColorKey( int32_t module, int32_t colorkey )
 {
-	V4L2_PRIVATE_HANDLE	hPrivate;
-	int32_t mlcId;
+	V4L2_PRIVATE_HANDLE	hPrivate = NULL;
+	int32_t mlcId, ret = 0;
 	
 	struct V4l2UsageScheme s;
 	memset(&s, 0, sizeof(s));
 
 	if( module == DISPLAY_MODULE_MLC0 ) {
 		s.useMlc0Video	= true;
-		s.useMlc1Video	= false;
-		
-		mlcId	= nxp_v4l2_mlc0_video;
+		mlcId = nxp_v4l2_mlc0_video;
 	}
 	else if( module == DISPLAY_MODULE_MLC1 ) {
-		s.useMlc0Video	= false;
 		s.useMlc1Video	= true;
-
-		mlcId	= nxp_v4l2_mlc1_video;
+		mlcId = nxp_v4l2_mlc1_video;
 	}
 	else {
 		return -1;
@@ -484,14 +472,48 @@ int32_t NX_DspSetColorKey( int32_t module, int32_t colorkey )
 	
 	if( NULL == (hPrivate = v4l2_init(&s)) ) {
 		printf("%s(): v4l2_init() failed.\n", __func__);
+		ret = -1;
+	}
+	
+	if( 0 > v4l2_set_ctrl( hPrivate, mlcId, V4L2_CID_MLC_VID_COLORKEY, colorkey ) ) {
+		printf("%s(): v4l2_set_ctrl() failed.\n", __func__);
+		ret = -1;
+	}
+
+	if( hPrivate ) v4l2_exit(hPrivate);
+	return ret;
+}
+
+int32_t NX_DspGetColorKey( int32_t module, int32_t *colorkey )
+{
+	V4L2_PRIVATE_HANDLE	hPrivate = NULL;
+	int32_t mlcId, ret = 0;
+	
+	struct V4l2UsageScheme s;
+	memset(&s, 0, sizeof(s));
+
+	if( module == DISPLAY_MODULE_MLC0 ) {
+		s.useMlc0Video	= true;
+		mlcId = nxp_v4l2_mlc0_video;
+	}
+	else if( module == DISPLAY_MODULE_MLC1 ) {
+		s.useMlc1Video	= true;
+		mlcId = nxp_v4l2_mlc1_video;
+	}
+	else {
 		return -1;
 	}
 	
-	if( 0 >  v4l2_set_ctrl( hPrivate, mlcId, V4L2_CID_MLC_VID_COLORKEY, colorkey ) ) {
-		printf("%s(): v4l2_set_ctrl() failed.\n", __func__);
-		return -1;
+	if( NULL == (hPrivate = v4l2_init(&s)) ) {
+		printf("%s(): v4l2_init() failed.\n", __func__);
+		ret = -1;
+	}
+	
+	if( 0 > v4l2_get_ctrl( hPrivate, mlcId, V4L2_CID_MLC_VID_COLORKEY, colorkey ) ) {
+		printf("%s(): v4l2_get_ctrl() failed.\n", __func__);
+		ret = -1;
 	}
 	
 	if( hPrivate ) v4l2_exit(hPrivate);
-	return 0;
+	return ret;
 }

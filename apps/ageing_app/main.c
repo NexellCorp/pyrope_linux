@@ -495,7 +495,8 @@ static int shell_main(const char *scan_path, const char *out_file)
 			}
 
 			usleep(300000);
-
+			duration = 0;
+			position = 0;
 			NX_MPGetCurDuration(hPlayer, &duration);
 			NX_MPGetCurPosition(hPlayer, &position);
 

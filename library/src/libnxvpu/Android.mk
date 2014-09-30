@@ -14,7 +14,7 @@ LOCAL_SHARED_LIBRARIES :=	\
 
 LOCAL_STATIC_LIBRARIES := \
 	libnxmalloc \
-	libnxvidrc
+	libnxvidrc_android
 
 LOCAL_C_INCLUDES := system/core/include/ion \
 					$(NX_PYROPE_INCLUDE) \

@@ -495,7 +495,7 @@ static int VPU_WaitBitInterrupt(int mSeconds)
 	{
 		reason=VpuReadReg(BIT_INT_REASON);
 		VpuWriteReg(BIT_INT_REASON, 0);
-		NX_ErrMsg(("VPU_WaitVpuInterrupt() TimeOut!!!(reason = 0x%.8x)\n", reason));
+		NX_ErrMsg(("VPU_WaitVpuInterrupt() TimeOut!!!(reason = 0x%.8x, CurPC = %x %x %x )\n", reason, VpuReadReg(BIT_CUR_PC), VpuReadReg(BIT_CUR_PC), VpuReadReg(BIT_CUR_PC) ));
 		return 0;
 	}
 	else
@@ -953,8 +953,8 @@ NX_VPU_RET	NX_VpuEncSetSeqParam( NX_VPU_INST_HANDLE handle, VPU_ENC_SEQ_ARG *seq
 
 	encInfo->EncCodecParam.avcEncParam.audEnable = seqArg->enableAUDelimiter;
 
-	NX_DbgMsg(1, ("NX_VpuEncSetSeqParam() : %dx%d, %d fps, %d kbps (gop(%d), maxQ(%d), SR(%d), StreamBuffer(0x%08x, 0x%08x))\n",
-		encInfo->srcWidth, encInfo->srcHeight, encInfo->frameRateNum/encInfo->frameRateDen, encInfo->bitRate,
+	NX_DbgMsg(1, ("NX_VpuEncSetSeqParam() : %dx%d, %d/%d fps, %d kbps (gop(%d), maxQ(%d), SR(%d), StreamBuffer(0x%08x, 0x%08x))\n",
+		encInfo->srcWidth, encInfo->srcHeight, encInfo->frameRateNum, encInfo->frameRateDen, encInfo->bitRate,
 		encInfo->gopSize, encInfo->userQpMax, encInfo->MESearchRange, encInfo->strmBufPhyAddr, encInfo->strmBufVirAddr));
 
 	if( CODEC_STD_MJPG == encInfo->codecStd )
@@ -1042,13 +1042,13 @@ NX_VPU_RET	NX_VpuEncGetHeader( NX_VPU_INST_HANDLE handle, VPU_ENC_GET_HEADER_ARG
 	else if ( MP4_ENC == handle->codecMode )
 	{
 		//	VOS
-		if( VPU_RET_OK != (ret = VPU_EncGetHeaderCommand(handle, VOS_HEADER, &ptr, &size)) )
+		/*if( VPU_RET_OK != (ret = VPU_EncGetHeaderCommand(handle, VOS_HEADER, &ptr, &size)) )
 		{
 			NX_ErrMsg(("NX_VpuEncGetHeader() VOS_HEADER Error!\n"));
 			goto GET_HEADER_EXIT;
 		}
 		NX_DrvMemcpy( header->mp4Header.vosData, ptr, size );
-		header->mp4Header.vosSize = size;
+		header->mp4Header.vosSize = size;*/
 		//	VOL
 		if( VPU_RET_OK != (ret = VPU_EncGetHeaderCommand(handle, VOL_HEADER, &ptr, &size)) )
 		{
@@ -1139,10 +1139,10 @@ static void VPU_EncDefaultParam(VpuEncInfo *pEncInfo)
 	else if(  CODEC_STD_H263 == pEncInfo->codecStd )
 	{
 		EncH263Param *pH263Param = &pEncInfo->EncCodecParam.h263EncParam;
-		pH263Param->h263AnnexIEnable = 1;
+		pH263Param->h263AnnexIEnable = 0;
 		pH263Param->h263AnnexJEnable = 1;
 		pH263Param->h263AnnexKEnable = 0;
-		pH263Param->h263AnnexTEnable = 0;
+		pH263Param->h263AnnexTEnable = 1;
 
 		pEncInfo->userQpMax = 31;
 	}
@@ -1461,7 +1461,7 @@ static NX_VPU_RET VPU_EncGetHeaderCommand(NX_VpuCodecInst *pInst, unsigned int h
 		VpuWriteReg(CMD_ENC_HEADER_BB_SIZE, pEncInfo->strmBufSize/1024);
 	}
 
-	if( pInst->codecMode == AVC_ENC )
+	if( pInst->codecMode == AVC_ENC && headerType == SPS_RBSP )
 	{
 		EncAvcParam *avcParam = &pEncInfo->EncCodecParam.avcEncParam;
 		int CropH = 0, CropV = 0;
@@ -1703,7 +1703,7 @@ static NX_VPU_RET VPU_EncChangeParameterCommand( NX_VpuCodecInst *pInst, VPU_ENC
 		VpuWriteReg(CMD_ENC_SEQ_PARA_HEC_MODE, chgArg->hecMode);
 	}
 
-	VpuWriteReg(CMD_ENC_SEQ_PARA_CHANGE_ENABLE, chgArg->chgFlg);
+	VpuWriteReg(CMD_ENC_SEQ_PARA_CHANGE_ENABLE, chgArg->chgFlg & 0x7F);
 
 	VpuBitIssueCommand(pInst, RC_CHANGE_PARAMETER);
 	if( VPU_RET_OK != VPU_WaitVpuBusy(VPU_BUSY_CHECK_TIMEOUT, BIT_BUSY_FLAG) )
@@ -2243,9 +2243,9 @@ static NX_VPU_RET VPU_DecSeqComplete( NX_VpuCodecInst *pInst, VPU_DEC_SEQ_INIT_A
 		if( val == 0 && val2 == 0 )
 		{
 			pArg->cropLeft = 0;
-			pArg->cropRight = pInfo->width;
+			pArg->cropRight = pArg->outWidth;
 			pArg->cropTop = 0;
-			pArg->cropBottom = pInfo->height;
+			pArg->cropBottom = pArg->outHeight;
 		}
 		else
 		{
@@ -2262,9 +2262,9 @@ static NX_VPU_RET VPU_DecSeqComplete( NX_VpuCodecInst *pInst, VPU_DEC_SEQ_INIT_A
 	else
 	{
 		pArg->cropLeft = 0;
-		pArg->cropRight = pInfo->width;
+		pArg->cropRight = pArg->outWidth;
 		pArg->cropTop = 0;
-		pArg->cropBottom = pInfo->height;
+		pArg->cropBottom = pArg->outHeight;
 	}
 
 	val = VpuReadReg(RET_DEC_SEQ_HEADER_REPORT);
@@ -2385,6 +2385,22 @@ static NX_VPU_RET VPU_DecSeqInitCommand(NX_VpuCodecInst *pInst, VPU_DEC_SEQ_INIT
 	VpuWriteReg(CMD_DEC_SEQ_BB_START, pInfo->strmBufPhyAddr);
 	VpuWriteReg(CMD_DEC_SEQ_BB_SIZE, pInfo->strmBufSize / 1024); // size in KBytes
 
+	//printk("hdr Addr = %x, Size = %x \n", pInfo->strmBufPhyAddr, pInfo->strmBufSize / 1024);
+	//printk("CurPC = %x, WR = %x, RD =  %x, Idx = %d \n", VpuReadReg(BIT_CUR_PC), VpuReadReg(BIT_WR_PTR), VpuReadReg(BIT_RD_PTR), pInst->instIndex );
+
+#if (DBG_REGISTER)
+		int i;
+		VpuWriteReg(BIT_BIT_STREAM_PARAM, 0 );
+
+		// Clear Stream end flag
+		i = (int)VpuReadReg( BIT_BIT_STREAM_PARAM );
+		if (i & (1 << ( pInst->instIndex + 2))) {
+		i -= 1 << ( pInst->instIndex + 2);
+		}
+		VpuWriteReg( BIT_BIT_STREAM_PARAM, i);
+	}
+#endif
+
 	if(pArg->enableUserData) {
 		pInfo->userDataBufPhyAddr = pArg->userDataBuffer.phyAddr;
 		pInfo->userDataBufVirAddr = pArg->userDataBuffer.virAddr;
@@ -2459,6 +2475,18 @@ static NX_VPU_RET VPU_DecSeqInitCommand(NX_VpuCodecInst *pInst, VPU_DEC_SEQ_INIT
 	//VpuWriteReg(H_MBY_SYNC_OUT, 0x00);
 	VpuWriteReg(BIT_FRM_DIS_FLG, 0);
 
+#if (DBG_REGISTER)
+	{
+		int reg;
+		NX_DbgMsg( DBG_REGISTER, ("[DEC_SEQ_INIT]\n") );
+		NX_DbgMsg( DBG_REGISTER, ("[Strm_CTRL : 0x10C]%x \n", VpuReadReg(BIT_BIT_STREAM_CTRL) ));
+		for (reg = 0x180 ; reg < 0x200 ; reg += 16)
+		{
+			NX_DbgMsg( DBG_REGISTER, ("[Addr = %3x]%x %x %x %x \n", reg, VpuReadReg(BIT_BASE + reg), VpuReadReg(BIT_BASE + reg + 4), VpuReadReg(BIT_BASE + reg + 8), VpuReadReg(BIT_BASE + reg + 12)) );
+		}
+	}
+#endif
+
 	VpuBitIssueCommand(pInst, SEQ_INIT);
 
 WAIT_INTERRUPT:
@@ -2468,6 +2496,8 @@ WAIT_INTERRUPT:
 		printk("WritePos = 0x%.8x, ReadPos = 0x%.8x\n", VpuReadReg(BIT_WR_PTR), VpuReadReg(BIT_RD_PTR));
 		return VPU_RET_ERR_TIMEOUT;
 	}
+
+	//printk("WritePos = 0x%.8x, ReadPos = 0x%.8x\n", VpuReadReg(BIT_WR_PTR), VpuReadReg(BIT_RD_PTR));
 
 	if( reason & (1<<VPU_INT_BIT_SEQ_INIT) )
 	{
@@ -2692,7 +2722,7 @@ static NX_VPU_RET VPU_DecGetOutputInfo(NX_VpuCodecInst *pInst, VPU_DEC_DEC_FRAME
 	pArg->outWidth  = (val>>16) & 0xFFFF;
 	pArg->outHeight = (val) & 0xFFFF;
 
-	if (pArg->indexFrameDecoded >= 0 && pArg->indexFrameDecoded < MAX_REG_FRAME)
+	//if (pArg->indexFrameDecoded >= 0 && pArg->indexFrameDecoded < MAX_REG_FRAME)
 	{
 		if( pInst->codecMode == VPX_DEC )
 		{
@@ -2753,13 +2783,13 @@ static NX_VPU_RET VPU_DecGetOutputInfo(NX_VpuCodecInst *pInst, VPU_DEC_DEC_FRAME
 		pArg->outRect.right  = rectInfo.right ;
 		pArg->outRect.bottom = rectInfo.bottom;
 	}
-	else
-	{
-		pArg->outRect.left   = 0;
-		pArg->outRect.top    = pInfo->width;
-		pArg->outRect.right  = 0;
-		pArg->outRect.bottom = pInfo->height;
-	}
+	//else
+	//{
+	//	pArg->outRect.left   = 0;
+	//	pArg->outRect.top    = 0;
+	//	pArg->outRect.right  = pInfo->width;
+	//	pArg->outRect.bottom = pInfo->height;
+	//}
 
 	val = VpuReadReg(RET_DEC_PIC_TYPE);
 	pArg->isInterace = (val >> 18) & 0x1;

@@ -103,6 +103,8 @@ typedef union
 		int vosSize;
 		unsigned char volData[512];
 		int volSize;
+		unsigned char voData[512];
+		int voSize;
 	} mp4Header;
 	struct {
 		unsigned char spsData[512];

@@ -17,6 +17,8 @@
 
 #define	ENABLE_NV12				1
 
+//#define TEST_CHG_PARA
+
 
 //	Encoder Application Data
 typedef struct tENC_APP_DATA {
@@ -184,44 +186,49 @@ static int32_t LoadImage( uint8_t *pSrc, int32_t w, int32_t h, NX_VID_MEMORY_INF
 	return 0;
 }
 
-static void TestchangeParameter( NX_VID_ENC_HANDLE hEnc, int32_t frameCnt )
+static void TestchangeParameter( ENC_APP_DATA *pAppData, NX_VID_ENC_HANDLE hEnc, int32_t frameCnt )
 {
 	NX_VID_ENC_CHG_PARAM stChgParam = {0,};
 
-	if (frameCnt == 50)
+	if (frameCnt == 0)
 	{
-		stChgParam.chgFlg = VID_CHG_GOP;
-		stChgParam.gopSize = 10;
-		NX_VidEncChangeParameter( hEnc, &stChgParam );
-	}
-	else if (frameCnt == 100)
-	{
-		stChgParam.chgFlg = VID_CHG_BITRATE | VID_CHG_GOP;
-		stChgParam.bitrate = 5000000;
-		stChgParam.gopSize = 30;
-		NX_VidEncChangeParameter( hEnc, &stChgParam );
-	}
-	else if (frameCnt == 150)
-	{
-		stChgParam.chgFlg = VID_CHG_FRAMERATE;
-		stChgParam.fpsNum = 15;
-		stChgParam.fpsDen = 1;
-		NX_VidEncChangeParameter( hEnc, &stChgParam );
-	}
-	else if (frameCnt == 150)
-	{
-		stChgParam.chgFlg = VID_CHG_FRAMERATE;
-		stChgParam.fpsNum = 15;
-		stChgParam.fpsDen = 1;
-		NX_VidEncChangeParameter( hEnc, &stChgParam );
+		printf(" <<< Test Change Parameter >>> \n");
 	}
 	else if (frameCnt == 200)
 	{
-		stChgParam.chgFlg = VID_CHG_BITRATE | VID_CHG_GOP | VID_CHG_FRAMERATE;
-		stChgParam.bitrate = 30000000;
-		stChgParam.gopSize = 10;
-		stChgParam.fpsNum = 30;
-		stChgParam.fpsDen = 1;
+		stChgParam.chgFlg = VID_CHG_GOP;
+		stChgParam.gopSize = pAppData->gop >> 1;
+		printf("Change From 200Frm : GOP Size is half (%d -> %d) \n", pAppData->gop, stChgParam.gopSize );
+		NX_VidEncChangeParameter( hEnc, &stChgParam );
+	}
+	else if (frameCnt == 400)
+	{
+		stChgParam.chgFlg = VID_CHG_BITRATE | VID_CHG_GOP | VID_CHG_VBV;
+		stChgParam.bitrate = ( pAppData->kbitrate >> 1 ) * 1024;
+		stChgParam.gopSize = pAppData->gop;
+		stChgParam.rcVbvSize = 0;
+		printf("Change From 400Frm : BPS is half (%d -> %d) \n", pAppData->kbitrate, stChgParam.bitrate );
+		NX_VidEncChangeParameter( hEnc, &stChgParam );
+	}
+	else if (frameCnt == 600)
+	{
+		stChgParam.chgFlg = VID_CHG_FRAMERATE | VID_CHG_BITRATE | VID_CHG_VBV;
+		stChgParam.bitrate = pAppData->kbitrate * 1024;
+		stChgParam.fpsNum = pAppData->fpsNum >> 1;
+		stChgParam.fpsDen = pAppData->fpsDen;
+		stChgParam.rcVbvSize = 0;
+		printf("Change From 600Frm : FPS is half (%d, %d) \n", pAppData->fpsNum, stChgParam.fpsNum );
+		NX_VidEncChangeParameter( hEnc, &stChgParam );
+	}
+	else if (frameCnt == 800)
+	{
+		stChgParam.chgFlg = VID_CHG_BITRATE | VID_CHG_GOP | VID_CHG_FRAMERATE | VID_CHG_VBV;
+		stChgParam.bitrate = ( pAppData->kbitrate << 2 ) * 1024;
+		stChgParam.gopSize = pAppData->gop >> 2;
+		stChgParam.fpsNum = pAppData->fpsNum;
+		stChgParam.fpsDen = pAppData->fpsDen;
+		stChgParam.rcVbvSize = 0;
+		printf("Change From 800Frm : BPS is quadruple & gop is quarter (%d -> %d, %d -> %d) \n", pAppData->kbitrate, stChgParam.bitrate, pAppData->gop, stChgParam.gopSize );
 		NX_VidEncChangeParameter( hEnc, &stChgParam );
 	}
 }
@@ -280,17 +287,19 @@ int32_t performance_test( ENC_APP_DATA *pAppData )
 		else if (pAppData->codec == 3) pAppData->codec = NX_JPEG_ENC;
 		hEnc = NX_VidEncOpen( pAppData->codec, NULL );
 
-		encInitParam.width = inWidth;
-		encInitParam.height = inHeight;
 		pAppData->fpsNum = ( pAppData->fpsNum ) ? ( pAppData->fpsNum ) : ( 30 );
 		pAppData->fpsDen = ( pAppData->fpsDen ) ? ( pAppData->fpsDen ) : ( 1 );
+		pAppData->gop = ( pAppData->gop ) ? ( pAppData->gop ) : ( pAppData->fpsNum / pAppData->fpsDen );
+
+		encInitParam.width = inWidth;
+		encInitParam.height = inHeight;
 		encInitParam.fpsNum = pAppData->fpsNum;
 		encInitParam.fpsDen = pAppData->fpsDen;
-		encInitParam.gopSize = ( pAppData->gop ) ? ( pAppData->gop ) : ( encInitParam.fpsNum / encInitParam.fpsDen );
+		encInitParam.gopSize = pAppData->gop;
 		encInitParam.bitrate = pAppData->kbitrate * 1024;
 		encInitParam.chromaInterleave = ENABLE_NV12;
 		encInitParam.enableAUDelimiter = 0;			// Enable / Disable AU Delimiter
-
+		encInitParam.searchRange = 0;
 		if ( pAppData->codec == NX_JPEG_ENC )
 		{
 			encInitParam.chromaInterleave = 0;
@@ -367,7 +376,9 @@ int32_t performance_test( ENC_APP_DATA *pAppData )
 
 		while(1)
 		{
-			//TestchangeParameter( hEnc, frameCnt );
+#ifdef TEST_CHG_PARA
+			TestchangeParameter( pAppData, hEnc, frameCnt );
+#endif
 			//if (frameCnt % 35 == 7)
 			//	encIn.forcedIFrame = 1;
 			//else if (frameCnt % 35 == 20)
@@ -388,7 +399,7 @@ int32_t performance_test( ENC_APP_DATA *pAppData )
 			{
 				encIn.forcedIFrame = 0;
 				encIn.forcedSkipFrame = 0;
-				encIn.quantParam = ( pAppData->qp ) ? ( pAppData->qp ) : (24);
+				encIn.quantParam = pAppData->qp;
 				encIn.timeStamp = 0;
 
 				//	Encode Image

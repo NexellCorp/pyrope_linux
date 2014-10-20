@@ -310,7 +310,7 @@ VID_ERROR_E NX_VidEncInit( NX_VID_ENC_HANDLE hEnc, NX_VID_ENC_INIT_PARAM *pstPar
 			hEnc->userQScale = (pstParam->initialQp == 0) ? (23) : (pstParam->initialQp);
 		}
 
-		seqArg.searchRange = pstParam->searchRange;       // ME Search Range
+		seqArg.searchRange = (hEnc->codecMode != NX_H263_ENC) ? (pstParam->searchRange) : (3);       // ME Search Range
 		seqArg.intraRefreshMbs = pstParam->numIntraRefreshMbs;
 
 		if( hEnc->codecMode == NX_AVC_ENC )
@@ -416,6 +416,7 @@ VID_ERROR_E NX_VidEncGetSeqInfo( NX_VID_ENC_HANDLE hEnc, uint8_t *pbySeqBuf, int
 VID_ERROR_E NX_VidEncEncodeFrame( NX_VID_ENC_HANDLE hEnc, NX_VID_ENC_IN *pstEncIn, NX_VID_ENC_OUT *pstEncOut )
 {
 	int32_t ret;
+	int32_t iFrmType = PIC_TYPE_UNKNOWN;
 	VPU_ENC_RUN_FRAME_ARG runArg;
 
 	FUNC_IN();
@@ -440,6 +441,8 @@ VID_ERROR_E NX_VidEncEncodeFrame( NX_VID_ENC_HANDLE hEnc, NX_VID_ENC_IN *pstEncI
 	runArg.skipPicture = pstEncIn->forcedSkipFrame;
 	//pstEncIn->timeStamp;
 
+	//printf("forcedIFrame = %d, GopFrmCnt = %d, gopSize = %d \n", pstEncIn->forcedIFrame, hEnc->GopFrmCnt, hEnc->gopSize);
+
 	if( (pstEncIn->forcedIFrame) || (hEnc->GopFrmCnt >= hEnc->gopSize) || (hEnc->GopFrmCnt == 0) )
 	{
 		runArg.forceIPicture = 1;
@@ -449,8 +452,6 @@ VID_ERROR_E NX_VidEncEncodeFrame( NX_VID_ENC_HANDLE hEnc, NX_VID_ENC_IN *pstEncI
 
 	if ( hEnc->hRC )
 	{
-		int32_t iFrmType;
-
 #if 1
 		if ( runArg.forceIPicture == 1 )
 			iFrmType = PIC_TYPE_I;
@@ -485,7 +486,7 @@ VID_ERROR_E NX_VidEncEncodeFrame( NX_VID_ENC_HANDLE hEnc, NX_VID_ENC_IN *pstEncI
 
 	pstEncOut->width = hEnc->width;
 	pstEncOut->height = hEnc->height;
-	pstEncOut->frameType = runArg.frameType;
+	pstEncOut->frameType = ( iFrmType != PIC_TYPE_SKIP ) ? (runArg.frameType) : (PIC_TYPE_SKIP);
 	pstEncOut->bufSize = runArg.outStreamSize;
 	pstEncOut->outBuf = runArg.outStreamAddr;
 	pstEncOut->ReconImg = *hEnc->hRefReconBuf[runArg.reconImgIdx];
@@ -514,12 +515,31 @@ VID_ERROR_E NX_VidEncChangeParameter( NX_VID_ENC_HANDLE hEnc, NX_VID_ENC_CHG_PAR
 
 	memset( &chgArg, 0, sizeof(chgArg) );
 
+	//printf("chgFlg = %x, gopSize = %d, bitrate = %d, fps = %d/%d, maxQp = %d, skip = %d, vbv = %d, mb = %d \n", \
+	//	pstChgParam->chgFlg, pstChgParam->gopSize, pstChgParam->bitrate, pstChgParam->fpsNum, pstChgParam->fpsDen, pstChgParam->maximumQp, pstChgParam->disableSkip, pstChgParam->rcVbvSize, pstChgParam->numIntraRefreshMbs);
+
 	chgArg.chgFlg = pstChgParam->chgFlg;
 	chgArg.gopSize = pstChgParam->gopSize;
 	chgArg.bitrate = pstChgParam->bitrate;
 	chgArg.frameRateNum = pstChgParam->fpsNum;
 	chgArg.frameRateDen = pstChgParam->fpsDen;
 	chgArg.intraRefreshMbs = pstChgParam->numIntraRefreshMbs;
+
+	if ( chgArg.chgFlg & VID_CHG_GOP )
+		hEnc->gopSize = chgArg.gopSize;
+
+	if ( hEnc->hRC )
+	{
+		if ( NX_VidRateCtrlChangePara( hEnc->hRC, pstChgParam ) != VID_ERR_NONE )
+			return VID_ERR_CHG_PARAM;
+
+		chgArg.chgFlg = pstChgParam->chgFlg & 0x18;
+		chgArg.gopSize = 0;
+		chgArg.bitrate = 0;
+		chgArg.frameRateNum = pstChgParam->fpsNum;
+		chgArg.frameRateDen = pstChgParam->fpsDen;
+		chgArg.intraRefreshMbs = pstChgParam->numIntraRefreshMbs;
+	}
 
 	ret = ioctl( hEnc->hEncDrv, IOCTL_VPU_ENC_CHG_PARAM, &chgArg );
 	if( ret < 0 )
@@ -918,8 +938,8 @@ VID_ERROR_E NX_VidDecInit(NX_VID_DEC_HANDLE hDec, NX_VID_SEQ_IN *pstSeqIn, NX_VI
 		NX_DbgMsg( DBG_WARNING, ("[Warning] External Buffer too small.(min=%d, buffers=%d)\n", pstSeqOut->minBuffers, hDec->numFrameBuffers) );
 	}
 
-	pstSeqOut->width        = seqArg.outWidth;
-	pstSeqOut->height       = seqArg.outHeight;
+	pstSeqOut->width        = seqArg.cropRight;
+	pstSeqOut->height       = seqArg.cropBottom;
 	pstSeqOut->frameBufDelay= seqArg.frameBufDelay;
 	pstSeqOut->isInterlace 	= seqArg.interlace;
 
@@ -1034,8 +1054,8 @@ VID_ERROR_E NX_VidDecDecodeFrame( NX_VID_DEC_HANDLE hDec, NX_VID_DEC_IN *pstDecI
 
 	pstDecOut->outImgIdx = decArg.indexFrameDisplay;
 	pstDecOut->outDecIdx = decArg.indexFrameDecoded;
-	pstDecOut->width     = decArg.outWidth;
-	pstDecOut->height    = decArg.outHeight;
+	pstDecOut->width     = decArg.outRect.right;
+	pstDecOut->height    = decArg.outRect.bottom;
 	pstDecOut->picType   = PIC_TYPE_UNKNOWN;
 
 	pstDecOut->strmReadPos  = decArg.strmReadPos;

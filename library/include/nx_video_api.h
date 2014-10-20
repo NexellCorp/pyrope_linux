@@ -78,12 +78,14 @@ enum {
 };
 
 typedef enum {
-	VID_CHG_GOP                     = 1,    // GOP
-	VID_CHG_BITRATE                 = 4,    // Bit Rate
-	VID_CHG_FRAMERATE               = 8,    // Frame Rate
-	VID_CHG_INTRARF                 = 16,   // Intra Refresh
+	VID_CHG_GOP                     = 1,			// GOP
+	VID_CHG_BITRATE                 = (1 << 2),    	// Bit Rate
+	VID_CHG_FRAMERATE               = (1 << 3),    	// Frame Rate
+	VID_CHG_INTRARF                 = (1 << 4),   	// Intra Refresh
+	VID_CHG_MAX_QP                  = (1 << 7),     // Maximum quantization parameter
+	VID_CHG_DISABLE_SKIP            = (1 << 8),		// Disable skip frame mode
+	VID_CHG_VBV                     = (1 << 9),		// Reference decoder buffer size in byte
 } VID_ENC_CHG_PARAM_E;
-
 
 
 //
@@ -161,6 +163,12 @@ typedef struct tNX_VID_ENC_CHG_PARAM{
 	int32_t bitrate;                        // Target bitrate in bits/second
 	int32_t fpsNum;							// Frame per second
 	int32_t fpsDen;
+	int32_t maximumQp;                      // Maximum quantization parameter
+	int32_t disableSkip;                    // Disable skip frame mode
+	uint32_t rcVbvSize;                     // Reference decoder buffer size in byte.
+											// The value shall be set when bitrate is changed in Nexell RC Algorithm.
+											// Default value is 2sec if RCAlgorithm is 1. (The value is ignored when RCAlgorithm is 0 or enableRC is 0)
+
 	int32_t numIntraRefreshMbs;             // Intra MB refresh number.(Cyclic Intra Refresh)
 }NX_VID_ENC_CHG_PARAM;
 

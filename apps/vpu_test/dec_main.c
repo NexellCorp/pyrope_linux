@@ -1179,6 +1179,15 @@ int dec_main( int argc, char *argv[] )
 				tmpSize = readSize;
  			}
 
+#if 0
+			printf(" << Init In Parameter >> \n");
+			printf("seqInfo = 0x%x (size = %d) \n", seqIn.seqInfo, seqIn.seqSize);
+			printf("w = %d, h= %d \n", seqIn.width, seqIn.height);
+			printf("pMemHandle = %x \n", seqIn.pMemHandle);
+			printf("numBuffers = %d, addNumBuffers = %d \n", seqIn.numBuffers, seqIn.addNumBuffers);
+			printf("disableOutReorder = %d, enablePostFilter = %d, enableUserData = %d \n", seqIn.disableOutReorder, seqIn.enablePostFilter, seqIn.enableUserData);
+#endif
+
 			if( vidRet == 1 )
 			{
 				seqNeedMoreBuffer = 1;
@@ -1227,6 +1236,8 @@ int dec_main( int argc, char *argv[] )
 		decIn.strmSize = pos;
 		decIn.timeStamp = timeStamp;
 		decIn.eos = 0;
+
+		//printf("strm = 0x%x, size = %d \n", decIn.strmBuf, decIn.strmSize);
 
 		startTime = NX_GetTickCount();
 		vidRet = NX_VidDecDecodeFrame( hDec, &decIn, &decOut );

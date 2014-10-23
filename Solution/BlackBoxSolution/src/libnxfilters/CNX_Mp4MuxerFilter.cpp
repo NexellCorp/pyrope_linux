@@ -565,6 +565,12 @@ int32_t CNX_Mp4MuxerFilter::SetMuxConfig( void )
 int32_t CNX_Mp4MuxerFilter::StartMuxing( void )
 {
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+
+	if( m_bThreadExit == false ) {
+		NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+		return false;
+	}
+
 	m_bStartMuxing = false;
 	m_bThreadExit  = false;
 	if( 0 > pthread_create( &this->m_hThread, NULL, this->ThreadMain, this ) )
@@ -581,9 +587,18 @@ int32_t	CNX_Mp4MuxerFilter::StopMuxing( void )
 {
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 
+	if( m_bThreadExit == true ) {
+		NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+		return false;
+	}
+
 	uint32_t FileSize, FilePos;
-	NxMP4MuxUpdateInfo(m_hMp4Mux, &FilePos, &FileSize);
-	NxMP4MuxClose(m_hMp4Mux);
+
+	if( m_hMp4Mux ) {
+		NxMP4MuxUpdateInfo( m_hMp4Mux, &FilePos, &FileSize );
+		NxMP4MuxClose( m_hMp4Mux );
+		m_hMp4Mux = 0x00;
+	}
 
 	m_bThreadExit = true;
 	m_pSemWriter->Post();

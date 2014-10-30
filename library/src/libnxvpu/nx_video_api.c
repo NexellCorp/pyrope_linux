@@ -923,6 +923,8 @@ VID_ERROR_E NX_VidDecInit(NX_VID_DEC_HANDLE hDec, NX_VID_SEQ_IN *pstSeqIn, NX_VI
 		frameArg.sliceBuffer = *hDec->hSliceBuffer;
 	if( hDec->hColMvBuffer)
 		frameArg.colMvBuffer = *hDec->hColMvBuffer;
+	if( hDec->hPvbSliceBuffer )
+		frameArg.pvbSliceBuffer = *hDec->hPvbSliceBuffer;
 
 	ret = ioctl( hDec->hDecDrv, IOCTL_VPU_DEC_REG_FRAME_BUF, &frameArg );
 	if( ret < 0 )

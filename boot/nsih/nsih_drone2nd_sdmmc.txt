@@ -52,7 +52,7 @@ FFFF021C	// 0x03C : SRAMBASE + Header
 //------------------------------------------------------------------------------ 										
 // CLKPWR registers 										
 //------------------------------------------------------------------------------ 										
-100D1302	// 0x05C : PLL0		550MHz							
+100CC801	// 0x05C : PLL0		800MHz							
 100D2C01	// 0x060 : PLL1		1200MHz							
 100CC801	// 0x064 : PLL2		800MHz							
 50086601	// 0x068 : PLL3		614.4MHz							
@@ -61,10 +61,10 @@ FFFF021C	// 0x03C : SRAMBASE + Header
 66660104	// 0x070 : PLL3 SPREAD 									
 										
 00000601	// 0x074 : CPU		PLL1	/FCLK:1200	/HCLK:300					
-0000020A	// 0x078 : BUS		PLL2	/BCLK:400	/PCLK:200					
+00000208	// 0x078 : BUS		PLL0	/BCLK:400	/PCLK:200					
 00208002	// 0x07C : MEM		PLL2	/MDCLK:800	/MCLK:800	/MBCLK:400	/MPCLK:200			
-00000200	// 0x080 : GR3D		PLL0	/GR3DBCLK:550						
-0000020A	// 0x084 : MPEG		PLL2	/MPEGBCLK:400	/MPEGPCLK:200					
+00000208	// 0x080 : GR3D		PLL0	/GR3DBCLK:400						
+00000208	// 0x084 : MPEG		PLL0	/MPEGBCLK:400	/MPEGPCLK:200					
 										
 //------------------------------------------------------------------------------ 										
 // MCU-D registers 										
@@ -76,13 +76,13 @@ FFFF021C	// 0x03C : SRAMBASE + Header
 										
 // DDR PHY delay timing Configuration 										
 0C0C0C0C	// 0x094									
-0D0C0D10	// 0x098									
+02020202	// 0x098									
 										
 // DDR AC Timing Configuration 										
 00000618	// 0x09C	/Refresh Interval:7.8us								
 6846650E	// 0x0A0	/tRFC:260ns(tCK)	/tRRD:7.5ns(tCK)	/tRP:13.75ns(tCK)	/tRCD:13.75ns(tCK)	/tRC:48.75ns(tCK)	/tRAS:35ns(tCK)			
 4641880B	// 0x0A4	/tWTR:7.5ns(tCK)	/tWR:15ns(tCK)	/tRTP:7.5ns(tCK)						
-4200033C	// 0x0A8	/tFAW:40ns(tCK)	/tXSR:512ns(tCK)	/tXP:6ns(tCK)	/tCKE:5ns(tCK)					
+42000334	// 0x0A8	/tFAW:40ns(tCK)	/tXSR:512ns(tCK)	/tXP:6ns(tCK)	/tCKE:5ns(tCK)					
 										
 //------------------------------------------------------------------------------ 										
 // AXI Master Priority registers 										
@@ -183,4 +183,3 @@ FFFF021C	// 0x03C : SRAMBASE + Header
 // Signature										
 //------------------------------------------------------------------------------ 										
 4849534E	// 0x1FC	"NSIH"								
-

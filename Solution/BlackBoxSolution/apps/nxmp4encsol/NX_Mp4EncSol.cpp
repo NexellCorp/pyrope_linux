@@ -72,7 +72,7 @@ static void shell_usage( void )
 	//      0         1         2         3         4         5         6
 	//      0123456789012345678901234567890123456789012345678901234567890123456789
 	printf("----------------------------------------------------------------------\n");
-	printf("                      Nexell DVR Test Application                     \n");
+	printf("                   MP4 Encoding Test Application                      \n");
 	printf("----------------------------------------------------------------------\n");
 	printf(" start or start [filename]     : encoding start.\n");
 	printf(" stop                          : mp4 encoding stop.\n");

@@ -43,8 +43,8 @@ FFFF021C	// 0x03C : SRAMBASE + Header
 //------------------------------------------------------------------------------ 										
 00008000	// 0x040 : Device Read Address 									
 00040000	// 0x044 : Load Size 									
-40100000	// 0x048 : Load Address 									
-40100000	// 0x04C : Launch Address 									 
+ffff0000	// 0x048 : Load Address 									
+ffff0000	// 0x04C : Launch Address 									 
 										
 00000002	// 0x050	Boot From SDMMC								
 00000000	// 0x054									

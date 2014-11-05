@@ -2679,6 +2679,17 @@ static NX_VPU_RET VPU_DecRegisterFrameBufCommand( NX_VpuCodecInst *pInst, VPU_DE
 
 	VpuBitIssueCommand(pInst, SET_FRAME_BUF);
 
+#if (DBG_REGISTER)
+	{
+		int reg;
+		NX_DbgMsg( DBG_REGISTER, ("[DEC_SET_FRM_BUF_Reg]\n") );
+		for (reg = 0x180 ; reg < 0x200 ; reg += 16)
+		{
+			NX_DbgMsg( DBG_REGISTER, ("[Addr = %3x]%x %x %x %x \n", reg, VpuReadReg(BIT_BASE + reg), VpuReadReg(BIT_BASE + reg + 4), VpuReadReg(BIT_BASE + reg + 8), VpuReadReg(BIT_BASE + reg + 12)) );
+		}
+	}
+#endif
+
 	if( VPU_RET_OK != VPU_WaitVpuBusy(VPU_BUSY_CHECK_TIMEOUT, BIT_BUSY_FLAG) )
 	{
 		NX_ErrMsg(("Error VPU_DecRegisterFrameBufCommand failed!!!\n"));

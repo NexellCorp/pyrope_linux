@@ -55,8 +55,8 @@
 
 //
 //
-#define DEFAULT_LOADADDR	(0x40c00000)
-#define DEFAULT_LAUNCHADDR	(0x40c00000)
+#define DEFAULT_LOADADDR	(0x0)
+#define DEFAULT_LAUNCHADDR	(0x0)
 
 #define	SECOND_BOOT_SIZE	(16*1024)
 
@@ -183,7 +183,9 @@ static int update_bootinfo (unsigned char *parsed_nsih, const build_info_t *BUIL
 	if (BUILD_INFO->dev_readaddr)
 	bootinfo->DEVICEADDR		= BUILD_INFO->dev_readaddr;
 	bootinfo->LOADSIZE			= BinFileSize;
+	if( BUILD_INFO->loadaddr)
 	bootinfo->LOADADDR			= BUILD_INFO->loadaddr;
+	if (BUILD_INFO->launchaddr)
 	bootinfo->LAUNCHADDR		= BUILD_INFO->launchaddr;
 	bootinfo->SIGNATURE			= HEADER_ID;
 

@@ -16,8 +16,8 @@
 
 //#define	DISPLAY_ONLY
 
-#define	IMAGE_WIDTH		720
-#define	IMAGE_HEIGHT	480
+#define	IMAGE_WIDTH		1024
+#define	IMAGE_HEIGHT	768
 //#define	IMAGE_STRIDE	(((IMAGE_WIDTH+63)>>6)<<6)		//	Interlace Camera
 #define	IMAGE_STRIDE	(((IMAGE_WIDTH+15)>>4)<<4)			//	Encoder Needs 16 Aligned Memory
 
@@ -145,13 +145,13 @@ int main( int argc, char *argv[] )
 	//	Allocate Memory
 	for( i=0; i<MAX_ENC_BUFFER ; i++ )
 	{
-		hMem[i] = NX_VideoAllocateMemory( 4096, IMAGE_STRIDE, IMAGE_WIDTH, NX_MEM_MAP_LINEAR, FOURCC_MVS0 );
+		hMem[i] = NX_VideoAllocateMemory( 4096, IMAGE_WIDTH, IMAGE_HEIGHT, NX_MEM_MAP_LINEAR, FOURCC_MVS0 );
 		NX_PushQueue( &memQueue, hMem[i] );
 	}
 
 	memset( &vipInfo, 0, sizeof(vipInfo) );
 
-	vipInfo.port = 0;
+	vipInfo.port = VIP_PORT_0;
 	vipInfo.mode = VIP_MODE_CLIPPER;
 
 	//	Sensor Input Size
@@ -175,7 +175,7 @@ int main( int argc, char *argv[] )
 	//	Initailize VIP & Display
 	dspInfo.port = DISPLAY_PORT_LCD;
 //	dspInfo.port = DISPLAY_PORT_HDMI;
-	dspInfo.module = 0;
+	dspInfo.module = DISPLAY_MODULE_MLC0;
 	dspInfo.width = cropW;
 	dspInfo.height = cropH;
 	dspInfo.numPlane = 1;

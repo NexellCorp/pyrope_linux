@@ -99,7 +99,7 @@ int main( int argc, char *argv[] )
 
 	memset( &vipInfo, 0, sizeof(vipInfo) );
 
-	vipInfo.port = 2;
+	vipInfo.port = VIP_PORT_MIPI;
 	vipInfo.mode = VIP_MODE_CLIPPER;
 
 	//	Sensor Input Size

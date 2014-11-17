@@ -10,8 +10,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <ion.h>
-#include <linux/ion.h>
+#include <ion/ion.h>
+//#include <linux/ion.h>
 #include <linux/nxp_ion.h>
 #include <nx_alloc_mem.h>
 #include <nx_fourcc.h>

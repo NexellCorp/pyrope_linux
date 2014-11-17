@@ -8,6 +8,7 @@ LOCAL_SHARED_LIBRARIES :=	\
 	libcutils
 
 LOCAL_C_INCLUDES += system/core/include/ion \
+                  system/core/libion/include \
 					$(TOP)/hardware/nexell/pyrope/include \
 					$(TOP)/linux/pyrope/library/include
 

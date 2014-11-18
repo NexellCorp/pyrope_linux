@@ -74,10 +74,10 @@ static void shell_usage( void )
 	printf("----------------------------------------------------------------------\n");
 	printf("                   MP4 Encoding Test Application                      \n");
 	printf("----------------------------------------------------------------------\n");
-	printf(" start or start [filename]     : encoding start.\n");
-	printf(" stop                          : mp4 encoding stop.\n");
-	printf(" capture or capture [filename] : jpeg capture.\n");
-	printf(" exit                          : exit application.\n");
+	printf(" start or start [filename]     : encoding start.                      \n");
+	printf(" stop                          : mp4 encoding stop.                   \n");
+	printf(" capture or capture [filename] : jpeg capture.                        \n");
+	printf(" exit                          : exit application.                    \n");
 	printf("----------------------------------------------------------------------\n");
 }
 

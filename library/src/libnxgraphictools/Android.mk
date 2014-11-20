@@ -1,4 +1,4 @@
-ifeq ($(TARGET_CPU_VARIANT),s5p4418)
+ifeq ($(TARGET_CPU_VARIANT2),s5p4418)
 
 LOCAL_PATH := $(call my-dir)
 

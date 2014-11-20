@@ -16,11 +16,11 @@
 #include <linux/pm.h>
 #include <linux/mutex.h>
 #include <mach/soc.h>
-#if defined (CONFIG_ARCH_NXP5430)
-#include <mach/nxp5430.h>
+#if defined (CONFIG_ARCH_S5P6818)
+#include <mach/s5p6818.h>
 #endif
-#if defined (CONFIG_ARCH_NXP4330)
-#include <mach/nxp4330.h>
+#if defined (CONFIG_ARCH_S5P4418)
+#include <mach/s5p4418.h>
 #endif
 #include <mach/devices.h>
 
@@ -127,7 +127,7 @@ static int swap_endian(unsigned char *data, int len);
 
 #define	POWER_PMU_VPU_MASK		0x00000002
 
-#if defined (CONFIG_ARCH_NXP5430)
+#if defined (CONFIG_ARCH_S5P6818)
 #define	TIEOFF_REG131			0xF001120C
 #define	VPU_ASYNCXUI1_CACTIVE	(1<<17)
 #define	VPU_ASYNCXUI1_CSYSACK	(1<<16)
@@ -236,18 +236,10 @@ void NX_VPU_HwOn(void)
 		return;
 	}
 
-#if defined (CONFIG_ARCH_NXP5430)
 	//	H/W Reset
 	nxp_soc_peri_reset_enter(RESET_ID_CODA_C);			//	63
 	nxp_soc_peri_reset_enter(RESET_ID_CODA_A);			//	61
 	nxp_soc_peri_reset_enter(RESET_ID_CODA_P);			//	62
-#endif
-#if defined (CONFIG_ARCH_NXP4330)
-	//	H/W Reset
-	nxp_soc_rsc_enter(RESET_ID_CODA_C);			//	63
-	nxp_soc_rsc_enter(RESET_ID_CODA_A);			//	61
-	nxp_soc_rsc_enter(RESET_ID_CODA_P);			//	62
-#endif
 
 	VpuWriteReg( VPU_ALIVEGATE_REG,  0x3 );
 
@@ -270,19 +262,13 @@ void NX_VPU_HwOn(void)
 
 	NX_VPU_Clock( 1 );
 
-#if defined (CONFIG_ARCH_NXP5430)
+#if defined (CONFIG_ARCH_S5P6818)
 	NX_ASYNCXUI_PowerUp();
+#endif
 	//	Release Reset
 	nxp_soc_peri_reset_exit(RESET_ID_CODA_P);			//	62
 	nxp_soc_peri_reset_exit(RESET_ID_CODA_A);			//	61
 	nxp_soc_peri_reset_exit(RESET_ID_CODA_C);			//	63
-#endif
-#if defined (CONFIG_ARCH_NXP4330)
-	//	Release Reset
-	nxp_soc_rsc_exit(RESET_ID_CODA_P);			//	62
-	nxp_soc_rsc_exit(RESET_ID_CODA_A);			//	61
-	nxp_soc_rsc_exit(RESET_ID_CODA_C);			//	63
-#endif
 
 	gstIsVPUOn = 1;
 
@@ -296,22 +282,13 @@ void NX_VPU_HWOff(void)
 	{
 		unsigned int tmpVal;
 
-#if defined (CONFIG_ARCH_NXP5430)
+#if defined (CONFIG_ARCH_S5P6818)
 		NX_ASYNCXUI_PowerDown();
 #endif
-
-#if defined (CONFIG_ARCH_NXP5430)
 		//	H/W Reset
 		nxp_soc_peri_reset_enter(RESET_ID_CODA_C);			//	63
 		nxp_soc_peri_reset_enter(RESET_ID_CODA_A);			//	61
 		nxp_soc_peri_reset_enter(RESET_ID_CODA_P);			//	62
-#endif
-#if defined (CONFIG_ARCH_NXP4330)
-		//	H/W Reset
-		nxp_soc_rsc_enter(RESET_ID_CODA_C);			//	63
-		nxp_soc_rsc_enter(RESET_ID_CODA_A);			//	61
-		nxp_soc_rsc_enter(RESET_ID_CODA_P);			//	62
-#endif
 
 		NX_DbgMsg( DBG_POWER, ("NX_VPU_HWOff() ++\n") );
 

@@ -1,4 +1,3 @@
-PLAT_ROOT		:= /home/ray/devel/nxp4330
 TOOL_SYS_ROOT	:= /opt/crosstools/arm-cortex_a9-eabi-4.7-eglibc-2.18/arm-cortex_a9-linux-gnueabi/sysroot
 
 # Set GLIB path (library & include)

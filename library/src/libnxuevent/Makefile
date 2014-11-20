@@ -5,7 +5,6 @@ TOPDIR	:= ../../..
 endif
 
 include $(TOPDIR)/build.env
-include ./app_env.mk
 
 LIB_INSTALL	:=	../../lib
 INC_INSTALL	:= 	../../include
@@ -13,12 +12,6 @@ INC_INSTALL	:= 	../../include
 ######################################################################
 # Build options
 INCLUDE += -I./ -I$(TOPDIR)/inc
-INCLUDE += -I$(GLIB_INC) -I$(GLIB_LIB)/include
-INCLUDE += -I$(GST_INC)
-
-LIBRARY	+= -lstdc++ -lpthread -lgobject-2.0 -lm
-LIBRARY += -L$(GLIB_LIB) -lglib-2.0 
-
 
 ######################################################################
 # Target

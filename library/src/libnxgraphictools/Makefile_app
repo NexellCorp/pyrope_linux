@@ -33,7 +33,7 @@ $(TARGET): depend $(OBJS)
 	$(CC) $(CPPFLAGS) $(OBJS) -o $@ $(LIBRARY)
 
 install:
-	cp $(TARGET) ~/working/nfs/nxp4330/rootfs-gst-sdl/root/
+
 
 clean:
 	rm -f *.o *.a $(TARGET) .depend

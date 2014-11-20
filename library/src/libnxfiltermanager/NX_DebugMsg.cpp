@@ -18,7 +18,7 @@ static unsigned int gst_TargetDebugLevel = PLAYER_DBG_LEVEL_INFO;	//	Error
 void NX_ChangeDebugLevel( unsigned int TargetLevel )
 {
 #if	_DEBUG
-	printf("[NXP4330]>>> NX_ChangeDebugLevel : %d to %d\n", gst_TargetDebugLevel, TargetLevel);
+	printf("[S5P4418]>>> NX_ChangeDebugLevel : %d to %d\n", gst_TargetDebugLevel, TargetLevel);
 	gst_TargetDebugLevel = TargetLevel;
 #else
 	printf(">>> Cannot change debug level. This library build in release mode.\n");
@@ -33,7 +33,7 @@ void NX_DbgMsg( unsigned int level, const char *format, ... )
 		va_list marker;
 		va_start(marker, format);
 		vsprintf(buffer, format, marker);
-		printf("[NXP4330]%s", buffer);
+		printf("[S5P4418]%s", buffer);
 		va_end(marker);
 	}
 	else
@@ -47,6 +47,6 @@ void NX_RelMsg( const char *format, ... )
 	va_list marker;
 	va_start(marker, format);
 	vsprintf(buffer, format, marker);
-	printf( "[NXP2120]%s", buffer );
+	printf( "[S5P4418]%s", buffer );
 	va_end(marker);
 }

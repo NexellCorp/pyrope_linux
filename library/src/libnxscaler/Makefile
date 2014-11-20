@@ -10,7 +10,7 @@ INC_INSTALL	:= 	../../include
 ######################################################################
 # Build options
 INCLUDE += -I./ -I../../include -I$(KERNDIR)/include
-INCLUDE += -I$(KERNDIR)/arch/arm/mach-nxp4330/include/
+INCLUDE += -I$(KERNDIR)/arch/arm/mach-s5p4418/include/
 
 LIBRARY += -L../../lib/
 LIBRARY += -lnxvmem

@@ -6,9 +6,9 @@ endif
 
 ########################################################################
 # Module Definition & Version Management
-DEVICE_NAME := NXP4330
+DEVICE_NAME := S5P4418
 MOD_BASE := diagnostic
-MOD_NAME := nxp4330_diag
+MOD_NAME := s5p4418_diag
 
 BUILD_NUMBER_FILE = build_number_$(MOD_NAME)
 BUILD_INFO_FILE = inc/build_info_$(MOD_NAME).h

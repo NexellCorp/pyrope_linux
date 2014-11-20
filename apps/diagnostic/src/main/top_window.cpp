@@ -3,7 +3,7 @@
 #include <utils.h>
 #include <base_app_window.h>
 
-#include <build_info_nxp4330_diag.h>
+#include <build_info_s5p4418_diag.h>
 
 //	Designed Diag Pannel
 #if 0	//	800x480 UI

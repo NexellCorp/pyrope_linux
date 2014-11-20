@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2009
- * jung hyun kim, Nexell Co, <jhkim@nexell.co.kr>
+ * Young Bok Parki, Nexell Co, <jhkim@nexell.co.kr>
  *
  * See file CREDITS for list of people who contributed to this
  * project.
@@ -21,8 +21,8 @@
  * MA 02111-1307 USA
  */
 
-#ifndef __NXP4330_BOOT_H__
-#define __NXP4330_BOOT_H__
+#ifndef __S5P4418_BOOT_H__
+#define __S5P4418_BOOT_H__
 
 typedef unsigned int        U32;
 
@@ -68,5 +68,5 @@ struct boot_dev_head {
 	unsigned int  signature;			// 0x1FC	"NSIH"
 };
 
-#endif /*	__NXP4330_BOOT_H__ */
+#endif /*	__S5P4418_BOOT_H__ */
 

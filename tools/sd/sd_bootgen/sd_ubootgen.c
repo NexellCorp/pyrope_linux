@@ -7,7 +7,7 @@
 #include <sys/ioctl.h>
 #include <errno.h>      // errno
 
-#include "nxp4330_boot.h"
+#include "s5p4418_boot.h"
 
 #define DEBUG 1
 

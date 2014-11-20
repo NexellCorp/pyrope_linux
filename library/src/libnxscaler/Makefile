@@ -2,7 +2,7 @@
 # Get Linux Build Enviornment:
 include ../../../build.env
 
-KERNDIR	:= /home/ray/devel/android/jb-mr1.1/kernel
+#KERNDIR	:= /home/ray/devel/android/jb-mr1.1/kernel
 
 LIB_INSTALL	:=	../../lib
 INC_INSTALL	:= 	../../include

@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2009
- * Young Bok Parki, Nexell Co, <jhkim@nexell.co.kr>
+ * Young Bok Parki, Nexell Co, <ybpark@nexell.co.kr>
  *
  * See file CREDITS for list of people who contributed to this
  * project.
@@ -37,7 +37,7 @@ struct boot_dev_mmc {
 	char port_no;
 	char resv0[3];
 	char rese1;
-	unsigned int crc32;		/* not use : nxp4330 */
+	unsigned int crc32;		/* not use : s5p4418 */
 };
 
 union boot_dev_data {

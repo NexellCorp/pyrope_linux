@@ -11,7 +11,7 @@ include $(TOPDIR)/build.env
 
 ######################################################################
 # Build options
-SUB_DIRS	:= libnxfilters libnxdvr libnxhls libnxmp4manager libnxrtp
+SUB_DIRS	:= libnxfilters libnxdvr libnxhls libnxmp4manager libnxrtp libnxtranscoding
 
 all: compile_subdirs 
 

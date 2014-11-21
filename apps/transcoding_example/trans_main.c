@@ -1006,6 +1006,7 @@ void *EncodeThread( void *arg )
 	NX_VID_ENC_INIT_PARAM encInitParam;
 	unsigned char *seqBuffer = (unsigned char *)malloc( MAX_SEQ_BUF_SIZE );
 	NX_VID_ENC_HANDLE hEnc;
+	NX_VID_ENC_IN encIn;
 	NX_VID_ENC_OUT encOut;
 	FILE *fdOut = NULL;
 	NX_VID_MEMORY_HANDLE encInputImg = NULL;
@@ -1016,7 +1017,7 @@ void *EncodeThread( void *arg )
 	fdOut = fopen( (const char*)pAppData->outFileName, "wb" );
 
 	//	Initialize Encoder
-	hEnc = NX_VidEncOpen( NX_AVC_ENC );
+	hEnc = NX_VidEncOpen( NX_AVC_ENC, NULL );
 
 	memset( &encInitParam, 0, sizeof(encInitParam) );
 	encInitParam.width = pAppData->encWidth;
@@ -1027,9 +1028,11 @@ void *EncodeThread( void *arg )
 	encInitParam.fpsDen = 1;
 	//	Rate Control
 	encInitParam.enableRC = 1;		//	Enable Rate Control
-	encInitParam.enableSkip = 0;	//	Enable Skip
-	encInitParam.maxQScale = 51;	//	Max Qunatization Scale
-	encInitParam.userQScale = 23;	//	Default Encoder API ( enableRC == 0 )
+	encInitParam.disableSkip = 0;	//	Enable Skip
+	encInitParam.maximumQp = 51;	//	Max Qunatization Scale
+	encInitParam.initialQp = 23;	//	Default Encoder API ( enableRC == 0 )
+
+	memset( &encIn, 0, sizeof(encIn) );
 
 	NX_VidEncInit( hEnc, &encInitParam );
 
@@ -1054,8 +1057,9 @@ void *EncodeThread( void *arg )
 		}
 
 		NX_PopQueue( &pAppData->encInputQueue, (void*)&encInputImg );
+		encIn.pImage = encInputImg;
 
-		NX_VidEncEncodeFrame( hEnc, encInputImg, &encOut );
+		NX_VidEncEncodeFrame( hEnc, &encIn, &encOut );
 		if( fdOut && encOut.bufSize>0 )
 		{
 			//	Write Sequence Data
@@ -1078,7 +1082,7 @@ void *DecodeThread( void *arg )
 {
 	FFMPEG_STREAM_READER *pReader;
 	int vpuCodecType;
-	NX_VID_RET vidRet;
+	VID_ERROR_E vidRet;
 	NX_VID_SEQ_IN seqIn;
 	NX_VID_SEQ_OUT seqOut;
 	NX_VID_DEC_HANDLE hDec;
@@ -1123,7 +1127,7 @@ void *DecodeThread( void *arg )
 	if( mp4Class == -1 )
 		mp4Class = codecIdToMp4Class( pReader->video_stream->codec->codec_id );
 
-	hDec = NX_VidDecOpen(vpuCodecType, mp4Class, 0);
+	hDec = NX_VidDecOpen(vpuCodecType, mp4Class, 0, NULL);
 	if( hDec == NULL )
 	{
 		printf("NX_VidDecOpen(%d) failed!!!\n", vpuCodecType);
@@ -1218,10 +1222,10 @@ void *DecodeThread( void *arg )
 		decIn.eos = 0;
 		vidRet = NX_VidDecDecodeFrame( hDec, &decIn, &decOut );
 		pos = 0;
-		if( vidRet == VID_NEED_MORE_BUF )
+		if( vidRet == VID_NEED_STREAM )
 		{
 			frameCount ++;
-			printf("VID_NEED_MORE_BUF\n");
+			printf("VID_NEED_STREAM\n");
 			continue;
 		}
 		if( vidRet < 0 )

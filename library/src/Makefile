@@ -13,13 +13,13 @@ DIR += libnxv4l2
 DIR += libnxvpu
 
 # Movie Player for FFMPEG
-#DIR += libnxfilter
-#DIR += libnxfilterhelp
-#DIR += libnxfiltermanager
+DIR += libnxfilter
+DIR += libnxfilterhelp
+DIR += libnxfiltermanager
 
 # Movie Player for FFMPEG
-#DIR += libnxtypefind
-#DIR += libnxmovieplayer
+DIR += libnxtypefind
+DIR += libnxmovieplayer
 
 # Graphic library
 DIR += libnxscaler
@@ -43,6 +43,11 @@ all:
 	@for dir in $(DIR); do			\
 	make -C $$dir || exit $?;		\
 	make -C $$dir install; 			\
+	done
+
+install:
+	@for dir in $(DIR); do			\
+	make -C $$dir install || exit $?;	\
 	done
 
 clean:

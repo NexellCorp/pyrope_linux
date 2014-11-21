@@ -11,7 +11,7 @@ include $(TOPDIR)/build.env
 
 ######################################################################
 # Build options
-SUB_DIRS	:= nxdvrmonitor nxdvrsol nxguisol nxhlssol nxmp4encsol nxrtpsol
+SUB_DIRS	:= nxdvrmonitor nxdvrsol nxguisol nxhlssol nxmp4encsol nxrtpsol nxtranscodingsol
 
 all: compile_subdirs 
 

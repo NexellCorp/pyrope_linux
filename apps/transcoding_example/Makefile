@@ -5,8 +5,8 @@ include ../../build.env
 ######################################################################
 # Build options
 INCLUDE += -I./
-LIBRARY	+= -L$(LIBSDIR)/lib 
-LIBRARY += -lnxvpu -lnxdsp -lnxv4l2 -lnxgraphictools -lnxvmem -lnxscaler -lion
+LIBRARY	+= -L$(LIBSDIR)/lib -L$(LIBSDIR)/lib/ratecontrol
+LIBRARY += -lnxvpu -lnxvidrc -lnxdsp -lnxv4l2 -lnxgraphictools -lnxvmem -lnxscaler -lion
 LIBRARY += -lEGL -lGLESv2 -lVR
 LIBRARY	+= -lavcodec -lavformat -lpthread -lstdc++
 

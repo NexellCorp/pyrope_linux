@@ -123,8 +123,8 @@ const CodStdTab codstd_tab[] = {
 
     { NX_RV_DEC,	0, CODEC_ID_RV30,		MKTAG('R', 'V', '3', '0') },
     { NX_RV_DEC,	0, CODEC_ID_RV40,		MKTAG('R', 'V', '4', '0') },
-    { NX_VPX_THEORA,0, CODEC_ID_THEORA,     MKTAG('T', 'H', 'E', 'O') },
-    { NX_VPX_VP8,   0, CODEC_ID_VP8,        MKTAG('V', 'P', '8', '0') }
+    { NX_THEORA_DEC,0, CODEC_ID_THEORA,     MKTAG('T', 'H', 'E', 'O') },
+    { NX_VP8_DEC,   0, CODEC_ID_VP8,        MKTAG('V', 'P', '8', '0') }
 #if 0
 	{ STD_AVS,		0, CODEC_ID_CAVS,		MKTAG('C','A','V','S') },
 	{ STD_AVS,		0, CODEC_ID_AVS,		MKTAG('A','V','S','2') },

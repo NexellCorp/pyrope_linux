@@ -30,7 +30,7 @@ $(TARGET): depend $(OBJS)
 	$(AR) $(ARFLAGS) $(LIBNAME).a $(OBJS)
 	chmod 644 $(TARGET)
 	chmod 644 $(LIBNAME).a
-	cp $(TARGET) ../libs/
+
 install: $(TARGET)
 	install -m 755 -d $(LIB_INSTALL)
 	install -m 644 $(LIBNAME).a $(LIB_INSTALL)

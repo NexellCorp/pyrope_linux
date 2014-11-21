@@ -593,7 +593,7 @@ int32_t	NX_CDemuxFFmpegFilter::ScanFile(void)
 
 #if (ENABLE_THEORA)
 					//	Intialize Theora Parser
-					if (m_DemuxMediaInfo.VideoInfo[m_VPinNum].iVpuCodecType == NX_VPX_THEORA)
+					if (m_DemuxMediaInfo.VideoInfo[m_VPinNum].iVpuCodecType == NX_THEORA_DEC)
 					{
 						theora_parser_init((void**)&m_TheoraParser);
 					}
@@ -903,8 +903,8 @@ static const CodStdTab codstd_tab[] = {
 
 	{ NX_RV_DEC, 0, CODEC_ID_RV30, MKTAG('R', 'V', '3', '0') },
 	{ NX_RV_DEC, 0, CODEC_ID_RV40, MKTAG('R', 'V', '4', '0') },
-	{ NX_VPX_THEORA, 0, CODEC_ID_THEORA, MKTAG('T', 'H', 'E', 'O') },
-	{ NX_VPX_VP8, 0, CODEC_ID_VP8, MKTAG('V', 'P', '8', '0') }
+	{ NX_THEORA_DEC, 0, CODEC_ID_THEORA, MKTAG('T', 'H', 'E', 'O') },
+	{ NX_VP8_DEC, 0, CODEC_ID_VP8, MKTAG('V', 'P', '8', '0') }
 #if 0
 	{ STD_AVS, 0, CODEC_ID_CAVS, MKTAG('C', 'A', 'V', 'S') },
 	{ STD_AVS, 0, CODEC_ID_AVS, MKTAG('A', 'V', 'S', '2') },
@@ -1476,12 +1476,12 @@ int NX_CDemuxFFmpegFilter::CodecIdToVpuType(int codecId, unsigned int fourcc)
 #if (ENABLE_THEORA)
 	else if (codecId == CODEC_ID_THEORA)
 	{
-		vpuCodecType = NX_VPX_THEORA;
+		vpuCodecType = NX_THEORA_DEC;
 	}
 #endif
 	else if (codecId == CODEC_ID_VP8)
 	{
-		vpuCodecType = NX_VPX_VP8;
+		vpuCodecType = NX_VP8_DEC;
 	}
 	else
 	{

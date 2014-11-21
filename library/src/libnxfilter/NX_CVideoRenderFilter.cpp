@@ -649,9 +649,14 @@ CBOOL NX_CDisplay::SetVideoPosition(int32_t moudleId, int32_t port, int32_t X, i
 
 	if (m_info->dstX != X || m_info->dstY != Y || m_info->dstWidth != Width || m_info->dstHeight != Height)
 	{
-		//printf("*******************************: NX_DspVideoPosition() (x:%d, y:%d, w:%d, h:%d)\n", X, Y, Width, Height);
-		if (NX_DspVideoPosition(m_info->hDsp, X, Y, X + Width, Y + Height)){
-			printf("Error : NX_DspVideoPosition() failed.(x:%d, y:%d, w:%d, h:%d)\n", X, Y, Width, Height);
+		DSP_IMG_RECT rect;
+		rect.left	= X;
+		rect.top	= Y;
+		rect.right	= X + Width;
+		rect.bottom	= Y + Height;
+		//printf("*******************************: NX_DspVideoSetPosition() (x:%d, y:%d, w:%d, h:%d)\n", X, Y, Width, Height);
+		if (NX_DspVideoSetPosition(m_info->hDsp, &rect)){
+			printf("Error : NX_DspVideoSetPosition() failed.(x:%d, y:%d, w:%d, h:%d)\n", X, Y, Width, Height);
 			return -1;
 		}
 		m_info->dstX = X;

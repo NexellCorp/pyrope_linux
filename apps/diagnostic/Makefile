@@ -23,6 +23,8 @@ DIR		:= src
 ######################################################################
 # Build
 all: UPDATE_BUILD_NUMBER
+	mkdir -p ./bin
+	mkdir -p ./libs
 	@for dir in $(DIR); do		\
 	make -C $$dir || exit $?;	\
 	done

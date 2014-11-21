@@ -11,6 +11,7 @@ DIR += libion
 DIR += libnxmalloc
 DIR += libnxv4l2
 DIR += libnxvpu
+DIR += libnxjpeg
 
 # Movie Player for FFMPEG
 #DIR += libnxfilter

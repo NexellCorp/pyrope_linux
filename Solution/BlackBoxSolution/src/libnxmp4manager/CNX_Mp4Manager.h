@@ -82,6 +82,7 @@ private:
 	CNX_AudCaptureFilter	*m_pAudCapFilter;
 	CNX_AacEncoder			*m_pAacEncFilter;
 
+	CNX_InterleaverFilter	*m_pInterleaverFilter;
 	CNX_Mp4MuxerFilter		*m_pMp4MuxerFilter;
 
 	// Configuration
@@ -92,6 +93,7 @@ private:
 	NX_AUDCAPTURE_CONFIG	m_AudCapConfig;
 	NX_AUDENC_CONFIG		m_AudEncConfig;
 
+	NX_INTERLEAVER_CONFIG	m_InterleaverConfig;
 	NX_MP4MUXER_CONFIG		m_Mp4MuxerConfig;
 
 	Mp4ManagerConfig		m_ManagerConfig;

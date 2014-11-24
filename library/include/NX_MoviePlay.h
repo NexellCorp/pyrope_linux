@@ -1,6 +1,8 @@
 #ifndef __NX_MoviePlay_H__
 #define __NX_MoviePlay_H__
 
+#define SEPARATE_OPEN_FUNC
+
 typedef struct MOVIE_TYPE	*MP_HANDLE;
 #define  MP_RESULT           int
 
@@ -56,8 +58,15 @@ typedef struct MP_MEDIA_INFO {
 extern "C" {
 #endif	//	__cplusplus
 
+#ifdef SEPARATE_OPEN_FUNC
+MP_RESULT NX_MPSetFileName( MP_HANDLE *handle, const char *uri, char *media_info);
+MP_RESULT NX_MPOpen( MP_HANDLE handle, int volumem, int dspModule, int dspPort, int audio_track_num, int video_track_num, int display,
+						void (*cb)(void *owner, unsigned int msg, unsigned int param1, unsigned int param2), void *cbPrivate);
+#else
 MP_RESULT NX_MPOpen( MP_HANDLE *handle, const char *uri, int volumem, int dspModule, int dspPort, int audio_track_num, int video_track_num, char *media_info, int display, int priority,
 						void (*cb)(void *owner, unsigned int msg, unsigned int param1, unsigned int param2), void *cbPrivate);
+#endif
+
 void NX_MPClose( MP_HANDLE handle );
 MP_RESULT NX_MPGetMediaInfo( MP_HANDLE handle, int index, MP_MEDIA_INFO *pInfo );
 MP_RESULT NX_MPPlay( MP_HANDLE handle, float speed );

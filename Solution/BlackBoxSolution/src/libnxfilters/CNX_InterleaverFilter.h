@@ -210,6 +210,8 @@ protected:
 	uint32_t				m_InterleaverChannel;
 
 	pthread_mutex_t			m_hReceiveLock;
+
+	int32_t					m_bStartInterleaver;
 	//------------------------------------------------------------------------
 	//	Statistics Infomation
 	//------------------------------------------------------------------------

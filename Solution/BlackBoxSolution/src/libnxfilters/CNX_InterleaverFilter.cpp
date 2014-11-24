@@ -29,9 +29,10 @@
 
 //------------------------------------------------------------------------------
 CNX_InterleaverFilter::CNX_InterleaverFilter()
+	: m_bInit( false )
+	, m_bRun( false )
+	, m_bStartInterleaver( false )
 {
-	m_bInit		= false;
-	m_bRun		= false;
 	memset( &m_FilterStatistics, 0x00, sizeof(NX_FILTER_STATISTICS) );
 	pthread_mutex_init( &m_hReceiveLock, NULL );
 	pthread_mutex_init( &m_hStatisticsLock, NULL );
@@ -77,7 +78,7 @@ int32_t	CNX_InterleaverFilter::Receive( CNX_Sample *pSample)
 	uint8_t *pSrcBuf = NULL;
 	uint8_t *pDestBuf = NULL;
 	
-	int32_t size, type, key;
+	int32_t size, type, key, flags;
 	uint64_t timeStamp;
 
 	pSample->Lock();
@@ -88,8 +89,18 @@ int32_t	CNX_InterleaverFilter::Receive( CNX_Sample *pSample)
 	key			= ((CNX_MuxerSample*)pSample)->GetSyncPoint();
 	size		= ((CNX_MuxerSample*)pSample)->GetActualDataLength();
 	timeStamp	= ((CNX_MuxerSample*)pSample)->GetTimeStamp();
+	flags		= ((CNX_MuxerSample*)pSample)->GetFlags();
 	
-	// 2. Prepare Destination Sample
+	// 2. Video / Audio sync
+	if( type == CNX_MuxerSample::DATA_VIDEO0 ) 
+		m_bStartInterleaver = true;
+	
+	if( m_bStartInterleaver == false ) {
+		pSample->Unlock();
+		return false;
+	}
+
+	// 3. Prepare Destination Sample
 	pDestSample	= new CNX_MuxerSample();
 	pDestBuf	= (uint8_t*)malloc( size );
 
@@ -113,6 +124,7 @@ int32_t	CNX_InterleaverFilter::Receive( CNX_Sample *pSample)
 	pDestSample->SetSyncPoint( key );
 	pDestSample->SetDataType( type );
 	pDestSample->SetTimeStamp( timeStamp );
+	pDestSample->SetFlags( flags );
 
 	// Debug code
 	// static int32_t bEmpty = false;
@@ -120,8 +132,8 @@ int32_t	CNX_InterleaverFilter::Receive( CNX_Sample *pSample)
 	// 	printf("id[%d], timeStamp[%lld], pDestBuf[%p], size[%d], bufCount[%d]\n", type, timeStamp, pDestBuf, size, m_InterleaverQueue[type].GetSampleCount());
 	// }
 
-	// 3. Interleave Samples
-	// 3-1. Check Interleaver Queue. ( Is Full - Force Delivery )
+	// 4. Interleave Samples
+	// 4-1. Check Interleaver Queue. ( Is Full - Force Delivery )
 	if( m_InterleaverQueue[type].IsFull() ) {
 		NxDbgMsg( NX_DBG_WARN, (TEXT("Buffer(id = %d) is Full. Force Delivery.\n"), type) );
 		m_InterleaverQueue[type].PopSample( (CNX_Sample**)&pOutSample );
@@ -131,10 +143,10 @@ int32_t	CNX_InterleaverFilter::Receive( CNX_Sample *pSample)
 		// bEmpty = true;
 	}
 
-	// 3-2. Push New Sample at Interleaver Queue.
+	// 4-2. Push New Sample at Interleaver Queue.
 	m_InterleaverQueue[type].PushSample( (CNX_Sample*)pDestSample );
 
-	// 3-3. Check Interleaver Queue. ( Is Empty - Stand by )
+	// 4-3. Check Interleaver Queue. ( Is Empty - Stand by )
 	for(uint32_t i = 0; i < m_InterleaverChannel; i++)
 	{
 		if( !m_InterleaverQueue[i].IsReady() ) {
@@ -142,7 +154,7 @@ int32_t	CNX_InterleaverFilter::Receive( CNX_Sample *pSample)
 		}
 	}
 
-	// 3-4. Delivery Samples.
+	// 4-4. Delivery Samples.
 	while( bLoop )
 	{
 		// a. Search fastest samples

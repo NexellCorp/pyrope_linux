@@ -61,7 +61,8 @@ static void dumpdata( void *data, int len, const char *msg )
 
 //------------------------------------------------------------------------------
 CNX_Mp4MuxerFilter::CNX_Mp4MuxerFilter( void )
-	: m_bInit( false )
+	: FileNameCallbackFunc( NULL )
+	, m_bInit( false )
 	, m_bRun( false )
 	, m_bThreadExit( true )
 	, m_hThread( 0x00 )
@@ -439,8 +440,8 @@ int32_t CNX_Mp4MuxerFilter::MuxEncodedSample( CNX_MuxerSample *pSample )
 						}
 					}
 					else {
-						dumpdata( m_TrackDsiInfo[trackID], MAX_VID_DSI_SIZE, "Video Dsi\n\t" );
-						NxMp4MuxSetDsiInfo( m_hMp4Mux, m_TrackDsiInfo[trackID], MAX_VID_DSI_SIZE, trackID );	
+						dumpdata( m_TrackDsiInfo[trackID], m_TrackDsiSize[trackID], "Video Dsi\n\t" );
+						NxMp4MuxSetDsiInfo( m_hMp4Mux, m_TrackDsiInfo[trackID], m_TrackDsiSize[trackID], trackID );	
 					}
 					m_bTrackStart[trackID] = true;
 				} 
@@ -452,8 +453,8 @@ int32_t CNX_Mp4MuxerFilter::MuxEncodedSample( CNX_MuxerSample *pSample )
 			}
 			else if( trackID < m_MP4Config.videoTrack + m_MP4Config.audioTrack ) {	// audio track
 				if( CODEC_AAC == m_MP4Config.trackConfig[trackID].codecType ) {
-					dumpdata( m_TrackDsiInfo[trackID], MAX_VID_DSI_SIZE, "Audio Dsi\n\t" );
-					NxMp4MuxSetDsiInfo( m_hMp4Mux, m_TrackDsiInfo[trackID], MAX_AUD_DSI_SIZE, trackID );
+					dumpdata( m_TrackDsiInfo[trackID], m_TrackDsiSize[trackID], "Audio Dsi\n\t" );
+					NxMp4MuxSetDsiInfo( m_hMp4Mux, m_TrackDsiInfo[trackID], m_TrackDsiSize[trackID], trackID );
 				}
 				m_bTrackStart[trackID] = true;
 			}
@@ -687,8 +688,10 @@ int32_t CNX_Mp4MuxerFilter::EnableMp4Muxing( bool enable )
 //------------------------------------------------------------------------------
 int32_t CNX_Mp4MuxerFilter::SetDsiInfo( uint32_t trackID, uint8_t *dsiInfo, int32_t dsiSize )
 {
-	memset( m_TrackDsiInfo[trackID], 0x00, MAX_VID_DSI_SIZE );
+	memset( m_TrackDsiInfo[trackID], 0x00, MAX_DSI_SIZE );
 	memcpy( m_TrackDsiInfo[trackID], dsiInfo, dsiSize );
+
+	m_TrackDsiSize[trackID] = dsiSize;
 
 	// NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s(): DSI Infomation( TrackID = %d, size = %d ) :: "), __func__, trackID, dsiSize) );
 	// dumpdata( m_TrackDsiInfo[trackID], MAX_VID_DSI_SIZE, "" );

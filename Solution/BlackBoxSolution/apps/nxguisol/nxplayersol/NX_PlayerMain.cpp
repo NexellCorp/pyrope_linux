@@ -263,7 +263,12 @@ int32_t PlayerStart( const char *filename )
 		}
 	}
 
-	mpResult = NX_MPOpen(&hPlayer, stUri, 100, 0, 0, audio_request_track_num, video_request_track_num, (char *)&MediaInfo, display, 0, &cbMessage, NULL);
+	mpResult = NX_MPSetFileName( &hPlayer, stUri, (char *)&MediaInfo );
+	if (ERROR_NONE != mpResult) {
+		printf("%s(): NX_MPSetFileName failed!\n", __func__);
+	}
+
+	mpResult = NX_MPOpen(hPlayer, 100, 0, 0, audio_request_track_num, video_request_track_num, display, &cbMessage, NULL);
 	if (ERROR_NONE != mpResult) {
 		printf("%s(): NX_MPOpen failed!\n", __func__);
 	}

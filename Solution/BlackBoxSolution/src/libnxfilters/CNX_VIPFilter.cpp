@@ -40,7 +40,7 @@ static FILE *outFp = NULL;
 static int32_t bFileOpen = false;
 #endif
 
-#if( 1 )
+#if( 0 )
 #define NxDbgColorMsg(A, B) do {										\
 								if( gNxFilterDebugLevel>=A ) {			\
 									printf("\033[1;37;41m%s", NX_DTAG);	\

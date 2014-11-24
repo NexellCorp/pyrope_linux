@@ -22,10 +22,11 @@ enum {
 	IOCTL_VPU_DEC_RUN_FRAME,									//	+9
 	IOCTL_VPU_DEC_FLUSH,										//	+10
 	IOCTL_VPU_DEC_CLR_DSP_FLAG,									//	+11
+	IOCTL_VPU_DEC_PARSE,										//	+12
 
 	//	Jpeg Specific ( MAGIC + 12 ~ 13 )
-	IOCTL_VPU_JPG_GET_HEADER,									//	+12
-	IOCTL_VPU_JPG_RUN_FRAME,									//	+13
+	IOCTL_VPU_JPG_GET_HEADER,									//	+13
+	IOCTL_VPU_JPG_RUN_FRAME,									//	+14
 };
 
 

@@ -53,6 +53,9 @@ typedef struct {
 #define	ENABLE_MLC_SCALER
 #endif
 
+//	Drone
+//#define	LCD_WIDTH	1024
+//#define	LCD_HEIGHT	600
 //	Pyxis
 #define	LCD_WIDTH	800
 #define	LCD_HEIGHT	1280
@@ -119,22 +122,22 @@ static void dumpdata( void *data, int len, const char *msg );
 	*_p++ = (unsigned char)((_var)>>0);  \
 	*_p++ = (unsigned char)((_var)>>8);  \
 	*_p++ = (unsigned char)((_var)>>16); \
-	*_p++ = (unsigned char)((_var)>>24); 
+	*_p++ = (unsigned char)((_var)>>24);
 
 #define PUT_BE32(_p, _var) \
 	*_p++ = (unsigned char)((_var)>>24);  \
 	*_p++ = (unsigned char)((_var)>>16);  \
 	*_p++ = (unsigned char)((_var)>>8); \
-	*_p++ = (unsigned char)((_var)>>0); 
+	*_p++ = (unsigned char)((_var)>>0);
 
 #define PUT_LE16(_p, _var) \
 	*_p++ = (unsigned char)((_var)>>0);  \
-	*_p++ = (unsigned char)((_var)>>8);  
+	*_p++ = (unsigned char)((_var)>>8);
 
 
 #define PUT_BE16(_p, _var) \
 	*_p++ = (unsigned char)((_var)>>8);  \
-	*_p++ = (unsigned char)((_var)>>0);  
+	*_p++ = (unsigned char)((_var)>>0);
 
 
 static uint64_t NX_GetTickCount( void )
@@ -345,7 +348,7 @@ int GetSequenceInformation( FFMPEG_STREAM_READER *streamReader, AVStream *stream
 				return retSize;
 			default:
 				break;
-			
+
 		}
 	}
 	else if(  (codecId == CODEC_ID_WMV1) || (codecId == CODEC_ID_WMV2) || (codecId == CODEC_ID_WMV3) )
@@ -912,12 +915,12 @@ static int CodecIdToVpuType( int codecId, unsigned int fourcc )
 #if (ENABLE_THEORA)
 	else if( codecId == CODEC_ID_THEORA )
 	{
-		vpuCodecType = NX_VPX_THEORA;
+		vpuCodecType = NX_THEORA_DEC;
 	}
 #endif
 	else if( codecId == CODEC_ID_VP8 )
 	{
-		vpuCodecType = NX_VPX_VP8;
+		vpuCodecType = NX_VP8_DEC;
 	}
 	else
 	{
@@ -1067,7 +1070,7 @@ int dec_main( int argc, char *argv[] )
 
 #if (ENABLE_THEORA)
 	//	Intialize Theora Parser
-	if( vpuCodecType == NX_VPX_THEORA )
+	if( vpuCodecType == NX_THEORA_DEC )
 	{
 		theora_parser_init((void**)&pReader->theoraParser);
 	}
@@ -1179,9 +1182,22 @@ int dec_main( int argc, char *argv[] )
 				tmpSize = readSize;
  			}
 
-#if 0
+#if 1
 			printf(" << Init In Parameter >> \n");
 			printf("seqInfo = 0x%x (size = %d) \n", seqIn.seqInfo, seqIn.seqSize);
+			if (seqIn.seqSize > 16 )
+			{
+				int i = 0;
+				for (i=0 ; i<16 ; i++)
+					printf("%2x ", seqIn.seqInfo[i]);
+			}
+			else
+			{
+				int i = 0;
+				for (i=0 ; i<seqIn.seqSize ; i++)
+					printf("%2x ", seqIn.seqInfo[i]);
+			}
+			printf("\n");
 			printf("w = %d, h= %d \n", seqIn.width, seqIn.height);
 			printf("pMemHandle = %x \n", seqIn.pMemHandle);
 			printf("numBuffers = %d, addNumBuffers = %d \n", seqIn.numBuffers, seqIn.addNumBuffers);
@@ -1200,8 +1216,8 @@ int dec_main( int argc, char *argv[] )
 				return -1;
 			}
 
-#if 0
-			printf("<<<<<<<<<<< Init_Info >>>>>>>>>>>>>> \n");
+#if 1
+			printf("<<<<<<<<<<< Init_Out >>>>>>>>>>>>>> \n");
 			printf("minBuffers = %d \n", seqOut.minBuffers);
 			printf("numBuffers = %d \n", seqOut.numBuffers);
 			printf("width = %d \n", seqOut.width);
@@ -1218,24 +1234,60 @@ int dec_main( int argc, char *argv[] )
 			printf("unsupportedFeature = %d \n", seqOut.unsupportedFeature);
 #endif
 
+#if 0
+			NX_VidDecParseVideoCfg(vpuCodecType, &seqIn, &seqOut);
+
+			printf("<<<<<<<<<<< Parser In >>>>>>>>>>>>>> \n");
+			printf("seqInfo = %x \n", seqIn.seqInfo);
+			printf("seqSize = %d \n", seqIn.seqSize);
+			printf("width = %d \n", seqIn.width);
+			printf("heigh = %d \n", seqIn.height);
+			printf("pMemHandle = %x \n", seqIn.pMemHandle);
+			printf("numBuffers = %d \n", seqIn.numBuffers);
+			printf("addNumBuffers = %d \n", seqIn.addNumBuffers);
+			printf("disableOutReorder = %d \n", seqIn.disableOutReorder);
+			printf("enablePostFilter = %d \n", seqIn.enablePostFilter);
+			printf("enableUserData = %d \n", seqIn.enableUserData);
+
+			printf("<<<<<<<<<<< Parser Out >>>>>>>>>>>>>> \n");
+			printf("minBuffers = %d \n", seqOut.minBuffers);
+			printf("numBuffers = %d \n", seqOut.numBuffers);
+			printf("width = %d \n", seqOut.width);
+			printf("height = %d \n", seqOut.height);
+			printf("frameBufDelay = %d \n", seqOut.frameBufDelay);
+			printf("isInterace = %d \n", seqOut.isInterlace);
+			printf("userDataNum = %d \n", seqOut.userDataNum);
+			printf("userDataSize = %d \n", seqOut.userDataSize);
+			printf("userDataBufFull = %d \n", seqOut.userDataBufFull);
+			printf("frameRateNum = %d \n", seqOut.frameRateNum);
+			printf("frameRateDen = %d \n", seqOut.frameRateDen);
+			printf("vp8ScaleWidth = %d \n", seqOut.vp8ScaleWidth);
+			printf("vp8ScaleHeight = %d \n", seqOut.vp8ScaleHeight);
+			printf("unsupportedFeature = %d \n", seqOut.unsupportedFeature);
+
+			return 0;
+#endif
 			pos = 0;
 			bInit = 1;
 		}
 		else
 		{
-			if( 0 != ReadStream( pReader, pReader->video_stream,  streamBuffer+pos, &readSize, &isKey, &timeStamp ) )
+			if( 0 == ReadStream( pReader, pReader->video_stream,  streamBuffer+pos, &readSize, &isKey, &timeStamp ) )
 			{
-				break;
+				pos += readSize;
+				tmpSize = pos;
 			}
-			pos += readSize;
-			tmpSize = pos;
+			else
+			{
+				pos = 0;
+			}
 		}
 
 		memset(&decIn, 0, sizeof(decIn));
 		decIn.strmBuf = streamBuffer;
 		decIn.strmSize = pos;
 		decIn.timeStamp = timeStamp;
-		decIn.eos = 0;
+		decIn.eos = ( decIn.strmSize > 0 || frameCount == 0 ) ? (0) : (1);
 
 		//printf("strm = 0x%x, size = %d \n", decIn.strmBuf, decIn.strmSize);
 
@@ -1255,8 +1307,10 @@ int dec_main( int argc, char *argv[] )
 			exit(-2);
 		}
 
-		printf("Frame[%5d]: size=%6d, DspIdx=%2d, DecIdx=%2d, InTimeStamp=%7lld, outTimeStamp=%7lld, time=%6lld \n", frameCount, tmpSize, decOut.outImgIdx, decOut.outDecIdx, timeStamp, decOut.timeStamp, (endTime-startTime));
-		printf("interlace = %d(%d), Reliable = %d, MultiResel = %d, upW = %d, upH = %d\n", decOut.isInterlace, decOut.topFieldFirst, decOut.outFrmReliable_0_100, decOut.multiResolution, decOut.upSampledWidth, decOut.upSampledHeight);
+		printf("%2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x \n", decIn.strmBuf[0], decIn.strmBuf[1], decIn.strmBuf[2], decIn.strmBuf[3], decIn.strmBuf[4], decIn.strmBuf[5], decIn.strmBuf[6], decIn.strmBuf[7],
+			decIn.strmBuf[8], decIn.strmBuf[9], decIn.strmBuf[10], decIn.strmBuf[11], decIn.strmBuf[12], decIn.strmBuf[13], decIn.strmBuf[14], decIn.strmBuf[15]);
+		printf("Frame[%5d]: size=%6d, DspIdx=%2d, DecIdx=%2d, InTimeStamp=%7lld, outTimeStamp=%7lld, time=%6lld, ", frameCount, tmpSize, decOut.outImgIdx, decOut.outDecIdx, timeStamp, decOut.timeStamp, (endTime-startTime));
+		printf("interlace = %d(%d), Reliable = %d, type = %d\n"/*, MultiResel = %d, upW = %d, upH = %d\n"*/, decOut.isInterlace, decOut.topFieldFirst, decOut.outFrmReliable_0_100, decOut.picType/*, decOut.multiResolution, decOut.upSampledWidth, decOut.upSampledHeight*/);
 
 		totalTime += (endTime-startTime);
 		frameCount ++;
@@ -1276,6 +1330,8 @@ int dec_main( int argc, char *argv[] )
 			{
 				int h;
 				unsigned char *pbyImg = (unsigned char *)(decOut.outImg.luVirAddr);
+
+				//printf("save w = %d, h= %d \n", decOut.width, decOut.height);
 
 				for(h=0 ; h<decOut.height ; h++)
 				{
@@ -1305,6 +1361,9 @@ int dec_main( int argc, char *argv[] )
 			}
 			prevIdx = decOut.outImgIdx;
 		}
+		else if ( decIn.eos == 1 )		break;
+
+		//if ( frameCount > 300 ) break;
 	}
 	NX_VidDecClose( hDec );
 
@@ -1312,7 +1371,7 @@ int dec_main( int argc, char *argv[] )
 
 #if (ENABLE_THEORA)
 	//	Intialize Theora Parser
-	if( vpuCodecType == NX_VPX_THEORA )
+	if( vpuCodecType == NX_THEORA_DEC )
 	{
 		theora_parser_end(pReader->theoraParser);
 	}

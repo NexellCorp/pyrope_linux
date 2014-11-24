@@ -983,6 +983,7 @@ int dec_main( int argc, char *argv[] )
 	char *outFileName = NULL;
 	int tmpSize;
 	int instanceIdx;
+	int brokenB = 0;
 	uint64_t startTime, endTime, totalTime = 0;
 	FILE *fpOut = NULL;
 
@@ -1185,19 +1186,12 @@ int dec_main( int argc, char *argv[] )
 #if 1
 			printf(" << Init In Parameter >> \n");
 			printf("seqInfo = 0x%x (size = %d) \n", seqIn.seqInfo, seqIn.seqSize);
-			if (seqIn.seqSize > 16 )
 			{
-				int i = 0;
-				for (i=0 ; i<16 ; i++)
+				int i, Size = ( seqIn.seqSize > 16 ) ? (16) : (seqIn.seqSize);
+				for (i=0 ; i<Size ; i++)
 					printf("%2x ", seqIn.seqInfo[i]);
+				printf("\n");
 			}
-			else
-			{
-				int i = 0;
-				for (i=0 ; i<seqIn.seqSize ; i++)
-					printf("%2x ", seqIn.seqInfo[i]);
-			}
-			printf("\n");
 			printf("w = %d, h= %d \n", seqIn.width, seqIn.height);
 			printf("pMemHandle = %x \n", seqIn.pMemHandle);
 			printf("numBuffers = %d, addNumBuffers = %d \n", seqIn.numBuffers, seqIn.addNumBuffers);
@@ -1234,39 +1228,6 @@ int dec_main( int argc, char *argv[] )
 			printf("unsupportedFeature = %d \n", seqOut.unsupportedFeature);
 #endif
 
-#if 0
-			NX_VidDecParseVideoCfg(vpuCodecType, &seqIn, &seqOut);
-
-			printf("<<<<<<<<<<< Parser In >>>>>>>>>>>>>> \n");
-			printf("seqInfo = %x \n", seqIn.seqInfo);
-			printf("seqSize = %d \n", seqIn.seqSize);
-			printf("width = %d \n", seqIn.width);
-			printf("heigh = %d \n", seqIn.height);
-			printf("pMemHandle = %x \n", seqIn.pMemHandle);
-			printf("numBuffers = %d \n", seqIn.numBuffers);
-			printf("addNumBuffers = %d \n", seqIn.addNumBuffers);
-			printf("disableOutReorder = %d \n", seqIn.disableOutReorder);
-			printf("enablePostFilter = %d \n", seqIn.enablePostFilter);
-			printf("enableUserData = %d \n", seqIn.enableUserData);
-
-			printf("<<<<<<<<<<< Parser Out >>>>>>>>>>>>>> \n");
-			printf("minBuffers = %d \n", seqOut.minBuffers);
-			printf("numBuffers = %d \n", seqOut.numBuffers);
-			printf("width = %d \n", seqOut.width);
-			printf("height = %d \n", seqOut.height);
-			printf("frameBufDelay = %d \n", seqOut.frameBufDelay);
-			printf("isInterace = %d \n", seqOut.isInterlace);
-			printf("userDataNum = %d \n", seqOut.userDataNum);
-			printf("userDataSize = %d \n", seqOut.userDataSize);
-			printf("userDataBufFull = %d \n", seqOut.userDataBufFull);
-			printf("frameRateNum = %d \n", seqOut.frameRateNum);
-			printf("frameRateDen = %d \n", seqOut.frameRateDen);
-			printf("vp8ScaleWidth = %d \n", seqOut.vp8ScaleWidth);
-			printf("vp8ScaleHeight = %d \n", seqOut.vp8ScaleHeight);
-			printf("unsupportedFeature = %d \n", seqOut.unsupportedFeature);
-
-			return 0;
-#endif
 			pos = 0;
 			bInit = 1;
 		}
@@ -1289,7 +1250,36 @@ int dec_main( int argc, char *argv[] )
 		decIn.timeStamp = timeStamp;
 		decIn.eos = ( decIn.strmSize > 0 || frameCount == 0 ) ? (0) : (1);
 
-		//printf("strm = 0x%x, size = %d \n", decIn.strmBuf, decIn.strmSize);
+		if ( (decOut.outFrmReliable_0_100 != 100) && (decOut.outDecIdx >= 0) && ( pos > 0 ) && (frameCount > 0) )
+		{
+			int iFrameType;
+			NX_VidDecGetFrameType( vpuCodecType, &decIn, &iFrameType );
+
+			if ( iFrameType != PIC_TYPE_I )
+			{
+				pos = 0;
+				frameCount++;
+				continue;
+			}
+			else
+			{
+				brokenB = 0;
+			}
+		}
+
+		if ( brokenB < 2 )
+		{
+			int iFrameType;
+			NX_VidDecGetFrameType( vpuCodecType, &decIn, &iFrameType );
+			if ( (iFrameType == PIC_TYPE_I) || (iFrameType == PIC_TYPE_P) )
+				brokenB++;
+			else if ( iFrameType == PIC_TYPE_B )
+			{
+				pos = 0;
+				frameCount++;
+				continue;
+			}
+		}
 
 		startTime = NX_GetTickCount();
 		vidRet = NX_VidDecDecodeFrame( hDec, &decIn, &decOut );
@@ -1307,10 +1297,8 @@ int dec_main( int argc, char *argv[] )
 			exit(-2);
 		}
 
-		printf("%2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x \n", decIn.strmBuf[0], decIn.strmBuf[1], decIn.strmBuf[2], decIn.strmBuf[3], decIn.strmBuf[4], decIn.strmBuf[5], decIn.strmBuf[6], decIn.strmBuf[7],
-			decIn.strmBuf[8], decIn.strmBuf[9], decIn.strmBuf[10], decIn.strmBuf[11], decIn.strmBuf[12], decIn.strmBuf[13], decIn.strmBuf[14], decIn.strmBuf[15]);
 		printf("Frame[%5d]: size=%6d, DspIdx=%2d, DecIdx=%2d, InTimeStamp=%7lld, outTimeStamp=%7lld, time=%6lld, ", frameCount, tmpSize, decOut.outImgIdx, decOut.outDecIdx, timeStamp, decOut.timeStamp, (endTime-startTime));
-		printf("interlace = %d(%d), Reliable = %d, type = %d\n"/*, MultiResel = %d, upW = %d, upH = %d\n"*/, decOut.isInterlace, decOut.topFieldFirst, decOut.outFrmReliable_0_100, decOut.picType/*, decOut.multiResolution, decOut.upSampledWidth, decOut.upSampledHeight*/);
+		printf("interlace = %d(%d), Reliable = %d, type = %d, MultiResel = %d, upW = %d, upH = %d\n", decOut.isInterlace, decOut.topFieldFirst, decOut.outFrmReliable_0_100, decOut.picType, decOut.multiResolution, decOut.upSampledWidth, decOut.upSampledHeight);
 
 		totalTime += (endTime-startTime);
 		frameCount ++;
@@ -1330,8 +1318,6 @@ int dec_main( int argc, char *argv[] )
 			{
 				int h;
 				unsigned char *pbyImg = (unsigned char *)(decOut.outImg.luVirAddr);
-
-				//printf("save w = %d, h= %d \n", decOut.width, decOut.height);
 
 				for(h=0 ; h<decOut.height ; h++)
 				{
@@ -1354,16 +1340,20 @@ int dec_main( int argc, char *argv[] )
 				}
 			}
 
-			outCount ++;
 			if( prevIdx != -1 )
 			{
 				NX_VidDecClrDspFlag( hDec, &decOut.outImg, prevIdx );
 			}
 			prevIdx = decOut.outImgIdx;
+
+			outCount ++;
 		}
 		else if ( decIn.eos == 1 )		break;
 
-		//if ( frameCount > 300 ) break;
+		if ( (decOut.outFrmReliable_0_100 != 100) && (decOut.outDecIdx >= 0) )
+		{
+			NX_VidDecFlush( hDec );
+		}
 	}
 	NX_VidDecClose( hDec );
 

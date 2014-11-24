@@ -16,6 +16,7 @@
 #include <nx_fourcc.h>
 #include <vpu_drv_ioctl.h>		//	Device Driver IOCTL
 #include <nx_alloc_mem.h>		//	Memory Allocation Information
+#include "parser_vld.h"
 
 
 #define	WORK_BUF_SIZE		(  80*1024)
@@ -1045,14 +1046,11 @@ VID_ERROR_E NX_VidDecDecodeFrame( NX_VID_DEC_HANDLE hDec, NX_VID_DEC_IN *pstDecI
 	pstDecOut->outImgIdx = -1;
 
 	ret = ioctl( hDec->hDecDrv, IOCTL_VPU_DEC_RUN_FRAME, &decArg );
-	if( ret < 0 )
+	if( ret != VID_ERR_NONE )
 	{
-		NX_ErrMsg( ("IOCTL_VPU_DEC_RUN_FRAME ioctl failed!!!\n") );
-		return -1;
+		NX_ErrMsg( ("IOCTL_VPU_DEC_RUN_FRAME ioctl failed!!!(%d) \n", decArg.iRet ) );
+		return (decArg.iRet);
 	}
-
-	if( ret > 0 )
-		return ret;
 
 	pstDecOut->outImgIdx = decArg.indexFrameDisplay;
 	pstDecOut->outDecIdx = decArg.indexFrameDecoded;
@@ -1188,6 +1186,80 @@ VID_ERROR_E NX_VidDecClrDspFlag( NX_VID_DEC_HANDLE hDec, NX_VID_MEMORY_HANDLE hF
 	FUNC_OUT();
 	return VID_ERR_NONE;
 }
+
+// Optional Function
+VID_ERROR_E NX_VidDecGetFrameType( VID_TYPE_E eCodecType, NX_VID_DEC_IN *pstDecIn, int32_t *o_iFrameType )
+{
+	uint8_t *pbyStrm = pstDecIn->strmBuf;
+	uint32_t uPreFourByte = (uint32_t)-1;
+	int32_t  iFrmType = PIC_TYPE_UNKNOWN;
+
+	if ( pbyStrm == NULL )
+		return VID_ERR_PARAM;
+
+	if ( eCodecType == NX_AVC_DEC )
+	{
+		do
+		{
+			if ( pbyStrm >= (pstDecIn->strmBuf + pstDecIn->strmSize) )		return VID_ERR_NOT_ENOUGH_STREAM;
+			uPreFourByte = (uPreFourByte << 8) + *pbyStrm++;
+
+			if ( uPreFourByte == 0x00000001 || uPreFourByte<<8 == 0x00000100 )
+			{
+				int32_t iNaluType = pbyStrm[0] & 0x1F;
+
+				// Slice start code
+				if ( iNaluType == 5 )
+				{
+					iFrmType = PIC_TYPE_I;
+					//iFrmType = PIC_TYPE_IDR;
+					break;
+				}
+				else if ( iNaluType == 1 )
+				{
+					VLD_STREAM stStrm = { 8, pbyStrm, pstDecIn->strmSize };
+					vld_get_uev(&stStrm);					// First_mb_in_slice
+					iFrmType = vld_get_uev(&stStrm);		// Slice type
+
+					if ( iFrmType == 0 || iFrmType == 5 ) 		iFrmType = PIC_TYPE_P;
+					else if ( iFrmType == 1 || iFrmType == 6 ) iFrmType = PIC_TYPE_B;
+					else if ( iFrmType == 2 || iFrmType == 7 ) iFrmType = PIC_TYPE_I;
+					break;
+				}
+			}
+		} while(1);
+	}
+	else if ( eCodecType == NX_MP2_DEC )
+	{
+		do
+		{
+			if ( pbyStrm >= (pstDecIn->strmBuf + pstDecIn->strmSize) )		return VID_ERR_NOT_ENOUGH_STREAM;
+			uPreFourByte = (uPreFourByte << 8) + *pbyStrm++;
+
+			// Picture start code
+			if ( uPreFourByte == 0x00000100 )
+			{
+				VLD_STREAM stStrm = { 0, pbyStrm, pstDecIn->strmSize };
+
+				vld_flush_bits( &stStrm, 10 );				// tmoporal_reference
+				iFrmType = vld_get_bits( &stStrm, 3 );		// picture_coding_type
+
+				if ( iFrmType == 1 ) 		iFrmType = PIC_TYPE_I;
+				else if ( iFrmType == 2 ) 	iFrmType = PIC_TYPE_P;
+				else if ( iFrmType == 3 ) 	iFrmType = PIC_TYPE_B;
+				break;
+			}
+		} while(1);
+	}
+	else
+	{
+		return VID_ERR_NOT_SUPPORT;
+	}
+
+	*o_iFrameType = iFrmType;
+	return VID_ERR_NONE;
+}
+
 
 //
 //	Video Decoder APIs
@@ -1376,7 +1448,6 @@ static int32_t AllocateDecoderMemory( NX_VID_DEC_HANDLE hDec )
 			}
 		}
 	}
-
 
 	hDec->hColMvBuffer = NX_AllocateMemory( mvSize*hDec->numFrameBuffers, 4096 );	//	Planar Lu/Cb/Cr
 	if( 0 == hDec->hColMvBuffer ){

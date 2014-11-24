@@ -49,6 +49,7 @@ typedef enum{
 	VID_ERR_BUSY                    = -21,  // VPU H/W Busy
 	VID_ERR_TIMEOUT                 = -20,  // VPU Wait Timeout
 	VID_ERR_MEM_ACCESS              = -19,  // Memory Access Violation
+	VID_ERR_NOT_SUPPORT				= -7,
 	VID_ERR_CHG_PARAM				= -6,	// VPU Not changed
 	VID_ERR_WRONG_SEQ               = -5,   // Wrong Sequence
 	VID_ERR_PARAM                   = -4,   // VPU Invalid Parameter
@@ -279,6 +280,7 @@ VID_ERROR_E NX_VidDecInit(NX_VID_DEC_HANDLE hDec, NX_VID_SEQ_IN *pstSeqIn, NX_VI
 VID_ERROR_E NX_VidDecDecodeFrame( NX_VID_DEC_HANDLE hDec, NX_VID_DEC_IN *pstDecIn, NX_VID_DEC_OUT *pstDecOut );
 VID_ERROR_E NX_VidDecClrDspFlag( NX_VID_DEC_HANDLE hDec, NX_VID_MEMORY_HANDLE hFrameBuf, int32_t iFrameIdx );
 VID_ERROR_E NX_VidDecFlush( NX_VID_DEC_HANDLE hDec );
+VID_ERROR_E NX_VidDecGetFrameType( VID_TYPE_E eCodecType, NX_VID_DEC_IN *pstDecIn, int32_t *o_iFrameType );
 
 //
 //  Jpeg Encoder APIs

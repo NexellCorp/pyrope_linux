@@ -37,9 +37,9 @@
 
 //------------------------------------------------------------------------------
 static Mp4ManagerConfig defConfig = {
-	0, 1024, 768, 30, 6000000,
+	0, 640, 480, 15, 6000000,
 	false,
-	0, 0, 1024, 768
+	0, 0, 640, 480
 };
 
 CNX_Mp4Manager::CNX_Mp4Manager()
@@ -52,6 +52,7 @@ CNX_Mp4Manager::CNX_Mp4Manager()
 	, m_pAacEncFilter( NULL )
 	, m_bInit( 0 )
 	, m_bRun( 0 )
+	, m_bMode( 0 )
 {
 	SetConfig( &defConfig );
 	pthread_mutex_init( &m_hLock, NULL );
@@ -255,7 +256,7 @@ int32_t CNX_Mp4Manager::Deinit( void )
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_Mp4Manager::Start( char *pFileName )
+int32_t CNX_Mp4Manager::Start( char *pFileName, int32_t mode )
 {
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	CNX_AutoLock lock( &m_hLock );
@@ -265,20 +266,25 @@ int32_t CNX_Mp4Manager::Start( char *pFileName )
 		SAFE_START_FILTER( m_pNotifier );
 		SAFE_START_FILTER( m_pVipFilter );
 		SAFE_START_FILTER( m_pVrFilter );
-		SAFE_START_FILTER( m_pAvcEncFilter );
-		SAFE_START_FILTER( m_pAudCapFilter );
-		SAFE_START_FILTER( m_pAacEncFilter );
-		SAFE_START_FILTER( m_pInterleaverFilter );
-		SAFE_START_FILTER( m_pMp4MuxerFilter );
+
+		if( mode == NX_MGR_MODE_ENCODE ) {
+			SAFE_START_FILTER( m_pAvcEncFilter );
+			SAFE_START_FILTER( m_pAudCapFilter );
+			SAFE_START_FILTER( m_pAacEncFilter );
+			SAFE_START_FILTER( m_pInterleaverFilter );
+			SAFE_START_FILTER( m_pMp4MuxerFilter );
+		}
 
 		if( m_pVrFilter )		m_pVrFilter->EnableRender( true );
-		
+		if( m_pVrFilter )		m_pVrFilter->EnableDeliver( (mode == NX_MGR_MODE_ENCODE) ? true : false );
+
 		if( pFileName )
 			if( m_pMp4MuxerFilter )	m_pMp4MuxerFilter->SetFileName( pFileName );
 		
 		if( m_pMp4MuxerFilter )	m_pMp4MuxerFilter->EnableMp4Muxing( true );
 
 		m_bRun = true;
+		m_bMode = mode;
 	}
 
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
@@ -295,11 +301,15 @@ int32_t CNX_Mp4Manager::Stop( void )
 	{
 		SAFE_STOP_FILTER( m_pVipFilter );
 		SAFE_STOP_FILTER( m_pVrFilter );
-		SAFE_STOP_FILTER( m_pAvcEncFilter );
-		SAFE_STOP_FILTER( m_pAudCapFilter );
-		SAFE_STOP_FILTER( m_pAacEncFilter );
-		SAFE_STOP_FILTER( m_pInterleaverFilter );
-		SAFE_STOP_FILTER( m_pMp4MuxerFilter );
+		
+		if( m_bMode == NX_MGR_MODE_ENCODE ) {
+			SAFE_STOP_FILTER( m_pAvcEncFilter );
+			SAFE_STOP_FILTER( m_pAudCapFilter );
+			SAFE_STOP_FILTER( m_pAacEncFilter );
+			SAFE_STOP_FILTER( m_pInterleaverFilter );
+			SAFE_STOP_FILTER( m_pMp4MuxerFilter );
+		}
+		
 		SAFE_STOP_FILTER( m_pNotifier );
 
 		if( m_pVrFilter )		m_pVrFilter->EnableRender( false );
@@ -313,18 +323,58 @@ int32_t CNX_Mp4Manager::Stop( void )
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_Mp4Manager::Capture( char *pFileName )
+int32_t CNX_Mp4Manager::Capture( char *pFileName, Mp4ManagerConfig *pConfig )
 {
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	if( m_bRun )
 	{
-		if( pFileName ) {
-			if( m_pVipFilter ) m_pVipFilter->SetJpegFileName( (uint8_t*)pFileName );
-		}
+		if( m_bMode == NX_MGR_MODE_ENCODE ) {
+			if( pFileName && m_pVipFilter )
+				m_pVipFilter->SetJpegFileName( (uint8_t*)pFileName );
 
-		if( m_pVipFilter )	m_pVipFilter->EnableCapture( true );
+			if( m_pVipFilter )
+				m_pVipFilter->EnableCapture();
+		}
+		else {
+			// a. Stop Previous VIP Filter.
+			SAFE_STOP_FILTER( m_pVipFilter );
+
+			// b. Resize VIP Filter Initialize.
+			CNX_VIPFilter *pVipFilter = new CNX_VIPFilter();
+			NX_VIP_CONFIG vipConfig;
+			memset( &vipConfig, 0x00, sizeof(vipConfig) );
+
+			if( pConfig ) {
+				vipConfig.width		= pConfig->width;
+				vipConfig.height	= pConfig->height;
+				vipConfig.fps		= pConfig->fps;
+			}
+			else {
+				vipConfig.width		= m_VipConfig.width;
+				vipConfig.height	= m_VipConfig.height;
+				vipConfig.fps		= m_VipConfig.fps;
+			}
+
+			// c. Register Notifier
+			if( pVipFilter )
+				pVipFilter->SetNotifier( m_pNotifier );
+			
+			// d. Resize Capture
+			if( pFileName && m_pVipFilter )
+				pVipFilter->SetJpegFileName( (uint8_t*)pFileName );
+			
+			if( pVipFilter )
+				pVipFilter->EnableResizeCapture( &vipConfig );
+
+			// e. Release VIP Filter
+			if( pVipFilter )
+				delete pVipFilter;
+
+			// f. Restart Previous VIP Filter
+			SAFE_START_FILTER( m_pVipFilter );
+		}
 	}
 
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
@@ -337,10 +387,7 @@ int32_t CNX_Mp4Manager::EnableRender( int32_t enable )
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	CNX_AutoLock lock( &m_hLock );
 
-	if( m_bRun )
-	{
-		if( m_pVrFilter )	m_pVrFilter->EnableRender( enable ? 1 : 0);
-	}
+	if( m_pVrFilter )	m_pVrFilter->EnableRender( enable ? true : false );
 
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return 0;

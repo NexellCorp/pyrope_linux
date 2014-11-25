@@ -53,6 +53,9 @@ typedef struct {
 #define	ENABLE_MLC_SCALER
 #endif
 
+//	Drone
+//#define	LCD_WIDTH	1024
+//#define	LCD_HEIGHT	600
 //	Pyxis
 #define	LCD_WIDTH	800
 #define	LCD_HEIGHT	1280
@@ -119,22 +122,22 @@ static void dumpdata( void *data, int len, const char *msg );
 	*_p++ = (unsigned char)((_var)>>0);  \
 	*_p++ = (unsigned char)((_var)>>8);  \
 	*_p++ = (unsigned char)((_var)>>16); \
-	*_p++ = (unsigned char)((_var)>>24); 
+	*_p++ = (unsigned char)((_var)>>24);
 
 #define PUT_BE32(_p, _var) \
 	*_p++ = (unsigned char)((_var)>>24);  \
 	*_p++ = (unsigned char)((_var)>>16);  \
 	*_p++ = (unsigned char)((_var)>>8); \
-	*_p++ = (unsigned char)((_var)>>0); 
+	*_p++ = (unsigned char)((_var)>>0);
 
 #define PUT_LE16(_p, _var) \
 	*_p++ = (unsigned char)((_var)>>0);  \
-	*_p++ = (unsigned char)((_var)>>8);  
+	*_p++ = (unsigned char)((_var)>>8);
 
 
 #define PUT_BE16(_p, _var) \
 	*_p++ = (unsigned char)((_var)>>8);  \
-	*_p++ = (unsigned char)((_var)>>0);  
+	*_p++ = (unsigned char)((_var)>>0);
 
 
 static uint64_t NX_GetTickCount( void )
@@ -345,7 +348,7 @@ int GetSequenceInformation( FFMPEG_STREAM_READER *streamReader, AVStream *stream
 				return retSize;
 			default:
 				break;
-			
+
 		}
 	}
 	else if(  (codecId == CODEC_ID_WMV1) || (codecId == CODEC_ID_WMV2) || (codecId == CODEC_ID_WMV3) )
@@ -912,12 +915,12 @@ static int CodecIdToVpuType( int codecId, unsigned int fourcc )
 #if (ENABLE_THEORA)
 	else if( codecId == CODEC_ID_THEORA )
 	{
-		vpuCodecType = NX_VPX_THEORA;
+		vpuCodecType = NX_THEORA_DEC;
 	}
 #endif
 	else if( codecId == CODEC_ID_VP8 )
 	{
-		vpuCodecType = NX_VPX_VP8;
+		vpuCodecType = NX_VP8_DEC;
 	}
 	else
 	{
@@ -980,6 +983,7 @@ int dec_main( int argc, char *argv[] )
 	char *outFileName = NULL;
 	int tmpSize;
 	int instanceIdx;
+	int brokenB = 0;
 	uint64_t startTime, endTime, totalTime = 0;
 	FILE *fpOut = NULL;
 
@@ -1067,7 +1071,7 @@ int dec_main( int argc, char *argv[] )
 
 #if (ENABLE_THEORA)
 	//	Intialize Theora Parser
-	if( vpuCodecType == NX_VPX_THEORA )
+	if( vpuCodecType == NX_THEORA_DEC )
 	{
 		theora_parser_init((void**)&pReader->theoraParser);
 	}
@@ -1179,9 +1183,15 @@ int dec_main( int argc, char *argv[] )
 				tmpSize = readSize;
  			}
 
-#if 0
+#if 1
 			printf(" << Init In Parameter >> \n");
 			printf("seqInfo = 0x%x (size = %d) \n", seqIn.seqInfo, seqIn.seqSize);
+			{
+				int i, Size = ( seqIn.seqSize > 16 ) ? (16) : (seqIn.seqSize);
+				for (i=0 ; i<Size ; i++)
+					printf("%2x ", seqIn.seqInfo[i]);
+				printf("\n");
+			}
 			printf("w = %d, h= %d \n", seqIn.width, seqIn.height);
 			printf("pMemHandle = %x \n", seqIn.pMemHandle);
 			printf("numBuffers = %d, addNumBuffers = %d \n", seqIn.numBuffers, seqIn.addNumBuffers);
@@ -1200,8 +1210,8 @@ int dec_main( int argc, char *argv[] )
 				return -1;
 			}
 
-#if 0
-			printf("<<<<<<<<<<< Init_Info >>>>>>>>>>>>>> \n");
+#if 1
+			printf("<<<<<<<<<<< Init_Out >>>>>>>>>>>>>> \n");
 			printf("minBuffers = %d \n", seqOut.minBuffers);
 			printf("numBuffers = %d \n", seqOut.numBuffers);
 			printf("width = %d \n", seqOut.width);
@@ -1223,21 +1233,53 @@ int dec_main( int argc, char *argv[] )
 		}
 		else
 		{
-			if( 0 != ReadStream( pReader, pReader->video_stream,  streamBuffer+pos, &readSize, &isKey, &timeStamp ) )
+			if( 0 == ReadStream( pReader, pReader->video_stream,  streamBuffer+pos, &readSize, &isKey, &timeStamp ) )
 			{
-				break;
+				pos += readSize;
+				tmpSize = pos;
 			}
-			pos += readSize;
-			tmpSize = pos;
+			else
+			{
+				pos = 0;
+			}
 		}
 
 		memset(&decIn, 0, sizeof(decIn));
 		decIn.strmBuf = streamBuffer;
 		decIn.strmSize = pos;
 		decIn.timeStamp = timeStamp;
-		decIn.eos = 0;
+		decIn.eos = ( decIn.strmSize > 0 || frameCount == 0 ) ? (0) : (1);
 
-		//printf("strm = 0x%x, size = %d \n", decIn.strmBuf, decIn.strmSize);
+		if ( (decOut.outFrmReliable_0_100 != 100) && (decOut.outDecIdx >= 0) && ( pos > 0 ) && (frameCount > 0) )
+		{
+			int iFrameType;
+			NX_VidDecGetFrameType( vpuCodecType, &decIn, &iFrameType );
+
+			if ( iFrameType != PIC_TYPE_I )
+			{
+				pos = 0;
+				frameCount++;
+				continue;
+			}
+			else
+			{
+				brokenB = 0;
+			}
+		}
+
+		if ( brokenB < 2 )
+		{
+			int iFrameType;
+			NX_VidDecGetFrameType( vpuCodecType, &decIn, &iFrameType );
+			if ( (iFrameType == PIC_TYPE_I) || (iFrameType == PIC_TYPE_P) )
+				brokenB++;
+			else if ( iFrameType == PIC_TYPE_B )
+			{
+				pos = 0;
+				frameCount++;
+				continue;
+			}
+		}
 
 		startTime = NX_GetTickCount();
 		vidRet = NX_VidDecDecodeFrame( hDec, &decIn, &decOut );
@@ -1255,8 +1297,8 @@ int dec_main( int argc, char *argv[] )
 			exit(-2);
 		}
 
-		printf("Frame[%5d]: size=%6d, DspIdx=%2d, DecIdx=%2d, InTimeStamp=%7lld, outTimeStamp=%7lld, time=%6lld \n", frameCount, tmpSize, decOut.outImgIdx, decOut.outDecIdx, timeStamp, decOut.timeStamp, (endTime-startTime));
-		printf("interlace = %d(%d), Reliable = %d, MultiResel = %d, upW = %d, upH = %d\n", decOut.isInterlace, decOut.topFieldFirst, decOut.outFrmReliable_0_100, decOut.multiResolution, decOut.upSampledWidth, decOut.upSampledHeight);
+		printf("Frame[%5d]: size=%6d, DspIdx=%2d, DecIdx=%2d, InTimeStamp=%7lld, outTimeStamp=%7lld, time=%6lld, ", frameCount, tmpSize, decOut.outImgIdx, decOut.outDecIdx, timeStamp, decOut.timeStamp, (endTime-startTime));
+		printf("interlace = %d(%d), Reliable = %d, type = %d, MultiResel = %d, upW = %d, upH = %d\n", decOut.isInterlace, decOut.topFieldFirst, decOut.outFrmReliable_0_100, decOut.picType, decOut.multiResolution, decOut.upSampledWidth, decOut.upSampledHeight);
 
 		totalTime += (endTime-startTime);
 		frameCount ++;
@@ -1298,12 +1340,19 @@ int dec_main( int argc, char *argv[] )
 				}
 			}
 
-			outCount ++;
 			if( prevIdx != -1 )
 			{
 				NX_VidDecClrDspFlag( hDec, &decOut.outImg, prevIdx );
 			}
 			prevIdx = decOut.outImgIdx;
+
+			outCount ++;
+		}
+		else if ( decIn.eos == 1 )		break;
+
+		if ( (decOut.outFrmReliable_0_100 != 100) && (decOut.outDecIdx >= 0) )
+		{
+			NX_VidDecFlush( hDec );
 		}
 	}
 	NX_VidDecClose( hDec );
@@ -1312,7 +1361,7 @@ int dec_main( int argc, char *argv[] )
 
 #if (ENABLE_THEORA)
 	//	Intialize Theora Parser
-	if( vpuCodecType == NX_VPX_THEORA )
+	if( vpuCodecType == NX_THEORA_DEC )
 	{
 		theora_parser_end(pReader->theoraParser);
 	}

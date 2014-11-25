@@ -1188,13 +1188,13 @@ VID_ERROR_E NX_VidDecClrDspFlag( NX_VID_DEC_HANDLE hDec, NX_VID_MEMORY_HANDLE hF
 }
 
 // Optional Function
-VID_ERROR_E NX_VidDecGetFrameType( VID_TYPE_E eCodecType, NX_VID_DEC_IN *pstDecIn, int32_t *o_iFrameType )
+VID_ERROR_E NX_VidDecGetFrameType( VID_TYPE_E eCodecType, NX_VID_DEC_IN *pstDecIn, int32_t *piFrameType )
 {
 	uint8_t *pbyStrm = pstDecIn->strmBuf;
 	uint32_t uPreFourByte = (uint32_t)-1;
 	int32_t  iFrmType = PIC_TYPE_UNKNOWN;
 
-	if ( pbyStrm == NULL )
+	if ( (pbyStrm == NULL) || (piFrameType == NULL) )
 		return VID_ERR_PARAM;
 
 	if ( eCodecType == NX_AVC_DEC )
@@ -1211,15 +1211,15 @@ VID_ERROR_E NX_VidDecGetFrameType( VID_TYPE_E eCodecType, NX_VID_DEC_IN *pstDecI
 				// Slice start code
 				if ( iNaluType == 5 )
 				{
-					iFrmType = PIC_TYPE_I;
-					//iFrmType = PIC_TYPE_IDR;
+					//vld_get_uev(&stStrm);                 // First_mb_in_slice
+					iFrmType = PIC_TYPE_IDR;
 					break;
 				}
 				else if ( iNaluType == 1 )
 				{
 					VLD_STREAM stStrm = { 8, pbyStrm, pstDecIn->strmSize };
-					vld_get_uev(&stStrm);					// First_mb_in_slice
-					iFrmType = vld_get_uev(&stStrm);		// Slice type
+					vld_get_uev(&stStrm);                   // First_mb_in_slice
+					iFrmType = vld_get_uev(&stStrm);        // Slice type
 
 					if ( iFrmType == 0 || iFrmType == 5 ) 		iFrmType = PIC_TYPE_P;
 					else if ( iFrmType == 1 || iFrmType == 6 ) iFrmType = PIC_TYPE_B;
@@ -1256,7 +1256,7 @@ VID_ERROR_E NX_VidDecGetFrameType( VID_TYPE_E eCodecType, NX_VID_DEC_IN *pstDecI
 		return VID_ERR_NOT_SUPPORT;
 	}
 
-	*o_iFrameType = iFrmType;
+	*piFrameType = iFrmType;
 	return VID_ERR_NONE;
 }
 

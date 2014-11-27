@@ -461,9 +461,20 @@ int32_t CNX_Mp4MuxerFilter::MuxEncodedSample( CNX_MuxerSample *pSample )
 			else {	// text track
 				m_bTrackStart[trackID] = true;
 			}
-		}	
-		memcpy( m_TrackInfo[trackID].pData, pBuffer, bufSize );
-		m_TrackInfo[trackID].size = bufSize;
+		}
+
+		if( trackID == (m_MP4Config.videoTrack + m_MP4Config.audioTrack + m_MP4Config.textTrack - 1) ) {
+			// Text Data Case
+			m_TrackInfo[trackID].pData[0] = (bufSize & 0xFF00)>> 8;
+			m_TrackInfo[trackID].pData[1] = (bufSize & 0x00FF);
+			memcpy( m_TrackInfo[trackID].pData + 2, pBuffer, bufSize);
+			
+			m_TrackInfo[trackID].size = bufSize + 2;
+		}
+		else {
+			memcpy( m_TrackInfo[trackID].pData, pBuffer, bufSize );
+			m_TrackInfo[trackID].size = bufSize;
+		}
 		
 		if( trackID < m_MP4Config.videoTrack )
 			m_TrackInfo[trackID].flag = pSample->GetSyncPoint();
@@ -525,7 +536,7 @@ int32_t CNX_Mp4MuxerFilter::SetMuxConfig( void )
 		}
 
 		if( i < m_MP4Config.videoTrack ) {
-			m_Mp4TrackInfo[i].fcc_type		= MAKEFOURCC('m','p','4','v');
+			m_Mp4TrackInfo[i].fcc_type		= MAKEFOURCC('a','v','c','1');
 			m_Mp4TrackInfo[i].width			= m_MP4Config.trackConfig[i].width;
 			m_Mp4TrackInfo[i].height		= m_MP4Config.trackConfig[i].height;
 			m_Mp4TrackInfo[i].frame_rate	= m_MP4Config.trackConfig[i].frameRate;
@@ -535,7 +546,7 @@ int32_t CNX_Mp4MuxerFilter::SetMuxConfig( void )
 			m_Mp4TrackInfo[i].channel_num	= m_MP4Config.trackConfig[i].channel;
 		}
 		else if( i < m_MP4Config.videoTrack + m_MP4Config.audioTrack + m_MP4Config.textTrack ) {	// Text Track
-			//m_Mp4TrackInfo[i].fcc_type		= MAKEFOURCC('m','p','4','a');		
+			m_Mp4TrackInfo[i].fcc_type		= MAKEFOURCC('t','x','3','g');		
 		}
 
 		m_Mp4TrackInfo[i].time_scale	= 1000;

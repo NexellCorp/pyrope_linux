@@ -161,9 +161,7 @@ int32_t	CNX_VIPFilter::Receive( CNX_Sample *pSample )
 //------------------------------------------------------------------------------
 int32_t	CNX_VIPFilter::ReleaseSample( CNX_Sample *pSample )
 {
-	if( 0 > NX_VipQueueBuffer( m_hVip, ((CNX_VideoSample*)pSample)->GetVideoMemory() ) ) {
-		NxDbgMsg( NX_DBG_ERR, (TEXT("VipQueueBuffer() Failed.\n")) );
-	}
+	m_ReleaseQueue.Push( (void*)((CNX_VideoSample*)pSample)->GetVideoMemory() );
 	m_SampleOutQueue.PushSample( pSample );
 	m_pSemOut->Post();
 
@@ -304,13 +302,17 @@ void CNX_VIPFilter::ThreadLoop( void )
 	}
 #endif
 	
+	m_ReleaseQueue.Reset();
+
 	for( int32_t i = 0; i < NUM_ALLOC_BUFFER; i++ )
 	{
 		if( 0 > NX_VipQueueBuffer( m_hVip, m_VideoMemory[i] ) ) {
 			NxDbgMsg( NX_DBG_ERR, (TEXT("VipQueueBuffer() Failed.\n")) );
 		}
-		m_pSemOut->Post();
 	}
+
+	for( int32_t i = 0; i < NUM_ALLOC_BUFFER - 1; i++ )
+		m_pSemOut->Post();
 
 	while( !m_bThreadExit )
 	{
@@ -325,6 +327,25 @@ void CNX_VIPFilter::ThreadLoop( void )
 		{
 			NxDbgMsg( NX_DBG_WARN, (TEXT("Sample is NULL\n")) );
 			continue;
+		}
+
+		while( m_ReleaseQueue.IsReady() )
+		{
+			m_ReleaseQueue.Pop( (void**)&pVideoMemory );
+
+			if( 0 > NX_VipQueueBuffer( m_hVip,  pVideoMemory ) ) {
+				NxDbgMsg( NX_DBG_ERR, (TEXT("VipQueueBuffer() Failed.\n")) );
+			}
+		}
+		
+		//printf("[%s] Sample ( %d / %d )\n", (m_VipInfo.port == VIP_PORT_MIPI) ? "MIPI" : "VIP0", m_SampleOutQueue.GetSampleCount(), NUM_ALLOC_BUFFER );
+		if( 3 > m_SampleOutQueue.GetSampleCount() ) {
+			NxDbgMsg( NX_DBG_WARN, (TEXT("Buffer is not enough. ( port = %s, cur = %2d, alloc = %2d )\n"), 
+				(m_VipInfo.port == VIP_PORT_0) ? "VIP0" :
+				(m_VipInfo.port == VIP_PORT_1) ? "VIP1" :
+				(m_VipInfo.port == VIP_PORT_2) ? "VIP2" : "MIPI",
+				m_SampleOutQueue.GetSampleCount(),
+				NUM_ALLOC_BUFFER) );
 		}
 
 		if( 0 > NX_VipDequeueBuffer( m_hVip, &pVideoMemory, &systemTime ) ) {

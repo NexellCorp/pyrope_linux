@@ -545,6 +545,80 @@ private:
 	int32_t			m_bReset;
 };
 
+//------------------------------------------------------------------------------
+//	CNX_Queue
+//------------------------------------------------------------------------------
+class	CNX_Queue
+{
+public:
+	CNX_Queue( void )
+	{
+		m_iHeadIndex 	= 0;
+		m_iTailIndex 	= 0;
+		m_iSampleCount  = 0;
+		m_iQueueDepth	= MAX_QUEUE_COUNT;
+		pthread_mutex_init( &m_hQLock, NULL );
+	}
+
+	virtual ~CNX_Queue( void )
+	{
+		pthread_mutex_destroy( &m_hQLock );
+	}
+
+public:
+	virtual void 	Push( void *pSample )
+	{
+		pthread_mutex_lock( &m_hQLock );
+
+		m_pBuffer[m_iTailIndex] = pSample;
+		m_iTailIndex = (m_iTailIndex+1) % MAX_QUEUE_COUNT;
+		m_iSampleCount++;
+
+		pthread_mutex_unlock( &m_hQLock );
+	}
+
+	virtual void	Pop( void **ppSample )
+	{
+		pthread_mutex_lock( &m_hQLock );
+
+		*ppSample = m_pBuffer[m_iHeadIndex];
+		m_iHeadIndex = (m_iHeadIndex+1) % MAX_QUEUE_COUNT;
+		m_iSampleCount--;
+
+		pthread_mutex_unlock( &m_hQLock );
+	}
+
+	virtual int32_t	IsReady( void )
+	{
+		pthread_mutex_lock( &m_hQLock );
+		if( m_iSampleCount > 0 ) {
+			pthread_mutex_unlock( &m_hQLock );
+			return true;
+		}
+		pthread_mutex_unlock( &m_hQLock );
+		return false;
+	}
+
+	virtual void	Reset( void )
+	{
+		pthread_mutex_lock( &m_hQLock );
+		m_iHeadIndex 	= 0;
+		m_iTailIndex 	= 0;
+		m_iSampleCount 	= 0;
+		pthread_mutex_unlock( &m_hQLock );
+	}
+
+protected:
+	enum { MAX_QUEUE_COUNT = 128 };
+	void *m_pBuffer[MAX_QUEUE_COUNT];
+	int32_t	m_iHeadIndex, m_iTailIndex, m_iSampleCount;
+	int32_t m_iQueueDepth;
+	pthread_mutex_t m_hQLock;
+
+private:
+	CNX_Queue (const CNX_Queue &Ref);
+	CNX_Queue &operator=(const CNX_Queue &Ref);	
+};
 
 //------------------------------------------------------------------------------
 //	CNX_BufferQueue

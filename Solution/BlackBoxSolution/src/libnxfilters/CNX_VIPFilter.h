@@ -97,12 +97,12 @@ protected:
 	//------------------------------------------------------------------------
 	//	Input / Output Buffer
 	//------------------------------------------------------------------------	
-	enum { MAX_BUFFER = 16, NUM_ALLOC_BUFFER = 10, NUM_PUSHED_BUFFER = 10 };
-	// enum { MAX_BUFFER = 16, NUM_ALLOC_BUFFER = 6 };
+	enum { MAX_BUFFER = 16, NUM_ALLOC_BUFFER = 12 };
 	int32_t					m_iNumOfBuffer;
 	NX_VID_MEMORY_HANDLE	m_VideoMemory[MAX_BUFFER];
 	CNX_VideoSample			m_VideoSample[MAX_BUFFER];
 	CNX_SampleQueue			m_SampleOutQueue;
+	CNX_Queue				m_ReleaseQueue;
 	//------------------------------------------------------------------------
 	//	For Capture
 	//------------------------------------------------------------------------

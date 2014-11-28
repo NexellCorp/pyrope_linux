@@ -87,7 +87,7 @@ void main(int argc, char* argv[])
 		if((ret = NXParserUserDataGetFrame(parser_handle, &p_buf, &Size, &TimeStamp)) != 0) 
 			printf("NXParserUserDataWrapFunc ERROR !!!\n");
 
-		printf("-user data = %s\n", p_buf);
+		printf("-user data = %s\n", p_buf + 2);
 
 		free(p_buf);
 	}

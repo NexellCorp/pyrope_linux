@@ -463,13 +463,15 @@ int32_t CNX_Mp4MuxerFilter::MuxEncodedSample( CNX_MuxerSample *pSample )
 			}
 		}
 
-		if( trackID == (m_MP4Config.videoTrack + m_MP4Config.audioTrack + m_MP4Config.textTrack - 1) ) {
-			// Text Data Case
-			m_TrackInfo[trackID].pData[0] = (bufSize & 0xFF00)>> 8;
-			m_TrackInfo[trackID].pData[1] = (bufSize & 0x00FF);
-			memcpy( m_TrackInfo[trackID].pData + 2, pBuffer, bufSize);
-			
-			m_TrackInfo[trackID].size = bufSize + 2;
+		if( m_MP4Config.textTrack ) {
+			if( trackID == (m_MP4Config.videoTrack + m_MP4Config.audioTrack + m_MP4Config.textTrack - 1) ) {
+				// Text Data Case
+				m_TrackInfo[trackID].pData[0] = (bufSize & 0xFF00)>> 8;
+				m_TrackInfo[trackID].pData[1] = (bufSize & 0x00FF);
+				memcpy( m_TrackInfo[trackID].pData + 2, pBuffer, bufSize);
+				
+				m_TrackInfo[trackID].size = bufSize + 2;
+			}
 		}
 		else {
 			memcpy( m_TrackInfo[trackID].pData, pBuffer, bufSize );

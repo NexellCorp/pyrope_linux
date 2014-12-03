@@ -54,7 +54,7 @@ install:
 
 distclean:
 	rm -f $(TOPDIR)/lib/$(SO_NAME)
-	rm -f $(TOPDIR)/include/INX_Mp4Manager.h
+	rm -f $(TOPDIR)/include/INX_Mp3Manager.h
 	@find $(OBJTREE) -type f \
 		\( -name '*.o'	-o -name $(TARGET) -o -name '*.a' -o -name '*.so.*' -o \
 		-name '*.bin' -o -name '*.map' -o -name 'core' -o -name '*~' -o -name '.depend' \) \

@@ -82,27 +82,27 @@ bool CNX_Mp4Notify::Stop( void )
 //------------------------------------------------------------------------------
 void CNX_Mp4Notify::Push( DVR_EVENT_MESSAGE *pSample )
 {
+	CNX_AutoLock lock( &m_hLock );
+
 	if( m_nMsgCount >= m_nQueueDepth)
 		return;
 
-	pthread_mutex_lock( &m_hLock );
 	m_pEventMsg[m_iTailIndex] = pSample;
 	m_iTailIndex = (m_iTailIndex+1) % MAX_EVENT_QUEUE_DEPTH;
 	m_nMsgCount++;
-	pthread_mutex_unlock( &m_hLock );
 }
 
 //------------------------------------------------------------------------------
 void CNX_Mp4Notify::Pop( DVR_EVENT_MESSAGE **ppSample )
 {
+	CNX_AutoLock lock( &m_hLock );
+
 	if( m_nMsgCount <= 0 )
 		return;
 
-	pthread_mutex_lock( &m_hLock );
 	*ppSample = m_pEventMsg[m_iHeadIndex];
 	m_iHeadIndex = (m_iHeadIndex+1) % MAX_EVENT_QUEUE_DEPTH;
 	m_nMsgCount--;
-	pthread_mutex_unlock( &m_hLock );
 }
 
 //------------------------------------------------------------------------------

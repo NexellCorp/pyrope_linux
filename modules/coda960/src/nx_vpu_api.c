@@ -472,11 +472,12 @@ static int VPU_WaitBitInterrupt(int mSeconds)
 	{
 		reason=VpuReadReg(BIT_INT_REASON);
 		VpuWriteReg(BIT_INT_REASON, 0);
-		NX_ErrMsg(("VPU_WaitVpuInterrupt() TimeOut!!!(reason = 0x%.8x, CurPC = %x %x %x )\n", reason, VpuReadReg(BIT_CUR_PC), VpuReadReg(BIT_CUR_PC), VpuReadReg(BIT_CUR_PC) ));
+		NX_ErrMsg(("VPU_WaitVpuInterrupt() TimeOut!!!(reason = 0x%.8x, CurPC(0xBD 0xBF : %x %x %x))\n", reason, VpuReadReg(BIT_CUR_PC), VpuReadReg(BIT_CUR_PC), VpuReadReg(BIT_CUR_PC) ));
 		return 0;
 	}
 	else
 	{
+		//NX_ErrMsg(("Success CurPC = %x %x %x\n", VpuReadReg(BIT_CUR_PC), VpuReadReg(BIT_CUR_PC), VpuReadReg(BIT_CUR_PC) ));
 		VpuWriteReg(BIT_INT_CLEAR, 1);		// clear HW signal
 		reason=VpuReadReg(BIT_INT_REASON);
 		VpuWriteReg(BIT_INT_REASON, 0);

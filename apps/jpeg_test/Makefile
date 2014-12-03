@@ -5,31 +5,40 @@ include ../../build.env
 ######################################################################
 # Build options
 INCLUDE += -I./
-INCLUDE += -I../../library/include
-LIBRARY	+= -L../../library/lib
-LIBRARY += -lnxjpeg -lturbojpeg -lnxdsp -lnxv4l2 -lnxvmem
+INCLUDE += -I../../library/include 
+LIBRARY	+= -L../../library/lib -L../../library/lib/ratecontrol
+LIBRARY += -lnxjpeg -lturbojpeg -lnxvip -lnxdsp -lnxv4l2 -lnxvmem -lnxscaler -lnxvpu -lnxvidrc
 LIBRARY	+= -lstdc++
 
 ######################################################################
 # Target
-COBJS	:= jpeg_dec.o
-CPPOBJS	:=  
+DEC_OBJS	:= jpeg_dec.o
+ENC_OBJS	:= jpeg_enc.o
 
-CFLAGS	+= -g
+COBJS		:= $(DEC_OBJS) $(ENC_OBJS)
+CPPOBJS		:=  
 
-TARGET := jpeg_dec
+CFLAGS		+= -g
+
+DEC_APP		:= jpeg_dec
+ENC_APP		:= jpeg_enc
 
 ######################################################################
 # Build
 OBJS	:= $(COBJS) $(CPPOBJS)
 
-all: $(TARGET)
+all:			\
+	$(DEC_APP)	\
+	$(ENC_APP)	\
 
-$(TARGET):	depend $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -o $@ $(LIBRARY)
+$(DEC_APP):	depend $(OBJS)
+	$(CC) $(CFLAGS) $(DEC_OBJS) -o $@ $(LIBRARY)
+
+$(ENC_APP):	depend $(OBJS)
+	$(CC) $(CFLAGS) $(ENC_OBJS) -o $@ $(LIBRARY)
 
 clean:
-	rm -f $(TARGET) *.o .depend
+	rm -f $(DEC_APP) $(ENC_APP) *.o .depend
 
 #########################################################################
 # Dependency

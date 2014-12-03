@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //
-//	Copyright (C) 2014 Nexell Co. All Rights Reserved
+//	Copyright (C) 2013 Nexell Co. All Rights Reserved
 //	Nexell Co. Proprietary & Confidential
 //
 //	NEXELL INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
@@ -11,29 +11,19 @@
 //	Module		:
 //	File		:
 //	Description	:
-//	Author		:
+//	Author		: 
 //	Export		:
 //	History		:
 //
 //------------------------------------------------------------------------------
 
-#ifndef __NX_MENUPLAYER_H__
-#define	__NX_MENUPLAYER_H__
+#ifndef __NX_GUICONFIG_H__
+#define __NX_GUICONFIG_H__
 
-#include <CNX_BaseObject.h>
+#include <NX_DvrControl.h>
 
-enum {
-	PLAYER_STATUS_RUN,
-	PLAYER_STATUS_STOP,
-	PLAYER_STATUS_EOS,
-};
+#define AUDIO_OUTPUT_ENABLE		0
 
-CNX_BaseObject	*GetMenuPlayerHandle( SDL_Surface *pSurface, TTF_Font *pFont );
-void 			ReleaseMenuPlayerHandle( CNX_BaseObject *pBaseWindow );
+static NX_DVR_CONTAINER_TYPE gstContainer = DVR_CONTAINER_TS;		// DVR_CONTAINER_TS, DVR_CONTAINER_MP4
 
-void			SetPlayerStatus( int32_t status );
-int32_t			GetPlayerStatus( void );
-
-#endif	// __NX_MENUPLAYER_H__
-
-
+#endif	// __NX_GUICONFIG_H__

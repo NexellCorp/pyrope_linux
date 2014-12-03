@@ -17,23 +17,12 @@
 //
 //------------------------------------------------------------------------------
 
-#ifndef __NX_MENUPLAYER_H__
-#define	__NX_MENUPLAYER_H__
+#ifndef __NX_MENUJPEGDECODER_H__
+#define	__NX_MENUJPEGDECODER_H__
 
 #include <CNX_BaseObject.h>
 
-enum {
-	PLAYER_STATUS_RUN,
-	PLAYER_STATUS_STOP,
-	PLAYER_STATUS_EOS,
-};
+CNX_BaseObject	*GetMenuJpegDecodeHandle( SDL_Surface *pSurface, TTF_Font *pFont );
+void 			ReleaseMenuJpegDecodeHandle( CNX_BaseObject *pBaseWindow );
 
-CNX_BaseObject	*GetMenuPlayerHandle( SDL_Surface *pSurface, TTF_Font *pFont );
-void 			ReleaseMenuPlayerHandle( CNX_BaseObject *pBaseWindow );
-
-void			SetPlayerStatus( int32_t status );
-int32_t			GetPlayerStatus( void );
-
-#endif	// __NX_MENUPLAYER_H__
-
-
+#endif	// __NX_MENUJPEGDECODER_H__

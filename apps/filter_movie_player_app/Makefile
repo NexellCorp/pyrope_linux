@@ -9,7 +9,7 @@ include $(TOPDIR)/build.env
 # Build options
 INCLUDE += -I./ -I$(LIBSDIR)/include
 LIBRARY	+= -lstdc++ -lpthread -lgobject-2.0 -lm
-LIBRARY += -L$(LIBSDIR)/lib -lnxfilter -lnxfilterhelp -lnxfiltermanager
+LIBRARY += -L$(LIBSDIR)/lib/player_filter -lnxfilter
 
 
 INCLUDE += -I./

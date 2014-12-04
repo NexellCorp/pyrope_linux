@@ -443,7 +443,7 @@ void *CommandThread( void *arg )
 					static_player.display = DISPLAY_LCD;
 					printf("==================== 1\n");
 //					if( ERROR_NONE != (mpResult = NX_MPOpen( &hPlayer, uri, static_player.volume, dspModule, dspPort, static_player.audio_request_track_num, static_player.video_request_track_num , (char *)&input_media_info, display,  priority, &callback, NULL )) )
-					NX_MPCreate(&hPlayer, uri, &media_info, &callback, NULL);
+//					NX_MPCreate(&hPlayer, uri, &media_info, &callback, NULL);
 					MediaStreamInfo(&media_info);
 					if (ERROR_NONE != (mpResult = NX_MPOpen(hPlayer, 1, 0, 0, 1, 1, 0)))
 					{
@@ -491,7 +491,7 @@ void *CommandThread( void *arg )
 							static_player.display = DISPLAY_DUAL;
 							printf("==================== 2\n");
 //							if (ERROR_NONE != (mpResult = NX_MPOpen(&hPlayer, uri, static_player.volume, dspModule, dspPort, static_player.audio_request_track_num, static_player.video_request_track_num, (char *)&input_media_info, display, priority, &callback, NULL)))
-							NX_MPCreate(&hPlayer, uri, &media_info, &callback, NULL);
+//							NX_MPCreate(&hPlayer, uri, &media_info, &callback, NULL);
 							MediaStreamInfo(&media_info);
 							if (ERROR_NONE != (mpResult = NX_MPOpen(hPlayer, 1, 0, 0, 1, 1, 0)))
 							{
@@ -542,7 +542,7 @@ void *CommandThread( void *arg )
 				openName = uri;
 			}
 
-			NX_MPCreate(&hPlayer, uri, &media_info, &callback, NULL);
+//			NX_MPCreate(&hPlayer, uri, &media_info, &callback, NULL);
 			MediaStreamInfo(&media_info);
 #if 1
 			pthread_mutex_lock(&CmdMutex);
@@ -976,7 +976,7 @@ int main( int argc, char *argv[] )
 	}
 
 
-	NX_MPCreate(&handle, uri, &media_info, &callback, NULL);
+//	NX_MPCreate(&handle, uri, &media_info, &callback, NULL);
 	MediaStreamInfo(&media_info);
 
 	//---------------------------------------------------------------------

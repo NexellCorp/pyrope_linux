@@ -5,10 +5,10 @@ include ../../build.env
 ######################################################################
 # Build options
 INCLUDE += -I./
-INCLUDE += -I../../library/include
+INCLUDE += -I../../library/include -I../../library/include/theoraparser
 LIBRARY	+= -L../../library/lib -L../../library/lib/ratecontrol 
 LIBRARY += -lnxvpu -lnxdsp -lnxvip -lnxv4l2 -lnxvmem -lnxvidrc
-LIBRARY += -L./theoraparser -ltheoraparser
+LIBRARY += -ltheoraparser
 LIBRARY	+= -lavcodec -lavformat -lstdc++ -lm
 
 ######################################################################
@@ -26,8 +26,6 @@ CPPOBJS	:= \
 
 CFLAGS	+= -g
 
-THEORAPARSER := libtheoraparser
-
 TARGET:= codec_tests
 
 ######################################################################
@@ -38,14 +36,10 @@ all:	\
 	$(THEORAPARSER) \
 	$(TARGET)
 
-$(THEORAPARSER):
-	make -C theoraparser
-
 $(TARGET):	depend $(OBJS)
 	$(CC) $(CPPFLAGS) $(OBJS) -o $@ $(LIBRARY)
 
 clean:
-	make -C theoraparser clean
 	rm -f $(OBJS) $(TARGET) .depend
 
 #########################################################################

@@ -350,6 +350,7 @@ bool CNXBlackboxPlayerDlg::OpenFile( CString strFileName )
 	{
 		delete m_pPlayer;
 		m_pPlayer = NULL;
+		m_bPlay = false;	// Clear flag
 	}
 	//	Step 2. Create Play Control
 	m_pPlayer = new CNX_BBFilterManager(fileType);
@@ -472,6 +473,7 @@ bool CNXBlackboxPlayerDlg::MP4UserDataParser( CString strFileName )
 		memset( &userData, 0x00, sizeof(userData) );
 
 		userData.timeStamp = timeStamp;
+		pBufTemp += 2;	// Skip Size Information of Subtitle. ( 2bytes )
 		CopyMemory( userData.latitude, pBufTemp, GPS_LATITUDE_SIZE );
 		pBufTemp += GPS_LATITUDE_SIZE + 1;
 		CopyMemory( userData.longitude, pBufTemp, GPS_LONGITUDE_SIZE );

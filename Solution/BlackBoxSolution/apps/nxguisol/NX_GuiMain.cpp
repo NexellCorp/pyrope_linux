@@ -38,6 +38,7 @@
 #include "NX_MenuFileList.h"
 #include "NX_MenuSetting.h"
 #include "NX_MenuPlayer.h"
+#include "NX_MenuJpegDecode.h"
 
 #include <nx_dsp.h>
 
@@ -45,6 +46,7 @@ static CNX_BaseWindow	*gstMenuTop			= NULL;
 static CNX_BaseWindow	*gstMenuBlackBox	= NULL;
 static CNX_BaseWindow	*gstMenuFileList	= NULL;
 static CNX_BaseWindow	*gstMenuPlayer		= NULL;
+static CNX_BaseWindow	*gstMenuJpegDecode	= NULL;
 static CNX_BaseWindow	*gstMenuSetting		= NULL;
 
 static SDL_Surface		*gstSurface			= NULL;
@@ -79,6 +81,8 @@ static void signal_handler( int32_t sig )
 	ReleaseMenuBlackBoxHandle( gstMenuBlackBox );
 	ReleaseMenuFileListHandle( gstMenuFileList );
 	ReleaseMenuSettingHandle( gstMenuSetting );
+	ReleaseMenuPlayerHandle( gstMenuPlayer );
+	ReleaseMenuJpegDecodeHandle( gstMenuJpegDecode );
 
 	exit( EXIT_FAILURE );
 }
@@ -92,6 +96,9 @@ static void register_signal( void )
 
 int32_t main( void )
 {
+	NX_DspVideoSetPriority( DISPLAY_MODULE_MLC0, 1 );
+	NX_DspSetColorKey( DISPLAY_MODULE_MLC0, 0x090909 );
+
 	TTF_Init();
 	gstFont = TTF_OpenFont("/root/DejaVuSansMono.ttf", 24);
 
@@ -110,9 +117,6 @@ int32_t main( void )
 
 	register_signal();
 
-	NX_DspVideoSetPriority( DISPLAY_MODULE_MLC0, 2 );
-	NX_DspSetColorKey( DISPLAY_MODULE_MLC0, 0x090909 );
-
 	// Read Configuration
 	if( 0 > DvrConfigRead("/mnt/mmc/config.dat" ) ) {
 		DvrConfigWriteDefault("/mnt/mmc/config.dat" );
@@ -123,6 +127,7 @@ int32_t main( void )
 	gstMenuFileList	= (CNX_BaseWindow*)GetMenuFileListHandle( gstSurface, gstFont );
 	gstMenuSetting	= (CNX_BaseWindow*)GetMenuBlackBoxHandle( gstSurface, gstFont );
 	gstMenuPlayer	= (CNX_BaseWindow*)GetMenuPlayerHandle( gstSurface, gstFont );
+	gstMenuJpegDecode = (CNX_BaseWindow*)GetMenuJpegDecodeHandle( gstSurface, gstFont );
 
 	gstMenuTop->EventLoop();
 
@@ -134,12 +139,13 @@ int32_t main( void )
 	if( gstSurface )	SDL_FreeSurface( gstSurface );
 	SDL_Quit();
 	TTF_CloseFont( gstFont );
-
+	
 	ReleaseMenuTopHandle( gstMenuTop );
 	ReleaseMenuBlackBoxHandle( gstMenuBlackBox );
 	ReleaseMenuFileListHandle( gstMenuFileList );
 	ReleaseMenuSettingHandle( gstMenuSetting );
 	ReleaseMenuPlayerHandle( gstMenuPlayer );
+	ReleaseMenuJpegDecodeHandle( gstMenuJpegDecode );
 
 	return 0;
 }

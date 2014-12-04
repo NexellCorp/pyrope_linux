@@ -45,6 +45,7 @@ CNX_MotionDetectFilter::CNX_MotionDetectFilter()
 {
 	m_pSemIn	= new CNX_Semaphore( MAX_BUFFER, 0 );
 	NX_ASSERT( m_pSemIn );
+	pthread_mutex_init( &m_hLock, NULL );
 }
 
 //------------------------------------------------------------------------------
@@ -52,6 +53,8 @@ CNX_MotionDetectFilter::~CNX_MotionDetectFilter()
 {
 	if( true == m_bInit )
 		Deinit();
+	
+	pthread_mutex_destroy( &m_hLock );
 	
 	delete m_pSemIn;
 }
@@ -202,7 +205,11 @@ void CNX_MotionDetectFilter::ThreadLoop(void)
 
 		Deliver( pSample );
 		
-		if( m_bEnabled )
+		pthread_mutex_lock( &m_hLock );
+		int32_t enable = m_bEnabled;
+		pthread_mutex_unlock( &m_hLock );
+
+		if( enable )
 		{
 			if( !(m_SamplingFrameCnt % m_SamplingFrame) )
 			{
@@ -338,6 +345,8 @@ void CNX_MotionDetectFilter::RegMotionDetectCallback( int32_t (*cbFunc)( NX_VID_
 //------------------------------------------------------------------------------
 int32_t CNX_MotionDetectFilter::EnableMotionDetect( int32_t enable )
 {
+	CNX_AutoLock lock( &m_hLock );	
+	
 	NxDbgMsg( NX_DBG_INFO, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnabled)?"Enable":"Disable", (enable)?"Enable":"Disable") );
 	m_bEnabled = enable;
 	return true;

@@ -22,11 +22,17 @@
 
 #include <CNX_BaseObject.h>
 
+enum {
+	PLAYER_STATUS_RUN,
+	PLAYER_STATUS_STOP,
+	PLAYER_STATUS_EOS,
+};
+
 CNX_BaseObject	*GetMenuPlayerHandle( SDL_Surface *pSurface, TTF_Font *pFont );
 void 			ReleaseMenuPlayerHandle( CNX_BaseObject *pBaseWindow );
 
-void			PushFlags( int32_t type );
-int32_t			PopFlags( void );
+void			SetPlayerStatus( int32_t status );
+int32_t			GetPlayerStatus( void );
 
 #endif	// __NX_MENUPLAYER_H__
 

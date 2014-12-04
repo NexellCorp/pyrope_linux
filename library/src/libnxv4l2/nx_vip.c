@@ -131,7 +131,7 @@ VIP_HANDLE NX_VipInit( VIP_INFO *pVipInfo )
 
 	// 3. Set sensor format. (Normal case / MIPI case)
 	if( pVipInfo->port != VIP_PORT_MIPI ) {
-		v4l2_set_format( hPrivate, sensorId, pVipInfo->width, pVipInfo->height, PIXCODE_YUV420_PLANAR );
+		v4l2_set_format( hPrivate, sensorId, pVipInfo->width, pVipInfo->height, PIXCODE_YUV422_PACKED );
 	}
 	else {
 		v4l2_set_format( hPrivate, sensorId, pVipInfo->width, pVipInfo->height, PIXCODE_YUV422_PACKED );

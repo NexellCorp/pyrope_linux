@@ -27,13 +27,16 @@
 #include <CNX_ListBox.h>
 
 #include <NX_PlayerMain.h>
+#include <NX_JpegDecode.h>
 
 #include "NX_MenuFileList.h"
+#include "NX_GuiConfig.h"
 
 static CNX_BaseWindow	*gstWnd 		= NULL;
 static CNX_TextBox		*gstTxtTitle	= NULL;
 static CNX_PushButton	*gstBtnNormal	= NULL;
 static CNX_PushButton	*gstBtnEvent	= NULL;
+static CNX_PushButton	*gstBtnCapture	= NULL;
 static CNX_PushButton	*gstBtnPlay		= NULL;
 static CNX_PushButton	*gstBtnExit		= NULL;
 static CNX_ListBox		*gstLstFile		= NULL;
@@ -43,15 +46,19 @@ static TTF_Font			*gstFont		= NULL;
 
 extern CNX_BaseObject *GetMenuTopHandle( SDL_Surface *pSurface, TTF_Font *pFont );
 extern CNX_BaseObject *GetMenuPlayerHandle( SDL_Surface *pSurface, TTF_Font *pFont );
+extern CNX_BaseObject *GetMenuJpegDecodeHandle( SDL_Surface *pSurface, TTF_Font *pFont );
 
 typedef enum {
 	LIST_TYPE_NORMAL,
 	LIST_TYPE_EVENT,
+	LIST_TYPE_CAPTURE,
 } ListType;
 
 static char 	m_FileBuffer[1024][255];
 static int32_t	m_FileCnt = 0;
 static ListType	m_FileListType;
+
+#define FILE_EXTENSION(A)		(A == DVR_CONTAINER_TS) ? ".ts" : ".mp4"
 
 int32_t CompareStrDecending(const void *str1, const void *str2)
 {
@@ -65,7 +72,7 @@ int32_t CompareStrDecending(const void *str1, const void *str2)
 	return 0;
 }
 
-static int32_t CreateFileList( const char *dir )
+static int32_t CreateFileList( const char *dir, const char *extension )
 {
 	DIR *dp;
 
@@ -82,7 +89,7 @@ static int32_t CreateFileList( const char *dir )
 
 	while( ((dirEntry = readdir(dp)) != NULL) )
 	{
-		if( (strlen(dirEntry->d_name) - 3) == (unsigned char)(strstr(dirEntry->d_name, ".ts") - dirEntry->d_name)) {
+		if( (strlen(dirEntry->d_name) - strlen(extension)) == (unsigned char)(strstr(dirEntry->d_name, extension) - dirEntry->d_name)) {
 			sprintf(fileName, "%s/%s", dir, dirEntry->d_name);
 			memcpy(m_FileBuffer[m_FileCnt], dirEntry->d_name, sizeof(dirEntry->d_name));
 			m_FileCnt++;
@@ -102,13 +109,24 @@ static void FileListPlay( void )
 	
 	fileName = gstLstFile->GetCurItemString();
 	memset(FilePath, 0x00, sizeof(FilePath));
-	if (m_FileListType == LIST_TYPE_NORMAL) sprintf((char*)FilePath, "/mnt/mmc/normal/%s", fileName);
-	else sprintf((char*)FilePath, "/mnt/mmc/event/%s", fileName);
 
-	PlayerStart((char*)FilePath);
+	if( m_FileListType != LIST_TYPE_CAPTURE ) {
+		sprintf( (char*)FilePath, 
+			(m_FileListType == LIST_TYPE_NORMAL) ? "/mnt/mmc/normal/%s" : "/mnt/mmc/event/%s", fileName );
 
-	CNX_BaseWindow *pWnd = (CNX_BaseWindow*)GetMenuPlayerHandle( gstSurface, gstFont );
-	pWnd->EventLoop();
+		PlayerStart( (char*)FilePath );
+
+		CNX_BaseWindow *pWnd = (CNX_BaseWindow*)GetMenuPlayerHandle( gstSurface, gstFont );
+		pWnd->EventLoop();
+	}
+	else {
+		sprintf( (char*)FilePath, "/mnt/mmc/capture/%s", fileName );
+
+		JpegDecodeStart( FilePath );
+
+		CNX_BaseWindow *pWnd = (CNX_BaseWindow*)GetMenuJpegDecodeHandle( gstSurface, gstFont );
+		pWnd->EventLoop();
+	}
 }
 
 void FileListNormal(void)
@@ -116,7 +134,7 @@ void FileListNormal(void)
 	printf("Build Normal List!\n");
 
 	m_FileListType = LIST_TYPE_NORMAL;
-	CreateFileList("/mnt/mmc/normal");
+	CreateFileList("/mnt/mmc/normal", FILE_EXTENSION(gstContainer) );
 
 	gstLstFile->RemoveAll();
 	
@@ -135,13 +153,32 @@ void FileListEvent( void )
 	printf("Build Event List!\n");
 
 	m_FileListType = LIST_TYPE_EVENT;
-	CreateFileList("/mnt/mmc/event");
+	CreateFileList("/mnt/mmc/event", FILE_EXTENSION(gstContainer) );
 
 	gstLstFile->RemoveAll();
 	
 	for(int32_t i = 0; i < m_FileCnt; i++ )
 	{
 		gstLstFile->AddString((uint8_t*)m_FileBuffer[i]);	
+	}
+
+	gstLstFile->SetPageItemNum( 10 );
+	gstLstFile->SetCurItem(0);
+	gstLstFile->Update();
+}
+
+void FileListCapture( void )
+{
+	printf("Build Jpeg List!\n");
+
+	m_FileListType = LIST_TYPE_CAPTURE;
+	CreateFileList("/mnt/mmc/capture", ".jpeg");
+
+	gstLstFile->RemoveAll();
+
+	for(int32_t i = 0; i < m_FileCnt; i++ )
+	{
+		gstLstFile->AddString((uint8_t*)m_FileBuffer[i]);
 	}
 
 	gstLstFile->SetPageItemNum( 10 );
@@ -156,11 +193,12 @@ void FileListNextPlay(void)
 
 	fileName = gstLstFile->GetNextItemString();
 	memset(FilePath, 0x00, sizeof(FilePath));
-	if (m_FileListType == LIST_TYPE_NORMAL) sprintf((char*)FilePath, "/mnt/mmc/normal/%s", fileName);
-	else sprintf((char*)FilePath, "/mnt/mmc/event/%s", fileName);
+
+	sprintf( (char*)FilePath, 
+		(m_FileListType == LIST_TYPE_NORMAL) ? "/mnt/mmc/normal/%s" : "/mnt/mmc/event/%s", fileName );
 
 	PlayerStop();
-	PlayerStart((char*)FilePath);
+	PlayerStart( (char*)FilePath );
 }
 
 void FileListPrevPlay(void)
@@ -170,15 +208,47 @@ void FileListPrevPlay(void)
 
 	fileName = gstLstFile->GetPrevItemString();
 	memset(FilePath, 0x00, sizeof(FilePath));
-	if (m_FileListType == LIST_TYPE_NORMAL) sprintf((char*)FilePath, "/mnt/mmc/normal/%s", fileName);
-	else sprintf((char*)FilePath, "/mnt/mmc/event/%s", fileName);
+
+	sprintf( (char*)FilePath, 
+		(m_FileListType == LIST_TYPE_NORMAL) ? "/mnt/mmc/normal/%s" : "/mnt/mmc/event/%s", fileName );
 
 	PlayerStop();
-	PlayerStart((char*)FilePath);
+	PlayerStart( (char*)FilePath );
+}
+
+void FileListNextJpegDecode(void)
+{
+	uint8_t FilePath[256];
+	uint8_t *fileName = NULL;
+
+	fileName = gstLstFile->GetNextItemString();
+	memset(FilePath, 0x00, sizeof(FilePath));
+	
+	sprintf( (char*)FilePath, "/mnt/mmc/capture/%s", fileName );
+
+	JpegDecodeStop();
+	JpegDecodeStart( FilePath );
+}
+
+void FileListPrevJpegDecode(void)
+{
+	uint8_t FilePath[256];
+	uint8_t *fileName = NULL;
+
+	fileName = gstLstFile->GetPrevItemString();
+	memset(FilePath, 0x00, sizeof(FilePath));
+	
+	sprintf( (char*)FilePath, "/mnt/mmc/capture/%s", fileName );
+
+	JpegDecodeStop();
+	JpegDecodeStart( FilePath );
 }
 
 static void Move2MenuTop( void )
 {
+	PlayerStop();
+	JpegDecodeStop();
+
 	CNX_BaseWindow *pWnd = (CNX_BaseWindow*)GetMenuTopHandle( gstSurface, gstFont );
 	pWnd->EventLoop();
 }
@@ -188,8 +258,9 @@ static void BuildMenuFileList( void )
 	SDL_Rect	rtWnd			= {   0,   0, 800, 480 };
 	SDL_Rect	rtTxtTitle		= {  10,  10, 800,  50 };
 	SDL_Rect	rtBtnNormal		= { 600, 100, 150,  50 };
-	SDL_Rect	rtBtnEvent		= { 600, 180, 150,  50 };
-	SDL_Rect	rtBtnPlay		= { 600, 320, 150,  50 };
+	SDL_Rect	rtBtnEvent		= { 600, 160, 150,  50 };
+	SDL_Rect	rtBtnCapture	= { 600, 220, 150,  50 };
+	SDL_Rect	rtBtnPlay		= { 600, 340, 150,  50 };
 	SDL_Rect	rtBtnExit		= { 600, 400, 150,  50 };
 	SDL_Rect	rtLstFile		= {	 30, 100, 500, 350 };
 	OBJ_ATTRIBUTE attr;
@@ -241,8 +312,23 @@ static void BuildMenuFileList( void )
 	attr.focusLineColor		= SDL_MapRGB(gstSurface->format, 0x00, 0x00, 0x00);
 	gstBtnEvent->Create( &attr );
 	gstBtnEvent->SetAction( OBJ_ACTION_EXEC, &FileListEvent );	
-	gstBtnEvent->SetChild( (CNX_BaseObject*)gstBtnPlay );	
+	gstBtnEvent->SetChild( (CNX_BaseObject*)gstBtnCapture );
 	
+	memset( &attr, 0x00, sizeof(OBJ_ATTRIBUTE) );
+	attr.pSurface			= gstSurface;
+	attr.rect				= rtBtnCapture;
+	attr.status				= OBJ_STATUS_NORMAL;
+	attr.pFont				= gstFont;
+	attr.pString			= "Capture";
+	attr.fontColor			= (SDL_Color){ 0x00, 0x00, 0x00, 0 };
+	attr.normalBgColor		= SDL_MapRGB(gstSurface->format, 0x00, 0xFF, 0x00);
+	attr.normalLineColor	= SDL_MapRGB(gstSurface->format, 0x00, 0x00, 0x00);
+	attr.focusBgColor		= SDL_MapRGB(gstSurface->format, 0x00, 0x00, 0xFF);
+	attr.focusLineColor		= SDL_MapRGB(gstSurface->format, 0x00, 0x00, 0x00);
+	gstBtnCapture->Create( &attr );
+	gstBtnCapture->SetAction( OBJ_ACTION_EXEC, &FileListCapture );
+	gstBtnCapture->SetChild( (CNX_BaseObject*)gstBtnPlay );
+
 	memset( &attr, 0x00, sizeof(OBJ_ATTRIBUTE) );
 	attr.pSurface 			= gstSurface;
 	attr.rect				= rtBtnPlay;
@@ -298,6 +384,7 @@ CNX_BaseObject *GetMenuFileListHandle( SDL_Surface *pSurface, TTF_Font *pFont )
 		
 		gstBtnNormal	= new CNX_PushButton();
 		gstBtnEvent		= new CNX_PushButton();
+		gstBtnCapture	= new CNX_PushButton();
 		gstBtnPlay		= new CNX_PushButton();
 		gstBtnExit		= new CNX_PushButton();
 		gstLstFile		= new CNX_ListBox();
@@ -316,9 +403,10 @@ void ReleaseMenuFileListHandle( CNX_BaseObject *pBaseWindow )
 	{
 		SAFE_RELEASE(gstWnd);
 		SAFE_RELEASE(gstTxtTitle);
-		SAFE_RELEASE(gstBtnNormal);		
+		SAFE_RELEASE(gstBtnNormal);
 		SAFE_RELEASE(gstBtnEvent);
+		SAFE_RELEASE(gstBtnCapture);
 		SAFE_RELEASE(gstBtnPlay);
-		SAFE_RELEASE(gstLstFile);				
+		SAFE_RELEASE(gstLstFile);
 	}
 }

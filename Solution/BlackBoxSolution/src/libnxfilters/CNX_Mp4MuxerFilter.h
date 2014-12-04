@@ -114,8 +114,9 @@ private:
 	MP4MUX_TRACK_INFO	m_Mp4TrackInfo[MAX_VID_NUM + MAX_AUD_NUM + MAX_TXT_NUM];
 
 	//  MP4 Decoder Specific Infomation
-	enum { MAX_VID_DSI_SIZE = 22,MAX_AUD_DSI_SIZE = 2 };
-	uint8_t				m_TrackDsiInfo[MAX_VID_NUM + MAX_AUD_NUM][MAX_VID_DSI_SIZE];
+	enum { MAX_DSI_SIZE = 64 };
+	uint8_t				m_TrackDsiInfo[MAX_VID_NUM + MAX_AUD_NUM][MAX_DSI_SIZE];
+	int32_t				m_TrackDsiSize[MAX_VID_NUM + MAX_AUD_NUM];
 
 	int32_t				m_bTrackStart[MAX_VID_NUM + MAX_AUD_NUM + MAX_TXT_NUM];
 	int32_t				m_bStartMuxing;

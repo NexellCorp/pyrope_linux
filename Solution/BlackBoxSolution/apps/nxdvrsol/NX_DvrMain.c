@@ -1159,13 +1159,15 @@ int main( int32_t argc, char *argv[] )
 
 	CMD_MESSAGE cmd; 
 
+#ifdef BOARD_TYPE_LYNX
 	NX_DspVideoSetPriority( DISPLAY_MODULE_MLC0, 0 );
+#endif
 
 	// Core Dump Debug
-	//echo "1" > /proc/sys/kernel/core_uses_pid;echo "/mnt/mmc/core.%e" > /proc/sys/kernel/core_pattern;ulimit -c 99999999
-	system("echo \"1\" > /proc/sys/kernel/core_uses_pid");
-	system("echo \"/mnt/mmc/core.%e\" > /proc/sys/kernel/core_pattern");
-	system("ulimit -c 99999999");
+	// echo "1" > /proc/sys/kernel/core_uses_pid;echo "/mnt/mmc/core.%e" > /proc/sys/kernel/core_pattern;ulimit -c 99999999
+	// system("echo \"1\" > /proc/sys/kernel/core_uses_pid");
+	// system("echo \"/mnt/mmc/core.%e\" > /proc/sys/kernel/core_pattern");
+	// system("ulimit -c 99999999");
 
 	pthread_mutex_init( &gstModeLock, NULL );
 	

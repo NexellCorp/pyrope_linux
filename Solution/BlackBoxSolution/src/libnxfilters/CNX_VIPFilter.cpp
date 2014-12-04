@@ -33,6 +33,7 @@
 
 #define DISPLAY_FPS			0
 #define DUMP_YUV			0
+#define ENABLE_DEBUG		0
 
 #if( DUMP_YUV )
 #define		YUV_DUMP_FILENAME	"/mnt/mmc/dump_video00.yuv"
@@ -40,7 +41,7 @@ static FILE *outFp = NULL;
 static int32_t bFileOpen = false;
 #endif
 
-#if( 1 )
+#if( ENABLE_DEBUG )
 #define NxDbgColorMsg(A, B) do {										\
 								if( gNxFilterDebugLevel>=A ) {			\
 									printf("\033[1;37;41m%s", NX_DTAG);	\
@@ -54,7 +55,8 @@ static int32_t bFileOpen = false;
 
 //------------------------------------------------------------------------------
 CNX_VIPFilter::CNX_VIPFilter()
-	: m_bInit( false )
+	: JpegFileNameFunc( NULL )
+	, m_bInit( false )
 	, m_bRun( false )
 	, m_bThreadExit( true )
 	, m_hThread( 0 )
@@ -113,8 +115,6 @@ void CNX_VIPFilter::Init( NX_VIP_CONFIG *pConfig )
 		m_VipInfo.outWidth		= pConfig->width;
 		m_VipInfo.outHeight		= pConfig->height;
 
-		m_hVip = NX_VipInit( &m_VipInfo );
-
 		AllocateBuffer( m_VipInfo.width, m_VipInfo.height, 256, 256, NUM_ALLOC_BUFFER, m_FourCC );
 		m_bInit = true;
 	}
@@ -137,9 +137,7 @@ void CNX_VIPFilter::Deinit( void )
 	if( true == m_bInit ) {
 		if( m_bRun )	Stop();
 
-		NX_VipStreamControl( m_hVip, false );
 		FreeBuffer();
-		NX_VipClose( m_hVip );
 		m_bInit = false;
 	}
 
@@ -163,6 +161,7 @@ int32_t	CNX_VIPFilter::Receive( CNX_Sample *pSample )
 //------------------------------------------------------------------------------
 int32_t	CNX_VIPFilter::ReleaseSample( CNX_Sample *pSample )
 {
+	m_ReleaseQueue.Push( (void*)((CNX_VideoSample*)pSample)->GetVideoMemory() );
 	m_SampleOutQueue.PushSample( pSample );
 	m_pSemOut->Post();
 
@@ -176,6 +175,8 @@ int32_t CNX_VIPFilter::Run( void )
 	if( m_bRun == false ) {
 		m_bThreadExit 	= false;
 		NX_ASSERT( !m_hThread );
+		
+		m_hVip = NX_VipInit( &m_VipInfo );
 
 		if( 0 > pthread_create( &this->m_hThread, NULL, this->ThreadMain, this ) ) {
 			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __func__) );
@@ -199,6 +200,10 @@ int32_t	CNX_VIPFilter::Stop( void )
 		m_hThread = 0x00;
 		m_bRun = false;
 	}
+
+	NX_VipStreamControl( m_hVip, false );
+	NX_VipClose( m_hVip );
+
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return true;
 }
@@ -212,7 +217,7 @@ void CNX_VIPFilter::AllocateBuffer( int32_t width, int32_t height, int32_t align
 	m_SampleOutQueue.Reset();
 	m_SampleOutQueue.SetQueueDepth( numOfBuffer );
 
-	m_pSemOut->Init();
+	//m_pSemOut->Init();
 	for( int32_t i = 0; i < numOfBuffer; i++)
 	{
 		NX_ASSERT(NULL == m_VideoMemory[i]);
@@ -220,7 +225,7 @@ void CNX_VIPFilter::AllocateBuffer( int32_t width, int32_t height, int32_t align
 		NX_ASSERT( NULL != m_VideoMemory[i] );
 		
 		m_VideoSample[i].SetOwner( this );
-		m_VideoSample[i].SetVideoMemory( m_VideoMemory[i] );
+		//m_VideoSample[i].SetVideoMemory( m_VideoMemory[i] );
 		m_SampleOutQueue.PushSample( &m_VideoSample[i] );
 	}
 	m_iNumOfBuffer = numOfBuffer;
@@ -273,8 +278,11 @@ void CNX_VIPFilter::ThreadLoop( void )
 	NX_VID_MEMORY_INFO	*pVideoMemory = NULL;
 	uint64_t			sampleTime = 0;
 	int64_t				systemTime = 0;
-	
+
+#if(ENABLE_DEBUG)	
 	uint64_t			prvTime = 0, curTime = 0;
+	uint64_t			expectTime = 0, delayMargin = 0;
+#endif
 
 #if(DISPLAY_FPS)
 	int32_t 			cnt = 0;
@@ -294,41 +302,21 @@ void CNX_VIPFilter::ThreadLoop( void )
 	}
 #endif
 	
-#if(0)	
-	// Vip Driver must have 1EA buffer at least.
-	m_SampleOutQueue.PopSample( (CNX_Sample **)&pSample );
-	if( pSample ) {
-		pVideoMemory = pSample->GetVideoMemory();
-		if( 0 > NX_VipQueueBuffer( m_hVip, pVideoMemory ) ) {
-			NxDbgMsg( NX_DBG_ERR, (TEXT("VipQueueBuffer() Failed.\n")) );
-		}
-	} else {
-		NxDbgMsg( NX_DBG_WARN, (TEXT("Sample is NULL\n")) );
-	}
-	
-	for( int32_t i = 0; i < m_iNumOfBuffer - 1; i++ )
-		m_pSemOut->Post();
-#else
-	for( int32_t i = 0; i < NUM_PUSHED_BUFFER; i++ )
+	m_ReleaseQueue.Reset();
+
+	for( int32_t i = 0; i < NUM_ALLOC_BUFFER; i++ )
 	{
-		m_SampleOutQueue.PopSample( (CNX_Sample **)&pSample );
-		if( pSample ) {
-			pVideoMemory = pSample->GetVideoMemory();
-			if( 0 > NX_VipQueueBuffer( m_hVip, pVideoMemory ) ) {
-				NxDbgMsg( NX_DBG_ERR, (TEXT("VipQueueBuffer() Failed.\n")) );
-			}
-		} else {
-			NxDbgMsg( NX_DBG_WARN, (TEXT("Sample is NULL\n")) );
+		if( 0 > NX_VipQueueBuffer( m_hVip, m_VideoMemory[i] ) ) {
+			NxDbgMsg( NX_DBG_ERR, (TEXT("VipQueueBuffer() Failed.\n")) );
 		}
 	}
 
-	for( int32_t i = 0; i < m_iNumOfBuffer - NUM_PUSHED_BUFFER; i++ )
+	for( int32_t i = 0; i < NUM_ALLOC_BUFFER - 1; i++ )
 		m_pSemOut->Post();
-#endif
 
 	while( !m_bThreadExit )
 	{
-		uint64_t threadInterval = NX_GetTickCount();
+		// uint64_t threadInterval = NX_GetTickCount();
 
 		if( false == GetDeliverySample( (CNX_Sample **)&pSample) )
 		{
@@ -341,11 +329,23 @@ void CNX_VIPFilter::ThreadLoop( void )
 			continue;
 		}
 
-		pVideoMemory = pSample->GetVideoMemory();
-		if( 0 > NX_VipQueueBuffer( m_hVip, pVideoMemory ) ) {
-			NxDbgMsg( NX_DBG_ERR, (TEXT("VipQueueBuffer() Failed.\n")) );
-			pSample->Unlock();
-			continue;
+		while( m_ReleaseQueue.IsReady() )
+		{
+			m_ReleaseQueue.Pop( (void**)&pVideoMemory );
+
+			if( 0 > NX_VipQueueBuffer( m_hVip,  pVideoMemory ) ) {
+				NxDbgMsg( NX_DBG_ERR, (TEXT("VipQueueBuffer() Failed.\n")) );
+			}
+		}
+		
+		//printf("[%s] Sample ( %d / %d )\n", (m_VipInfo.port == VIP_PORT_MIPI) ? "MIPI" : "VIP0", m_SampleOutQueue.GetSampleCount(), NUM_ALLOC_BUFFER );
+		if( 3 > m_SampleOutQueue.GetSampleCount() ) {
+			NxDbgMsg( NX_DBG_WARN, (TEXT("Buffer is not enough. ( port = %s, cur = %2d, alloc = %2d )\n"), 
+				(m_VipInfo.port == VIP_PORT_0) ? "VIP0" :
+				(m_VipInfo.port == VIP_PORT_1) ? "VIP1" :
+				(m_VipInfo.port == VIP_PORT_2) ? "VIP2" : "MIPI",
+				m_SampleOutQueue.GetSampleCount(),
+				NUM_ALLOC_BUFFER) );
 		}
 
 		if( 0 > NX_VipDequeueBuffer( m_hVip, &pVideoMemory, &systemTime ) ) {
@@ -363,26 +363,32 @@ void CNX_VIPFilter::ThreadLoop( void )
 		int32_t nSampleCount = m_SampleOutQueue.GetSampleCount();
 
 		m_pOutStatistics->CalculateFps();
-		m_pOutStatistics->CalculateBufNumber( m_iNumOfBuffer - m_SampleOutQueue.GetSampleCount() );
+		m_pOutStatistics->CalculateBufNumber( m_iNumOfBuffer - nSampleCount );
+
+#if(ENABLE_DEBUG)	// Internal Debug Message ( Thread Hit / Delayed Capture )
+		expectTime	= (uint64_t)(1. / (double)(m_VipInfo.fpsNum / m_VipInfo.fpsDen) * 1000.);
+		delayMargin = (uint64_t)(1. / (double)(m_VipInfo.fpsNum / m_VipInfo.fpsDen) * 1000. / 2.);
 
 		// Internal Debug Message ( Thread Hit Interval )
-		threadInterval = NX_GetTickCount() - threadInterval;
-		if( threadInterval >= (((uint64_t)(m_VipInfo.fpsNum / m_VipInfo.fpsDen)) == 30 ? (uint64_t)(33*2) : (uint64_t)(66*2) ) ) 
-			NxDbgColorMsg( NX_DBG_VBS, (TEXT("[%d] DeliverSample <-> DequeueBuffer ( Over %dmSec : %lld mSec )"), nSampleCount, 
-				(((uint64_t)(m_VipInfo.fpsNum / m_VipInfo.fpsDen) == 30) ? (int32_t)(33*2) : (int32_t)(66*2)), threadInterval ));
+		// threadInterval = NX_GetTickCount() - threadInterval;
+		// if( threadInterval >= (expectTime + delayMargin) ) {
+		// 	NxDbgColorMsg( NX_DBG_VBS, (TEXT("[%d] DeliverSample <-> DequeueBuffer ( Over %lldmSec : %lld mSec )"), 
+		// 		nSampleCount, expectTime + delayMargin, threadInterval) );
+		// }
 
 		// Internal Debug Message ( Delayed Capture )
-		if( prvTime ) {
-			curTime = sampleTime;
+		if( !prvTime )	prvTime = curTime = sampleTime;
+		else 			curTime = sampleTime;
 
-			if( (curTime - prvTime) >= (((uint64_t)(m_VipInfo.fpsNum / m_VipInfo.fpsDen) == 30) ? (33 + 6) : (66 + 6)) )
-				NxDbgColorMsg( NX_DBG_VBS, (TEXT("[%d] Delayed capture. ( Over %dmSec : %lld mSec )"), nSampleCount, 
-					(((uint64_t)(m_VipInfo.fpsNum / m_VipInfo.fpsDen) == 30) ? (33 + 6) : (66 + 6)), curTime - prvTime ));
+		if( (curTime - prvTime) >= ( expectTime + delayMargin) ) {
+			NxDbgMsg( NX_DBG_VBS, (TEXT("[%d] Delayed Capture. (DelayedCapture = %lldms / TargetTime = %lldms / Margine = %lldms, TargetFps = %dfps)\n"),
+				nSampleCount, curTime - prvTime, expectTime, delayMargin, m_VipInfo.fpsNum / m_VipInfo.fpsDen) );
 		}
+
 		prvTime = curTime;
+#endif
 
-
-#if(DISPLAY_FPS) // Internal Debug Message : Display frame rate.
+#if(DISPLAY_FPS)	// Internal Debug Message : Display frame rate.
 		cnt++;
 		if( !(cnt % 100) ) {
 			cnt = 0;
@@ -390,7 +396,6 @@ void CNX_VIPFilter::ThreadLoop( void )
 				(m_VipInfo.port == 2) ? "MIPI" : (m_VipInfo.port == 0) ? "VIP0" : "VIP1", m_pOutStatistics->GetFpsCurrent()));
 		}
 #endif		
-
 		// Capture
 		pthread_mutex_lock( &m_hCaptureLock );
 		if( m_bCaptured ) {
@@ -464,11 +469,10 @@ void CNX_VIPFilter::JpegEncode( CNX_Sample *pSample )
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_VIPFilter::EnableCapture( uint32_t enable )
+int32_t CNX_VIPFilter::EnableCapture()
 {
 	pthread_mutex_lock( &m_hCaptureLock );
-	NxDbgMsg( NX_DBG_INFO, (TEXT("%s : %s -- > %s\n"), __func__, (m_bCaptured)?"Enable":"Disable", (enable)?"Enable":"Disable") );
-	m_bCaptured = enable;
+	m_bCaptured = true;
 	pthread_mutex_unlock( &m_hCaptureLock );
 	return true;	
 }
@@ -485,5 +489,80 @@ int32_t CNX_VIPFilter::RegJpegFileNameCallback( int32_t(*cbFunc)( uint8_t *, uin
 //------------------------------------------------------------------------------
 int32_t  CNX_VIPFilter::GetStatistics( NX_FILTER_STATISTICS *pStatistics )
 {
+	return true;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_VIPFilter::EnableResizeCapture( NX_VIP_CONFIG *pConfig  )
+{
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+
+	if( m_hVip ) {
+		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Already initialize.\n"), __func__) );
+		return -1;
+	}
+
+	// a. VIP Initialize
+	m_VipInfo.port			= pConfig->port;
+	m_VipInfo.mode			= VIP_MODE_CLIPPER;
+	m_VipInfo.width			= pConfig->width;
+	m_VipInfo.height		= pConfig->height;
+	m_VipInfo.numPlane		= 1;
+	m_VipInfo.fpsNum		= pConfig->fps;
+	m_VipInfo.fpsDen		= 1;
+	m_VipInfo.cropX			= 0;
+	m_VipInfo.cropY			= 0;
+	m_VipInfo.cropWidth		= pConfig->width;
+	m_VipInfo.cropHeight	= pConfig->height;
+	m_VipInfo.outWidth		= pConfig->width;
+	m_VipInfo.outHeight		= pConfig->height;
+	
+	m_hVip = NX_VipInit( &m_VipInfo );
+	
+	// b. Video Memory allocate & push memory
+	for( int32_t i = 0; i < 2; i++ ) {
+		m_VideoMemory[i] = NX_VideoAllocateMemory( 4096, pConfig->width, pConfig->height, NX_MEM_MAP_LINEAR, FOURCC_MVS0 );	
+		if( 0 > NX_VipQueueBuffer( m_hVip, m_VideoMemory[i] ) ) {
+			NxDbgMsg( NX_DBG_ERR, (TEXT("VipQueueBuffer() Failed.\n")) );
+		}
+	}
+
+	// c. dequeue memory
+	NX_VID_MEMORY_INFO	*pVideoMemory = NULL;
+	int64_t systemTime = 0;
+
+	if( 0 > NX_VipDequeueBuffer( m_hVip, &pVideoMemory, &systemTime ) ) {
+		NxDbgMsg( NX_DBG_WARN, (TEXT("VipDequeueBuffer() Failed.\n")) );
+	}
+
+	// d. jpeg capture
+	if( !m_JpegFileName[0] ) {
+		if( JpegFileNameFunc ) {
+			uint32_t bufSize = 0;
+			JpegFileNameFunc( (uint8_t*)m_JpegFileName, bufSize );
+		}
+		else {
+			time_t eTime;
+			struct tm *eTm;
+			time( &eTime);
+
+			eTm = localtime( &eTime );
+
+			sprintf( (char*)m_JpegFileName, "./capture_%04d%02d%02d_%02d%02d%02d.jpeg",
+					eTm->tm_year + 1900, eTm->tm_mon + 1, eTm->tm_mday, eTm->tm_hour, eTm->tm_min, eTm->tm_sec );
+		}
+	}
+
+	m_pJpegCapture->SetNotifier( m_pNotify );
+	m_pJpegCapture->SetFileName( (char*)m_JpegFileName );
+	m_pJpegCapture->Encode( pVideoMemory );
+
+	// e. Release Resouce
+	if( m_hVip ) NX_VipClose( m_hVip );
+	for( int32_t i = 0; i < 2; i++ ) {
+		if( m_VideoMemory[i] ) NX_FreeVideoMemory( m_VideoMemory[i] );
+	}
+
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return true;
 }

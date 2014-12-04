@@ -1021,7 +1021,7 @@ int32_t CNX_DvrManager::SetCapture( int32_t channel )
 
 	// b. capture channel
 	if( m_pVipFilter[channel] )
-		m_pVipFilter[channel]->EnableCapture( true );
+		m_pVipFilter[channel]->EnableCapture();
 	
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return 0;

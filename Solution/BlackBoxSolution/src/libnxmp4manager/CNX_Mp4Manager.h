@@ -59,12 +59,12 @@ public:
 	virtual int32_t Init( void );
 	virtual int32_t Deinit( void );
 	
-	virtual int32_t Start( char *pFileName );
+	virtual int32_t Start( char *pFileName, int32_t mode );
 	virtual int32_t Stop( void );
 
-	virtual int32_t Capture( char *pFileName );
+	virtual int32_t Capture( char *pFileName, Mp4ManagerConfig *pConfig );
 	virtual int32_t EnableRender( int32_t enable );
-	
+
 	virtual int32_t RegisterNotifyCallback( uint32_t (*cbNotify)(uint32_t, uint8_t *, uint32_t) );
 
 private:
@@ -82,6 +82,7 @@ private:
 	CNX_AudCaptureFilter	*m_pAudCapFilter;
 	CNX_AacEncoder			*m_pAacEncFilter;
 
+	CNX_InterleaverFilter	*m_pInterleaverFilter;
 	CNX_Mp4MuxerFilter		*m_pMp4MuxerFilter;
 
 	// Configuration
@@ -92,6 +93,7 @@ private:
 	NX_AUDCAPTURE_CONFIG	m_AudCapConfig;
 	NX_AUDENC_CONFIG		m_AudEncConfig;
 
+	NX_INTERLEAVER_CONFIG	m_InterleaverConfig;
 	NX_MP4MUXER_CONFIG		m_Mp4MuxerConfig;
 
 	Mp4ManagerConfig		m_ManagerConfig;
@@ -99,7 +101,8 @@ private:
 private:
 	int32_t					m_bInit;
 	int32_t					m_bRun;
-	
+	int32_t					m_bMode;
+
 	char 					m_FileName[1024];
 
 	pthread_mutex_t			m_hLock;

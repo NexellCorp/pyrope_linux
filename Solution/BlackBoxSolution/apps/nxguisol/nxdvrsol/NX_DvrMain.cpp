@@ -35,6 +35,7 @@
 #include <NX_DvrConfig.h>
 
 #include <nx_audio.h>
+#include <NX_GuiConfig.h>
 
 static NX_DVR_HANDLE			g_hDvr = NULL;
 static CMD_QUEUE_HANDLE			g_hCmd = NULL;
@@ -50,7 +51,8 @@ static NX_DVR_MEDIA_CONFIG		gstMediaConfig;
 static NX_DVR_RECORD_CONFIG		gstRecordConfig;
 static NX_DVR_DISPLAY_CONFIG	gstDisplayConfig;
 
-static NX_DVR_ENCODE_TYPE gstMode	= DVR_ENCODE_NORMAL; // DVR_ENCODE_NORMAL, DVR_ENCODE_MOTION
+static NX_DVR_ENCODE_TYPE 		gstMode			= DVR_ENCODE_NORMAL;	// DVR_ENCODE_NORMAL, DVR_ENCODE_MOTION
+
 static int32_t gstMotionEnable		= true;
 static int32_t gstAudioEnable		= true;
 static int32_t gstUserDataEnable	= false;
@@ -65,8 +67,9 @@ int32_t cbGetNormalFileName( uint8_t *buf, uint32_t bufSize )
 	
 	time( &eTime);
 	eTm = localtime( &eTime );
-	sprintf((char*)buf, "/mnt/mmc/normal/normal_%04d%02d%02d_%02d%02d%02d.ts",
-		eTm->tm_year + 1900, eTm->tm_mon + 1, eTm->tm_mday, eTm->tm_hour, eTm->tm_min, eTm->tm_sec);
+	sprintf((char*)buf, "/mnt/mmc/normal/normal_%04d%02d%02d_%02d%02d%02d.%s",
+		eTm->tm_year + 1900, eTm->tm_mon + 1, eTm->tm_mday, eTm->tm_hour, eTm->tm_min, eTm->tm_sec,
+		(gstContainer == DVR_CONTAINER_TS) ? "ts" : "mp4");
 
 	return 0;
 }
@@ -78,8 +81,9 @@ int32_t cbGetEventFileName( uint8_t *buf, uint32_t bufSize )
 	
 	time( &eTime);
 	eTm = localtime( &eTime );
-	sprintf((char*)buf, "/mnt/mmc/event/event_%04d%02d%02d_%02d%02d%02d.ts",
-		eTm->tm_year + 1900, eTm->tm_mon + 1, eTm->tm_mday, eTm->tm_hour, eTm->tm_min, eTm->tm_sec);
+	sprintf((char*)buf, "/mnt/mmc/event/event_%04d%02d%02d_%02d%02d%02d.%s",
+		eTm->tm_year + 1900, eTm->tm_mon + 1, eTm->tm_mday, eTm->tm_hour, eTm->tm_min, eTm->tm_sec,
+		(gstContainer == DVR_CONTAINER_TS) ? "ts" : "mp4");
 
 	return 0;
 }
@@ -238,7 +242,7 @@ static void DvrSetConfigure( void )
 	gstMediaConfig.nVideoChannel	= !gDvrConfig.nChannel ? 1 : 2;
 	gstMediaConfig.bEnableAudio		= gstAudioEnable;
 	gstMediaConfig.bEnableUserData 	= gstUserDataEnable;
-	gstMediaConfig.nContainer		= DVR_CONTAINER_TS;	
+	gstMediaConfig.nContainer		= gstContainer;	
 
 	gstMediaConfig.videoConfig[0].nPort 		= DVR_CAMERA_MIPI;
 	gstMediaConfig.videoConfig[0].nSrcWidth		= 1024;
@@ -275,16 +279,22 @@ static void DvrSetConfigure( void )
 	gstRecordConfig.networkType					= gDvrConfig.bHls ? DVR_NETWORK_HLS : DVR_NETWORK_NONE;
 	gstRecordConfig.hlsConfig.nSegmentDuration 	= 10;
 	gstRecordConfig.hlsConfig.nSegmentNumber	= 3;
-	sprintf( (char*)gstRecordConfig.hlsConfig.MetaFileName,	"test.m3u8" );
+	sprintf( (char*)gstRecordConfig.hlsConfig.MetaFileName,		"test.m3u8" );
 	sprintf( (char*)gstRecordConfig.hlsConfig.SegmentFileName,	"segment" );
 	sprintf( (char*)gstRecordConfig.hlsConfig.SegmentRootDir,	"/www" );
 
-	gstRecordConfig.bMdEnable[0]				= false;
+	gstRecordConfig.rtpConfig.nPort				= 554;
+	gstRecordConfig.rtpConfig.nSessionNum		= gDvrConfig.nChannel;
+	gstRecordConfig.rtpConfig.nConnectNum		= 2;
+	sprintf( (char*)gstRecordConfig.rtpConfig.sessionName[0], 	"video0" );	
+	sprintf( (char*)gstRecordConfig.rtpConfig.sessionName[1], 	"video1" );
+
+	gstRecordConfig.bMdEnable[0]				= gstMotionEnable;
 	gstRecordConfig.mdConfig[0].nMdThreshold	= 100;
 	gstRecordConfig.mdConfig[0].nMdSensitivity	= 100;
 	gstRecordConfig.mdConfig[0].nMdSampingFrame	= 1;
 
-	gstRecordConfig.bMdEnable[1]				= gstMotionEnable;
+	gstRecordConfig.bMdEnable[1]				= false;
 	gstRecordConfig.mdConfig[1].nMdThreshold	= 100;
 	gstRecordConfig.mdConfig[1].nMdSensitivity	= 100;
 	gstRecordConfig.mdConfig[1].nMdSampingFrame	= 1;
@@ -311,15 +321,17 @@ void DvrStart( void )
 
 	DvrSetConfigure( );
 
-	g_hNormalFileManager	= DvrFileManagerInit( (const char*)"/mnt/mmc/normal", 50, "ts" );
-	g_hEventFileManager		= DvrFileManagerInit( (const char*)"/mnt/mmc/event", 20, "ts" );
-	g_hCaptureFileManager	= DvrFileManagerInit( (const char*)"/mnt/mmc/capture", 1, "jpeg" );
+	g_hNormalFileManager	= DvrFileManagerInit( (const char*)"/mnt/mmc/normal",	50,	(gstContainer == DVR_CONTAINER_TS) ? "ts" : "mp4" );
+	g_hEventFileManager		= DvrFileManagerInit( (const char*)"/mnt/mmc/event",	20,	(gstContainer == DVR_CONTAINER_TS) ? "ts" : "mp4" );
+	g_hCaptureFileManager	= DvrFileManagerInit( (const char*)"/mnt/mmc/capture",	1,	"jpeg" );
 
 	// g_hGpsManager			= DvrGpsManagerInit();
 	// g_hGsensorManager 		= DvrGsensorManagerInit();
 	// g_hPowerManager			= DvrPowerManagerInit();
-
-	g_hAudio = NX_AudioInit();	
+#if (AUDIO_OUTPUT_ENABLE)
+	g_hAudio = NX_AudioInit();
+#endif
+	
 	g_hDvr = NX_DvrInit( &gstMediaConfig, &gstRecordConfig, &gstDisplayConfig );
 
 	if( g_hGsensorManager )		DvrGsensorManagerRegCmd( g_hGsensorManager, g_hCmd );

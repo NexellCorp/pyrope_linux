@@ -112,25 +112,19 @@ typedef struct Static_player_st {
 	int32_t	video_request_track_num;
 } Static_player_st;
 
-typedef struct AppData {
-	MP_HANDLE hPlayer;
-} AppData;
-
 Static_player_st	static_player;
-AppData				appData;
 
 pthread_t	gstPlayerThread;
 int32_t		gstPlayerThreadRun = false;
 
 MP_HANDLE	hPlayer = NULL;
-
 int32_t		bPlayerRun = false;
 
 static void cbMessage( void *privateDesc, uint32_t message, uint32_t param1, uint32_t param2 )
 {
 	if( message == CALLBACK_MSG_EOS ) {
 		printf("%s(): end of stream.\n", __func__);
-		PushFlags( 3 );
+		SetPlayerStatus( PLAYER_STATUS_EOS );
 	}
 	else if( message == CALLBACK_MSG_PLAY_ERR ) {
 		printf("%s(): cannot play contents.\n", __func__);
@@ -225,7 +219,6 @@ int32_t PlayerStart( const char *filename )
 
 		if (pMediaInfo->DemuxType == DEMUX_TYPE_MPEGTSDEMUX) {		// TS contents.
 			if (pMediaInfo->program_tot_no > 1) {
-				//scanf("%d", &program_no_track_num);
 				program_no_track_num = 0;
 				audio_request_track_num = program_no_track_num;
 				video_request_track_num = program_no_track_num;
@@ -233,12 +226,10 @@ int32_t PlayerStart( const char *filename )
 		}
 		else {														// The other contents. ( mp4, .. ) 
 			if (pMediaInfo->VideoTrackTotNum > 1){
-				//scanf("%d", &video_request_track_num);
 				while (1)
 				{
 					if (video_request_track_num < 1 || video_request_track_num >(signed)pMediaInfo->VideoTrackTotNum) {
 						printf("%s(): Error Input video request number.\n", __func__);
-						//scanf("%d", &video_request_track_num);
 					}
 					else {
 						video_request_track_num--;
@@ -263,7 +254,12 @@ int32_t PlayerStart( const char *filename )
 		}
 	}
 
-	mpResult = NX_MPOpen(&hPlayer, stUri, 100, 0, 0, audio_request_track_num, video_request_track_num, (char *)&MediaInfo, display, 0, &cbMessage, NULL);
+	mpResult = NX_MPSetFileName( &hPlayer, stUri, (char *)&MediaInfo );
+	if (ERROR_NONE != mpResult) {
+		printf("%s(): NX_MPSetFileName failed!\n", __func__);
+	}
+
+	mpResult = NX_MPOpen(hPlayer, 100, 0, 0, audio_request_track_num, video_request_track_num, display, &cbMessage, NULL);
 	if (ERROR_NONE != mpResult) {
 		printf("%s(): NX_MPOpen failed!\n", __func__);
 	}
@@ -279,7 +275,7 @@ int32_t PlayerStart( const char *filename )
 		printf("%s(): NX_MPPlay failed!\n", __func__);
 	}
 	bPlayerRun = true;
-	PushFlags( 1 );
+	SetPlayerStatus( PLAYER_STATUS_RUN );
 
 	return 0;
 }
@@ -288,10 +284,12 @@ int32_t PlayerStop( void )
 {
 	memset( stUri, 0x00, sizeof(stUri) );
 
-	if (hPlayer) NX_MPStop(hPlayer);
-	if (hPlayer) NX_MPClose(hPlayer);
-	hPlayer = NULL;
-	PushFlags( 0 );
+	if (hPlayer) {
+		NX_MPStop(hPlayer);
+		NX_MPClose(hPlayer);
+		hPlayer = NULL;
+	};
+	SetPlayerStatus( PLAYER_STATUS_STOP );
 
 	return 0;
 }

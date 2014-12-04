@@ -80,6 +80,10 @@ public:
 
 		return true;
 	}
+	int32_t Encode( NX_VID_MEMORY_INFO *pVideoMemory )
+	{
+		return JpegEncode( pVideoMemory );
+	}
 	void SetNotifier( INX_EventNotify *pNotify )
 	{ 
 		if( pNotify ) m_pNotify = pNotify;

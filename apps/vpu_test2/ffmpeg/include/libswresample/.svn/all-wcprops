@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/nxp-4330/!svn/ver/810/media/android/ffmpeg/include/libswresample
+END
+swresample.h
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/nxp-4330/!svn/ver/810/media/android/ffmpeg/include/libswresample/swresample.h
+END
+version.h
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/nxp-4330/!svn/ver/810/media/android/ffmpeg/include/libswresample/version.h
+END

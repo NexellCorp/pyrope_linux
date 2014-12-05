@@ -1167,7 +1167,10 @@ void *DecodeThread( void *arg )
 				seqIn.seqInfo = streamBuffer;
 				seqIn.seqSize = readSize+seqSize;
 				seqIn.enableUserData = 0;
-				vidRet = NX_VidDecInit( hDec, &seqIn, &seqOut );
+				vidRet = NX_VidDecParseVideoCfg(hDec, &seqIn, &seqOut);
+				seqIn.width = seqOut.width;
+				seqIn.height = seqOut.height;
+				vidRet = NX_VidDecInit( hDec, &seqIn );
 			}
 			else
 			{
@@ -1179,7 +1182,10 @@ void *DecodeThread( void *arg )
 				seqIn.seqInfo = streamBuffer;
 				seqIn.seqSize = readSize;
 				seqIn.enableUserData = 0;
-				vidRet = NX_VidDecInit( hDec, &seqIn, &seqOut );
+				vidRet = NX_VidDecParseVideoCfg(hDec, &seqIn, &seqOut);
+				seqIn.width = seqOut.width;
+				seqIn.height = seqOut.height;
+				vidRet = NX_VidDecInit( hDec, &seqIn );
 			}
 
 			if( vidRet == 1 )

@@ -104,13 +104,14 @@ int32_t	CNX_SimpleFileWriter::Receive( CNX_Sample *pSample )
 	m_CurTimeStamp = pSample->GetTimeStamp();
 	pthread_mutex_unlock( &m_hTimeLock );
 	
-	((CNX_MediaSample*)pSample)->GetBuffer( &pSrcBuffer, &srcSize);
+	((CNX_MediaSample*)pSample)->GetBuffer( &pSrcBuffer, &srcSize );
+	srcSize = ((CNX_MediaSample*)pSample)->GetActualDataLength();
 
 	if( m_OutFd ) {
-		m_pStatistics->CalculateBpsStart();
+		// m_pStatistics->CalculateBpsStart();
 		int32_t ret = write( m_OutFd, pSrcBuffer, srcSize );
-		printf("Push stream. (buf = %p, size = %d)\n", pSrcBuffer, srcSize);
-		m_pStatistics->CalculateBpsEnd( srcSize );
+		// printf("Push stream. (buf = %p, size = %d)\n", pSrcBuffer, srcSize);
+		// m_pStatistics->CalculateBpsEnd( srcSize );
 
 		// static int32_t samplingCount = 0;
 		// samplingCount++;

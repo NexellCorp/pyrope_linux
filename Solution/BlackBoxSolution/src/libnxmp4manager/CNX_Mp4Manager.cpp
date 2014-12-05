@@ -37,9 +37,9 @@
 
 //------------------------------------------------------------------------------
 static Mp4ManagerConfig defConfig = {
-	0, 1024, 768, 30, 6000000,
+	0, 640, 480, 15, 6000000,
 	false,
-	0, 0, 1024, 768
+	0, 0, 640, 480
 };
 
 CNX_Mp4Manager::CNX_Mp4Manager()
@@ -52,6 +52,7 @@ CNX_Mp4Manager::CNX_Mp4Manager()
 	, m_pAacEncFilter( NULL )
 	, m_bInit( 0 )
 	, m_bRun( 0 )
+	, m_bMode( 0 )
 {
 	SetConfig( &defConfig );
 	pthread_mutex_init( &m_hLock, NULL );
@@ -68,26 +69,31 @@ CNX_Mp4Manager::~CNX_Mp4Manager()
 //------------------------------------------------------------------------------
 int32_t CNX_Mp4Manager::BuildFilter( void )
 {
-	m_pRefClock			= new CNX_RefClock();
-	m_pNotifier 		= new CNX_Mp4Notify();
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 
-	m_pVipFilter		= new CNX_VIPFilter();
-	m_pVrFilter			= new CNX_VRFilter();
-	m_pAvcEncFilter 	= new CNX_H264Encoder();
+	m_pRefClock				= new CNX_RefClock();
+	m_pNotifier 			= new CNX_Mp4Notify();
+
+	m_pVipFilter			= new CNX_VIPFilter();
+	m_pVrFilter				= new CNX_VRFilter();
+	m_pAvcEncFilter 		= new CNX_H264Encoder();
 
 	if( m_Mp4MuxerConfig.audioTrack ) {
 		m_pAudCapFilter		= new CNX_AudCaptureFilter();
 		m_pAacEncFilter		= new CNX_AacEncoder();
 	}
 
-	m_pMp4MuxerFilter	= new CNX_Mp4MuxerFilter();
+	m_pInterleaverFilter 	= new CNX_InterleaverFilter();
+	m_pMp4MuxerFilter		= new CNX_Mp4MuxerFilter();
 
 	if( m_pVipFilter )			m_pVipFilter->Connect( m_pVrFilter );
 	if( m_pVrFilter )			m_pVrFilter->Connect( m_pAvcEncFilter );
-	if( m_pAvcEncFilter )		m_pAvcEncFilter->Connect( m_pMp4MuxerFilter );
+	if( m_pAvcEncFilter )		m_pAvcEncFilter->Connect( m_pInterleaverFilter );
 
 	if( m_pAudCapFilter )		m_pAudCapFilter->Connect( m_pAacEncFilter );
-	if( m_pAacEncFilter )		m_pAacEncFilter->Connect( m_pMp4MuxerFilter );
+	if( m_pAacEncFilter )		m_pAacEncFilter->Connect( m_pInterleaverFilter );
+	
+	if( m_pInterleaverFilter )	m_pInterleaverFilter->Connect( m_pMp4MuxerFilter );
 
 	if( m_pVipFilter )			m_pVipFilter->Init( &m_VipConfig );
 	if( m_pVrFilter )			m_pVrFilter->Init( &m_VidRenderConfig );
@@ -96,6 +102,7 @@ int32_t CNX_Mp4Manager::BuildFilter( void )
 	if( m_pAudCapFilter )		m_pAudCapFilter->Init( &m_AudCapConfig );
 	if( m_pAacEncFilter )		m_pAacEncFilter->Init( &m_AudEncConfig );
 
+	if( m_pInterleaverFilter )	m_pInterleaverFilter->Init( &m_InterleaverConfig );
 	if( m_pMp4MuxerFilter )		m_pMp4MuxerFilter->Init( &m_Mp4MuxerConfig );
 
 	uint8_t dsiInfo[24] = { 0x00, };
@@ -109,6 +116,7 @@ int32_t CNX_Mp4Manager::BuildFilter( void )
 	if( m_pAacEncFilter )	m_pAacEncFilter->GetDsiInfo( dsiInfo, &dsiSize );
 	if( m_pMp4MuxerFilter )	m_pMp4MuxerFilter->SetDsiInfo( 1, dsiInfo, dsiSize );
 
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return 0;
 }
 
@@ -119,6 +127,8 @@ int32_t CNX_Mp4Manager::BuildFilter( void )
 
 void CNX_Mp4Manager::SetNotifier( void )
 {
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	
 	if( m_pNotifier )
 	{
 		SET_EVENT_NOTIFIER( m_pVipFilter,			m_pNotifier );
@@ -126,13 +136,19 @@ void CNX_Mp4Manager::SetNotifier( void )
 		SET_EVENT_NOTIFIER( m_pAvcEncFilter,		m_pNotifier );
 		SET_EVENT_NOTIFIER( m_pAudCapFilter,		m_pNotifier );
 		SET_EVENT_NOTIFIER( m_pAacEncFilter,		m_pNotifier );
+		SET_EVENT_NOTIFIER( m_pInterleaverFilter, 	m_pNotifier );
 		SET_EVENT_NOTIFIER( m_pMp4MuxerFilter,		m_pNotifier );
 	}
+
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_Mp4Manager::SetConfig( Mp4ManagerConfig *pConfig )
 {
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	CNX_AutoLock lock( &m_hLock );
+
 	m_VipConfig.port				= pConfig->port;
 	m_VipConfig.width				= pConfig->width;
 	m_VipConfig.height				= pConfig->height;
@@ -165,6 +181,8 @@ int32_t CNX_Mp4Manager::SetConfig( Mp4ManagerConfig *pConfig )
 	m_AudEncConfig.bitrate			= 128000;
 	m_AudEncConfig.codec			= MP4_CODEC_TYPE_AAC;
 
+	m_InterleaverConfig.channel		= pConfig->bAudEnable ? 2 : 1;
+
 	m_Mp4MuxerConfig.videoTrack		= 1;
 	m_Mp4MuxerConfig.audioTrack		= pConfig->bAudEnable;
 	m_Mp4MuxerConfig.textTrack		= 0;
@@ -180,28 +198,35 @@ int32_t CNX_Mp4Manager::SetConfig( Mp4ManagerConfig *pConfig )
 	m_Mp4MuxerConfig.trackConfig[1].bitrate		= 128000;
 	m_Mp4MuxerConfig.trackConfig[1].codecType	= MP4_CODEC_TYPE_AAC;
 
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return 0;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_Mp4Manager::Init( void )
 {
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	CNX_AutoLock lock( &m_hLock );
+	int32_t ret = 0;
 
-	int32_t ret = BuildFilter();
-
-	if( !ret )
+	if( !m_bInit )
 	{
-		SetNotifier();
-		m_bInit = true;
+		ret = BuildFilter();
+		if( !ret )
+		{
+			SetNotifier();
+			m_bInit = true;
+		}
 	}
 
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return ret;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_Mp4Manager::Deinit( void )
 {
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	if( m_bInit )
@@ -211,6 +236,7 @@ int32_t CNX_Mp4Manager::Deinit( void )
 		SAFE_DEINIT_FILTER( m_pAvcEncFilter );
 		SAFE_DEINIT_FILTER( m_pAudCapFilter );
 		SAFE_DEINIT_FILTER( m_pAacEncFilter );
+		SAFE_DEINIT_FILTER( m_pInterleaverFilter );
 		SAFE_DEINIT_FILTER( m_pMp4MuxerFilter );
 
 		SAFE_DELETE_FILTER( m_pNotifier );
@@ -219,53 +245,71 @@ int32_t CNX_Mp4Manager::Deinit( void )
 		SAFE_DELETE_FILTER( m_pAvcEncFilter );
 		SAFE_DELETE_FILTER( m_pAudCapFilter );
 		SAFE_DELETE_FILTER( m_pAacEncFilter );
+		SAFE_DELETE_FILTER( m_pInterleaverFilter );
 		SAFE_DELETE_FILTER( m_pMp4MuxerFilter );
+
+		m_bInit = false;
 	}
 
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return 0;	
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_Mp4Manager::Start( char *pFileName )
+int32_t CNX_Mp4Manager::Start( char *pFileName, int32_t mode )
 {
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	CNX_AutoLock lock( &m_hLock );
 
-	if( m_bInit )
+	if( m_bInit && !m_bRun )
 	{
 		SAFE_START_FILTER( m_pNotifier );
 		SAFE_START_FILTER( m_pVipFilter );
 		SAFE_START_FILTER( m_pVrFilter );
-		SAFE_START_FILTER( m_pAvcEncFilter );
-		SAFE_START_FILTER( m_pAudCapFilter );
-		SAFE_START_FILTER( m_pAacEncFilter );
-		SAFE_START_FILTER( m_pMp4MuxerFilter );
+
+		if( mode == NX_MGR_MODE_ENCODE ) {
+			SAFE_START_FILTER( m_pAvcEncFilter );
+			SAFE_START_FILTER( m_pAudCapFilter );
+			SAFE_START_FILTER( m_pAacEncFilter );
+			SAFE_START_FILTER( m_pInterleaverFilter );
+			SAFE_START_FILTER( m_pMp4MuxerFilter );
+		}
 
 		if( m_pVrFilter )		m_pVrFilter->EnableRender( true );
-		
+		if( m_pVrFilter )		m_pVrFilter->EnableDeliver( (mode == NX_MGR_MODE_ENCODE) ? true : false );
+
 		if( pFileName )
 			if( m_pMp4MuxerFilter )	m_pMp4MuxerFilter->SetFileName( pFileName );
 		
 		if( m_pMp4MuxerFilter )	m_pMp4MuxerFilter->EnableMp4Muxing( true );
 
 		m_bRun = true;
+		m_bMode = mode;
 	}
 
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return 0;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_Mp4Manager::Stop( void )
 {
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	if( m_bRun )
 	{
 		SAFE_STOP_FILTER( m_pVipFilter );
 		SAFE_STOP_FILTER( m_pVrFilter );
-		SAFE_STOP_FILTER( m_pAvcEncFilter );
-		SAFE_STOP_FILTER( m_pAudCapFilter );
-		SAFE_STOP_FILTER( m_pAacEncFilter );
-		SAFE_STOP_FILTER( m_pMp4MuxerFilter );
+		
+		if( m_bMode == NX_MGR_MODE_ENCODE ) {
+			SAFE_STOP_FILTER( m_pAvcEncFilter );
+			SAFE_STOP_FILTER( m_pAudCapFilter );
+			SAFE_STOP_FILTER( m_pAacEncFilter );
+			SAFE_STOP_FILTER( m_pInterleaverFilter );
+			SAFE_STOP_FILTER( m_pMp4MuxerFilter );
+		}
+		
 		SAFE_STOP_FILTER( m_pNotifier );
 
 		if( m_pVrFilter )		m_pVrFilter->EnableRender( false );
@@ -274,47 +318,85 @@ int32_t CNX_Mp4Manager::Stop( void )
 		m_bRun = false;
 	}
 
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_Mp4Manager::Capture( char *pFileName )
+int32_t CNX_Mp4Manager::Capture( char *pFileName, Mp4ManagerConfig *pConfig )
 {
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	CNX_AutoLock lock( &m_hLock );
-	int32_t ret = 0;
 
 	if( m_bRun )
 	{
-		if( pFileName ) {
-			if( m_pVipFilter ) m_pVipFilter->SetJpegFileName( (uint8_t*)pFileName );
-		}
+		if( m_bMode == NX_MGR_MODE_ENCODE ) {
+			if( pFileName && m_pVipFilter )
+				m_pVipFilter->SetJpegFileName( (uint8_t*)pFileName );
 
-		if( m_pVipFilter )	m_pVipFilter->EnableCapture( true );
+			if( m_pVipFilter )
+				m_pVipFilter->EnableCapture();
+		}
+		else {
+			// a. Stop Previous VIP Filter.
+			SAFE_STOP_FILTER( m_pVipFilter );
+
+			// b. Resize VIP Filter Initialize.
+			CNX_VIPFilter *pVipFilter = new CNX_VIPFilter();
+			NX_VIP_CONFIG vipConfig;
+			memset( &vipConfig, 0x00, sizeof(vipConfig) );
+
+			if( pConfig ) {
+				vipConfig.width		= pConfig->width;
+				vipConfig.height	= pConfig->height;
+				vipConfig.fps		= pConfig->fps;
+			}
+			else {
+				vipConfig.width		= m_VipConfig.width;
+				vipConfig.height	= m_VipConfig.height;
+				vipConfig.fps		= m_VipConfig.fps;
+			}
+
+			// c. Register Notifier
+			if( pVipFilter )
+				pVipFilter->SetNotifier( m_pNotifier );
+			
+			// d. Resize Capture
+			if( pFileName && m_pVipFilter )
+				pVipFilter->SetJpegFileName( (uint8_t*)pFileName );
+			
+			if( pVipFilter )
+				pVipFilter->EnableResizeCapture( &vipConfig );
+
+			// e. Release VIP Filter
+			if( pVipFilter )
+				delete pVipFilter;
+
+			// f. Restart Previous VIP Filter
+			SAFE_START_FILTER( m_pVipFilter );
+		}
 	}
-	else
-	{
-		printf("%s[%s] Manager is not running.\n", NX_DTAG, __func__);
-		ret = -1;
-	}
-	return ret;
+
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	return 0;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_Mp4Manager::EnableRender( int32_t enable )
 {
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	CNX_AutoLock lock( &m_hLock );
 
-	if( m_bRun )
-	{
-		if( m_pVrFilter )	m_pVrFilter->EnableRender( enable ? 1 : 0);
-	}
-	
+	if( m_pVrFilter )	m_pVrFilter->EnableRender( enable ? true : false );
+
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return 0;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_Mp4Manager::RegisterNotifyCallback( uint32_t (*cbNotify)(uint32_t, uint8_t*, uint32_t) )
 {
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	CNX_AutoLock lock( &m_hLock );
 	
 	if( cbNotify )
@@ -322,5 +404,6 @@ int32_t CNX_Mp4Manager::RegisterNotifyCallback( uint32_t (*cbNotify)(uint32_t, u
 		m_pNotifier->RegisterNotifyCallback( cbNotify );
 	}
 
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return 0;
 }

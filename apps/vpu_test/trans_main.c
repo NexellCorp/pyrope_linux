@@ -965,7 +965,12 @@ int transcoding( const char *inFileName, const char *outFileName )
 			seqIn.seqSize = readSize+seqSize;
 			seqIn.enableUserData = 0;
 			seqIn.disableOutReorder = 0;
-			if( 0 != NX_VidDecInit( hDec, &seqIn, &seqOut ) )
+			vidRet = NX_VidDecParseVideoCfg(hDec, &seqIn, &seqOut);
+			seqIn.width = seqOut.width;
+			seqIn.height = seqOut.height;
+			vidRet = NX_VidDecInit( hDec, &seqIn );
+
+			if( 0 != vidRet )
 			{
 				//printf("Initialize Failed!!!\n");
 				return -1;

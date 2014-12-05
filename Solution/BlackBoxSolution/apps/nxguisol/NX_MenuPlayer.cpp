@@ -75,8 +75,8 @@ static void PlayPause( void )
 
 static void Move2FileList( void )
 {
-	CNX_BaseWindow *pWnd = (CNX_BaseWindow*)GetMenuFileListHandle( gstSurface, gstFont );
 	PlayerStop();
+	CNX_BaseWindow *pWnd = (CNX_BaseWindow*)GetMenuFileListHandle( gstSurface, gstFont );
 	pWnd->EventLoop();
 }
 
@@ -88,17 +88,17 @@ void *EventTask( void *arg )
 {
 	uint32_t position, duration;
 	int32_t ratio;
-	int32_t flag;
+	int32_t status = PLAYER_STATUS_STOP;
 
 	pthread_mutex_init( &hEventLock, NULL );
 
 	while(bEventTaskRun)
 	{
 		usleep( 100000 );
-		// zero is wait..
-		flag = PopFlags();
+		// "PLAYER_STATUS_STOP" is wait..
+		status = GetPlayerStatus();	
 
-		if(flag == 1) {		// running
+		if(status == PLAYER_STATUS_RUN) {
 			PlayerGetPos( &position, &duration );
 
 			ratio = (int32_t)(((float)position / (float)duration) * 100.);
@@ -111,13 +111,16 @@ void *EventTask( void *arg )
 			gstBarSeek->SetPos( ratio );
 			gstTextDur->SetText( strDuration, 0x09, 0x09, 0x09 );
 		}
-		else if(flag == 3) {	// eos
-			printf( "EOS!!\n" );
+		else if(status == PLAYER_STATUS_EOS) {	// eos
+			printf( "End of stream.\n");
 			PlayNext();
 		}
 	}
 
 	pthread_mutex_destroy( &hEventLock );
+
+	if(status == PLAYER_STATUS_RUN)
+		PlayerStop();
 
 	return (void*)0xDEADDEAD;
 }
@@ -317,20 +320,19 @@ void ReleaseMenuPlayerHandle( CNX_BaseObject *pBaseWindow )
 	}
 }
 
-static int32_t flags;
+static int32_t gstPlayerStatus = PLAYER_STATUS_STOP;
 
-void PushFlags( int32_t type )
+void SetPlayerStatus( int32_t status )
 {
 	pthread_mutex_lock( &hEventLock );
-	flags = type;
+	gstPlayerStatus = status;
 	pthread_mutex_unlock( &hEventLock );
 }
 
-int32_t PopFlags( void )
+int32_t GetPlayerStatus( void )
 {
-	int32_t type;
 	pthread_mutex_lock( &hEventLock );
-	type = flags;
+	int32_t status = gstPlayerStatus;
 	pthread_mutex_unlock( &hEventLock );
-	return type;
+	return status;
 }

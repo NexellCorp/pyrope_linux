@@ -5,10 +5,10 @@ include ../../build.env
 ######################################################################
 # Build options
 INCLUDE += -I./
-INCLUDE += -I../../library/include
+INCLUDE += -I../../library/include -I../../library/include/theoraparser
 LIBRARY	+= -L../../library/lib -L../../library/lib/ratecontrol 
 LIBRARY += -lnxvpu -lnxdsp -lnxvip -lnxv4l2 -lnxvmem -lnxvidrc
-LIBRARY += -L./theoraparser -ltheoraparser
+LIBRARY += -ltheoraparser
 LIBRARY	+= -lavcodec -lavformat -lstdc++ -lm
 
 ######################################################################
@@ -42,23 +42,18 @@ ENCPERFAPP := enc_perf_test
 DECAPP := dec_test
 JPGAPP := jpg_test
 TRANSAPP := trans_test
-THEORAPARSER := libtheoraparser
 
 ######################################################################
 # Build
 OBJS	:= $(COBJS) $(CPPOBJS)
 
 all:	\
-	$(THEORAPARSER) \
 	$(DECAPP)	\
 	$(JPGAPP)	\
 	$(TRANSAPP) \
 	$(JPGAPP)	\
 	$(ENCAPP)	\
 	$(ENCPERFAPP)	\
-
-$(THEORAPARSER):
-	make -C theoraparser
 
 $(ENCAPP):	depend $(OBJS)
 	$(CC) $(CFLAGS) $(ENC_OBJS) -o $@ $(LIBRARY)
@@ -70,14 +65,12 @@ $(JPGAPP):	depend $(OBJS)
 	$(CC) $(CFLAGS) $(JPG_OBJS) -o $@ $(LIBRARY)
 
 $(DECAPP):	depend $(OBJS)
-	make -C theoraparser
 	$(CC) $(CFLAGS) $(DEC_OBJS) -o $@ $(LIBRARY)
 
 $(TRANSAPP):	depend $(OBJS)
 	$(CC) $(CFLAGS) $(TRNAS_OBJS) -o $@ $(LIBRARY)
 
 clean:
-	make -C theoraparser clean
 	rm -f $(ENCAPP) $(ENCPERFAPP) $(JPGAPP) $(DECAPP) $(TRANSAPP) *.o .depend
 
 #########################################################################

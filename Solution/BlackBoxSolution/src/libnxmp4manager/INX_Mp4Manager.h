@@ -44,6 +44,11 @@ typedef enum {
 	NX_NOTIFY_ERR_WRITE			= 0xF004,
 } NX_NOTIFY_TYPE;
 
+typedef enum {
+	NX_MGR_MODE_ENCODE			= 0,
+	NX_MGR_MODE_PREVIEW,
+} NX_MGR_MODE;
+
 #include <stdint.h>
 
 class INX_Mp4Manager
@@ -57,10 +62,10 @@ public:
 	virtual int32_t	Init( void ) = 0;
 	virtual int32_t	Deinit( void ) = 0;
 	
-	virtual int32_t	Start( char *pFileName ) = 0;
+	virtual int32_t	Start( char *pFileName, int32_t mode = 0 ) = 0;
 	virtual int32_t	Stop( void ) = 0;
 	
-	virtual int32_t Capture( char *pFileName ) = 0;
+	virtual int32_t Capture( char *pFileName, Mp4ManagerConfig *pConfig = NULL ) = 0;
 	virtual int32_t EnableRender( int32_t enable ) = 0;
 
 	virtual int32_t	RegisterNotifyCallback( uint32_t (*cbNotify)(uint32_t, uint8_t*, uint32_t) ) = 0;

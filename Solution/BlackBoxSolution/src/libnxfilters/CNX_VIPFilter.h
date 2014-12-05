@@ -71,7 +71,8 @@ public:
 	//	External Interfaces
 	//------------------------------------------------------------------------
 			void 		SetJpegFileName( uint8_t *pFileName );
-			int32_t		EnableCapture( uint32_t enable );
+			int32_t		EnableCapture( void );
+			int32_t		EnableResizeCapture( NX_VIP_CONFIG *pConfig );
 			int32_t		RegJpegFileNameCallback( int32_t(*cbFunc)( uint8_t *, uint32_t ) );
 			int32_t  	GetStatistics( NX_FILTER_STATISTICS *pStatistics );
 
@@ -96,12 +97,12 @@ protected:
 	//------------------------------------------------------------------------
 	//	Input / Output Buffer
 	//------------------------------------------------------------------------	
-	enum { MAX_BUFFER = 16, NUM_ALLOC_BUFFER = 12, NUM_PUSHED_BUFFER = 6 };
-	// enum { MAX_BUFFER = 16, NUM_ALLOC_BUFFER = 6 };
+	enum { MAX_BUFFER = 16, NUM_ALLOC_BUFFER = 12 };
 	int32_t					m_iNumOfBuffer;
 	NX_VID_MEMORY_HANDLE	m_VideoMemory[MAX_BUFFER];
 	CNX_VideoSample			m_VideoSample[MAX_BUFFER];
 	CNX_SampleQueue			m_SampleOutQueue;
+	CNX_Queue				m_ReleaseQueue;
 	//------------------------------------------------------------------------
 	//	For Capture
 	//------------------------------------------------------------------------

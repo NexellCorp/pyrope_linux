@@ -129,7 +129,7 @@ static int nx_vpu_close( struct inode *inode, struct file *filp )
 #ifdef ENABLE_CLOCK_GATING
 		NX_VPU_Clock( 0 );
 #endif
-		NX_DbgMsg(1, ("End of power saving!!!\n"));
+		NX_DbgMsg(0, ("End of power saving!!!\n"));
 #ifdef CONFIG_NEXELL_DFS_BCLK
         bclk_put(BCLK_USER_MPEG);
 #endif

@@ -13,11 +13,6 @@ DIR += libnxv4l2
 DIR += libnxvpu
 DIR += libnxjpeg
 
-# Movie Player for FFMPEG
-DIR += libnxfilter
-DIR += libnxfilterhelp
-DIR += libnxfiltermanager
-
 # Movie Player for G-Streamer
 DIR += libnxtypefind
 DIR += libnxmovieplayer

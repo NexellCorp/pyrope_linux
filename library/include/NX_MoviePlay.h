@@ -42,16 +42,15 @@ enum{
 }; 
 #endif
 
-
 typedef struct MP_MEDIA_INFO {
 	unsigned long		VDuration;
 	unsigned long       Framerate;
-	unsigned long		Width;	
-	unsigned long		Height;	
-	unsigned long		ADuration;	
-	unsigned long		samplerate;	
-	unsigned long		channels;	
-	unsigned long		bitrate;	
+	unsigned long		Width;
+	unsigned long		Height;
+	unsigned long		ADuration;
+	unsigned long		samplerate;
+	unsigned long		channels;
+	unsigned long		bitrate;
 } MP_MEDIA_INFO;
 
 #ifdef __cplusplus
@@ -59,9 +58,12 @@ extern "C" {
 #endif	//	__cplusplus
 
 #ifdef SEPARATE_OPEN_FUNC
-MP_RESULT NX_MPSetFileName( MP_HANDLE *handle, const char *uri, char *media_info);
-MP_RESULT NX_MPOpen( MP_HANDLE handle, int volumem, int dspModule, int dspPort, int audio_track_num, int video_track_num, int display,
-						void (*cb)(void *owner, unsigned int msg, unsigned int param1, unsigned int param2), void *cbPrivate);
+	MP_RESULT NX_MPSetFileName(MP_HANDLE *handle, const char *uri, char *media_info);
+//MP_RESULT NX_MPOpen( MP_HANDLE handle, int volumem, int dspModule, int dspPort, int audio_track_num, int video_track_num, int display,
+//						void (*cb)(void *owner, unsigned int msg, unsigned int param1, unsigned int param2), void *cbPrivate);
+MP_RESULT NX_MPOpen(MP_HANDLE handle, int audio_track_num, int video_track_num, int display,
+					void *volumem, void *dspModule, void *dspPort,
+					void (*cb)(void *owner, unsigned int msg, unsigned int param1, unsigned int param2), void *cbPrivate);
 #else
 MP_RESULT NX_MPOpen( MP_HANDLE *handle, const char *uri, int volumem, int dspModule, int dspPort, int audio_track_num, int video_track_num, char *media_info, int display, int priority,
 						void (*cb)(void *owner, unsigned int msg, unsigned int param1, unsigned int param2), void *cbPrivate);

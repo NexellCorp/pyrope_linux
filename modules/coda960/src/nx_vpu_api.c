@@ -55,7 +55,7 @@
 
 
 #define	ENABLE_INTERRUPT_MODE
-#define	OPEN_INFO_MSG			0
+#define	INFO_MSG			0
 
 //-----------------------------------------------------------------------------
 //		Macro & Definitions
@@ -550,7 +550,7 @@ void CheckVersion(void)
 		(unsigned int)(version>>16), (unsigned int)((version>>(12))&0x0f),
 		(unsigned int)((version>>(8))&0x0f), (unsigned int)((version)&0xff), revision) );
 	NX_DbgMsg( 0, ("Hardware Version => %04x\n", productId));
-	NX_DbgMsg( 1, ("Build Date : %s, %s\n", __DATE__, __TIME__));
+	NX_DbgMsg( INFO_MSG, ("Build Date : %s, %s\n", __DATE__, __TIME__));
 }
 
 
@@ -931,7 +931,7 @@ NX_VPU_RET	NX_VpuEncSetSeqParam( NX_VPU_INST_HANDLE handle, VPU_ENC_SEQ_ARG *seq
 
 	encInfo->EncCodecParam.avcEncParam.audEnable = seqArg->enableAUDelimiter;
 
-	NX_DbgMsg(1, ("NX_VpuEncSetSeqParam() : %dx%d, %d/%d fps, %d kbps (gop(%d), maxQ(%d), SR(%d), StreamBuffer(0x%08x, 0x%08x))\n",
+	NX_DbgMsg(INFO_MSG, ("NX_VpuEncSetSeqParam() : %dx%d, %d/%d fps, %d kbps (gop(%d), maxQ(%d), SR(%d), StreamBuffer(0x%08x, 0x%08x))\n",
 		encInfo->srcWidth, encInfo->srcHeight, encInfo->frameRateNum, encInfo->frameRateDen, encInfo->bitRate,
 		encInfo->gopSize, encInfo->userQpMax, encInfo->MESearchRange, encInfo->strmBufPhyAddr, encInfo->strmBufVirAddr));
 
@@ -1319,7 +1319,7 @@ static NX_VPU_RET VPU_EncSeqCommand(NX_VpuCodecInst *pInst)
 	pEncInfo->strmWritePrt = VpuReadReg(BIT_WR_PTR);
 	pEncInfo->strmEndFlag = VpuReadReg(BIT_BIT_STREAM_PARAM);
 
-	NX_DbgMsg( 0, ("VPU_EncSeqCommand() Success : Writer Ptr = 0x%08x, Stream End Flag = %d\n",
+	NX_DbgMsg( INFO_MSG, ("VPU_EncSeqCommand() Success : Writer Ptr = 0x%08x, Stream End Flag = %d\n",
 		pEncInfo->strmWritePrt, pEncInfo->strmEndFlag) );
 
 	pInst->isInitialized = 1;
@@ -1643,7 +1643,7 @@ static NX_VPU_RET VPU_EncOneFrameCommand( NX_VpuCodecInst *pInst, VPU_ENC_RUN_FR
 	runArg->frameType = ( (picType&0x1) == 0 ) ? 1 : 0;
 	runArg->outStreamSize = size;
 	runArg->outStreamAddr = (unsigned char*)pEncInfo->strmBufVirAddr;
-	NX_DbgMsg( 0, ("Encoded Size = %d, PicType = %d, picFlag = %d, sliceNumber = %d\n", size, picType, picFlag, sliceNumber) );
+	NX_DbgMsg( INFO_MSG, ("Encoded Size = %d, PicType = %d, picFlag = %d, sliceNumber = %d\n", size, picType, picFlag, sliceNumber) );
 
 	return VPU_RET_OK;
 }
@@ -1946,13 +1946,13 @@ NX_VPU_RET	NX_VpuDecOpen( VPU_OPEN_ARG *openArg, void *drvHandle, NX_VPU_INST_HA
 
 	*handle = hInst;
 
-	NX_DbgMsg( OPEN_INFO_MSG, ("===================================\n") );
-	NX_DbgMsg( OPEN_INFO_MSG, (" VPU Open Informations:\n") );
-	NX_DbgMsg( OPEN_INFO_MSG, ("  Instance Index : %d\n", hInst->instIndex        ) );
-	NX_DbgMsg( OPEN_INFO_MSG, ("  BitStream Mode : %d\n", pDecInfo->bitstreamMode ) );
-	NX_DbgMsg( OPEN_INFO_MSG, ("  Codec Standard : %d\n", hInst->codecMode        ) );
-	NX_DbgMsg( OPEN_INFO_MSG, ("  Codec AUX Mode : %d\n", hInst->auxMode          ) );
-	NX_DbgMsg( OPEN_INFO_MSG, ("===================================\n") );
+	NX_DbgMsg( INFO_MSG, ("===================================\n") );
+	NX_DbgMsg( INFO_MSG, (" VPU Open Informations:\n") );
+	NX_DbgMsg( INFO_MSG, ("  Instance Index : %d\n", hInst->instIndex        ) );
+	NX_DbgMsg( INFO_MSG, ("  BitStream Mode : %d\n", pDecInfo->bitstreamMode ) );
+	NX_DbgMsg( INFO_MSG, ("  Codec Standard : %d\n", hInst->codecMode        ) );
+	NX_DbgMsg( INFO_MSG, ("  Codec AUX Mode : %d\n", hInst->auxMode          ) );
+	NX_DbgMsg( INFO_MSG, ("===================================\n") );
 
 	FUNCOUT();
 	return VPU_RET_OK;

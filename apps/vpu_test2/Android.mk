@@ -24,7 +24,7 @@ LOCAL_C_INCLUDES += \
 	hardware/libhardware/include	\
 	hardware/samsung_slsi/slsiap/include	\
 	linux/platform/s5p4418/library/include	\
-	$(LOCAL_PATH)/ffmpeg/include    \
+	$(LOCAL_PATH)/ffmpeg/include	\
 	$(LOCAL_PATH)
 
 LOCAL_SHARED_LIBRARIES := \
@@ -47,7 +47,7 @@ LOCAL_LDFLAGS += \
 	-lavdevice-2.1.4	\
 	-lavfilter-2.1.4	\
 	-lswresample-2.1.4	\
-	-ltheoraparser
+	-ltheoraparser_and
 
 LOCAL_MODULE:= codec_tests
 

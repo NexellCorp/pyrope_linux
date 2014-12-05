@@ -438,8 +438,8 @@ void *CommandThread( void *arg )
 						printf("Error : NX_MPSetFileName Failed! ( uri = %s, mpResult = %d )\n", pAppData->uri, mpResult);
 						continue;	
 					}
-					
-					if( ERROR_NONE != (mpResult = NX_MPOpen( pAppData->hPlayer, pAppData->volume, pAppData->dsp_module, pAppData->dsp_port, pAppData->audio_request_track_num, pAppData->video_request_track_num, pAppData->display, &callback, (void*)pAppData )) )
+			
+					if( ERROR_NONE != (mpResult = NX_MPOpen( pAppData->hPlayer, pAppData->audio_request_track_num, pAppData->video_request_track_num, pAppData->display, (void *)&pAppData->volume, (void *)&pAppData->dsp_module, (void *)&pAppData->dsp_port, &callback, (void*)pAppData )) )
 					{
 						printf("Error : NX_MPOpen Failed! ( mpResult = %d )\n", mpResult);
 						continue;
@@ -474,7 +474,8 @@ void *CommandThread( void *arg )
 						printf("Error : NX_MPSetFileName Failed! ( uri = %s, mpResult = %d )\n", pAppData->uri, mpResult);
 						continue;	
 					}
-					if( ERROR_NONE != (mpResult = NX_MPOpen( pAppData->hPlayer, pAppData->volume, pAppData->dsp_module, pAppData->dsp_port, pAppData->audio_request_track_num, pAppData->video_request_track_num, pAppData->display, &callback, (void*)pAppData )) )
+
+					if( ERROR_NONE != (mpResult = NX_MPOpen( pAppData->hPlayer, pAppData->audio_request_track_num, pAppData->video_request_track_num, pAppData->display, (void *)&pAppData->volume, (void *)&pAppData->dsp_module, (void *)&pAppData->dsp_port, &callback, (void*)pAppData )) )
 					{
 						printf("Error : NX_MPOpen Failed! ( mpResult = %d )\n", mpResult);
 						continue;
@@ -544,7 +545,7 @@ void *CommandThread( void *arg )
 				continue;
 			}
 
-			if( ERROR_NONE != (mpResult = NX_MPOpen( pAppData->hPlayer, pAppData->volume, pAppData->dsp_module, pAppData->dsp_port, pAppData->audio_request_track_num, pAppData->video_request_track_num, pAppData->display,  &callback, (void*)pAppData )) )
+			if( ERROR_NONE != (mpResult = NX_MPOpen( pAppData->hPlayer, pAppData->audio_request_track_num, pAppData->video_request_track_num, pAppData->display, (void *)&pAppData->volume, (void *)&pAppData->dsp_module, (void *)&pAppData->dsp_port, &callback, (void*)pAppData )) )
 			{
 				printf("Error : NX_MPOpen Failed! ( mpResult = %d )\n", mpResult);
 				continue;
@@ -874,7 +875,7 @@ int main( int argc, char *argv[] )
 	printf("handle = %p\n", appData.hPlayer);
 
 	//	2. Media Player Open
-	mpResult = NX_MPOpen( appData.hPlayer, appData.volume, appData.dsp_module, appData.dsp_port, appData.audio_request_track_num, appData.video_request_track_num, appData.display, &callback, (void*)&appData );
+	mpResult = NX_MPOpen( appData.hPlayer, appData.audio_request_track_num, appData.video_request_track_num, appData.display, (void *)&appData.volume, (void *)&appData.dsp_module, (void *)&appData.dsp_port, &callback, (void*)&appData );
 	if( ERROR_NONE != mpResult ) {
 		printf("Error : NX_MPOpen Failed! ( mpResult = %d )\n", mpResult);
 		return -1;

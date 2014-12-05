@@ -268,7 +268,7 @@ static void on_demux_pad_added(GstElement *element, GstPad *pad, MP_HANDLE handl
 	caps = gst_pad_get_caps(pad);
 	g_assert(caps != NULL);
 	name = gst_pad_get_name(pad);
-	DbgMsg("-new demux pad %s\n", name);
+	//DbgMsg("-new demux pad %s\n", name);
 
 	//
 	if( (0 == strcasecmp( name, "private_2" ) ) )
@@ -280,19 +280,19 @@ static void on_demux_pad_added(GstElement *element, GstPad *pad, MP_HANDLE handl
 	str = gst_caps_get_structure(caps, 0);
 	g_assert(str != NULL);
 
-	DbgMsg("-compare string %s\n", gst_structure_get_name(str));
+	//DbgMsg("-compare string %s\n", gst_structure_get_name(str));
 
 	targetqueue = NULL;
 	// TODO: is this the right way to match video/audio pads
 
 	if (g_strrstr(gst_structure_get_name(str), "video")) {
-		DbgMsg("-Linking %s to %s\n", name, gst_structure_get_name(str) );
+		//DbgMsg("-Linking %s to %s\n", name, gst_structure_get_name(str) );
 		targetqueue = handle->video_queue;
 		video_on = 0;
 	}
 #if Audio_on	
 	else if (g_strrstr(gst_structure_get_name(str), "audio")) {
-		DbgMsg("-Linking %s to %s\n", name, gst_structure_get_name(str) );
+		//DbgMsg("-Linking %s to %s\n", name, gst_structure_get_name(str) );
 		targetqueue = handle->audio_queue;
 		audio_on = 0;
 	}
@@ -371,18 +371,18 @@ static void on_decodebin_pad_added(GstElement *element, GstPad *pad, MP_HANDLE h
 	caps = gst_pad_get_caps(pad);
 	g_assert(caps != NULL);
 	name = gst_pad_get_name(pad);
-	DbgMsg("-new decodebin pad %s\n", name);
+	//DbgMsg("-new decodebin pad %s\n", name);
 
 	str = gst_caps_get_structure(caps, 0);
 	g_assert(str != NULL);
 
-	DbgMsg("-compare string %s\n", gst_structure_get_name(str));
+	//DbgMsg("-compare string %s\n", gst_structure_get_name(str));
 
 	targetqueue = NULL;
 	// TODO: is this the right way to match /audio pads
 
 	if (g_strrstr(gst_structure_get_name(str), "audio")) {
-		DbgMsg("-Linking %s to %s\n", name, gst_structure_get_name(str) );
+		//DbgMsg("-Linking %s to %s\n", name, gst_structure_get_name(str) );
 		targetqueue = handle->volume;
 	}
 
@@ -962,12 +962,14 @@ static void typefind_debug(TYMEDIA_INFO *ty_handle)
 }
 
 #ifdef SEPARATE_OPEN_FUNC
-MP_RESULT NX_MPSetFileName( MP_HANDLE *handle_s, const char *uri, char *media_info)
+MP_RESULT NX_MPSetFileName(MP_HANDLE *handle_s, const char *uri, char *media_info)
 {
 	MP_HANDLE handle = NULL;
-	TYMEDIA_INFO *ty_handle = (TYMEDIA_INFO *)media_info;
+//	TYMEDIA_INFO media_info;
+	TYMEDIA_INFO *ty_handle = (TYMEDIA_INFO*)media_info;
 	gint uri_len = 0;
 	int ret = 0;
+	gint i = 0;
 
 	FUNC_IN();
 	if( NULL == (handle = (MP_HANDLE)malloc( sizeof(MOVIE_TYPE) ))) {
@@ -1019,11 +1021,37 @@ MP_RESULT NX_MPSetFileName( MP_HANDLE *handle_s, const char *uri, char *media_in
 	else
 	{
 		memcpy(&handle->TymediaInfo, media_info, sizeof(TYMEDIA_INFO) );
+//		memcpy(&handle->TymediaInfo, &media_info, sizeof(TYMEDIA_INFO));
 	}
 
 	//typefind end
 
 	*handle_s = handle;
+#if 0
+	//
+	p_media_info->AudioTrackTotNum = ty_handle->AudioTrackTotNum;
+	p_media_info->VideoTrackTotNum = ty_handle->VideoTrackTotNum;
+	p_media_info->DataTrackTotNum = 0;
+	if(p_media_info->AudioTrackTotNum)
+		p_media_info->Duration = ty_handle->AudioInfo[0].ADuration;
+
+	for(i=0;i<ty_handle->AudioTrackTotNum;i++)
+	{
+		p_media_info->AudioInfo[i].AudioTrackNum = ty_handle->AudioInfo[i].AudioTrackNum;
+		p_media_info->AudioInfo[i].ACodecID = ty_handle->AudioInfo[i].ACodecType;
+		p_media_info->AudioInfo[i].samplerate = ty_handle->AudioInfo[i].samplerate;
+		p_media_info->AudioInfo[i].channels = ty_handle->AudioInfo[i].samplerate;
+	}
+
+	for(i=0;i<ty_handle->VideoTrackTotNum;i++)
+	{
+		p_media_info->VideoInfo[i].VideoTrackNum = ty_handle->VideoInfo[i].VideoTrackNum;
+		p_media_info->VideoInfo[i].VCodecID = ty_handle->VideoInfo[i].VCodecType;
+		p_media_info->VideoInfo[i].Width = ty_handle->VideoInfo[i].Width;
+		p_media_info->VideoInfo[i].Height = ty_handle->VideoInfo[i].Height;
+	}
+#endif
+	//
 
 	FUNC_OUT();
 	return ERROR_NONE;
@@ -1037,14 +1065,23 @@ ERROR_EXIT:
 	return ERROR;
 }
 
-MP_RESULT NX_MPOpen( MP_HANDLE handle, int volumem, int dspModule, int dspPort, int audio_track_num, int video_track_num, int display,
-						void (*cb)(void *owner, unsigned int msg, unsigned int param1, unsigned int param2), void *cbPrivate)
+//MP_RESULT NX_MPOpen( MP_HANDLE handle, int volumem, int dspModule, int dspPort, int audio_track_num, int video_track_num, int display,
+//						void (*cb)(void *owner, unsigned int msg, unsigned int param1, unsigned int param2), void *cbPrivate)
+MP_RESULT NX_MPOpen(MP_HANDLE handle, int32_t audio_track_num, int32_t video_track_num, int32_t display,
+					void *pvolumem, void *pdspModule, void *pdspPort,
+					void(*cb)(void *owner, unsigned int msg, unsigned int param1, unsigned int param2), void *cbPrivate)
+
 {
 	int ret = 0;
 	int priority = 0;
+	int volumem =0,  dspModule =0, dspPort = 0;
 
 	if( !handle )
 		goto ERROR_EXIT;
+	
+	volumem = (int *)pvolumem;
+	dspModule = (int *)pdspModule;
+	dspPort = (int *)pdspPort;
 
 	if( audio_track_num < 0 )
 		audio_track_num = 0;
@@ -1140,7 +1177,7 @@ MP_RESULT NX_MPOpen( MP_HANDLE handle, int volumem, int dspModule, int dspPort, 
 			goto ERROR_EXIT;
 		}		
 		//add video queue,decoder,sink
-		ret = video_element_set( handle,  dspModule,  dspPort, display, priority);
+		ret = video_element_set( handle,  dspModule, dspPort, display, priority);
 		if(ret == 0){
 			goto ERROR_EXIT;
 		}		
@@ -1431,7 +1468,7 @@ MP_RESULT NX_MPGetMediaInfo( MP_HANDLE handle, int idx, MP_MEDIA_INFO *pInfo )
 	pInfo->channels = handle->TymediaInfo.AudioInfo[idx].channels;
 	pInfo->bitrate = -1;
 
-#if 1
+#if 0
 	g_print("\n");
 	g_print("===============================================================================\n");
 	if( 0 != handle->TymediaInfo.VideoTrackTotNum)

@@ -376,7 +376,7 @@ static void on_demux_pad_added_typefind(GstElement *element, GstPad *pad, TypeFi
 
 	loop = ty_handle->loop;
 
-	DbgMsg("===on_demux_pad_added_typefind ++\n");
+	//DbgMsg("===on_demux_pad_added_typefind ++\n");
 
 //	video_track_num = ty_handle->video_track_num ;
 //	audio_track_num = ty_handle->audio_track_num ;
@@ -384,7 +384,7 @@ static void on_demux_pad_added_typefind(GstElement *element, GstPad *pad, TypeFi
 	caps = gst_pad_get_caps(pad);
 	g_assert(caps != NULL);
 	name = gst_pad_get_name(pad);
-	DbgMsg("new demux pad %s\n", name);
+	//DbgMsg("new demux pad %s\n", name);
 
 	if( (0 == strcasecmp( name, "private_2" ) ) )
 	{
@@ -394,7 +394,7 @@ static void on_demux_pad_added_typefind(GstElement *element, GstPad *pad, TypeFi
 	str = gst_caps_get_structure(caps, 0);
 	g_assert(str != NULL);
 
-	DbgMsg("compare string %s\n", gst_structure_get_name(str));
+	//DbgMsg("compare string %s\n", gst_structure_get_name(str));
 
 	targetqueue = NULL;
 	if (g_strrstr(gst_structure_get_name(str), "video")) {
@@ -409,7 +409,7 @@ static void on_demux_pad_added_typefind(GstElement *element, GstPad *pad, TypeFi
 	if(CODEC_TYPE_VIDEO == codec_type)
 	{ 
 		if (g_strrstr(gst_structure_get_name(str), "video")) {
-			DbgMsg("--Linking %s to %s\n", name, gst_structure_get_name(str) );
+			//DbgMsg("--Linking %s to %s\n", name, gst_structure_get_name(str) );
 			targetqueue = ty_handle->video_queue;
 			ty_handle->TymediaInfo->VideoTrackTotNum++;
 			tot_num = ty_handle->TymediaInfo->VideoTrackTotNum - 1;
@@ -446,7 +446,7 @@ static void on_demux_pad_added_typefind(GstElement *element, GstPad *pad, TypeFi
 			gchar *type = NULL;
 			const GValue *value;
 			
-			DbgMsg("--Linking %s to %s\n", name, gst_structure_get_name(str) );
+			//DbgMsg("--Linking %s to %s\n", name, gst_structure_get_name(str) );
 			targetqueue = ty_handle->audio_queue;
 			ty_handle->TymediaInfo->AudioTrackTotNum++;
 			tot_num = ty_handle->TymediaInfo->AudioTrackTotNum - 1;
@@ -523,7 +523,7 @@ static void on_demux_pad_added_typefind(GstElement *element, GstPad *pad, TypeFi
 					g_critical("demux pad link failed(%s): %d\n", __func__, rc);
 				}
 				gst_object_unref(targetsink);
-				DbgMsg("demux pad video link succeed\n");
+				//DbgMsg("demux pad video link succeed\n");
 			}
 		}
 		else //if(0 == strcmp(name,(char *)ty_handle->TymediaInfo->VideoInfo[video_track_num].VideoPadName))	
@@ -535,7 +535,7 @@ static void on_demux_pad_added_typefind(GstElement *element, GstPad *pad, TypeFi
 				if (rc) {
 					g_critical("demux pad link failed(%s): %d\n", __func__, rc);
 				}
-				DbgMsg("demux pad video link succeed\n");
+				//DbgMsg("demux pad video link succeed\n");
 				gst_object_unref(targetsink);
 			}
 		}
@@ -552,7 +552,7 @@ static void on_demux_pad_added_typefind(GstElement *element, GstPad *pad, TypeFi
 					g_critical("demux pad link failed(%s): %d\n", __func__, rc);
 				}
 				gst_object_unref(targetsink);
-				DbgMsg("demux pad audio link succeed\n");
+				//DbgMsg("demux pad audio link succeed\n");
 			}
 		}
 		else //if(0 == strcmp(name,(char *)ty_handle->TymediaInfo->AudioInfo[audio_track_num].AudioPadName))	
@@ -566,7 +566,7 @@ static void on_demux_pad_added_typefind(GstElement *element, GstPad *pad, TypeFi
 					g_critical("demux pad link failed(%s): %d\n", __func__, rc);
 				}
 				gst_object_unref(targetsink);
-				DbgMsg("demux pad audio link succeed\n");
+				//DbgMsg("demux pad audio link succeed\n");
 			}
 		}
 	}
@@ -582,7 +582,7 @@ EXIT:
 		) {
 			g_idle_add (idle_exit_loop, loop);	
 	}
-	DbgMsg("===on_demux_pad_added_typefind --\n");
+	//DbgMsg("===on_demux_pad_added_typefind --\n");
 
 	FUNC_OUT();
 
@@ -1172,25 +1172,25 @@ static void on_demux_pad_added_num(GstElement *element, GstPad *pad, TypeFindSt 
 
 	FUNC_IN();
 	
-	DbgMsg("===on_demux_pad_added_num ++\n");
+	//DbgMsg("===on_demux_pad_added_num ++\n");
 
 	loop = ty_handle->loop;
 
 	caps = gst_pad_get_caps(pad);
 	g_assert(caps != NULL);
 	name = gst_pad_get_name(pad);
-	DbgMsg("new demux pad add %s\n", name);
+	//DbgMsg("new demux pad add %s\n", name);
 
 	str = gst_caps_get_structure(caps, 0);
 	g_assert(str != NULL);
 
-	DbgMsg("compare string %s\n", gst_structure_get_name(str));
+	//DbgMsg("compare string %s\n", gst_structure_get_name(str));
 
 	targetqueue = NULL;
 
 	// TODO: is this the right way to match video/audio pads
 	if (g_strrstr(gst_structure_get_name(str), "video")) {
-		DbgMsg("Linking %s to %s\n", name, gst_structure_get_name(str) );
+		//DbgMsg("Linking %s to %s\n", name, gst_structure_get_name(str) );
 		targetqueue = ty_handle->video_queue;
 		tot_num = ty_handle->TymediaInfo->VideoTrackTotNum;
 		ty_handle->TymediaInfo->VideoTrackTotNum++;
@@ -1209,7 +1209,7 @@ static void on_demux_pad_added_num(GstElement *element, GstPad *pad, TypeFindSt 
 	}
 
 	if (g_strrstr(gst_structure_get_name(str), "audio")) {
-		DbgMsg("Linking %s to %s\n", name, gst_structure_get_name(str) );
+		//DbgMsg("Linking %s to %s\n", name, gst_structure_get_name(str) );
 		targetqueue = ty_handle->audio_queue;
 		tot_num = ty_handle->TymediaInfo->AudioTrackTotNum;
 		ty_handle->TymediaInfo->AudioTrackTotNum++;
@@ -1245,7 +1245,7 @@ static void on_demux_pad_added_num(GstElement *element, GstPad *pad, TypeFindSt 
 
 	g_idle_add (idle_exit_loop, loop);
 
-	DbgMsg("===on_demux_pad_added_num --\n");
+	//DbgMsg("===on_demux_pad_added_num --\n");
 
 	FUNC_OUT();
 }
@@ -1406,25 +1406,25 @@ static void on_demux_pad_added_num_ps(GstElement *element, GstPad *pad, TypeFind
 
 	FUNC_IN();
 	
-	DbgMsg("===on_demux_pad_added_num ++\n");
+	//DbgMsg("===on_demux_pad_added_num ++\n");
 
 //	loop = ty_handle->loop;
 
 	caps = gst_pad_get_caps(pad);
 	g_assert(caps != NULL);
 	name = gst_pad_get_name(pad);
-	DbgMsg("new demux pad add %s\n", name);
+	//DbgMsg("new demux pad add %s\n", name);
 
 	str = gst_caps_get_structure(caps, 0);
 	g_assert(str != NULL);
 
-	DbgMsg("compare string %s\n", gst_structure_get_name(str));
+	//DbgMsg("compare string %s\n", gst_structure_get_name(str));
 
 	targetqueue = NULL;
 
 	// TODO: is this the right way to match video/audio pads
 	if (g_strrstr(gst_structure_get_name(str), "video")) {
-		DbgMsg("Linking %s to %s\n", name, gst_structure_get_name(str) );
+		//DbgMsg("Linking %s to %s\n", name, gst_structure_get_name(str) );
 		targetqueue = ty_handle->video_queue;
 		tot_num = ty_handle->TymediaInfo->VideoTrackTotNum;
 		ty_handle->TymediaInfo->VideoTrackTotNum++;
@@ -1443,7 +1443,7 @@ static void on_demux_pad_added_num_ps(GstElement *element, GstPad *pad, TypeFind
 	}
 
 	if (g_strrstr(gst_structure_get_name(str), "audio")) {
-		DbgMsg("Linking %s to %s\n", name, gst_structure_get_name(str) );
+		//DbgMsg("Linking %s to %s\n", name, gst_structure_get_name(str) );
 		targetqueue = ty_handle->audio_queue;
 		tot_num = ty_handle->TymediaInfo->AudioTrackTotNum;
 		ty_handle->TymediaInfo->AudioTrackTotNum++;
@@ -1475,7 +1475,7 @@ static void on_demux_pad_added_num_ps(GstElement *element, GstPad *pad, TypeFind
 
 	gst_caps_unref(caps);
 
-	DbgMsg("===on_demux_pad_added_num --\n");
+	//DbgMsg("===on_demux_pad_added_num --\n");
 
 	FUNC_OUT();
 }
@@ -1572,24 +1572,24 @@ static void on_video_decodebin_pad_added(GstElement *element, GstPad *pad, gpoin
 	GstPad *targetsink;
 	TypeFindSt *ty_handle = data; 
 
-	DbgMsg("===on_video_decodebin_pad_added ++\n");
+	//DbgMsg("===on_video_decodebin_pad_added ++\n");
 
 	caps = gst_pad_get_caps(pad);
 	g_assert(caps != NULL);
 	name = gst_pad_get_name(pad);
-	DbgMsg("new video decodebin pad %s\n", name);
+	//DbgMsg("new video decodebin pad %s\n", name);
 
 	str = gst_caps_get_structure(caps, 0);
 	g_assert(str != NULL);
 
 //	DbgMsg("Media type %s found\n", str);
-	DbgMsg("compare string %s\n", gst_structure_get_name(str));
+	//DbgMsg("compare string %s\n", gst_structure_get_name(str));
 
 	targetqueue = NULL;
 	// TODO: is this the right way to match /audio pads
 
 	if (g_strrstr(gst_structure_get_name(str), "video")) {
-		DbgMsg("Linking %s to %s\n", name, gst_structure_get_name(str) );
+		//DbgMsg("Linking %s to %s\n", name, gst_structure_get_name(str) );
 		//targetqueue = ty_handle->audio_queue;
 		targetqueue = ty_handle->video_typefind;
 		
@@ -1609,7 +1609,7 @@ static void on_video_decodebin_pad_added(GstElement *element, GstPad *pad, gpoin
 	
 	gst_caps_unref(caps);
 
-	DbgMsg("===on_video_decodebin_pad_added --\n");
+	//DbgMsg("===on_video_decodebin_pad_added --\n");
 
 }
 
@@ -1625,23 +1625,23 @@ static void on_audio_decodebin_pad_added(GstElement *element, GstPad *pad, gpoin
 	GstPad *targetsink;
 	TypeFindSt *ty_handle = data; 
 
-	DbgMsg("===on_audio_decodebin_pad_added ++\n");
+	//DbgMsg("===on_audio_decodebin_pad_added ++\n");
 
 	caps = gst_pad_get_caps(pad);
 	g_assert(caps != NULL);
 	name = gst_pad_get_name(pad);
-	DbgMsg("new decodebin pad %s\n", name);
+	//DbgMsg("new decodebin pad %s\n", name);
 
 	str = gst_caps_get_structure(caps, 0);
 	g_assert(str != NULL);
 
-	DbgMsg("compare string %s\n", gst_structure_get_name(str));
+	//DbgMsg("compare string %s\n", gst_structure_get_name(str));
 
 	targetqueue = NULL;
 	// TODO: is this the right way to match /audio pads
 
 	if (g_strrstr(gst_structure_get_name(str), "audio")) {
-		DbgMsg("Linking %s to %s\n", name, gst_structure_get_name(str) );		
+		//DbgMsg("Linking %s to %s\n", name, gst_structure_get_name(str) );		
 		if(ty_handle->TymediaInfo->DemuxType == DEMUX_TYPE_MPEGTSDEMUX)
 			targetqueue = ty_handle->audio_typefind;
 		else
@@ -1662,7 +1662,7 @@ static void on_audio_decodebin_pad_added(GstElement *element, GstPad *pad, gpoin
 
 	gst_caps_unref(caps);
 
-	DbgMsg("===on_audio_decodebin_pad_added --\n");
+	//DbgMsg("===on_audio_decodebin_pad_added --\n");
 }
 
 
@@ -1683,7 +1683,7 @@ static void cb_typefind_audio_only (GstElement *typefind,
 	gchar *media_type = NULL;
 	gint track_num = 0;
 
-	DbgMsg("===cb_typefind_audio_only ++\n");
+	//DbgMsg("===cb_typefind_audio_only ++\n");
 	
 	track_num = ty_handle->audio_track_num;
 	ty_handle->TymediaInfo->AudioTrackTotNum = 1;
@@ -1768,7 +1768,7 @@ static void cb_typefind_audio_only (GstElement *typefind,
    * Normally, your app should not need to worry about such things. */
 	g_idle_add (idle_exit_loop, loop);
 
-	DbgMsg("===cb_typefind_audio_only --\n");
+	//DbgMsg("===cb_typefind_audio_only --\n");
 		
 }
 
@@ -1959,6 +1959,7 @@ MP_RESULT NX_TypeFind( TYMEDIA_INFO *ty_media_handle,  const char *uri)
 		ty_media_handle->AudioTrackTotNum = 0;
 
 		if(ty_media_handle->DemuxType == DEMUX_TYPE_MPEGTSDEMUX){
+#if 0
 			g_print("\n");
 			g_print("============================================\n");
 			g_print("=========== MpegTs Program Total Number : %d\n",ty_media_handle->program_tot_no);		
@@ -1966,9 +1967,11 @@ MP_RESULT NX_TypeFind( TYMEDIA_INFO *ty_media_handle,  const char *uri)
 				g_print("=========== program : %d \n", ty_media_handle->program_no[i] );		
 			g_print("============================================\n");
 			g_print("\n");
+#endif
 		
 		}
 		else{
+#if 0
 			g_print("\n");
 			g_print("============================================\n");
 			g_print("===========VideoTotNum = %d==================\n",VideoTotNum);		
@@ -1979,6 +1982,7 @@ MP_RESULT NX_TypeFind( TYMEDIA_INFO *ty_media_handle,  const char *uri)
 				g_print("===========ACodecType : %s \n", AudioTypeString[ty_media_handle->AudioInfo[i].ACodecType] );
 			g_print("============================================\n");
 			g_print("\n");
+#endif
 		}
 
 		if(0 < VideoTotNum)

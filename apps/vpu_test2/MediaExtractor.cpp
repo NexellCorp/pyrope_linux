@@ -502,7 +502,11 @@ int32_t CMediaReader::ReadStream( int32_t type, uint8_t *buf, int32_t *size, int
 	else
 		return -1;
 
+#ifdef ANDROID
+	enum AVCodecID codecId = stream->codec->codec_id;
+#else
 	enum CodecID codecId = stream->codec->codec_id;
+#endif	
 	double timeStampRatio = (double)stream->time_base.num*1000./(double)stream->time_base.den;
 	do{
 		ret = av_read_frame( m_pFormatCtx, &pkt );
@@ -617,7 +621,11 @@ int32_t CMediaReader::GetAudioSeqInfo( uint8_t *buf )
 int32_t CMediaReader::GetSequenceInformation( AVStream *stream, unsigned char *buffer )
 {
 	uint8_t *pbHeader = buffer;
+#ifdef ANDROID
+	enum AVCodecID codecId = stream->codec->codec_id;
+#else
 	enum CodecID codecId = stream->codec->codec_id;
+#endif
 	int32_t fourcc;
 	int32_t frameRate = 0;
 	int32_t nMetaData = stream->codec->extradata_size;

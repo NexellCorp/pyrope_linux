@@ -109,11 +109,11 @@ int32_t main( int32_t argc, char *argv[] )
 	{
 		case DECODER_MODE:
 			return VpuDecMain( &appData );
-		case ENCODER_MODE:
-			if ( (appData.codec != 3) || (appData.inFileName) )
-		 		return VpuEncMain( &appData );
-			else
-		 		return VpuJpgMain( &appData );
+		// case ENCODER_MODE:
+		// 	if ( (appData.codec != 3) || (appData.inFileName) )
+		//  		return VpuEncMain( &appData );
+		// 	else
+		//  		return VpuJpgMain( &appData );
 	}
 
 	return 0;

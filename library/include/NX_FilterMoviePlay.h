@@ -37,29 +37,29 @@ enum{
 	ERROR_NOT_SUPPORT_CONTENTS          		= -3
 }; 
 
-typedef struct _AUDIO_INFO {
+typedef struct _Audio_Info {
 	int32_t		AudioTrackNum;
 	int32_t		ACodecID;
 	int32_t		samplerate;
 	int32_t		channels;
-} AUDIO_INFO;
+} Audio_Info;
 
-typedef struct _VIDEO_INFO {
+typedef struct _Video_Info {
 	int32_t		VideoTrackNum;
 	int32_t		VCodecID;
 	int32_t		Width;
 	int32_t		Height;
-} VIDEO_INFO;
+} Video_Info;
 
 #define MEDIA_MAX		5
-typedef struct _MEDIA_INFO{
+typedef struct _Media_Info{
 	int32_t		AudioTrackTotNum;
-	AUDIO_INFO	AudioInfo[MEDIA_MAX];
+	Audio_Info	AudioInfo[MEDIA_MAX];
 	int32_t		VideoTrackTotNum;
-	VIDEO_INFO	VideoInfo[MEDIA_MAX];
+	Video_Info	VideoInfo[MEDIA_MAX];
 	int32_t		DataTrackTotNum;
 	int64_t		Duration;
-} MEDIA_INFO;
+} Media_Info;
 
 
 #ifdef __cplusplus

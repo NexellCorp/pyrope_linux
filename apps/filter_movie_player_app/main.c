@@ -134,10 +134,10 @@ static int GetArgument( char *pSrc, char arg[][SHELL_MAX_STR] )
 	return i;
 }
 
-static void MediaStreamInfo(MEDIA_INFO *media_handle)
+static void MediaStreamInfo(Media_Info *media_handle)
 {
 	int i = 0;
-
+#if 0
 	printf("\n");
 	printf("===============================================================================\n");
 	if (media_handle->VideoTrackTotNum > 0)
@@ -188,7 +188,7 @@ static void MediaStreamInfo(MEDIA_INFO *media_handle)
 			media_handle->VideoTrackTotNum, media_handle->AudioTrackTotNum, media_handle->DataTrackTotNum);
 		printf("\n");
 	}
-
+#endif
 	printf("===============================================================================\n\n");
 }
 
@@ -378,7 +378,7 @@ void *CommandThread( void *arg )
 	int ret = 0;
 	int	display = DISPLAY_LCD;
 //	TYMEDIA_INFO input_media_info;
-	MEDIA_INFO media_info;
+	Media_Info media_info;
 	int input_media_info;
 	CommandBuffer cmd_st;
 	int status;
@@ -445,7 +445,7 @@ void *CommandThread( void *arg )
 //					if( ERROR_NONE != (mpResult = NX_MPOpen( &hPlayer, uri, static_player.volume, dspModule, dspPort, static_player.audio_request_track_num, static_player.video_request_track_num , (char *)&input_media_info, display,  priority, &callback, NULL )) )
 //					NX_MPCreate(&hPlayer, uri, &media_info, &callback, NULL);
 					MediaStreamInfo(&media_info);
-					if (ERROR_NONE != (mpResult = NX_MPOpen(hPlayer, 1, 0, 0, 1, 1, 0)))
+					//if (ERROR_NONE != (mpResult = NX_MPOpen(hPlayer, 1, 0, 0, 1, 1, 0)))
 					{
 						printf("Error : NX_MPOpen Failed!!!(uri=%s, %d)\n", uri, mpResult);
 						continue;
@@ -493,7 +493,7 @@ void *CommandThread( void *arg )
 //							if (ERROR_NONE != (mpResult = NX_MPOpen(&hPlayer, uri, static_player.volume, dspModule, dspPort, static_player.audio_request_track_num, static_player.video_request_track_num, (char *)&input_media_info, display, priority, &callback, NULL)))
 //							NX_MPCreate(&hPlayer, uri, &media_info, &callback, NULL);
 							MediaStreamInfo(&media_info);
-							if (ERROR_NONE != (mpResult = NX_MPOpen(hPlayer, 1, 0, 0, 1, 1, 0)))
+							//if (ERROR_NONE != (mpResult = NX_MPOpen(hPlayer, 1, 0, 0, 1, 1, 0)))
 							{
 								printf("Error : NX_MPOpen Failed!!!(uri=%s, %d)\n", uri, mpResult);
 								continue;
@@ -632,7 +632,7 @@ void *CommandThread( void *arg )
 				display = DISPLAY_LCD;
 				static_player.display = DISPLAY_LCD;
 			}
-			if (ERROR_NONE != (mpResult = NX_MPOpen(hPlayer, volume, dspModule, dspPort, audio_request_track_num, video_request_track_num, 0)))
+			//if (ERROR_NONE != (mpResult = NX_MPOpen(hPlayer, volume, dspModule, dspPort, audio_request_track_num, video_request_track_num, 0)))
 			{
 				printf("Error : NX_MPOpen Failed!!!(uri=%s, %d)\n", openName, mpResult);
 				continue;
@@ -949,10 +949,12 @@ int main( int argc, char *argv[] )
 	int audio_request_track_num = 1;						//multi track, default 0
 	int video_request_track_num = 1;						//multi track, default 0
 //	TYMEDIA_INFO input_media_info;
-	MEDIA_INFO media_info;
+	Media_Info media_info;
 	int input_media_info;
 	int display = DISPLAY_LCD;
 	int priority = 0;
+
+	int volumem, dspModule, dspPort;
 
 	if( 2>argc )
 	{
@@ -977,10 +979,14 @@ int main( int argc, char *argv[] )
 
 
 //	NX_MPCreate(&handle, uri, &media_info, &callback, NULL);
-	MediaStreamInfo(&media_info);
+//	MediaStreamInfo(&media_info);
+	//
+	NX_DspVideoSetPriority(0, 0);
+	//
+	NX_MPSetFileName(&handle, uri, &media_info);
 
 	//---------------------------------------------------------------------
-#if 1
+#if 0
 	if (media_info.AudioTrackTotNum > 1){
 		printf("Input Audio Request Track Number!!!\n");
 		scanf("%d", &audio_request_track_num);
@@ -1016,7 +1022,10 @@ int main( int argc, char *argv[] )
 	//---------------------------------------------------------------------
 
 	printf("NX_MPOpen ++\n");
-	NX_MPOpen(handle, 1, 0, 0, audio_request_track_num, video_request_track_num, 0);
+	//NX_MPOpen(handle, 1, 0, 0, audio_request_track_num, video_request_track_num, 0);
+	NX_MPOpen(handle, 1, 1, 0,	(void *)&volumem, (void *)&dspModule, (void *)&dspPort,
+		&callback, NULL);
+
 	printf("handle_s1 = %p\n",handle);
 	
 	if( handle )

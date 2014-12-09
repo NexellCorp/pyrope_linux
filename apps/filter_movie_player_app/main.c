@@ -13,6 +13,8 @@
 #define ON	1
 #define OFF	0
 
+#define	SCREEN_WIDTH	1024
+#define	SCREEN_HEIGHT	600
 
 typedef struct CommandBuffer{
 	int		cmd_cnt;	
@@ -954,7 +956,7 @@ int main( int argc, char *argv[] )
 	int display = DISPLAY_LCD;
 	int priority = 0;
 
-	int volumem, dspModule, dspPort;
+	int volumem, dspModule = 0, dspPort = 0;			//	Currently can support only dspModule = 0 and dspPort = 0
 
 	if( 2>argc )
 	{
@@ -1041,6 +1043,9 @@ int main( int argc, char *argv[] )
 	}
 	count = 0;
 
+	//	We are set always full screen mode.
+	NX_MPSetDspPosition(handle, dspModule, dspPort, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
 	while(1)
 	{
 		usleep(300000);
@@ -1052,6 +1057,8 @@ int main( int argc, char *argv[] )
 
 		count ++;	
 		
+		//	for display position test
+		//NX_MPSetDspPosition(handle, dspModule, dspPort, 0, 0, SCREEN_WIDTH, ((SCREEN_HEIGHT+count) %SCREEN_HEIGHT)+1 );
 
 		if( count == 50 )
 		{

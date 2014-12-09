@@ -54,8 +54,8 @@ typedef struct {
 #endif
 
 //	Pyxis
-#define	LCD_WIDTH	800
-#define	LCD_HEIGHT	1280
+#define	LCD_WIDTH	1024
+#define	LCD_HEIGHT	600
 //	Lynx
 //#define	LCD_WIDTH	1280
 //#define	LCD_HEIGHT	800
@@ -274,6 +274,22 @@ ErrorExit:
 {
 	if( pStreamReader )
 	{
+		if( pStreamReader->video_stream )
+		{
+			if( pStreamReader->video_stream->codec )
+			{
+				avcodec_close( pStreamReader->video_stream->codec );
+			}
+			pStreamReader->video_stream = NULL;
+		}
+		if( pStreamReader->audio_stream )
+		{
+			if( pStreamReader->audio_stream->codec )
+			{
+				avcodec_close( pStreamReader->audio_stream->codec );
+			}
+			pStreamReader->audio_stream = NULL;
+		}
 		av_close_input_file( (AVFormatContext*)((void*)pStreamReader->fmt_ctx) );
 		free( pStreamReader );
 	}
@@ -1043,7 +1059,10 @@ int dec_main( int argc, char *argv[] )
 		return 0;
 	}
 
-	fpOut = fopen( outFileName, "wb" );
+	if( outFileName )
+	{
+		fpOut = fopen( outFileName, "wb" );
+	}
 
 	vpuCodecType = CodecIdToVpuType( pReader->video_stream->codec->codec_id, pReader->video_stream->codec->codec_tag );
 	if( vpuCodecType < 0 )
@@ -1328,6 +1347,8 @@ int dec_main( int argc, char *argv[] )
 #ifdef ENABLE_DISPLAY
 	NX_DspClose(hDsp);
 #endif
+
+	CloseFile( pReader );
 
 	if ( fpOut )
 		fclose(fpOut);

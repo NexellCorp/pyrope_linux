@@ -24,8 +24,8 @@ unsigned char seqData[1024*4];
 
 
 //	Display Window Screen Size
-#define	WINDOW_WIDTH		1280
-#define	WINDOW_HEIGHT		720
+#define	WINDOW_WIDTH		1024
+#define	WINDOW_HEIGHT		600
 #define	NUMBER_OF_BUFFER	12
 
 

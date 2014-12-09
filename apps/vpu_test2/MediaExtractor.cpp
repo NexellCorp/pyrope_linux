@@ -344,8 +344,25 @@ CMediaReader::~CMediaReader()
 		avformat_close_input( &m_pFormatCtx );
 #else
 		//	Linux Old Version FFMPEG
+
+		if( m_VideoStream )
+		{
+			m_VideoStream->discard = AVDISCARD_ALL;
+			if( m_VideoStream->codec )
+				avcodec_close(m_VideoStream->codec);
+			m_VideoStream = NULL;
+		}
+
+		if( m_AudioStream )
+		{
+			m_AudioStream->discard = AVDISCARD_ALL;
+			if( m_AudioStream->codec )
+				avcodec_close(m_AudioStream->codec);
+			m_AudioStream = NULL;
+		}
+
 		av_close_input_file( m_pFormatCtx );
-		free( m_pFormatCtx );
+		//free( m_pFormatCtx );
 #endif
 	}
 }
@@ -477,6 +494,18 @@ void CMediaReader::CloseFile()
 #ifdef ANDROID
 		avformat_close_input( &m_pFormatCtx );
 #else
+		if( m_VideoStream )
+		{
+			m_VideoStream->discard = AVDISCARD_ALL;
+			avcodec_close(m_VideoStream->codec);
+			m_VideoStream = NULL;
+		}
+		if( m_AudioStream )
+		{
+			m_AudioStream->discard = AVDISCARD_ALL;
+			avcodec_close(m_AudioStream->codec);
+			m_AudioStream = NULL;
+		}
 		//	Linux Old Version FFMPEG
 		av_close_input_file( m_pFormatCtx );
 		free( m_pFormatCtx );

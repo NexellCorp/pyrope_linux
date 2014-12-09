@@ -104,7 +104,7 @@ $(CAMCLIPPERCROPAPP):	depend $(OBJS)
 	$(CC) $(CPPFLAGS) $(CAM_CLIPPER_CROP_OBJS) -o $@ $(LIBRARY)
 
 clean:
-	rm -f $(DECIAPP) $(HDMIAPP) $(CSIAPP) $(RESCAPP) *.o .depend
+	rm -f $(CSIAPP) $(DECIAPP) $(DECICROPAPP) $(DECICROPSCALEAPP) $(HDMIAPP) $(CAMAPP) $(CAMINTERLACEAPP) $(CAMVIDEOOUTSOURCECROPAPP) $(CAMDECICLIPPERAPP) $(CAMCLIPPERCROPAPP) *.o .depend
 
 #########################################################################
 # Dependency

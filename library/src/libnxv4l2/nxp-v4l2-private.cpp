@@ -148,10 +148,11 @@ class V4l2NexellPrivate {
     } SubdevUsageScheme;
 
 public:
-    V4l2NexellPrivate() : EntityCount(0) {
+    V4l2NexellPrivate() : EntityCount(0), MediaFD(0) {
     }
 
     virtual ~V4l2NexellPrivate() {
+        if( MediaFD ) close(MediaFD);
     }
 
     int init(const struct V4l2UsageScheme *);

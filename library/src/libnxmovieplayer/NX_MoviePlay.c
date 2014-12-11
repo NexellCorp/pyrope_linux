@@ -873,7 +873,6 @@ static int video_element_set(MP_HANDLE handle, int dspModule, int dspPort, int d
 	g_object_set(G_OBJECT(handle->video_sink), "dsp-port", dspPort, NULL);
 	g_object_set(G_OBJECT(handle->video_sink), "dsp-priority", priority, NULL);
 
-
 	if( ( dspModule == 0) && (dspPort == 0) && (display == DISPLAY_PORT_LCD) )	//lcd
 	{
 		g_object_set(G_OBJECT(handle->video_sink), "lcd-display", ON, NULL);
@@ -961,11 +960,9 @@ static void typefind_debug(TYMEDIA_INFO *ty_handle)
 	g_print("===============================================================================\n\n");
 }
 
-#ifdef SEPARATE_OPEN_FUNC
 MP_RESULT NX_MPSetFileName(MP_HANDLE *handle_s, const char *uri, char *media_info)
 {
 	MP_HANDLE handle = NULL;
-//	TYMEDIA_INFO media_info;
 	TYMEDIA_INFO *ty_handle = (TYMEDIA_INFO*)media_info;
 	gint uri_len = 0;
 	int ret = 0;
@@ -1021,37 +1018,11 @@ MP_RESULT NX_MPSetFileName(MP_HANDLE *handle_s, const char *uri, char *media_inf
 	else
 	{
 		memcpy(&handle->TymediaInfo, media_info, sizeof(TYMEDIA_INFO) );
-//		memcpy(&handle->TymediaInfo, &media_info, sizeof(TYMEDIA_INFO));
 	}
 
 	//typefind end
 
 	*handle_s = handle;
-#if 0
-	//
-	p_media_info->AudioTrackTotNum = ty_handle->AudioTrackTotNum;
-	p_media_info->VideoTrackTotNum = ty_handle->VideoTrackTotNum;
-	p_media_info->DataTrackTotNum = 0;
-	if(p_media_info->AudioTrackTotNum)
-		p_media_info->Duration = ty_handle->AudioInfo[0].ADuration;
-
-	for(i=0;i<ty_handle->AudioTrackTotNum;i++)
-	{
-		p_media_info->AudioInfo[i].AudioTrackNum = ty_handle->AudioInfo[i].AudioTrackNum;
-		p_media_info->AudioInfo[i].ACodecID = ty_handle->AudioInfo[i].ACodecType;
-		p_media_info->AudioInfo[i].samplerate = ty_handle->AudioInfo[i].samplerate;
-		p_media_info->AudioInfo[i].channels = ty_handle->AudioInfo[i].samplerate;
-	}
-
-	for(i=0;i<ty_handle->VideoTrackTotNum;i++)
-	{
-		p_media_info->VideoInfo[i].VideoTrackNum = ty_handle->VideoInfo[i].VideoTrackNum;
-		p_media_info->VideoInfo[i].VCodecID = ty_handle->VideoInfo[i].VCodecType;
-		p_media_info->VideoInfo[i].Width = ty_handle->VideoInfo[i].Width;
-		p_media_info->VideoInfo[i].Height = ty_handle->VideoInfo[i].Height;
-	}
-#endif
-	//
 
 	FUNC_OUT();
 	return ERROR_NONE;
@@ -1065,22 +1036,15 @@ ERROR_EXIT:
 	return ERROR;
 }
 
-MP_RESULT NX_MPOpen( MP_HANDLE handle,
-					 int32_t audio_track_num, int32_t video_track_num,
-					 int32_t display, void *pvolumem, void *pdspModule, void *pdspPort,
-					 void(*cb)(void *owner, unsigned int msg, unsigned int param1, unsigned int param2), void *cbPrivate)
+MP_RESULT NX_MPOpen( MP_HANDLE handle, int volumem, int dspModule, int dspPort, int audio_track_num, int video_track_num, int display,
+						void (*cb)(void *owner, unsigned int msg, unsigned int param1, unsigned int param2), void *cbPrivate)
 {
 	int ret = 0;
 	int priority = 0;
-	int volumem =0,  dspModule =0, dspPort = 0;
 
 	if( !handle )
 		goto ERROR_EXIT;
 	
-	volumem = *((int*)pvolumem);
-	dspModule = *((int*)pdspModule);
-	dspPort = *((int*)pdspPort);
-
 	if( audio_track_num < 0 )
 		audio_track_num = 0;
 
@@ -1216,221 +1180,6 @@ ERROR_EXIT:
 	return ERROR;
 }
 
-#else
-MP_RESULT NX_MPOpen( MP_HANDLE *handle_s, const char *uri, int volumem, int dspModule, int dspPort, int audio_track_num, int video_track_num, char *media_info, int display, int priority,
-					void (*cb)(void *owner, unsigned int msg, unsigned int param1, unsigned int param2), void *cbPrivate )
-{
-	MP_HANDLE handle = NULL;
-//	const gchar *surfix = NULL;
-	gint uri_len = 0;
-//	double vol = 0;
-	int ret = 0;
-	TYMEDIA_INFO *ty_handle = (TYMEDIA_INFO *)media_info;
-	AppData *appData = NULL;
-
-//	int display = 0;
-
-	FUNC_IN();
-
-	if(cbPrivate != NULL)
-		appData = (AppData*)cbPrivate;
-
-	if( !gst_is_initialized() ){
-		gst_init(NULL, NULL);
-	}
-
-	handle = (MP_HANDLE)malloc( sizeof(MOVIE_TYPE) );
-	if(NULL == handle)
-		return ERROR_HANDLE;
-
-	memset( handle, 0, sizeof(MOVIE_TYPE) );
-
-	if( ( strncmp( uri, "http://", 7 ) == 0 ) ||
-		( strncmp( uri, "https://", 8 ) == 0 ) )
-	{
-		handle->uri_type = URI_TYPE_URL;
-	}
-	else
-	{
-		handle->uri_type = URI_TYPE_FILE;
-	}
-
-	uri_len = strlen( uri );
-
-	if( uri_len <= 4 )
-		goto ERROR_EXIT;
-//	surfix = &uri[ uri_len-4 ];
-
-	handle->uri = strdup( uri );
-
-	//typefind
-	if(	  audio_track_num < 0 || video_track_num < 0
-		|| (ty_handle->AudioTrackTotNum <=0 && ty_handle->VideoTrackTotNum <=0) )
-	{
-		ret  = NX_TypeFind_Open( &ty_handle );
-		if(ret != ERROR_NONE)
-		{
-			g_error ("Error NX_TypeFind_Open!! ");
-			goto ERROR_EXIT;
-		}
-
-		ret = NX_TypeFind( ty_handle, uri );
-
-		memcpy(&handle->TymediaInfo, ty_handle, sizeof(TYMEDIA_INFO) );
-
-		typefind_debug( ty_handle);
-
-		NX_TypeFind_Close(ty_handle);
-
-		if(ret != ERROR_NONE)
-		{
-			g_error ("ERROR Not Support Contents!! \n ");
-			goto ERROR_EXIT;
-		}
-
-		if(audio_track_num < 0)
-			audio_track_num = 0;
-		if(video_track_num < 0)
-			video_track_num = 0;
-	}
-	else
-	{
-		memcpy(&handle->TymediaInfo, media_info, sizeof(TYMEDIA_INFO) );
-	}
-	//typefind end
-
-	handle->display = display;
-	 
-
-	handle->audio_select_track_num = audio_track_num;
-	handle->video_select_track_num = video_track_num;
-
-	handle->audio_type =handle->TymediaInfo.AudioInfo[handle->audio_select_track_num].ACodecType;
-	handle->video_type =handle->TymediaInfo.VideoInfo[handle->video_select_track_num].VCodecType;
-
-	handle->callback = cb;
-	if(cbPrivate != NULL)
-		appData->hPlayer = handle;
-	handle->owner = cbPrivate;
-
-	if( handle->pipeline_is_linked )
-	{
-		DbgMsg("%s() : Already Initialized\n",__func__);
-		return ERROR_NONE;
-	}
-
-	handle->pipeline = gst_pipeline_new ("Movie Player");
-	if( NULL==handle->pipeline )
-	{
-		g_print("NULL==handle->pipeline\n");
-		goto ERROR_EXIT;
-	}
-
-	//	Add bus watch
-	handle->bus = gst_pipeline_get_bus( (GstPipeline*)(handle->pipeline) );
-	gst_bus_add_watch ( handle->bus, (GstBusFunc)bus_callback, handle );
-	gst_object_unref ( GST_OBJECT(handle->bus) );
-
-	/* Create gstreamer elements */
-	switch( handle->uri_type )
-	{
-	case URI_TYPE_FILE:
-		handle->input_src = gst_element_factory_make ("filesrc", "file-source");
-		break;
-	case URI_TYPE_URL :
-		handle->input_src = gst_element_factory_make ("souphttpsrc", NULL);
-		break;
-	}
-
-	if( NULL==handle->input_src )
-	{
-		g_print ("NULL, Could not create 'input_src' element\n");
-		goto ERROR_EXIT;
-	}
-	// we set the input filename to the source element
-	g_object_set (G_OBJECT (handle->input_src), "location", handle->uri, NULL);
-
-	if(handle->TymediaInfo.AudioOnly == ON){		
-		//DbgMsg("TymediaInfo.AudioOnly == ON)\n");
-		//	add audio queue,decoder,sink,volume
-		ret = audio_only_element_set(handle, volumem, dspPort);
-		if(ret == 0){
-			goto ERROR_EXIT;
-		}		
-
-		ret = audio_only_bin_add_link(handle);
-		if(ret == 0){
-			goto ERROR_EXIT;
-		}		
-
-	}
-	else if(handle->TymediaInfo.VideoOnly == ON){
-		//add video queue,decoder,sink
-		ret = video_element_set( handle,  dspModule,  dspPort, display, priority);
-		if(ret == 0){
-			goto ERROR_EXIT;
-		}		
-		ret = demux_element_search(handle);
-		if(ret == 0){
-			goto ERROR_EXIT;
-		}		
-		ret = video_only_bin_add_link(handle);
-		if(ret == 0){
-			goto ERROR_EXIT;
-		}		
-	}			
-	else { //audio + video		
-		//	add audio queue,decoder,sink,volume
-		ret = audio_element_set(handle, volumem, dspPort);
-		if(ret == 0){
-			goto ERROR_EXIT;
-		}		
-		//add video queue,decoder,sink
-		ret = video_element_set( handle,  dspModule,  dspPort, display, priority);
-		if(ret == 0){
-			goto ERROR_EXIT;
-		}		
-		ret = demux_element_search(handle);
-		if(ret == 0){
-			goto ERROR_EXIT;
-		}		
-		ret = video_audio_bin_add_link(handle);
-		if(ret == 0){
-			goto ERROR_EXIT;
-		}		
-	}
-
-	if( GST_STATE_CHANGE_FAILURE == gst_element_set_state (handle->pipeline, GST_STATE_READY) )
-	{
-		DbgMsg("%s() : GST_STATE_CHANGE_FAILURE\n",__func__);
-		return ERROR;
-	}
-
-	if( GST_STATE_CHANGE_FAILURE == gst_element_get_state( handle->pipeline, NULL, NULL, -1 ) )
-	{
-		DbgMsg("%s() : GST_STATE_CHANGE_FAILURE_1\n",__func__);
-		return ERROR;
-	}
-
-	handle->pipeline_is_linked = TRUE;
-	start_loop_thread( handle );
-
-	*handle_s = handle;
-
-	FUNC_OUT();
-
-	return ERROR_NONE;
-
-ERROR_EXIT:
-
-	if( handle ){
-		free( handle );
-	}
-
-	return ERROR;
-}
-#endif
-
 void NX_MPClose( MP_HANDLE handle )
 {
 	FUNC_IN();
@@ -1514,6 +1263,7 @@ MP_RESULT NX_MPPlay( MP_HANDLE handle, float speed )
 		ErrMsg("%s() : Sate change failed!!!(ret=%d)\n", __func__, ret);
 		return ERROR;
 	}
+
 //	handle->seek_state = 0;	
 //	handle->pause_state = 0;	
 	FUNC_OUT();
@@ -1645,13 +1395,19 @@ MP_RESULT NX_MPGetCurDuration(MP_HANDLE handle, unsigned int *duration)
 		}
 		else
 		{
+			DbgMsg("============ Invalid Status\n");
 			return ERROR;	//	Invalid state
 		}
 	}
 	else
 	{
+		DbgMsg("============ Invalid Status 2\n");
 		return ERROR;
 	}
+
+
+	DbgMsg( "state(%d) , GST_STATE_PLAYING(%d) , GST_STATE_PAUSED(%d) , GST_STATE_READY(%d)\n",
+		state, GST_STATE_PLAYING, GST_STATE_PAUSED, GST_STATE_READY );
 
 	FUNC_OUT();
 

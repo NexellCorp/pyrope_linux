@@ -16,7 +16,7 @@
 #define			MAX_COMMAND_QUEUE		1024
 
 typedef struct CommandBuffer {
-	int			cmd_cnt;	
+	int32_t		cmd_cnt;	
 	char		cmd[10][10];	
 } CommandBuffer;
 
@@ -27,20 +27,20 @@ typedef struct AppData {
 	TYMEDIA_INFO	input_media_info;
 
 	// Player Parameter
-	int				volume;
+	int32_t			volume;
 
-	int				video_request_track_num;
-	int				audio_request_track_num;
+	int32_t			video_request_track_num;
+	int32_t			audio_request_track_num;
 
-	int				display;
-	int				dsp_port;
-	int 			dsp_module;
-	int				hdmi_detect;
-	int				hdmi_detect_init;
+	int32_t			display;
+	int32_t			dsp_port;
+	int32_t 		dsp_module;
+	int32_t			hdmi_detect;
+	int32_t			hdmi_detect_init;
 
 	// Player Status
-	int				position_save;
-	int				isPaused;
+	int32_t			position_save;
+	int32_t			isPaused;
 
 	// Internal Thread
 	pthread_t		hCmdThread;	
@@ -49,16 +49,16 @@ typedef struct AppData {
 	pthread_t		hHdmiThread;
 	pthread_mutex_t HdmiMutex;
 
-	int				thread_flag;
+	int32_t			thread_flag;
 
 	// Command Queue
 	CommandBuffer	CommandQueue[MAX_COMMAND_QUEUE];
-	int				CmdHead;
-	int				CmdTail;
-	int				NumCmd;
+	int32_t			CmdHead;
+	int32_t			CmdTail;
+	int32_t			NumCmd;
 
 	// Application Mode
-	int				shell_mode;
+	int32_t			shell_mode;
 } AppData;
 
 
@@ -105,7 +105,7 @@ static const char *VideoTypeString[12] =
 //
 //	Player Event Callback
 //
-static void callback( void *privateDesc, unsigned int message, unsigned int param1, unsigned int param2 )
+static void callback( void *privateDesc, uint32_t message, uint32_t param1, uint32_t param2 )
 {
 	AppData *pAppData = privateDesc;
 	
@@ -172,7 +172,7 @@ static void shell_help( void )
 
 static void typefind_debug(TYMEDIA_INFO *ty_handle)
 {
-	int i = 0;
+	uint32_t i = 0;
 
 	printf("\n");
 	printf("===============================================================================\n");
@@ -182,18 +182,18 @@ static void typefind_debug(TYMEDIA_INFO *ty_handle)
 		printf("-------------------------------------------------------------------------------\n");
 		printf("                       Video Information \n");
 		printf("-------------------------------------------------------------------------------\n");
-		printf("    VideoTrackTotNum: %d  \n",  (int)ty_handle->VideoTrackTotNum);
+		printf("    VideoTrackTotNum: %ld  \n",  ty_handle->VideoTrackTotNum);
 		printf("\n");
-		for(i = 0; i < (int)ty_handle->VideoTrackTotNum; i++)
+		for(i = 0; i < ty_handle->VideoTrackTotNum; i++)
 		{
-			printf("    VideoTrackNum   : %d	\n", (int)ty_handle->VideoInfo[i].VideoTrackNum);
-			printf("    VCodecType      : %d, %s\n", (int)ty_handle->VideoInfo[i].VCodecType, VideoTypeString[ty_handle->VideoInfo[i].VCodecType] );
-			printf("    Width           : %d  	\n", (int)ty_handle->VideoInfo[i].Width);
-			printf("    Height          : %d  	\n", (int)ty_handle->VideoInfo[i].Height);
+			printf("    VideoTrackNum   : %ld	\n", ty_handle->VideoInfo[i].VideoTrackNum);
+			printf("    VCodecType      : %ld, %s\n", ty_handle->VideoInfo[i].VCodecType, VideoTypeString[ty_handle->VideoInfo[i].VCodecType] );
+			printf("    Width           : %ld  	\n", ty_handle->VideoInfo[i].Width);
+			printf("    Height          : %ld  	\n", ty_handle->VideoInfo[i].Height);
 			if(ty_handle->VideoInfo[i].Framerate.value_numerator == 0 || ty_handle->VideoInfo[i].Framerate.value_denominator == 0)
-				printf("    Framerate       : %f	\n", (float)0.); 
+				printf("    Framerate       : %f	\n", 0.); 
 			else
-				printf("    Framerate       : %f  	\n", (float)ty_handle->VideoInfo[i].Framerate.value_numerator/ty_handle->VideoInfo[i].Framerate.value_denominator); 
+				printf("    Framerate       : %f  	\n", (double)(ty_handle->VideoInfo[i].Framerate.value_numerator/ty_handle->VideoInfo[i].Framerate.value_denominator));
 			printf("\n");
 			printf("\n");
 		}
@@ -203,14 +203,14 @@ static void typefind_debug(TYMEDIA_INFO *ty_handle)
 		printf("-------------------------------------------------------------------------------\n");
 		printf("                       Audio Information \n");
 		printf("-------------------------------------------------------------------------------\n");
-		printf("    AudioTrackTotNum: %d  \n",  (int)ty_handle->AudioTrackTotNum);
+		printf("    AudioTrackTotNum: %ld  \n",  ty_handle->AudioTrackTotNum);
 		printf("\n");
-		for(i = 0; i < (int)ty_handle->AudioTrackTotNum; i++)
+		for(i = 0; i < ty_handle->AudioTrackTotNum; i++)
 		{
-			printf("    AudioTrackNum   : %d  	\n", (int)ty_handle->AudioInfo[i].AudioTrackNum);
-			printf("    ACodecType      : %d, %s\n", (int)ty_handle->AudioInfo[i].ACodecType, AudioTypeString[ty_handle->AudioInfo[i].ACodecType] );
-			printf("    samplerate      : %d  	\n", (int)ty_handle->AudioInfo[i].samplerate);
-			printf("    channels        : %d  	\n", (int)ty_handle->AudioInfo[i].channels);
+			printf("    AudioTrackNum   : %ld  	\n", ty_handle->AudioInfo[i].AudioTrackNum);
+			printf("    ACodecType      : %ld, %s\n", ty_handle->AudioInfo[i].ACodecType, AudioTypeString[ty_handle->AudioInfo[i].ACodecType] );
+			printf("    samplerate      : %ld  	\n", ty_handle->AudioInfo[i].samplerate);
+			printf("    channels        : %ld  	\n", ty_handle->AudioInfo[i].channels);
 			printf("\n");
 			printf("\n");
 		}
@@ -226,9 +226,9 @@ static void typefind_debug(TYMEDIA_INFO *ty_handle)
 #define	SHELL_MAX_ARG	32
 #define	SHELL_MAX_STR	1024
 
-static int GetArgument( char *pSrc, char arg[][SHELL_MAX_STR] )
+static int32_t GetArgument( char *pSrc, char arg[][SHELL_MAX_STR] )
 {
-	int	i, j;
+	int32_t	i, j;
 
 	// Reset all arguments
 	for( i=0 ; i<SHELL_MAX_ARG ; i++ )
@@ -258,7 +258,7 @@ static int GetArgument( char *pSrc, char arg[][SHELL_MAX_STR] )
 	return i;
 }
 
-static int PopCommand( AppData *pAppData, CommandBuffer *cmd )
+static int32_t PopCommand( AppData *pAppData, CommandBuffer *cmd )
 {
 	//	Command Pop Operation
 	pthread_mutex_lock( &pAppData->CmdMutex );
@@ -272,7 +272,7 @@ static int PopCommand( AppData *pAppData, CommandBuffer *cmd )
 	return 0;
 }
 
-static int PushCommand( AppData *pAppData, CommandBuffer *cmd )
+static int32_t PushCommand( AppData *pAppData, CommandBuffer *cmd )
 {
 	//	Command Push Operation
 	pthread_mutex_lock( &pAppData->CmdMutex );
@@ -295,9 +295,9 @@ static int PushCommand( AppData *pAppData, CommandBuffer *cmd )
 
 void *HdmiDetectThread( void *arg )
 {
-	int err;
-	int fd;
-	unsigned int hdmi;
+	int32_t err;
+	int32_t fd;
+	uint32_t hdmi;
 	struct pollfd fds[1];
 	unsigned char uevent_desc[2048];
 	char val;
@@ -352,7 +352,7 @@ void *HdmiDetectThread( void *arg )
 
 		if( err > 0 ) {
 			if( fds[0].revents & POLLIN ) {
-				//int len = uevent_next_event((char *)uevent_desc, sizeof(uevent_desc) - 2);
+				//int32_t len = uevent_next_event((char *)uevent_desc, sizeof(uevent_desc) - 2);
 				hdmi = !strcmp((const char *)uevent_desc, (const char *)"change@/devices/virtual/switch/hdmi");
 				if( hdmi ) {
 					fd = open(HDMI_STATE_FILE, O_RDONLY);
@@ -398,7 +398,7 @@ void *CommandThread( void *arg )
 	MP_RESULT mpResult = ERROR_NONE;
 
 	static 	char cmd[SHELL_MAX_ARG][SHELL_MAX_STR];
-	int i = 0, cmdCnt = 0;
+	int32_t i = 0, cmdCnt = 0;
 	
 	CommandBuffer cmd_st;
 
@@ -425,7 +425,7 @@ void *CommandThread( void *arg )
 			if( pAppData->hdmi_detect == OFF )
 			{
 				if( pAppData->hPlayer ){
-					NX_MPGetCurPosition( pAppData->hPlayer, (unsigned int*)&pAppData->position_save);
+					NX_MPGetCurPosition( pAppData->hPlayer, (uint32_t*)&pAppData->position_save);
 					NX_MPClose( pAppData->hPlayer );
 					pAppData->hPlayer = NULL;
 					
@@ -438,8 +438,13 @@ void *CommandThread( void *arg )
 						printf("Error : NX_MPSetFileName Failed! ( uri = %s, mpResult = %d )\n", pAppData->uri, mpResult);
 						continue;	
 					}
-			
-					if( ERROR_NONE != (mpResult = NX_MPOpen( pAppData->hPlayer, pAppData->audio_request_track_num, pAppData->video_request_track_num, pAppData->display, (void *)&pAppData->volume, (void *)&pAppData->dsp_module, (void *)&pAppData->dsp_port, &callback, (void*)pAppData )) )
+
+					mpResult = NX_MPOpen( pAppData->hPlayer,
+										pAppData->volume, pAppData->dsp_module, pAppData->dsp_port,
+										pAppData->audio_request_track_num, pAppData->video_request_track_num,
+										pAppData->display, &callback, pAppData );
+
+					if( ERROR_NONE != mpResult )
 					{
 						printf("Error : NX_MPOpen Failed! ( mpResult = %d )\n", mpResult);
 						continue;
@@ -462,7 +467,7 @@ void *CommandThread( void *arg )
 			else if(pAppData->hdmi_detect == ON)
 			{
 				if( pAppData->hPlayer ){
-					NX_MPGetCurPosition( pAppData->hPlayer, (unsigned int*)&pAppData->position_save);
+					NX_MPGetCurPosition( pAppData->hPlayer, (uint32_t*)&pAppData->position_save);
 					NX_MPClose( pAppData->hPlayer );
 					pAppData->hPlayer = NULL;
 
@@ -475,7 +480,12 @@ void *CommandThread( void *arg )
 						continue;	
 					}
 
-					if( ERROR_NONE != (mpResult = NX_MPOpen( pAppData->hPlayer, pAppData->audio_request_track_num, pAppData->video_request_track_num, pAppData->display, (void *)&pAppData->volume, (void *)&pAppData->dsp_module, (void *)&pAppData->dsp_port, &callback, (void*)pAppData )) )
+					mpResult = NX_MPOpen( pAppData->hPlayer,
+										pAppData->volume, pAppData->dsp_module, pAppData->dsp_port,
+										pAppData->audio_request_track_num, pAppData->video_request_track_num,
+										pAppData->display, &callback, pAppData );
+
+					if( ERROR_NONE != mpResult )
 					{
 						printf("Error : NX_MPOpen Failed! ( mpResult = %d )\n", mpResult);
 						continue;
@@ -545,7 +555,12 @@ void *CommandThread( void *arg )
 				continue;
 			}
 
-			if( ERROR_NONE != (mpResult = NX_MPOpen( pAppData->hPlayer, pAppData->audio_request_track_num, pAppData->video_request_track_num, pAppData->display, (void *)&pAppData->volume, (void *)&pAppData->dsp_module, (void *)&pAppData->dsp_port, &callback, (void*)pAppData )) )
+			mpResult = NX_MPOpen( pAppData->hPlayer,
+								pAppData->volume, pAppData->dsp_module, pAppData->dsp_port,
+								pAppData->audio_request_track_num, pAppData->video_request_track_num,
+								pAppData->display, &callback, pAppData );
+
+			if( ERROR_NONE != mpResult )
 			{
 				printf("Error : NX_MPOpen Failed! ( mpResult = %d )\n", mpResult);
 				continue;
@@ -663,7 +678,7 @@ void *CommandThread( void *arg )
 		}
 		else if( (0 == strcasecmp( cmd[0], "seek" )) || (0 == strcasecmp( cmd[0], "s" )) )
 		{
-			int seekTime;
+			int32_t seekTime;
 			if( cmdCnt < 2 )
 			{
 				printf("Error : Invalid argument !!!, Usage : seek (or s) [milli seconds]\n");
@@ -688,7 +703,7 @@ void *CommandThread( void *arg )
 		{
 			if( pAppData->hPlayer )
 			{
-				unsigned int duration, position;
+				uint32_t duration, position;
 				NX_MPGetCurDuration(pAppData->hPlayer, &duration);
 				NX_MPGetCurPosition(pAppData->hPlayer, &position);
 				printf("Postion : %d / %d msec\n", position, duration);
@@ -700,7 +715,7 @@ void *CommandThread( void *arg )
 		}
 		else if( 0 == strcasecmp( cmd[0], "pos" ) )
 		{
-			int x, y, w, h;
+			int32_t x, y, w, h;
 			if( cmdCnt < 7) {
 				printf("\nError : Invalid argument, Usage : pos [module] [port] [x] [y] [w] [h]\n");
 				continue;
@@ -769,12 +784,12 @@ void *CommandThread( void *arg )
 	return (void*)0xDEADDEAD;
 }
 
-static int shell_main( AppData *pAppData )
+static int32_t shell_main( AppData *pAppData )
 {
 	static char cmdstring[SHELL_MAX_ARG * SHELL_MAX_STR];
 	static char cmd[SHELL_MAX_ARG][SHELL_MAX_STR];
 	
-	int i = 0, cmdCnt = 0;
+	int32_t i = 0, cmdCnt = 0;
 	CommandBuffer cmdBuffer;
 
 	if( pthread_create( &pAppData->hHdmiThread, NULL, HdmiDetectThread, (void*)pAppData ) != 0 )
@@ -818,40 +833,56 @@ static int shell_main( AppData *pAppData )
 	return 0;
 }
 
-int main( int argc, char *argv[] )
+int32_t main( int32_t argc, char *argv[] )
 {	
 	AppData appData;
 	MP_RESULT mpResult = ERROR_NONE;
 
-	int opt = 0, count = 0;
-	unsigned int duration = 0, position = 0;
+	int32_t opt = 0, count = 0;
+	int32_t aging = 0, agingCnt = 0, shellMode = 0;
+	uint32_t duration = 0, position = 0;
+	char *uri = NULL;
 
 	if( 2 > argc ) {
 		print_usage( argv[0] );
 		return 0;
 	}
 
-	// appData Configuration
+	while( -1 != (opt=getopt(argc, argv, "ahsf:")))
+	{
+		switch( opt ){
+			case 'h':	print_usage( argv[0] );		 0;
+			case 'f':	uri = strdup( optarg );		break;
+			case 's':	shellMode = 1;				break;
+			case 'a':	aging = 1;					break;
+			default:								break;
+		}
+	}
+
+AGING_LOOP:
+	if( aging )
+	{
+		printf("\n==================== Aging Count = %d ====================\n", ++agingCnt);
+	}
+
+	//	Initialize Parameters
+	count = 0;
+	duration = position = 0;
+
 	memset( &appData, 0x00, sizeof(AppData) );
+	// appData Configuration
+	appData.shell_mode				= shellMode;
 	appData.audio_request_track_num = 0;
 	appData.video_request_track_num = 0;
 	appData.volume					= 10;
 	appData.display					= DISPLAY_PORT_LCD;
 	appData.dsp_port				= DISPLAY_PORT_LCD;
 	appData.dsp_module				= DISPLAY_MODULE_MLC0;
-
-	while( -1 != (opt=getopt(argc, argv, "hsf:")))
-	{
-		switch( opt ){
-			case 'h':	print_usage( argv[0] );			return 0;
-			case 'f':	strcpy( appData.uri, optarg );	break;
-			case 's':	appData.shell_mode = 1;			break;
-			default:									break;
-		}
-	}
+	strcpy(appData.uri, uri);
 
 	if( appData.shell_mode )
 	{
+		free(uri);
 		return shell_main( &appData );
 	}
 
@@ -875,11 +906,17 @@ int main( int argc, char *argv[] )
 	printf("handle = %p\n", appData.hPlayer);
 
 	//	2. Media Player Open
-	mpResult = NX_MPOpen( appData.hPlayer, appData.audio_request_track_num, appData.video_request_track_num, appData.display, (void *)&appData.volume, (void *)&appData.dsp_module, (void *)&appData.dsp_port, &callback, (void*)&appData );
+	NX_MPOpen( appData.hPlayer,
+			   appData.volume, appData.dsp_module, appData.dsp_port,
+			   appData.audio_request_track_num, appData.video_request_track_num,
+			   appData.display, &callback, &appData );
+
 	if( ERROR_NONE != mpResult ) {
 		printf("Error : NX_MPOpen Failed! ( mpResult = %d )\n", mpResult);
 		return -1;
 	}
+
+
 
 	//	3. Media Player Start
 	mpResult = NX_MPPlay( appData.hPlayer, 1 );
@@ -905,7 +942,24 @@ int main( int argc, char *argv[] )
 			// NX_MPPause( hPlayer );
 			// NX_MPSetVolume( hPlayer, 0 );
 		}
+		if( aging && count>10 )
+			break;
 	}
+
+printf("NX_MPStop++\n");
+	NX_MPStop(appData.hPlayer);
+printf("NX_MPStop--\n");
+	NX_MPClose(appData.hPlayer);
+printf("NX_MPClose--\n");
+	appData.hPlayer = NULL;
+
+
+	if( aging )
+	{
+		goto AGING_LOOP;
+	}
+	if( uri )
+		free(uri);
 
 	return 0;
 }

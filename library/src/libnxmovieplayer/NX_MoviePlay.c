@@ -1065,23 +1065,18 @@ ERROR_EXIT:
 	return ERROR;
 }
 
-//MP_RESULT NX_MPOpen( MP_HANDLE handle, int volumem, int dspModule, int dspPort, int audio_track_num, int video_track_num, int display,
-//						void (*cb)(void *owner, unsigned int msg, unsigned int param1, unsigned int param2), void *cbPrivate)
-MP_RESULT NX_MPOpen(MP_HANDLE handle, int32_t audio_track_num, int32_t video_track_num, int32_t display,
-					void *pvolumem, void *pdspModule, void *pdspPort,
-					void(*cb)(void *owner, unsigned int msg, unsigned int param1, unsigned int param2), void *cbPrivate)
+MP_RESULT NX_MPOpen( MP_HANDLE handle, int volumem, int dspModule, int dspPort, int audio_track_num, int video_track_num, int display,
+						void (*cb)(void *owner, unsigned int msg, unsigned int param1, unsigned int param2), void *cbPrivate)
+//MP_RESULT NX_MPOpen(MP_HANDLE handle, int32_t audio_track_num, int32_t video_track_num, int32_t display,
+//					void *pvolumem, void *pdspModule, void *pdspPort,
+//					void(*cb)(void *owner, unsigned int msg, unsigned int param1, unsigned int param2), void *cbPrivate)
 
 {
 	int ret = 0;
 	int priority = 0;
-	int volumem =0,  dspModule =0, dspPort = 0;
 
 	if( !handle )
 		goto ERROR_EXIT;
-	
-	volumem = (int *)pvolumem;
-	dspModule = (int *)pdspModule;
-	dspPort = (int *)pdspPort;
 
 	if( audio_track_num < 0 )
 		audio_track_num = 0;

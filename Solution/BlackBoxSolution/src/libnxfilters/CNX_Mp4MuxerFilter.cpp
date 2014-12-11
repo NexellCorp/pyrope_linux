@@ -472,6 +472,10 @@ int32_t CNX_Mp4MuxerFilter::MuxEncodedSample( CNX_MuxerSample *pSample )
 				
 				m_TrackInfo[trackID].size = bufSize + 2;
 			}
+			else {
+				memcpy( m_TrackInfo[trackID].pData, pBuffer, bufSize );
+				m_TrackInfo[trackID].size = bufSize;
+			}
 		}
 		else {
 			memcpy( m_TrackInfo[trackID].pData, pBuffer, bufSize );

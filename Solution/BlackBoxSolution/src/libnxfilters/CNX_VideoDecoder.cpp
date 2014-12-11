@@ -197,7 +197,11 @@ void CNX_VideoDecoder::ThreadLoop( void )
 			seqIn.enableUserData	= 0;
 			seqIn.disableOutReorder = 0;
 
-			vidRet = NX_VidDecInit( m_hDec, &seqIn, &seqOut );
+			vidRet = NX_VidDecParseVideoCfg( m_hDec, &seqIn, &seqOut );
+			seqIn.width		= seqOut.width;
+			seqIn.height	= seqOut.height;
+			
+			vidRet = NX_VidDecInit( m_hDec, &seqIn );
 			if( vidRet == VID_ERR_NEED_MORE_BUF ) {
 				NxDbgMsg( NX_DBG_ERR, (TEXT("VPU Initialize Failed!!!\n")) );
 				break;

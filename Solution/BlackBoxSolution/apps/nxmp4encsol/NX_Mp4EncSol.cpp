@@ -31,6 +31,7 @@
 uint32_t cbNotifier( uint32_t eventCode, uint8_t *pEventData, uint32_t dataSize );
 
 static INX_Mp4Manager *pMp4Manager = NULL;
+static NX_MGR_MODE	  gstMode;
 
 // Signal Handler
 static void signal_handler(int sig)
@@ -74,10 +75,11 @@ static void shell_usage( void )
 	printf("----------------------------------------------------------------------\n");
 	printf("                   MP4 Encoding Test Application                      \n");
 	printf("----------------------------------------------------------------------\n");
-	printf(" start or start [filename]     : encoding start.                      \n");
-	printf(" stop                          : mp4 encoding stop.                   \n");
-	printf(" capture or capture [filename] : jpeg capture.                        \n");
-	printf(" exit                          : exit application.                    \n");
+	printf(" startenc or startenc [filename] : start encoding mode.               \n");
+	printf(" startprv                        : start preview-capture mode.        \n");
+	printf(" stop                            : mp4 encoding stop.                 \n");
+	printf(" capture or capture [filename]   : jpeg capture.                      \n");
+	printf(" exit                            : exit application.                  \n");
 	printf("----------------------------------------------------------------------\n");
 }
 
@@ -136,41 +138,58 @@ static int32_t shell_main( void )
 			printf("Exit.\n");
 			break;
 		}
-		else if( !strcmp( cmd[0], "start" ) ) {
-			printf("Start.\n");
+		else if( !strcmp( cmd[0], "startenc" ) ) {
+			printf("Start Encoding Mode.\n");
 			
-			if( cmdCnt > 1 )
-			{
+			if( cmdCnt > 1 ) {
 				char fileName[1024];
 				sprintf(fileName, "%s", cmd[1] );
+				gstMode = NX_MGR_MODE_ENCODE;
 				pMp4Manager->Init();
 				pMp4Manager->RegisterNotifyCallback( cbNotifier );
-				pMp4Manager->Start( fileName );
+				pMp4Manager->Start( fileName, NX_MGR_MODE_ENCODE);
 			}
-			else
-			{
+			else {
+				gstMode = NX_MGR_MODE_ENCODE;
 				pMp4Manager->Init();
 				pMp4Manager->RegisterNotifyCallback( cbNotifier );
-				pMp4Manager->Start( NULL );
+				pMp4Manager->Start( NULL, NX_MGR_MODE_ENCODE );
 			}
+		}
+		else if( !strcmp( cmd[0], "startprv") ) {
+			printf("Start Preview Mode.\n");
 
+			gstMode = NX_MGR_MODE_PREVIEW;
+			pMp4Manager->Init();
+			pMp4Manager->RegisterNotifyCallback( cbNotifier );
+			pMp4Manager->Start( NULL, NX_MGR_MODE_PREVIEW );
 		}
 		else if( !strcmp( cmd[0], "stop") ) {
 			printf("Stop.\n");
+			
 			pMp4Manager->Stop();
 			pMp4Manager->Deinit();
 		}
 		else if( !strcmp( cmd[0], "capture") ) {
 			printf("Capture.\n");
-			if( cmdCnt > 1 )
-			{
-				char fileName[1024];
-				sprintf(fileName, "%s", cmd[1] );
-				pMp4Manager->Capture( fileName );
+			if( gstMode == NX_MGR_MODE_ENCODE ) {
+				if( cmdCnt > 1 ) {
+					char fileName[1024];
+					sprintf(fileName, "%s", cmd[1] );
+					pMp4Manager->Capture( fileName );
+				}
+				else {
+					pMp4Manager->Capture( NULL );
+				}
 			}
-			else
-			{
-				pMp4Manager->Capture( NULL );
+			else {
+				Mp4ManagerConfig mgrConfig;
+				mgrConfig.port 		= 0;
+				mgrConfig.width 	= 1024;
+				mgrConfig.height 	= 768;
+				mgrConfig.fps		= 30;
+
+				pMp4Manager->Capture( NULL, &mgrConfig );
 			}
 		}
 	}

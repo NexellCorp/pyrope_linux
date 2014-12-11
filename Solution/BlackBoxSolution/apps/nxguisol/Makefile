@@ -9,7 +9,7 @@ include ../../../../build.env
 # Build options
 INCLUDE += -I./ -I$(TOPDIR)/include
 INCLUDE += -I$(LIBSDIR)/include
-INCLUDE	+= -I./ -I./BaseComponent -I./nxdvrsol -I./nxplayersol
+INCLUDE	+= -I./ -I./BaseComponent -I./nxdvrsol -I./nxplayersol -I./nxjpegdecode
 
 LIBRARY	+= -L$(TOPDIR)/lib
 LIBRARY += -L$(LIBSDIR)/lib -L$(LIBSDIR)/lib/ratecontrol
@@ -20,6 +20,9 @@ LIBRARY += -lnxdvr -lnxnmeaparser -lnxaudio -lnxgpio -lnxadc
 
 # Player Library
 LIBRARY += -lnxmovplayer -lnxtypefind
+
+# JpegDecode Library
+LIBRARY += -lnxjpeg -lturbojpeg
 
 # Common System Library
 LIBRARY += -lnxvip -lnxdsp -lnxv4l2 -lnxvpu -lnxvidrc -lnxvmem
@@ -49,6 +52,10 @@ CPPOBJS	+= \
 CPPOBJS += \
 	./nxplayersol/NX_PlayerMain.o		
 
+# JpegDecoder Component
+CPPOBJS += \
+	./nxjpegdecode/NX_JpegDecode.o
+
 # Base UI Component
 CPPOBJS	+= \
 	./BaseComponent/NX_DbgMsg.o			\
@@ -65,8 +72,9 @@ CPPOBJS	+= \
 	NX_MenuTop.o		\
 	NX_MenuBlackBox.o	\
 	NX_MenuFileList.o	\
-	NX_MenuPlayer.o		\
 	NX_MenuSetting.o	\
+	NX_MenuPlayer.o		\
+	NX_MenuJpegDecode.o	\
 	NX_GuiMain.o		
 
 TARGET	:= nxguisol

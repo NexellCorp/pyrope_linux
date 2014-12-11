@@ -24,10 +24,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <termios.h>
-#include <sys/time.h>
 #include <signal.h>
+#include <sys/time.h>
 
-#include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
@@ -225,14 +224,15 @@ static int32_t EVEN_ALIGNED( int32_t value )
 //
 //	Test Application
 //
-static void print_usage( char *pName )
+static void print_usage( void )
 {
-	printf("Usage : %s [options]                                                   \n", pName);
+	printf("Usage : jpeg_dec [options]                                                    \n");
 	printf("   -h                  : Help                                                 \n");
 	printf("   -i [file]           : Input filename.                 (mandatory)          \n");
 	printf("   -o [file]           : Output filename. (Raw Format)   (optional)           \n");
 	printf("   -m [mode]           : 0(YUV->VideoLayer), 1(RGB->FB)  (default : 0)        \n");
 	printf("   -p [width],[height] : Display Region. (Support Mode0) (default : 720 x 480)\n");
+	printf("   -t                  : Time required of Function.                           \n");
 }
 
 int main( int argc, char *argv[] )
@@ -268,7 +268,7 @@ int main( int argc, char *argv[] )
 		switch( opt )
 		{
 			case 'h' :
-				print_usage(argv[0]);
+				print_usage();
 				goto END;
 			case 'i' :
 				inFileName = (uint8_t*)strdup( optarg );
@@ -290,7 +290,7 @@ int main( int argc, char *argv[] )
 
 	if( !inFileName ) {
 		printf("Error: No input file.\n");
-		print_usage(argv[0]);
+		print_usage();
 		goto END;
 	}
 
@@ -303,7 +303,7 @@ int main( int argc, char *argv[] )
 
 	if( mode != 0 && mode != 1 ) {
 		printf("Error: Unkown mode. ( 0 or 1 )\n");
-		print_usage(argv[0]);
+		print_usage();
 		goto END;
 	}
 

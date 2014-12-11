@@ -54,6 +54,8 @@ public:
 	//------------------------------------------------------------------------
 			int32_t	EnableRender( uint32_t enable );
 			int32_t EnableHdmiRender( uint32_t enable );
+			int32_t EnableDeliver( uint32_t enable );
+			
 			int32_t SetRenderCrop( DSP_IMG_RECT *pCropRect );
 			int32_t SetRenderPosition( DSP_IMG_RECT *pDspRect );
 			
@@ -65,6 +67,7 @@ protected:
 	int32_t				m_bRun;
 	int32_t				m_bEnable;
 	int32_t				m_bEnableHdmi;
+	int32_t				m_bEnableDeliver;
 	pthread_mutex_t		m_hLock;
 	//------------------------------------------------------------------------
 	//	Display

@@ -59,12 +59,12 @@ public:
 	virtual int32_t Init( void );
 	virtual int32_t Deinit( void );
 	
-	virtual int32_t Start( char *pFileName );
+	virtual int32_t Start( char *pFileName, int32_t mode );
 	virtual int32_t Stop( void );
 
-	virtual int32_t Capture( char *pFileName );
+	virtual int32_t Capture( char *pFileName, Mp4ManagerConfig *pConfig );
 	virtual int32_t EnableRender( int32_t enable );
-	
+
 	virtual int32_t RegisterNotifyCallback( uint32_t (*cbNotify)(uint32_t, uint8_t *, uint32_t) );
 
 private:
@@ -101,7 +101,8 @@ private:
 private:
 	int32_t					m_bInit;
 	int32_t					m_bRun;
-	
+	int32_t					m_bMode;
+
 	char 					m_FileName[1024];
 
 	pthread_mutex_t			m_hLock;

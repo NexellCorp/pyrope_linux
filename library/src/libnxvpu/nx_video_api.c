@@ -909,6 +909,12 @@ VID_ERROR_E NX_VidDecParseVideoCfg(NX_VID_DEC_HANDLE hDec, NX_VID_SEQ_IN *pstSeq
 	hDec->seqDataSize = ( pstSeqIn->seqSize < 2048 ) ? ( pstSeqIn->seqSize ) : ( 2048 );
 	memcpy (hDec->pSeqData, pstSeqIn->seqInfo, hDec->seqDataSize);
 
+	if ( pstSeqIn->seqSize == 0 )
+	{
+		seqArg.cropRight = pstSeqIn->width;
+		seqArg.cropBottom = pstSeqIn->height;
+	}
+
 	hDec->width = seqArg.cropRight;
 	hDec->height = seqArg.cropBottom;
 	hDec->numFrameBuffers = seqArg.minFrameBufCnt;

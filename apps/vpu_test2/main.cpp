@@ -68,7 +68,7 @@ int32_t main( int32_t argc, char *argv[] )
 	appData.dspWidth = 1024;
 	appData.dspHeight = 600;
 
-	while( -1 != (opt=getopt(argc, argv, "m:i:o:d:h:r:c:s:f:b:g:q:v:x:l:a:")))
+	while( -1 != (opt=getopt(argc, argv, "m:i:o:d:hr:c:s:f:b:g:q:v:x:l:a:")))
 	{
 		switch( opt ){
 			case 'm':
@@ -109,11 +109,11 @@ int32_t main( int32_t argc, char *argv[] )
 	{
 		case DECODER_MODE:
 			return VpuDecMain( &appData );
-		// case ENCODER_MODE:
-		// 	if ( (appData.codec != 3) || (appData.inFileName) )
-		//  		return VpuEncMain( &appData );
-		// 	else
-		//  		return VpuJpgMain( &appData );
+		case ENCODER_MODE:
+		 	if ( (appData.codec != 3) || (appData.inFileName) )
+		  		return VpuEncMain( &appData );
+		 	//else
+		  	//	return VpuJpgMain( &appData );
 	}
 
 	return 0;

@@ -165,6 +165,12 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 #if 1
 			vidRet = NX_VidDecParseVideoCfg(hDec, &seqIn, &seqOut);
 			printf("Parser Return = %d \n", vidRet );
+			if ( vidRet != VID_ERR_NONE )
+			{
+				printf("Parser Fail \n");
+				exit(-1);
+			}
+
 			seqIn.width = seqOut.width;
 			seqIn.height = seqOut.height;
 			vidRet = NX_VidDecInit( hDec, &seqIn );
@@ -186,6 +192,8 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 				{
 					printf("%2x ", seqIn.seqInfo[i]);
 					if (i > 16) break;
+					//if ( i > 128 ) break;
+					//if (i % 32 == 0) printf("\n");
 				}
 				printf("\n");
 			}
@@ -293,14 +301,16 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 		totalTime += (endTime - startTime);
 
 		//if ( decOut.outFrmReliable_0_100 != 100 ) {
-		printf("(%2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x) ", decIn.strmBuf[0], decIn.strmBuf[1], decIn.strmBuf[2], decIn.strmBuf[3], decIn.strmBuf[4], decIn.strmBuf[5], decIn.strmBuf[6], decIn.strmBuf[7],
-			decIn.strmBuf[8], decIn.strmBuf[9], decIn.strmBuf[10], decIn.strmBuf[11], decIn.strmBuf[12], decIn.strmBuf[13], decIn.strmBuf[14], decIn.strmBuf[15]);
-		printf("Frame[%5d]: size=%6d, DspIdx=%2d, DecIdx=%2d, InTimeStamp=%7lld, outTimeStamp=%7lld, time=%6lld, interlace=%d(%d), Reliable=%d, type = %d, MultiResol=%d, upW=%d, upH=%d\n",
+		printf("Frame[%5d]: size=%6d, DspIdx=%2d, DecIdx=%2d, InTimeStamp=%7lld, outTimeStamp=%7lld, time=%6lld, interlace=%d(%d), Reliable=%d, type = %d, MultiResol=%d, upW=%d, upH=%d, ",
 			frameCount, decIn.strmSize, decOut.outImgIdx, decOut.outDecIdx, timeStamp, decOut.timeStamp, (endTime-startTime), decOut.isInterlace, decOut.topFieldFirst, decOut.outFrmReliable_0_100, decOut.picType, decOut.multiResolution, decOut.upSampledWidth, decOut.upSampledHeight);
 		//}
+		printf("(%2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x)\n", decIn.strmBuf[0], decIn.strmBuf[1], decIn.strmBuf[2], decIn.strmBuf[3], decIn.strmBuf[4], decIn.strmBuf[5], decIn.strmBuf[6], decIn.strmBuf[7],
+			decIn.strmBuf[8], decIn.strmBuf[9], decIn.strmBuf[10], decIn.strmBuf[11], decIn.strmBuf[12], decIn.strmBuf[13], decIn.strmBuf[14], decIn.strmBuf[15]);
 #else
-		printf("Frame[%5d]: size=%6d, DspIdx=%2d, DecIdx=%2d, InTimeStamp=%7lld, outTimeStamp=%7lld, interlace=%d(%d), Reliable=%d, type = %d, MultiResol=%d, upW=%d, upH=%d\n",
+		printf("Frame[%5d]: size=%6d, DspIdx=%2d, DecIdx=%2d, InTimeStamp=%7lld, outTimeStamp=%7lld, interlace=%d(%d), Reliable=%d, type = %d, MultiResol=%d, upW=%d, upH=%d, ",
 			frameCount, decIn.strmSize, decOut.outImgIdx, decOut.outDecIdx, timeStamp, decOut.timeStamp, decOut.isInterlace, decOut.topFieldFirst, decOut.outFrmReliable_0_100, decOut.picType, decOut.multiResolution, decOut.upSampledWidth, decOut.upSampledHeight);
+		printf("(%2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x)\n", decIn.strmBuf[0], decIn.strmBuf[1], decIn.strmBuf[2], decIn.strmBuf[3], decIn.strmBuf[4], decIn.strmBuf[5], decIn.strmBuf[6], decIn.strmBuf[7],
+			decIn.strmBuf[8], decIn.strmBuf[9], decIn.strmBuf[10], decIn.strmBuf[11], decIn.strmBuf[12], decIn.strmBuf[13], decIn.strmBuf[14], decIn.strmBuf[15]);
 #endif
 
 		if( vidRet == VID_NEED_STREAM )

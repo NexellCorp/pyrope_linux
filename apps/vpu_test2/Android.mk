@@ -12,9 +12,8 @@ LOCAL_SRC_FILES:= \
 	NX_AndroidRenderer.cpp \
 	Util.cpp			\
 	VpuDecTest.cpp		\
-	main.cpp
-
-#	VpuEncTest.cpp		\
+	main.cpp                \
+	VpuEncTest.cpp		
 #	VpuJpgTest.cpp		\
 #	img_proc_main.cpp	\
 

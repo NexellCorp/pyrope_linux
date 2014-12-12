@@ -22,10 +22,12 @@ static int32_t ConvertPrivateHandleVideoMemory( struct private_handle_t const *h
 	memInfo->cbPhyAddr = memInfo->luPhyAddr + handle->stride * vstride;
 	memInfo->crPhyAddr = memInfo->cbPhyAddr + ALIGN(handle->stride>>1,16) * ALIGN(vstride>>1,16);
 	memInfo->luStride  = handle->stride;
-	memInfo->cbStride  = 
+	memInfo->cbStride  =
 	memInfo->crStride  = handle->stride >> 1;;
 
-	printf("PhyAddr(%08x, 0x%08x, 0x%08x)\n", memInfo->luPhyAddr, memInfo->cbPhyAddr, memInfo->crPhyAddr );
+	memInfo->luVirAddr = (unsigned int)mmap(NULL, handle->width * handle->height, PROT_READ|PROT_WRITE, MAP_SHARED, handle->share_fd, 0);
+	memInfo->cbVirAddr = memInfo->luVirAddr + handle->stride * vstride;
+	memInfo->crVirAddr = memInfo->cbVirAddr + ALIGN(handle->stride>>1,16) * ALIGN(vstride>>1,16);
 
 	close( ion_fd );
 	return 0;
@@ -38,7 +40,7 @@ CNX_AndroidRenderer::CNX_AndroidRenderer( int32_t iWndWidth, int32_t iWndHeight 
 {
 	int32_t err;
 	sp<SurfaceComposerClient> surfComClient = new SurfaceComposerClient();
-	sp<SurfaceControl> yuvSurfaceControl = 
+	sp<SurfaceControl> yuvSurfaceControl =
 		surfComClient->createSurface(String8("YUV Surface"), iWndWidth, iWndHeight, HAL_PIXEL_FORMAT_YV12, ISurfaceComposerClient::eFXSurfaceNormal);
 	if (yuvSurfaceControl == NULL) {
 		printf("failed to create yuv surface!!!");

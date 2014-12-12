@@ -2367,6 +2367,7 @@ static NX_VPU_RET VPU_DecSeqInitCommand(NX_VpuCodecInst *pInst, VPU_DEC_SEQ_INIT
 	//printk("CurPC = %x, WR = %x, RD =  %x, Idx = %d \n", VpuReadReg(BIT_CUR_PC), VpuReadReg(BIT_WR_PTR), VpuReadReg(BIT_RD_PTR), pInst->instIndex );
 
 #if (DBG_REGISTER)
+	{
 		int i;
 		VpuWriteReg(BIT_BIT_STREAM_PARAM, 0 );
 

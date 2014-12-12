@@ -174,6 +174,7 @@ static void TestChangeParameter( ENC_APP_DATA *pAppData, NX_VID_ENC_HANDLE hEnc,
 }
 #endif
 
+#if 0
 //	Camera Encoder Main
 static int32_t VpuCamEncMain( CODEC_APP_DATA *pAppData )
 {
@@ -257,6 +258,7 @@ static int32_t VpuCamEncMain( CODEC_APP_DATA *pAppData )
 	if( pAppData->outFileName )
 		fdOut = fopen( pAppData->outFileName, "wb" );
 
+#ifndef ANDROID
 	//	Initailize VIP & Display
 	dspInfo.port = 0;
 	dspInfo.module = 0;
@@ -273,7 +275,8 @@ static int32_t VpuCamEncMain( CODEC_APP_DATA *pAppData )
 	dspInfo.dspDstRect.bottom = cropH;
 	hDsp = NX_DspInit( &dspInfo );
 	//	NX_DspVideoSetPriority(0, 0);
-	hVip = NX_VipInit(&vipInfo);
+#endif
+	//hVip = NX_VipInit(&vipInfo);
 
 	//	Open Encoder
 	hEnc = NX_VidEncOpen( NX_AVC_ENC,  &instanceIdx);
@@ -312,9 +315,11 @@ static int32_t VpuCamEncMain( CODEC_APP_DATA *pAppData )
 	pNV12Mem = NX_VideoAllocateMemory( 4096, cropW, cropH, NX_MEM_MAP_LINEAR, FOURCC_NV12 );
 #endif
 
+#ifndef ANDROID
 	//	PopQueue
 	NX_PopQueue( &memQueue, (void**)&pTmpMem );
 	NX_VipQueueBuffer( hVip, pTmpMem );
+#endif
 
 	while(1)
 	{
@@ -391,6 +396,7 @@ static int32_t VpuCamEncMain( CODEC_APP_DATA *pAppData )
 
 	return 0;
 }
+#endif
 
 //
 //	Coda960 Performance Test Application
@@ -430,9 +436,10 @@ static int32_t VpuEncPerfMain( CODEC_APP_DATA *pAppData )
 	// INITIALIZATION
 	//==============================================================================
 	{
-		DISPLAY_INFO dspInfo = {0, };
 		NX_VID_ENC_INIT_PARAM encInitParam = {0, };			         // Encoder Parameters
 		uint8_t *seqBuffer = (uint8_t *)malloc( MAX_SEQ_BUF_SIZE );  // SPS/PPS or JPEG Header
+#ifndef ANDROID
+		DISPLAY_INFO dspInfo = {0, };
 
 		// Initailize Display
 		dspInfo.port = 0;
@@ -452,6 +459,7 @@ static int32_t VpuEncPerfMain( CODEC_APP_DATA *pAppData )
 		dspInfo.dspDstRect.bottom = pAppData->dspY + pAppData->dspHeight;
 		hDsp = NX_DspInit( &dspInfo );
 		NX_DspVideoSetPriority(dspInfo.module, 0);
+#endif
 
 		// Initialize Encoder
 		if ( pAppData->codec == 0) pAppData->codec = NX_AVC_ENC;
@@ -592,6 +600,7 @@ static int32_t VpuEncPerfMain( CODEC_APP_DATA *pAppData )
 			endTime = NX_GetTickCount();
 			totalTime += (endTime-startTime);
 
+#ifndef ANDROID
 			// Display Image
 			NX_DspQueueBuffer( hDsp, encIn.pImage );
 
@@ -600,6 +609,7 @@ static int32_t VpuEncPerfMain( CODEC_APP_DATA *pAppData )
 				NX_DspDequeueBuffer( hDsp );
 			}
 			pPrevDsp = encIn.pImage;
+#endif
 
 			if( fdOut && encOut.bufSize>0 )
 			{
@@ -625,9 +635,36 @@ static int32_t VpuEncPerfMain( CODEC_APP_DATA *pAppData )
 
 				if ( fdRecon )
 				{
-					fwrite( (void *)encOut.ReconImg.luVirAddr, 1, encOut.width * encOut.height, fdRecon );
-					fwrite( (void *)encOut.ReconImg.cbVirAddr, 1, encOut.width * encOut.height / 4, fdRecon );
-					fwrite( (void *)encOut.ReconImg.crVirAddr, 1, encOut.width * encOut.height / 4, fdRecon );
+					if ( encOut.width == encOut.ReconImg.luStride )
+					{
+						fwrite( (void *)encOut.ReconImg.luVirAddr, 1, encOut.width * encOut.height, fdRecon );
+						fwrite( (void *)encOut.ReconImg.cbVirAddr, 1, encOut.width * encOut.height / 4, fdRecon );
+						fwrite( (void *)encOut.ReconImg.crVirAddr, 1, encOut.width * encOut.height / 4, fdRecon );
+					}
+					else
+					{
+						int32_t y;
+						uint8_t *pbyTmp = (uint8_t *)encOut.ReconImg.luVirAddr;
+						for (y=0 ; y<encOut.height ; y++)
+						{
+							fwrite( (void *)pbyTmp, 1, encOut.width, fdRecon );
+							pbyTmp += encOut.ReconImg.luStride;
+						}
+
+						pbyTmp = (uint8_t *)encOut.ReconImg.cbVirAddr;
+						for (y=0 ; y<encOut.height/2 ; y++)
+						{
+							fwrite( (void *)pbyTmp, 1, encOut.width/2, fdRecon );
+							pbyTmp += encOut.ReconImg.cbStride;
+						}
+
+						pbyTmp = (uint8_t *)encOut.ReconImg.crVirAddr;
+						for (y=0 ; y<encOut.height/2 ; y++)
+						{
+							fwrite( (void *)pbyTmp, 1, encOut.width/2, fdRecon );
+							pbyTmp += encOut.ReconImg.crStride;
+						}
+					}
 				}
 			}
 			// if (frameCnt > 5) break;
@@ -663,7 +700,9 @@ static int32_t VpuEncPerfMain( CODEC_APP_DATA *pAppData )
 		NX_VidEncClose( hEnc );
 	}
 
+#ifndef ANDROID
 	NX_DspClose( hDsp );
+#endif
 
 	return 0;
 }
@@ -681,8 +720,9 @@ int32_t VpuEncMain( CODEC_APP_DATA *pAppData )
 		}
 		return VpuEncPerfMain( pAppData );
 	}
-	else
-	{
-		return VpuCamEncMain( pAppData );
-	}
+	//else
+	//{
+	//	return VpuCamEncMain( pAppData );
+	//}
+	return 0;
 }

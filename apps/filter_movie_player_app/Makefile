@@ -9,13 +9,11 @@ include $(TOPDIR)/build.env
 # Build options
 INCLUDE += -I./ -I$(LIBSDIR)/include
 LIBRARY	+= -lstdc++ -lpthread -lgobject-2.0 -lm
-LIBRARY += -L$(LIBSDIR)/lib/player_filter -lnxfilter
-
 
 INCLUDE += -I./
 INCLUDE += -I../../library/include
 LIBRARY	+= -L../../library/lib -L../../library/lib/ratecontrol
-LIBRARY += -lnxvpu -lnxdsp -lnxvip -lnxv4l2 -lnxvmem  -lnxvidrc
+LIBRARY += -lnxvpu -lnxdsp -lnxvip -lnxv4l2 -lnxvmem  -lnxvidrc -lnxfilter
 
 LIBRARY += -L$(LIBSDIR)/lib -lnxuevent
 

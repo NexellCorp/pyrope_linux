@@ -4,14 +4,6 @@
 typedef struct MOVIE_TYPE	*MP_HANDLE;
 #define  MP_RESULT           int
 
-#if 0
-//	uri type
-enum{
-	URI_TYPE_FILE,
-	URI_TYPE_URL
-};
-#endif
-
 //	disply port
 enum{
 	DISPLAY_PORT_LCD,
@@ -29,16 +21,6 @@ enum{
 	CALLBACK_MSG_EOS			= 0x1000,
 	CALLBACK_MSG_PLAY_ERR		= 0x8001,
 };
-
-#if 0
-//ErrorCode
-enum{
-	ERROR_NONE 				                    = 0,
-	ERROR										= -1,
-	ERROR_HANDLE		                 		= -2,
-	ERROR_NOT_SUPPORT_CONTENTS          		= -3
-}; 
-#endif
 
 typedef struct MP_MEDIA_INFO {
 	unsigned long		VDuration;

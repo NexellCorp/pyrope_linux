@@ -6,7 +6,11 @@
 
 
 //------------------------------------------------------------------------------
- -. Revision History
+ -. Revision History ( libnxdvr.so )
+   2014.12.08 ( v1.0.13 )
+     Mp4Muxer library improvement. ( Support wmp12, ubuntu default player )
+     Support Mp4 Subtitle. ( Userdata field )
+
    2014.08.25 ( v1.0.12 )
      Support MP4 Container. ( bug fixed )
      Bug fixed nxmp4encsol. ( Start / Stop Bug )
@@ -16,6 +20,7 @@
 
    2014.06.16 ( v1.0.10 )
      Support HDMI output.
+     Add build number.
    
    2014.05.23
      Add GUI Solution.  
@@ -29,7 +34,7 @@
      Modify Writing Time Handling. ( bug fixed )
      Add Rate control paramter handling. ( bug fixed )
      Add Message Queue. (apps)
-     Modify FileWriter. ( bug fixed - thread base)
+     Modify FileWriter. ( bug fixed - thread base )
      
    2014.02.11
      Add simple MP4 encoding library and test application.
@@ -44,9 +49,6 @@
    2013.12.02
      First Release.
 
- -. Last Revision Number
-    libnxdvr : 1.0.12
-
 
 //------------------------------------------------------------------------------
 -. Directory Architecture
@@ -54,16 +56,20 @@
 Solution
  |
  +-+-- apps    --+-- nxdvrmonitor : simple wireless network monitor program ( Support SoftAP & Station Mode )
-   |			 |
+   |             |
    |             +-- nxdvrsol     : simple blackbox encoding application
    |             |
    |             +-- nxguisol     : simple GUI based blackbox / player application
    |             |
    |             +-- nxhlssol     : simple HLS test application
    |             |
+   |             +-- nxmp3encsol  : simple MP3 encoding test application
+   |             |
    |             +-- nxmp4encsol  : simple MP4 encoding test application
    |             |
    |             +-- nxrtpsol     : simple RTP test application
+   |             |
+   |             +-- nxtranscodingsol : simple Trascoding test application ( Filter base )
    |
    +-- bin                        : build result & resource files
    |
@@ -79,23 +85,27 @@ Solution
                  |
                  +-- libnxhls     : HLS manager library
                  |
+                 +-- libnxmp3manager : simple MP3 encoding manager library
+                 |
                  +-- libnxmp4manager : simple MP4 encoding manager library
                  |
                  +-- libnxrtp     : simple HLS manager library
+                 |
+                 +-- libnxtranscoding : simple Transcoding manager library
+                 |
+                 +-- live555      : Base library for RTP Filter
 
+
+//------------------------------------------------------------------------------
+-. Prefix definition. ( in build.env )
+
+ [ARCHDIR]    : Architecture Directory of Android Source.
+ [ROOTFS]     : Your rootfs directory.
 
 //------------------------------------------------------------------------------
 -. Build Prepare. 
 
- Step 1. Modify "build.env" file for each system.
-
-      $ vi [nexell_linux]/pyrope/build.env
-        ...
-        ARCHDIR   := /home/doriya/working/nexell_linux/pyrope/
-        KERNDIR   := /home/doriya/working/nexell_linux/kernel/kernel-3.4.39/
-        ..
-
- Step 2. Build system library.
+ Step 1. Build system library.
       [ARCHDIR]/library/src/libion
       [ARCHDIR]/library/src/libnxmalloc
       [ARCHDIR]/library/src/libnxv4l2
@@ -109,41 +119,54 @@ Solution
       $ make
       $ make install
 
- Step 3. Build driver module. ( must build kernel )
-      Coda960
-      $ cd [ARCHDIR]/modules/coda960
-      $ make ARCH=arm
+ Step 2. Build driver module. ( after building kernel )
 
-      $ cd [ARCHDIR]/module/
+      $ cd [ARCHDIR]/modules/coda960
       $ make ARCH=arm
 
 
 //------------------------------------------------------------------------------
--. Build Application
+-. Build Application. (Blackbox Example)
 
  1. Default Mathod. 
- Step 1. Build Filter
+ Step 1. Build Base Filter.
 
       $ cd [ARCHDIR]/Solution/BlackBoxSolution/src/libfilters
       $ make
 
- Step 2. Build Manager
+ Step 2. Build each manager libraries. 
+      [ARCHDIR]/Solution/BlackBoxSolution/src/libnxdvr
+      [ARCHDIR]/Solution/BlackBoxSolution/src/libnxhls
+      [ARCHDIR]/Solution/BlackBoxSolution/src/libnxmp4manager
+      [ARCHDIR]/Solution/BlackBoxSolution/src/libnxrtp
+      [ARCHDIR]/Solution/BlackBoxSolution/src/libnxtranscoding
 
-      $ cd [ARCHDIR]/Solution/BlackBoxSolution/src/libnxdvr
+      $ cd [ARCHDIR]/Solution/BlackBoxSolution/src/[Each library directory]
       $ make
       $ make install
 
- Step 3. Build Application
+ Step 3. Build each application
+      [ARCHDIR]/Solution/BlackBoxSolution/apps/nxdvrsol
+      [ARCHDIR]/Solution/BlackBoxSolution/apps/nxguisol  <-- depend on libnxdvr.so / libnxmovieplayer.so
+      [ARCHDIR]/Solution/BlackBoxSolution/apps/nxhlssol
+      [ARCHDIR]/Solution/BlackBoxSolution/apps/nxmp4encsol
+      [ARCHDIR]/Solution/BlackBoxSolution/apps/nxrtpsol
+      [ARCHDIR]/Solution/BlackBoxSolution/apps/nxtranscodingsol
 
-      $ cd [ARCHDIR]/Solution/BlackBoxSoltion/apps/nxdvrsol
+      $ cd [ARCHDIR]/Solution/BlackBoxSolution/apps/[Each application directory]
       $ make
       $ make install
 
  2. Another Mathod. (using script)
- Step 1. Build all
 
       $ cd [ARCHDIR]/Solution/BlackBoxSoltion/build/
-      $ ./build-blackbox.sh
+      
+      $ ./clean-blackbox.sh;./build-blackbox.sh
+      $ ./clean-gui.sh;./build-gui.sh
+      $ ./clean-hls.sh;./build-hls.sh
+      $ ./clean-mp4.sh;./build-mp4.sh
+      $ ./clean-rtp.sh;./build-rtp.sh
+      $ ./clean-transcoding.sh;./build-transcoding.sh
 
 
 //------------------------------------------------------------------------------
@@ -152,13 +175,14 @@ Solution
  Step 1. Prepare root file system ( [ARCHDIR]/fs/buildroot/ )
 	 buildroot configuration : br.2013.11.cortex_a9_glibc_gst_sdl_dfb_wifi.config
 	  
- Step 2. Copy system dependent shared objects.
+ Step 2. Copy system shared libraries.
 
       $ cp -a [ARCHDIR]/library/lib/*.so [ROOTDIR]/usr/lib
+      $ cp -a [ARCHDIR]/library/lib/ratecontrol/libnxvidrc.so [ROOTDIR]/usr/lib
 
- Step 3. Copy Blackbox solution shared objects.
+ Step 3. Copy solution shared libraries.
 
-      $ cp -a [SOLUTION]/lib/*.so [ROOTDIR]/usr/lib
+      $ cp -a [ARCHDIR]/Solution/BlackBoxSoltion/lib/*.so [ROOTDIR]/usr/lib
  
  Step 4. Copy Encoder module driver.
 
@@ -166,45 +190,69 @@ Solution
 
  Step 5. Copy Application & Resouce file to root file system.
 
-      $ cp -a [SOLUTION]/bin * [ROOTDIR]/root
+      $ cp -a [ARCHDIR]/Solution/BlackBoxSoltion/bin * [ROOTDIR]/root
  
  Step 6. System Booting.
 
- Step 7. Load Encoder Driver ( at Target board )
+ Step 7. Load Encoder Driver. ( at Target board )
 
       $ insmod /root/nx_vpu.ko
 
- Step 8. Run Blackbox Solution applications ( at Target board)
+ Step 8. Run applications. ( at Target board )
 
-      $ /root/nxdvrsol
+      $ /root/[Application Name]
 
 //------------------------------------------------------------------------------
 -. Etc.
 
- Support HLS at nxdvrsol/nxguisol.
- ( Lynx Board + Wired LAN )
+ 1. Support HLS.
+
  Step 1. Make Temperary Directory. (at Target Board )
 
       $ mkdir /tmp/www
       $ ln -s /tmp/www /www
-      $ cp /root/www/index.html /www"
 
- Step 2. Running http demon
+ Step 2. Running http demon. (at Target Board )
 
       $ httpd
 
- Step 3. Running Application
+ Step 3. Create "index.html" for http demon test. (optional)
 
-      $ /root/nxdvrsol -n
+      $ vi /www/index.html
 
- Step 4. Connection 
-      Connetection Address : http://[Target Board IP]/test.m3u8
+      <html><body><head><title>Test Web Page</title></head>This page is http demon test page.</body></html>
 
- UI Base Blackbox Solution.
- Step 1. Running BlackBox GUI Solution.
+ Step 4. Running Application with HLS. ( nxdvrsol, nxhlssol, nxguisol )
+
+      $ /root/nxdvrsol -n 1
+
+ Step 5. Connection 
+      Connection Address : http://[Target Board IP]/test.m3u8
+
+      If it is not connected, check your http deomon. ( Connect index.html )
+
+
+ 2. Support RTP.
+
+ Step 1. Running Application with RTP. ( nxdvrsol, nxrtpsol ) 
+
+      $ /root/nxrtpsol -n 2
+
+ Step 2. Connection ( Identify Terminal Message )
+      Connection Address : rtsp://[Target Board IP]/video0
+
+
+ 3. UI Base Blackbox Solution.
+
+ Step 1. Need more libraries for Blackbox GUI Solution.
+
+      $ cp -a [ARCHDIR]/library/lib/libnxmovplayer.so [ROOTDIR]/usr/lib
+      $ cp -a [ARCHDIR]/library/lib/gstreamer-0.10/libgst*.so [ROOTDIR]/usr/lib/gstreamer-0.10/
+      
+      If it is not exist, build nxmovieplayer.
+      $ cd [ARCHDIR]/library/src/libnxmovideplayer
+      $ make;make install
+
+ Step 2. Running BlackBox GUI Solution.
 
       $ /root/nxguisol
-
-      For use player in nxguisol, 
-               need "libnxmovieplayer"
-

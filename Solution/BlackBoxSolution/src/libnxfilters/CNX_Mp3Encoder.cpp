@@ -49,6 +49,7 @@ static FILE *outPcmFp = NULL;
 CNX_Mp3Encoder::CNX_Mp3Encoder()
 	: m_bInit( false )
 	, m_bRun( false )
+	, m_bEnableDeliver( true )
 	, m_bThreadExit( true )
 	, m_hThread( 0 )
 	, m_PacketID( 0 )
@@ -65,6 +66,8 @@ CNX_Mp3Encoder::CNX_Mp3Encoder()
 
 	NX_ASSERT( m_pSemIn );
 	NX_ASSERT( m_pSemOut );
+
+	pthread_mutex_init( &m_hLock, NULL );
 }
 
 //------------------------------------------------------------------------------
@@ -73,6 +76,8 @@ CNX_Mp3Encoder::~CNX_Mp3Encoder()
 	if( true == m_bInit )
 		Deinit();
 
+	pthread_mutex_destroy( &m_hLock );
+	
 	delete m_pSemIn;
 	delete m_pSemOut;
 	delete m_pInStatistics;
@@ -159,7 +164,11 @@ void	CNX_Mp3Encoder::Deinit( void )
 //------------------------------------------------------------------------------
 int32_t	CNX_Mp3Encoder::Receive( CNX_Sample *pSample )
 {
+	CNX_AutoLock lock( &m_hLock );
 	NX_ASSERT( NULL != pSample );
+
+	if( !m_bEnableDeliver ) 
+		return true;
 
 #if( DUMP_MP3 )
 #else
@@ -226,7 +235,7 @@ void	CNX_Mp3Encoder::AllocateBuffer( int32_t numOfBuffer )
 {
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s++\n"), __func__) );
 	NX_ASSERT(numOfBuffer <= MAX_BUFFER);
-	
+
 	m_SampleOutQueue.Reset();
 	m_SampleOutQueue.SetQueueDepth(numOfBuffer);
 
@@ -288,6 +297,7 @@ int32_t	CNX_Mp3Encoder::GetDeliverySample( CNX_Sample **ppSample )
 void	CNX_Mp3Encoder::ThreadLoop(void)
 {
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+
 	int32_t	ret;
 	CNX_MediaSample		*pSample = NULL;
 	CNX_MuxerSample		*pOutSample = NULL;
@@ -336,6 +346,10 @@ void	CNX_Mp3Encoder::ThreadLoop(void)
 		ret = EncodeAudio( pSample, pOutSample );
 		m_pOutStatistics->CalculateBpsEnd( pOutSample->GetActualDataLength() );
 
+		if( pSample )
+			pSample->Unlock();
+
+
 		m_pOutStatistics->CalculateFps();
 		m_pOutStatistics->CalculateBufNumber( m_iNumOfBuffer - m_SampleInQueue.GetSampleCount() );
 
@@ -350,9 +364,6 @@ void	CNX_Mp3Encoder::ThreadLoop(void)
 		else {
 			NxDbgMsg( NX_DBG_DEBUG, (TEXT("Have no MP3 encode result.\n")) );
 		}
-
-		if( pSample )
-			pSample->Unlock();
 
 		if( pOutSample )
 			pOutSample->Unlock();
@@ -402,7 +413,6 @@ int32_t	CNX_Mp3Encoder::EncodeAudio( CNX_MediaSample *pInSample, CNX_MuxerSample
 		return -1;
 	}
 
-
 #if( DUMP_PCM )
 	if( outPcmFp ) {
 		fwrite( pSrc, 1, srcSize, outPcmFp );
@@ -439,5 +449,19 @@ int32_t	CNX_Mp3Encoder::SetPacketID( uint32_t PacketID )
 //------------------------------------------------------------------------------
 int32_t  CNX_Mp3Encoder::GetStatistics( NX_FILTER_STATISTICS *pStatistics )
 {
+	return true;
+}
+
+//------------------------------------------------------------------------------
+int32_t	CNX_Mp3Encoder::EnableDeliver( uint32_t enable )
+{
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	CNX_AutoLock lock( &m_hLock );
+
+	NxDbgMsg( NX_DBG_INFO, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnableDeliver)?"Enable":"Disable", (enable)?"Enable":"Disable") );
+
+	m_bEnableDeliver = enable;
+
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return true;
 }

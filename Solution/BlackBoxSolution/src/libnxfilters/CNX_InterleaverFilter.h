@@ -193,6 +193,7 @@ public:
 	//------------------------------------------------------------------------
 	//	External Interfaces
 	//------------------------------------------------------------------------
+			int32_t		Flush( void );
 			int32_t 	GetStatistics( NX_FILTER_STATISTICS *pStatistics );
 
 protected:

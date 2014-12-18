@@ -85,13 +85,13 @@ protected:
 	//------------------------------------------------------------------------
 	//	Audio Sample
 	//------------------------------------------------------------------------
-	uint32_t 			m_hDevice;
 	uint32_t			m_Channels;
 	uint32_t			m_Frequency;
 	uint32_t			m_Samples;
 	uint64_t			m_PrevAudioSampleTime;
 	uint64_t			m_TotalReadSampleSize;
 	int64_t				m_ClockCorrectThreshold;
+	int64_t				m_ClockCorrectTime;
 	//------------------------------------------------------------------------
 	//	Input / Output Buffer
 	//------------------------------------------------------------------------

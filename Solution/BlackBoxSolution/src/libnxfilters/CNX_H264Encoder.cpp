@@ -45,6 +45,7 @@ static int32_t bFileOpen = false;
 CNX_H264Encoder::CNX_H264Encoder()
 	: m_bInit( false )
 	, m_bRun( false )
+	, m_bEnableDeliver( true )
 	, m_bThreadExit( true )
 	, m_hThread( 0x00 )
 	, m_PacketID( 0 )
@@ -58,6 +59,8 @@ CNX_H264Encoder::CNX_H264Encoder()
 
 	NX_ASSERT( m_pSemIn );
 	NX_ASSERT( m_pSemOut );
+
+	pthread_mutex_init( &m_hLock, NULL );
 }
 
 //------------------------------------------------------------------------------
@@ -66,6 +69,8 @@ CNX_H264Encoder::~CNX_H264Encoder()
 	if( true == m_bInit )
 		Deinit();
 
+	pthread_mutex_destroy( &m_hLock );
+	
 	delete m_pSemIn;
 	delete m_pSemOut;
 	delete m_pInStatistics;
@@ -158,7 +163,11 @@ void CNX_H264Encoder::Deinit( void )
 //------------------------------------------------------------------------------
 int32_t	CNX_H264Encoder::Receive( CNX_Sample *pSample )
 {
+	CNX_AutoLock lock( &m_hLock );
 	NX_ASSERT( NULL != pSample );
+
+	if( !m_bEnableDeliver ) 
+		return true;
 
 #if( DUMP_H264 )
 #else	
@@ -167,7 +176,7 @@ int32_t	CNX_H264Encoder::Receive( CNX_Sample *pSample )
 #endif
 
 	pSample->Lock();
-	m_SampleInQueue.PushSample(pSample);
+	m_SampleInQueue.PushSample( pSample );
 	m_pSemIn->Post();
 
 	return true;
@@ -251,7 +260,7 @@ void CNX_H264Encoder::AllocateBuffer( int32_t numOfBuffer )
 void CNX_H264Encoder::FreeBuffer( void )
 {
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
-	m_SampleOutQueue.Reset();
+
 	for( int32_t i = 0; i < m_iNumOfBuffer; i++ )
 	{
 		//NX_ASSERT(NULL != m_OutBuf[i]);
@@ -293,6 +302,7 @@ int32_t	CNX_H264Encoder::GetDeliverySample( CNX_Sample **ppSample )
 void CNX_H264Encoder::ThreadLoop( void )
 {
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+
 	int32_t	ret = 0;
 	CNX_VideoSample		*pSample = NULL;
 	CNX_MuxerSample		*pOutSample = NULL;
@@ -542,3 +552,16 @@ int32_t  CNX_H264Encoder::GetStatistics( NX_FILTER_STATISTICS *pStatistics )
 	return true;
 }
 
+//------------------------------------------------------------------------------
+int32_t	CNX_H264Encoder::EnableDeliver( uint32_t enable )
+{
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	CNX_AutoLock lock( &m_hLock );
+
+	NxDbgMsg( NX_DBG_INFO, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnableDeliver)?"Enable":"Disable", (enable)?"Enable":"Disable") );
+
+	m_bEnableDeliver = enable;
+
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	return true;
+}

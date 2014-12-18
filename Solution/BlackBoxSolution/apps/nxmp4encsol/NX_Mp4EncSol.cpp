@@ -31,9 +31,23 @@
 uint32_t cbNotifier( uint32_t eventCode, uint8_t *pEventData, uint32_t dataSize );
 
 static INX_Mp4Manager *pMp4Manager = NULL;
-static NX_MGR_MODE	  gstMode;
 
-// Signal Handler
+static Mp4ManagerConfig defCamConfig = {
+	NX_MGR_MODE_CAMCODER,
+	3, 640, 480, 15, 
+	6000000,
+	true,
+	0, 0, 640, 480
+};
+
+static Mp4ManagerConfig defPicConfig = {
+	NX_MGR_MODE_PICTURE,
+	3, 1024, 768, 15, 
+	6000000,
+	false,
+	0, 0, 640, 480
+};
+
 static void signal_handler(int sig)
 {
 	printf("Aborted by signal %s (%d)...\n", (char*)strsignal(sig), sig);
@@ -49,7 +63,7 @@ static void signal_handler(int sig)
 		default :
 			break;
 	}   
-	
+
 	if( pMp4Manager )
 	{
 		pMp4Manager->Stop();
@@ -70,17 +84,24 @@ static void register_signal(void)
 static void shell_usage( void )
 {
 	printf("\n");
-	//      0         1         2         3         4         5         6
-	//      0123456789012345678901234567890123456789012345678901234567890123456789
-	printf("----------------------------------------------------------------------\n");
-	printf("                   MP4 Encoding Test Application                      \n");
-	printf("----------------------------------------------------------------------\n");
-	printf(" startenc or startenc [filename] : start encoding mode.               \n");
-	printf(" startprv                        : start preview-capture mode.        \n");
-	printf(" stop                            : mp4 encoding stop.                 \n");
-	printf(" capture or capture [filename]   : jpeg capture.                      \n");
-	printf(" exit                            : exit application.                  \n");
-	printf("----------------------------------------------------------------------\n");
+	//      0         1         2         3         4         5         6         7
+	//      01234567890123456789012345678901234567890123456789012345678901234567890123456789
+	printf("--------------------------------------------------------------------------------\n");
+	printf("                         MP4 Encoding Test Application                          \n");
+	printf("--------------------------------------------------------------------------------\n");
+	printf(" startcam [enable] or startcam [enable] [filename] : start camcoder mode.       \n");
+	printf(" startpic                                          : start picture mode.        \n");
+	printf(" stop                                              : stop.                      \n");
+	printf(" chgenc [enable]                                   : change encoding enable.    \n");
+	printf(" capture or capture [filename]                     : jpeg capture.              \n");
+	printf(" help                                              : print usage.               \n");
+	printf(" exit                                              : exit application.          \n");
+	printf("--------------------------------------------------------------------------------\n");
+	printf(" parameters :                                                                   \n");
+	printf("   [enable]    : recording enable. ( 0 : disable, 1 : enable)                   \n");
+	printf("   [filename]  : fullpath of filename. ( text )                                 \n");
+	printf("--------------------------------------------------------------------------------\n");
+	printf("\n");
 }
 
 #define	SHELL_MAX_ARG	32
@@ -138,31 +159,50 @@ static int32_t shell_main( void )
 			printf("Exit.\n");
 			break;
 		}
-		else if( !strcmp( cmd[0], "startenc" ) ) {
-			printf("Start Encoding Mode.\n");
+		else if( !strcmp( cmd[0], "help" ) ) {
+			shell_usage();
+		}
+		else if( !strcmp( cmd[0], "startcam" ) ) {
+			printf("Start Camcoder mode.\n");
 			
-			if( cmdCnt > 1 ) {
+			if( cmdCnt == 2 ) {
+				if( strcmp(cmd[1], "0") && strcmp(cmd[1], "1" ) ) {
+					printf("invalid options.\n");
+					continue;
+				}
+
+				pMp4Manager->Init( &defCamConfig );
+				pMp4Manager->RegisterNotifyCallback( cbNotifier );
+				pMp4Manager->Start( atoi(cmd[1]) );
+			}
+			else if( cmdCnt == 3 ) {
+				if( strcmp(cmd[1], "0") && strcmp(cmd[1], "1" ) ) {
+					printf("invalid options.\n");
+					continue;
+				}
+
 				char fileName[1024];
 				sprintf(fileName, "%s", cmd[1] );
-				gstMode = NX_MGR_MODE_ENCODE;
-				pMp4Manager->Init();
+				pMp4Manager->Init( &defCamConfig );
 				pMp4Manager->RegisterNotifyCallback( cbNotifier );
-				pMp4Manager->Start( fileName, NX_MGR_MODE_ENCODE);
+				pMp4Manager->SetFileName( fileName );
+				pMp4Manager->Start( true );
 			}
 			else {
-				gstMode = NX_MGR_MODE_ENCODE;
-				pMp4Manager->Init();
-				pMp4Manager->RegisterNotifyCallback( cbNotifier );
-				pMp4Manager->Start( NULL, NX_MGR_MODE_ENCODE );
+				printf("invalid options.\n");
 			}
 		}
-		else if( !strcmp( cmd[0], "startprv") ) {
-			printf("Start Preview Mode.\n");
+		else if( !strcmp( cmd[0], "startpic") ) {
+			printf("Start Picture mode.\n");
 
-			gstMode = NX_MGR_MODE_PREVIEW;
-			pMp4Manager->Init();
-			pMp4Manager->RegisterNotifyCallback( cbNotifier );
-			pMp4Manager->Start( NULL, NX_MGR_MODE_PREVIEW );
+			if( cmdCnt == 1 ) {
+				pMp4Manager->Init( &defPicConfig );
+				pMp4Manager->RegisterNotifyCallback( cbNotifier );
+				pMp4Manager->Start();
+			}
+			else {
+				printf("invalid options.\n");
+			}
 		}
 		else if( !strcmp( cmd[0], "stop") ) {
 			printf("Stop.\n");
@@ -170,27 +210,22 @@ static int32_t shell_main( void )
 			pMp4Manager->Stop();
 			pMp4Manager->Deinit();
 		}
-		else if( !strcmp( cmd[0], "capture") ) {
-			printf("Capture.\n");
-			if( gstMode == NX_MGR_MODE_ENCODE ) {
-				if( cmdCnt > 1 ) {
-					char fileName[1024];
-					sprintf(fileName, "%s", cmd[1] );
-					pMp4Manager->Capture( fileName );
+		else if( !strcmp( cmd[0], "chgenc" ) ) {
+			printf("Change encoding enable.\n");
+			if( cmdCnt == 2 ) {
+				if( strcmp(cmd[1], "0") && strcmp(cmd[1], "1" ) ) {
+					printf("invalid options.\n");
+					continue;
 				}
-				else {
-					pMp4Manager->Capture( NULL );
-				}
+				pMp4Manager->EnableEncode( atoi(cmd[1]) );
 			}
 			else {
-				Mp4ManagerConfig mgrConfig;
-				mgrConfig.port 		= 0;
-				mgrConfig.width 	= 1024;
-				mgrConfig.height 	= 768;
-				mgrConfig.fps		= 30;
-
-				pMp4Manager->Capture( NULL, &mgrConfig );
+				printf("invalid options.\n");
 			}
+		}
+		else if( !strcmp( cmd[0], "capture") ) {
+			printf("Capture.\n");
+			pMp4Manager->Capture();
 		}
 	}
 

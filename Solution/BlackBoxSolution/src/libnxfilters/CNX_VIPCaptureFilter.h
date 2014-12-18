@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //
-//	Copyright (C) 2013 Nexell Co. All Rights Reserved
+//	Copyright (C) 2014 Nexell Co. All Rights Reserved
 //	Nexell Co. Proprietary & Confidential
 //
 //	NEXELL INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
@@ -17,26 +17,30 @@
 //
 //------------------------------------------------------------------------------
 
-#ifndef __CNX_AACECODER_H__
-#define __CNX_AACECODER_H__
+#ifndef __CNX_VIPCAPTUREFILTER_H__
+#define __CNX_VIPCAPTUREFILTER_H__
 
+#include <nx_vip.h>
+#include <nx_alloc_mem.h>
+#include <nx_fourcc.h>
+
+#include "CNX_RefClock.h"
+#include "INX_JpegCapture.h"
 #include "CNX_BaseFilter.h"
 #include "NX_FilterConfigTypes.h"
 
-#include <nx_aac_encoder.h>
-
 #ifdef __cplusplus
 
-class	CNX_AacEncoder
-		: public CNX_BaseFilter
+class	CNX_VIPCaptureFilter
+	: public CNX_BaseFilter
 {
 public:
-	CNX_AacEncoder();
-	virtual ~CNX_AacEncoder();
+	CNX_VIPCaptureFilter();
+	virtual ~CNX_VIPCaptureFilter();
 
 public:
 	//------------------------------------------------------------------------
-	virtual void		Init( NX_AUDENC_CONFIG *pConfig );
+	virtual void		Init( NX_VIPCAPTURE_CONFIG *pConfig );
 	virtual void		Deinit( void );
 	//------------------------------------------------------------------------
 	//	Override from CNX_BaseFilter
@@ -49,76 +53,76 @@ public:
 	//------------------------------------------------------------------------
 
 protected:
-	virtual void		AllocateBuffer( int32_t numOfBuffer );
+	virtual void		AllocateBuffer( int32_t width, int32_t height, int32_t alignx, int32_t aligny, int32_t numOfBuffer, uint32_t dwFourCC );
 	virtual void		FreeBuffer( void );
 
 	virtual	int32_t		GetSample( CNX_Sample **ppSample );
 	virtual	int32_t		GetDeliverySample( CNX_Sample **ppSample );
 
+			int32_t		GetCaptureSample( CNX_Sample **ppSample );
+
 protected:
 			void		ThreadLoop( void );
 	static 	void*		ThreadMain( void *arg );
 
-private:
-			int32_t		EncodeAudio( CNX_MediaSample *pInSample, CNX_MuxerSample *pOutSample );
+			int32_t		(*JpegFileNameFunc)( uint8_t *buf, uint32_t bufSize );
+			void 		JpegEncode( CNX_Sample *pSample );
 
 public:
 	//------------------------------------------------------------------------
 	//	External Interfaces
 	//------------------------------------------------------------------------
-			int32_t		SetPacketID( uint32_t PacketID );
-			int32_t		GetDsiInfo( uint8_t *dsiInfo, int32_t *dsiSize );
-			int32_t 	EnableDeliver( uint32_t enable );
-			int32_t  	GetStatistics( NX_FILTER_STATISTICS *pStatistics );
-			
+			void 		SetJpegFileName( uint8_t *pFileName );
+			int32_t		EnableCapture( void );
+			int32_t		RegJpegFileNameCallback( int32_t(*cbFunc)( uint8_t *, uint32_t ) );
+
 protected:
 	//------------------------------------------------------------------------
 	//	Filter status
 	//------------------------------------------------------------------------
-	int32_t				m_bInit;
-	int32_t				m_bRun;
-	int32_t				m_bEnableDeliver;
-	CNX_Semaphore		*m_pSemIn;
-	CNX_Semaphore		*m_pSemOut;
-	pthread_mutex_t		m_hLock;
+	int32_t					m_bInit;
+	int32_t					m_bRun;
+	
+	CNX_Semaphore			*m_pSemCap;
+	CNX_Semaphore			*m_pSemOut;
 	//------------------------------------------------------------------------
 	//	Thread
+	//------------------------------------------------------------------------	
+	int32_t					m_bThreadExit;
+	pthread_t				m_hThread;
 	//------------------------------------------------------------------------
-	int32_t				m_bThreadExit;
-	pthread_t			m_hThread;
+	//	Video Input
 	//------------------------------------------------------------------------
-	//	Output sample
-	//------------------------------------------------------------------------
-	uint32_t			m_PacketID;
-	//------------------------------------------------------------------------
-	//	AAC Audio Encoder
-	//------------------------------------------------------------------------
-	AacEncHandle		m_hAACenc;
-	uint32_t			m_Channels;
-	uint32_t			m_Frequency;
-	uint32_t			m_Bitrate;
-	uint32_t			m_bAdts;
-
-	enum { MAX_ESDS_SIZE = 39 };
-	uint8_t				m_EsdsInfo[MAX_ESDS_SIZE];
+	VIP_HANDLE				m_hVip;
+	VIP_INFO				m_VipInfo;	
+	uint32_t				m_FourCC;
 	//------------------------------------------------------------------------
 	//	Input / Output Buffer
-	//------------------------------------------------------------------------
-	enum { MAX_BUFFER = 32, NUM_ALLOC_BUFFER = 16 };
+	//------------------------------------------------------------------------	
+	enum { MAX_BUFFER = 10, NUM_ALLOC_BUFFER = 6 };
+	int32_t					m_iNumOfBuffer;
+	
+	NX_VID_MEMORY_HANDLE	m_ClipMemory[MAX_BUFFER];
+	NX_VID_MEMORY_HANDLE	m_DeciMemory[MAX_BUFFER];
 
-	int32_t				m_iNumOfBuffer;
-	unsigned char		m_OutBuf[MAX_BUFFER][9212];
-	CNX_MuxerSample		m_OutSample[MAX_BUFFER];
-	CNX_SampleQueue		m_SampleInQueue;	//	Input queue
-	CNX_SampleQueue		m_SampleOutQueue;	//  Output queue
+	CNX_VideoSample			m_ClipSample[MAX_BUFFER];
+	CNX_VideoSample			m_DeciSample[MAX_BUFFER];
+
+	CNX_SampleQueue			m_SampleCapQueue;
+	CNX_SampleQueue			m_SampleOutQueue;
+	
+	CNX_Queue				m_ReleaseClipQueue;
+	CNX_Queue				m_ReleaseDeciQueue;
 	//------------------------------------------------------------------------
-	//	Statistics Infomation
+	//	For Capture
 	//------------------------------------------------------------------------
-	CNX_Statistics		*m_pInStatistics;
-	CNX_Statistics		*m_pOutStatistics;
+	INX_JpegCapture			*m_pJpegCapture;
+	uint8_t					m_JpegFileName[1024];
+	int32_t					m_bCaptured;
+	pthread_mutex_t			m_hCaptureLock;
 };
 
 #endif //	__cplusplus
 
-#endif // __CNX_AACECODER_H__
+#endif // __CNX_VIPCAPTUREFILTER_H__
 

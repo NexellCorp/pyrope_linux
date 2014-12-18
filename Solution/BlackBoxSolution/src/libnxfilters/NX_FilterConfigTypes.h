@@ -31,6 +31,25 @@ typedef struct tag_NX_VIP_CONFIG {
 	int32_t		fps;
 } NX_VIP_CONFIG;
 
+typedef struct tag_NX_VIPCAPTURE_CONFIG {
+	int32_t		port;
+	int32_t		width;
+	int32_t		height;
+	int32_t		fps;
+	
+	int32_t		outWidth;
+	int32_t		outHeight;
+} NX_VIPCAPTURE_CONFIG;
+
+typedef struct tag_NX_VIDENC_CONFIG
+{
+	uint32_t	width;
+	uint32_t	height;
+	uint32_t	fps;
+	uint32_t	bitrate;
+	uint32_t	codec;
+} NX_VIDENC_CONFIG;
+
 //----------------------------------------------------------------------------
 //	Video Renderer Config
 //----------------------------------------------------------------------------
@@ -54,15 +73,6 @@ typedef struct tag_NX_VIDRENDER_CONFIG
 	int32_t		dspRight;	// display region right
 	int32_t		dspBottom;	// display region bottom
 } NX_VIDRENDER_CONFIG;
-
-typedef struct tag_NX_VIDENC_CONFIG
-{
-	uint32_t	width;
-	uint32_t	height;
-	uint32_t	fps;
-	uint32_t	bitrate;
-	uint32_t	codec;
-} NX_VIDENC_CONFIG;
 
 //----------------------------------------------------------------------------
 //	Audio Config

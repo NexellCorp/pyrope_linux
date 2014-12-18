@@ -41,14 +41,12 @@ class INX_JpegCapture
 {
 public:
 	INX_JpegCapture()
-		: m_bThreadExit( true )
+		: m_bThreadExit( false )
 		, m_hThread( 0x00 )
 		, m_JpegQuality( 100 )
 		, m_pNotify( NULL )
 	{
 		m_pSemIn	= new CNX_Semaphore(MAX_JPG_BUFFER, 0);
-
-		m_bThreadExit 	= false;
 		pthread_create( &this->m_hThread, NULL, this->ThreadMain, this );
 	}
 	~INX_JpegCapture()

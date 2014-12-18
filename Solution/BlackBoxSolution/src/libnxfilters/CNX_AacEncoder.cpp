@@ -62,6 +62,7 @@ static FILE *outPcmFp = NULL;
 CNX_AacEncoder::CNX_AacEncoder()
 	: m_bInit( false )
 	, m_bRun( false )
+	, m_bEnableDeliver( true )	
 	, m_bThreadExit( true )
 	, m_hThread( 0 )
 	, m_PacketID( 0 )
@@ -78,6 +79,8 @@ CNX_AacEncoder::CNX_AacEncoder()
 
 	NX_ASSERT( m_pSemIn );
 	NX_ASSERT( m_pSemOut );
+
+	pthread_mutex_init( &m_hLock, NULL );
 }
 
 //------------------------------------------------------------------------------
@@ -86,6 +89,8 @@ CNX_AacEncoder::~CNX_AacEncoder()
 	if( true == m_bInit )
 		Deinit();
 
+	pthread_mutex_destroy( &m_hLock );
+	
 	delete m_pSemIn;
 	delete m_pSemOut;
 	delete m_pInStatistics;
@@ -177,7 +182,11 @@ void	CNX_AacEncoder::Deinit( void )
 //------------------------------------------------------------------------------
 int32_t	CNX_AacEncoder::Receive( CNX_Sample *pSample )
 {
+	CNX_AutoLock lock( &m_hLock );
 	NX_ASSERT( NULL != pSample );
+
+	if( !m_bEnableDeliver ) 
+		return true;
 
 #if( DUMP_AAC )
 #else
@@ -191,6 +200,7 @@ int32_t	CNX_AacEncoder::Receive( CNX_Sample *pSample )
 	pSample->Lock();
 	m_SampleInQueue.PushSample( pSample );
 	m_pSemIn->Post();
+
 	return true;
 }
 
@@ -242,8 +252,8 @@ int32_t	CNX_AacEncoder::Stop( void )
 void	CNX_AacEncoder::AllocateBuffer( int numOfBuffer )
 {
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
-
 	NX_ASSERT(numOfBuffer <= MAX_BUFFER);
+
 	m_SampleOutQueue.Reset();
 	m_SampleOutQueue.SetQueueDepth(numOfBuffer);
 
@@ -482,5 +492,19 @@ int32_t	CNX_AacEncoder::GetDsiInfo( uint8_t *dsiInfo, int32_t *dsiSize )
 //------------------------------------------------------------------------------
 int32_t  CNX_AacEncoder::GetStatistics( NX_FILTER_STATISTICS *pStatistics )
 {
+	return true;
+}
+
+//------------------------------------------------------------------------------
+int32_t	CNX_AacEncoder::EnableDeliver( uint32_t enable )
+{
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	CNX_AutoLock lock( &m_hLock );
+
+	NxDbgMsg( NX_DBG_INFO, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnableDeliver)?"Enable":"Disable", (enable)?"Enable":"Disable") );
+
+	m_bEnableDeliver = enable;
+
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return true;
 }

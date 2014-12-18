@@ -51,15 +51,15 @@ public:
 	//------------------------------------------------------------------------
 
 protected:
-	virtual void		AllocateBuffer( int numOfBuffer );
-	virtual void		FreeBuffer(void);
+	virtual void		AllocateBuffer( int32_t numOfBuffer );
+	virtual void		FreeBuffer( void );
 
-	virtual	int32_t		GetSample(CNX_Sample **ppSample);
-	virtual int32_t		GetDeliverySample(CNX_Sample **pSample);
+	virtual	int32_t		GetSample( CNX_Sample **ppSample );
+	virtual	int32_t		GetDeliverySample( CNX_Sample **ppSample );
 
 protected:
-			void		ThreadLoop(void);
-	static 	void*		ThreadMain(void*arg);
+			void		ThreadLoop( void );
+	static 	void*		ThreadMain( void *arg );
 
 private:
 			int32_t		EncodeVideo( CNX_VideoSample *pInSample, CNX_MuxerSample *pOutSample );
@@ -68,18 +68,21 @@ public:
 	//------------------------------------------------------------------------
 	//	External Interfaces
 	//------------------------------------------------------------------------
-			int32_t		GetDsiInfo( uint8_t *dsiInfo, int32_t *dsiSize );
 			int32_t		SetPacketID( uint32_t packetID );
+			int32_t		GetDsiInfo( uint8_t *dsiInfo, int32_t *dsiSize );
+			int32_t 	EnableDeliver( uint32_t enable );
 			int32_t  	GetStatistics( NX_FILTER_STATISTICS *pStatistics );
+			
 protected:
 	//------------------------------------------------------------------------
 	//	Filter status
 	//------------------------------------------------------------------------
 	int32_t				m_bInit;
 	int32_t				m_bRun;
-
+	int32_t				m_bEnableDeliver;
 	CNX_Semaphore		*m_pSemIn;
 	CNX_Semaphore		*m_pSemOut;
+	pthread_mutex_t		m_hLock;
 	//------------------------------------------------------------------------
 	//	Thread
 	//------------------------------------------------------------------------

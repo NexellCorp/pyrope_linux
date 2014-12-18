@@ -20,7 +20,23 @@
 #ifndef __INX_MP4MANAGER_H__
 #define __INX_MP4MANAGER_H__
 
+typedef enum {
+	NX_MGR_MODE_CAMCODER,
+	NX_MGR_MODE_PICTURE,
+} NX_MGR_MODE;
+
+typedef enum {
+	NX_NOTIFY_FILEWRITING_DONE	= 0x1001,
+	NX_NOTIFY_JPEGWRITING_DONE	= 0x1003,
+	NX_NOTIFY_ERR_VIDEO_INPUT	= 0xF001,
+	NX_NOTIFY_ERR_VIDEO_ENCODE	= 0xF002,
+	NX_NOTIFY_ERR_OPEN_FAIL		= 0xF003,
+	NX_NOTIFY_ERR_WRITE			= 0xF004,
+} NX_NOTIFY_TYPE;
+
 typedef struct tagMp4ManagerConfig {
+	NX_MGR_MODE		mode;
+
 	int32_t			port;
 	int32_t 		width;
 	int32_t			height;
@@ -35,20 +51,6 @@ typedef struct tagMp4ManagerConfig {
 	int32_t			dspBottom;
 } Mp4ManagerConfig;
 
-typedef enum {
-	NX_NOTIFY_FILEWRITING_DONE	= 0x1001,
-	NX_NOTIFY_JPEGWRITING_DONE	= 0x1003,
-	NX_NOTIFY_ERR_VIDEO_INPUT	= 0xF001,
-	NX_NOTIFY_ERR_VIDEO_ENCODE	= 0xF002,
-	NX_NOTIFY_ERR_OPEN_FAIL		= 0xF003,
-	NX_NOTIFY_ERR_WRITE			= 0xF004,
-} NX_NOTIFY_TYPE;
-
-typedef enum {
-	NX_MGR_MODE_ENCODE			= 0,
-	NX_MGR_MODE_PREVIEW,
-} NX_MGR_MODE;
-
 #include <stdint.h>
 
 class INX_Mp4Manager
@@ -57,16 +59,15 @@ public:
 	virtual ~INX_Mp4Manager(){}
 
 public:
-	virtual int32_t	SetConfig( Mp4ManagerConfig *pConfig ) = 0;
+	virtual int32_t	Init( Mp4ManagerConfig *pConfig )	= 0;
+	virtual int32_t	Deinit( void )						= 0;
 	
-	virtual int32_t	Init( void ) = 0;
-	virtual int32_t	Deinit( void ) = 0;
+	virtual int32_t SetFileName( char *pFileName )		= 0;
+	virtual int32_t	Start( int32_t encode = 0 )			= 0;
+	virtual int32_t	Stop( void )						= 0;
 	
-	virtual int32_t	Start( char *pFileName, int32_t mode = 0 ) = 0;
-	virtual int32_t	Stop( void ) = 0;
-	
-	virtual int32_t Capture( char *pFileName, Mp4ManagerConfig *pConfig = NULL ) = 0;
-	virtual int32_t EnableRender( int32_t enable ) = 0;
+	virtual int32_t Capture( char *pFileName = NULL )	= 0;
+	virtual int32_t EnableEncode( int32_t enable )		= 0;
 
 	virtual int32_t	RegisterNotifyCallback( uint32_t (*cbNotify)(uint32_t, uint8_t*, uint32_t) ) = 0;
 };

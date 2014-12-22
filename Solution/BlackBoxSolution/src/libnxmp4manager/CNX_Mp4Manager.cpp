@@ -90,10 +90,10 @@ int32_t CNX_Mp4Manager::SetConfig( Mp4ManagerConfig *pConfig )
 	m_VidRenderConfig.port 			= 0;
 	m_VidRenderConfig.width			= pConfig->width;
 	m_VidRenderConfig.height 		= pConfig->height;
-	m_VidRenderConfig.cropLeft		= pConfig->dspLeft;
-	m_VidRenderConfig.cropTop		= pConfig->dspTop;
-	m_VidRenderConfig.cropRight		= pConfig->dspRight;
-	m_VidRenderConfig.cropBottom	= pConfig->dspBottom;
+	m_VidRenderConfig.cropLeft		= 0;
+	m_VidRenderConfig.cropTop		= 0;
+	m_VidRenderConfig.cropRight		= pConfig->width;
+	m_VidRenderConfig.cropBottom	= pConfig->height;
 	m_VidRenderConfig.dspLeft		= pConfig->dspLeft;
 	m_VidRenderConfig.dspTop		= pConfig->dspTop;
 	m_VidRenderConfig.dspRight		= pConfig->dspRight;

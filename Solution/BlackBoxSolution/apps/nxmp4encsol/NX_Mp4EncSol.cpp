@@ -68,7 +68,7 @@ static void signal_handler(int sig)
 	{
 		pMp4Manager->Stop();
 		pMp4Manager->Deinit();
-		ReleaseMp4ManagerHandle( pMp4Manager );
+		ReleaseMp4ManagerHandle();
 	}
 
 	exit(EXIT_FAILURE);
@@ -92,7 +92,7 @@ static void shell_usage( void )
 	printf(" startcam [enable] or startcam [enable] [filename] : start camcoder mode.       \n");
 	printf(" startpic                                          : start picture mode.        \n");
 	printf(" stop                                              : stop.                      \n");
-	printf(" chgenc [enable]                                   : change encoding enable.    \n");
+	printf(" chgenc [enable] or chgenc [enable] [filename]     : change encoding enable.    \n");
 	printf(" capture or capture [filename]                     : jpeg capture.              \n");
 	printf(" help                                              : print usage.               \n");
 	printf(" exit                                              : exit application.          \n");
@@ -165,7 +165,7 @@ static int32_t shell_main( void )
 		else if( !strcmp( cmd[0], "startcam" ) ) {
 			printf("Start Camcoder mode.\n");
 			
-			if( cmdCnt == 2 ) {
+			if( cmdCnt > 1 ) {
 				if( strcmp(cmd[1], "0") && strcmp(cmd[1], "1" ) ) {
 					printf("invalid options.\n");
 					continue;
@@ -173,23 +173,14 @@ static int32_t shell_main( void )
 
 				pMp4Manager->Init( &defCamConfig );
 				pMp4Manager->RegisterNotifyCallback( cbNotifier );
+
+				if( cmd[2][0] != 0x00 ) {
+					char fileName[1024];
+					sprintf(fileName, "%s", cmd[2] );
+					pMp4Manager->SetFileName( fileName );
+				}
+
 				pMp4Manager->Start( atoi(cmd[1]) );
-			}
-			else if( cmdCnt == 3 ) {
-				if( strcmp(cmd[1], "0") && strcmp(cmd[1], "1" ) ) {
-					printf("invalid options.\n");
-					continue;
-				}
-
-				char fileName[1024];
-				sprintf(fileName, "%s", cmd[1] );
-				pMp4Manager->Init( &defCamConfig );
-				pMp4Manager->RegisterNotifyCallback( cbNotifier );
-				pMp4Manager->SetFileName( fileName );
-				pMp4Manager->Start( true );
-			}
-			else {
-				printf("invalid options.\n");
 			}
 		}
 		else if( !strcmp( cmd[0], "startpic") ) {
@@ -212,20 +203,33 @@ static int32_t shell_main( void )
 		}
 		else if( !strcmp( cmd[0], "chgenc" ) ) {
 			printf("Change encoding enable.\n");
-			if( cmdCnt == 2 ) {
+
+			if( cmdCnt > 1 ) {
 				if( strcmp(cmd[1], "0") && strcmp(cmd[1], "1" ) ) {
 					printf("invalid options.\n");
 					continue;
 				}
+				
+				if( (atoi(cmd[1]) == 1) && (cmd[2][0] != 0x00) ) {
+					char fileName[1024];
+					sprintf( fileName, "%s", cmd[2] );
+					pMp4Manager->SetFileName( fileName );
+				}
+
 				pMp4Manager->EnableEncode( atoi(cmd[1]) );
-			}
-			else {
-				printf("invalid options.\n");
 			}
 		}
 		else if( !strcmp( cmd[0], "capture") ) {
 			printf("Capture.\n");
-			pMp4Manager->Capture();
+
+			if( cmdCnt > 1 ) {
+				char fileName[1024];
+				sprintf( fileName, "%s", cmd[1] );
+				pMp4Manager->Capture( fileName );
+			}
+			else {
+				pMp4Manager->Capture();	
+			}
 		}
 	}
 
@@ -286,7 +290,7 @@ int main(void)
 	{
 		pMp4Manager->Stop();
 		pMp4Manager->Deinit();
-		ReleaseMp4ManagerHandle( pMp4Manager );
+		ReleaseMp4ManagerHandle();
 	}
 
 	return 0;

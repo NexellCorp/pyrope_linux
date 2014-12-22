@@ -242,6 +242,7 @@ void CNX_VIPCaptureFilter::FreeBuffer( void )
 		if( m_ClipMemory[i] ) NX_FreeVideoMemory( m_ClipMemory[i] );
 		if( m_DeciMemory[i] ) NX_FreeVideoMemory( m_DeciMemory[i] );
 	}
+	m_pSemCap->Post();
 	m_pSemOut->Post();
 	m_iNumOfBuffer = 0;
 
@@ -440,7 +441,7 @@ void CNX_VIPCaptureFilter::JpegEncode( CNX_Sample *pSample )
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_VIPCaptureFilter::EnableCapture()
+int32_t CNX_VIPCaptureFilter::EnableCapture( void )
 {
 	pthread_mutex_lock( &m_hCaptureLock );
 	m_bCaptured = true;

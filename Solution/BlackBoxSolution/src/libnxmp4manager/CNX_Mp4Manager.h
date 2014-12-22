@@ -53,6 +53,9 @@ public:
 	CNX_Mp4Manager();
 	~CNX_Mp4Manager();
 
+	static INX_Mp4Manager*	GetInstance( void );
+	static void				ReleaseIntance( void );
+
 public:
 	virtual int32_t	Init( Mp4ManagerConfig *pConfig );
 	virtual int32_t	Deinit( void );
@@ -105,16 +108,8 @@ private:
 	int32_t					m_bEncoding;
 
 	pthread_mutex_t			m_hLock;
+
+	static CNX_Mp4Manager	*m_psInstance;
 };
 
-INX_Mp4Manager *GetMp4ManagerHandle( void )
-{
-	return (INX_Mp4Manager *)new CNX_Mp4Manager();
-}
-
-void ReleaseMp4ManagerHandle( INX_Mp4Manager *pMp4Manager )
-{
-	if( pMp4Manager ) delete (CNX_Mp4Manager*)pMp4Manager;
-}
-
-#endif
+#endif	// __CNX_MP4MANAGER_H__

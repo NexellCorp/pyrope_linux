@@ -72,7 +72,7 @@ public:
 	virtual int32_t	RegisterNotifyCallback( uint32_t (*cbNotify)(uint32_t, uint8_t*, uint32_t) ) = 0;
 };
 
-extern INX_Mp4Manager *GetMp4ManagerHandle( void );
-extern void ReleaseMp4ManagerHandle( INX_Mp4Manager *pMp4Manager );
+extern INX_Mp4Manager*	GetMp4ManagerHandle( void );
+extern void 			ReleaseMp4ManagerHandle( void );
 
 #endif	// __INX_MP4MANAGER_H__

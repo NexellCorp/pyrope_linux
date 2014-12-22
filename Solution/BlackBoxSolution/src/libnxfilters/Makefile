@@ -37,6 +37,7 @@ CPPOBJS		+= NX_FilterSysApi.o NX_DbgMsg.o
 
 # Video modules
 CPPOBJS		+= CNX_VIPFilter.o
+CPPOBJS		+= CNX_VIPCaptureFilter.o
 CPPOBJS		+= CNX_VRFilter.o
 CPPOBJS		+= CNX_H264Encoder.o
 # Audio modules

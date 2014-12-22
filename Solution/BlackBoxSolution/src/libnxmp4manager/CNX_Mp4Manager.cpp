@@ -22,6 +22,14 @@
 #define NX_DTAG		"[CNX_Mp4Manager] "
 #include <NX_DbgMsg.h>
 
+static Mp4ManagerConfig defConfig = {
+	NX_MGR_MODE_CAMCODER,
+	0, 1024, 768, 15, 
+	6000000,
+	false,
+	0, 0, 640, 480
+};
+
 #ifndef	SAFE_DELETE_FILTER
 #define	SAFE_DELETE_FILTER(A)	if(A){delete A;A=NULL;}
 #endif
@@ -36,14 +44,6 @@
 #endif
 
 //------------------------------------------------------------------------------
-static Mp4ManagerConfig defConfig = {
-	NX_MGR_MODE_CAMCODER,
-	0, 1024, 768, 15, 
-	6000000,
-	false,
-	0, 0, 640, 480
-};
-
 CNX_Mp4Manager::CNX_Mp4Manager()
 	: m_pRefClock( NULL )
 	, m_pNotifier( NULL )
@@ -52,6 +52,8 @@ CNX_Mp4Manager::CNX_Mp4Manager()
 	, m_pAvcEncFilter( NULL )
 	, m_pAudCapFilter( NULL )
 	, m_pAacEncFilter( NULL )
+	, m_pInterleaverFilter( NULL )
+	, m_pMp4MuxerFilter( NULL )
 	, m_Mode( NX_MGR_MODE_CAMCODER )
 	, m_bInit( false )
 	, m_bRun( false )
@@ -76,14 +78,15 @@ int32_t CNX_Mp4Manager::SetConfig( Mp4ManagerConfig *pConfig )
 {
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 
+	memset( &m_VipConfig, 0x00, sizeof(m_VipConfig) );
 	m_VipConfig.port				= pConfig->port;
 	m_VipConfig.width				= pConfig->width;
 	m_VipConfig.height				= pConfig->height;
 	m_VipConfig.fps					= pConfig->fps;
-
 	m_VipConfig.outWidth			= pConfig->width;
 	m_VipConfig.outHeight			= pConfig->height;
 
+	memset( &m_VidRenderConfig, 0x00, sizeof(m_VidRenderConfig) );
 	m_VidRenderConfig.port 			= 0;
 	m_VidRenderConfig.width			= pConfig->width;
 	m_VidRenderConfig.height 		= pConfig->height;
@@ -96,23 +99,28 @@ int32_t CNX_Mp4Manager::SetConfig( Mp4ManagerConfig *pConfig )
 	m_VidRenderConfig.dspRight		= pConfig->dspRight;
 	m_VidRenderConfig.dspBottom		= pConfig->dspBottom;
 
+	memset( &m_VidEncConfig, 0x00, sizeof(m_VidEncConfig) );
 	m_VidEncConfig.width			= pConfig->width;
 	m_VidEncConfig.height			= pConfig->height;
 	m_VidEncConfig.fps				= pConfig->fps;
 	m_VidEncConfig.bitrate			= pConfig->bitrate;
 	m_VidEncConfig.codec			= MP4_CODEC_TYPE_H264;
 
+	memset( &m_AudCapConfig, 0x00, sizeof(m_AudCapConfig) );
 	m_AudCapConfig.channels			= 2;
 	m_AudCapConfig.frequency		= 48000;
 	m_AudCapConfig.samples			= FRAME_SIZE_AAC;
 
+	memset( &m_AudEncConfig, 0x00, sizeof(m_AudEncConfig) );
 	m_AudEncConfig.channels			= 2;
 	m_AudEncConfig.frequency		= 48000;
 	m_AudEncConfig.bitrate			= 128000;
 	m_AudEncConfig.codec			= MP4_CODEC_TYPE_AAC;
 
+	memset( &m_InterleaverConfig, 0x00, sizeof(m_InterleaverConfig) );
 	m_InterleaverConfig.channel		= pConfig->bAudEnable ? 2 : 1;
 
+	memset( &m_Mp4MuxerConfig, 0x00, sizeof(m_Mp4MuxerConfig) );
 	m_Mp4MuxerConfig.videoTrack		= 1;
 	m_Mp4MuxerConfig.audioTrack		= pConfig->bAudEnable;
 	m_Mp4MuxerConfig.textTrack		= 0;
@@ -144,7 +152,8 @@ int32_t CNX_Mp4Manager::BuildFilter( void )
 	m_pVrFilter				= new CNX_VRFilter();
 	m_pAvcEncFilter 		= new CNX_H264Encoder();
 
-	if( m_Mp4MuxerConfig.audioTrack ) {
+	if( m_Mp4MuxerConfig.audioTrack )
+	{
 		m_pAudCapFilter		= new CNX_AudCaptureFilter();
 		m_pAacEncFilter		= new CNX_AacEncoder();
 	}
@@ -286,7 +295,8 @@ int32_t CNX_Mp4Manager::Start( int32_t encode )
 		SAFE_START_FILTER( m_pVipFilter );
 		SAFE_START_FILTER( m_pVrFilter );
 
-		if( m_Mode == NX_MGR_MODE_CAMCODER ) {
+		if( m_Mode == NX_MGR_MODE_CAMCODER )
+		{
 			SAFE_START_FILTER( m_pAvcEncFilter );
 			SAFE_START_FILTER( m_pAudCapFilter );
 			SAFE_START_FILTER( m_pAacEncFilter );
@@ -320,7 +330,8 @@ int32_t CNX_Mp4Manager::Stop( void )
 		SAFE_STOP_FILTER( m_pVipFilter );
 		SAFE_STOP_FILTER( m_pVrFilter );
 		
-		if( m_Mode == NX_MGR_MODE_CAMCODER ) {
+		if( m_Mode == NX_MGR_MODE_CAMCODER )
+		{
 			SAFE_STOP_FILTER( m_pAvcEncFilter );
 			SAFE_STOP_FILTER( m_pAudCapFilter );
 			SAFE_STOP_FILTER( m_pAacEncFilter );
@@ -347,7 +358,8 @@ int32_t CNX_Mp4Manager::Capture( char *pFileName )
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	CNX_AutoLock lock( &m_hLock );
 
-	if( !m_bRun ) {
+	if( !m_bRun )
+	{
 		NxDbgMsg( NX_DBG_WARN, (TEXT("not running.\n")) );
 		goto END;
 	}
@@ -366,12 +378,14 @@ int32_t CNX_Mp4Manager::EnableEncode( int32_t enable )
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	CNX_AutoLock lock( &m_hLock );
 
-	if( !m_bRun ) {
+	if( !m_bRun )
+	{
 		NxDbgMsg( NX_DBG_WARN, (TEXT("not running.\n")) );
 		goto END;
 	}
 
-	if( m_Mode != NX_MGR_MODE_CAMCODER ) {
+	if( m_Mode != NX_MGR_MODE_CAMCODER )
+	{
 		NxDbgMsg( NX_DBG_WARN, (TEXT("not supported. ( mode: %s )\n"), (m_Mode == NX_MGR_MODE_CAMCODER) ? "Camcoder mode" : "Picture mode") );
 		goto END;
 	}
@@ -414,4 +428,40 @@ int32_t CNX_Mp4Manager::RegisterNotifyCallback( uint32_t (*cbNotify)(uint32_t, u
 
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return 0;
+}
+
+//------------------------------------------------------------------------------
+CNX_Mp4Manager* CNX_Mp4Manager::m_psInstance = NULL;
+
+INX_Mp4Manager* CNX_Mp4Manager::GetInstance()
+{
+	if( NULL == m_psInstance )
+	{
+		m_psInstance = new CNX_Mp4Manager();
+	}
+
+	return (INX_Mp4Manager*)m_psInstance;
+}
+
+//------------------------------------------------------------------------------
+void CNX_Mp4Manager::ReleaseIntance()
+{
+	if( NULL != m_psInstance )
+	{
+		delete m_psInstance;
+	}
+
+	m_psInstance = NULL;
+}
+
+//------------------------------------------------------------------------------
+INX_Mp4Manager *GetMp4ManagerHandle( void )
+{
+	return CNX_Mp4Manager::GetInstance();
+}
+
+//------------------------------------------------------------------------------
+void ReleaseMp4ManagerHandle( void )
+{
+	CNX_Mp4Manager::ReleaseIntance();
 }

@@ -29,7 +29,6 @@ CNX_VRFilter::CNX_VRFilter( void )
 	, m_bRun( false )
 	, m_bEnable( false )
 	, m_bEnableHdmi( false )
-	, m_bEnableDeliver( true )
 	, m_hDsp( NULL )
 	, m_pPrevVideoSample( NULL )
 {
@@ -112,7 +111,7 @@ int32_t	CNX_VRFilter::Receive( CNX_Sample *pSample )
 		pVideoSample->Lock();
 		if( m_hDsp ) NX_DspQueueBuffer( m_hDsp, pVideoSample->GetVideoMemory() );
 
-		if( m_bEnableDeliver ) Deliver( pSample );		
+		Deliver( pSample );		
 
 		if( m_pPrevVideoSample ) {
 			if( m_hDsp ) NX_DspDequeueBuffer( m_hDsp );
@@ -123,7 +122,7 @@ int32_t	CNX_VRFilter::Receive( CNX_Sample *pSample )
 	}
 	else {
 		pVideoSample->Lock();
-		if( m_bEnableDeliver ) Deliver( pSample );
+		Deliver( pSample );
 		pVideoSample->Unlock();
 	}
 
@@ -247,20 +246,6 @@ int32_t CNX_VRFilter::EnableHdmiRender( uint32_t enable )
 		}		
 	}
 	m_bEnableHdmi = enable;
-
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
-	return true;	
-}
-
-//------------------------------------------------------------------------------
-int32_t CNX_VRFilter::EnableDeliver( uint32_t enable )
-{
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
-	CNX_AutoLock lock( &m_hLock );
-
-	NxDbgMsg( NX_DBG_INFO, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnable)?"Enable":"Disable", (enable)?"Enable":"Disable") );
-
-	m_bEnableDeliver = enable;
 
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return true;	

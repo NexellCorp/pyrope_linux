@@ -20,10 +20,9 @@
 #ifndef __CNX_MP3ENCODER_H__
 #define __CNX_MP3ENCODER_H__
 
-#include <pthread.h>
+#include "CNX_BaseFilter.h"
+#include "NX_FilterConfigTypes.h"
 
-#include <CNX_BaseFilter.h>
-#include <NX_FilterConfigTypes.h>
 #include <nx_mp3enc.h>
 
 #ifdef __cplusplus
@@ -68,6 +67,7 @@ public:
 	//	External Interfaces
 	//------------------------------------------------------------------------
 			int32_t		SetPacketID( uint32_t PacketID );
+			int32_t 	EnableDeliver( uint32_t enable );
 			int32_t  	GetStatistics( NX_FILTER_STATISTICS *pStatistics );
 
 protected:
@@ -76,8 +76,10 @@ protected:
 	//------------------------------------------------------------------------
 	int32_t				m_bInit;
 	int32_t				m_bRun;
+	int32_t				m_bEnableDeliver;
 	CNX_Semaphore		*m_pSemIn;
 	CNX_Semaphore		*m_pSemOut;
+	pthread_mutex_t		m_hLock;
 	//------------------------------------------------------------------------
 	//	Thread
 	//------------------------------------------------------------------------

@@ -56,12 +56,14 @@ CNX_AudCaptureFilter::CNX_AudCaptureFilter()
 	: m_bInit( false )
 	, m_bRun( false )
 	, m_bThreadExit( true )
-	, m_hThread( 0 )
+	, m_hThread( 0x00 )
 	, m_Channels( 2 )
 	, m_Frequency( 48000 )
 	, m_Samples( 1152 )
 	, m_PrevAudioSampleTime( 0 )
 	, m_TotalReadSampleSize( 0 )
+	, m_ClockCorrectThreshold( 0 )
+	, m_ClockCorrectTime( 0 )
 	, m_pSampleBuffer( NULL )
 	, m_iNumOfBuffer( 0 )
 	, m_hAudCapture( NULL )
@@ -99,8 +101,11 @@ void	CNX_AudCaptureFilter::Init( NX_AUDCAPTURE_CONFIG *pConfig )
 		AllocateBuffer( (m_Frequency + m_Samples) / m_Samples );
 		
 		// Sample Time Correct Parameter
-		m_ClockCorrectThreshold = 2 * 1000 * m_Samples / m_Frequency;	// Time of Sample(mSec) = 1000 * m_Samples / m_Frequency
-																		// ex) AAC / 48KHz -> 1000 * 1024 / 48000 = about 21mSec
+		// Time of Sample(mSec) = 1000 * m_Samples / m_Frequency
+		// ex) AAC / 48KHz -> 1000 * 1024 / 48000 = about 21mSec
+		m_ClockCorrectThreshold = 2 * 1000 * m_Samples / m_Frequency;
+		m_ClockCorrectTime = 3;
+
 		m_TotalReadSampleSize = 0;
 
 		if( false == InitAudCapture( m_Channels, m_Frequency ) ) {
@@ -474,11 +479,11 @@ int32_t	CNX_AudCaptureFilter::CaptureAudioSample( CNX_MediaSample *pSample )
 		
 		if( Gap > m_ClockCorrectThreshold ) {
 			m_pRefClock->SetTickErrorTime( 3 );
-			NxDbgMsg( NX_DBG_VBS, (TEXT("\tCorrect audio time stamp(+1, %lld)!!\n"), m_ClockCorrectThreshold) );
+			NxDbgMsg( NX_DBG_VBS, (TEXT("Correct audio time stamp(+3, %lld)!!\n"), m_ClockCorrectThreshold) );
 		}
 		else if( Gap < -m_ClockCorrectThreshold ) {
 			m_pRefClock->SetTickErrorTime( -3 );
-			NxDbgMsg( NX_DBG_VBS, (TEXT("\tCorrect audio time stamp(-1, %lld)!!\n"), m_ClockCorrectThreshold) );
+			NxDbgMsg( NX_DBG_VBS, (TEXT("Correct audio time stamp(-3, %lld)!!\n"), m_ClockCorrectThreshold) );
 		}
 	}
 #else

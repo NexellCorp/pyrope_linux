@@ -524,7 +524,7 @@ int32_t CNX_Mp4MuxerFilter::SetMuxConfig( void )
 
 	unlink( (char*)m_FileName );
 	m_OutFd = open( (char*)m_FileName, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0777 );
-	// printf("Create File( %d ) : %s\n", m_OutFd, m_FileName);
+	NxDbgMsg( NX_DBG_INFO, (TEXT("Create File( %d ): %s\n"), m_OutFd, m_FileName) );
 
 	if( m_OutFd < 0) {
 		if( m_pNotify )

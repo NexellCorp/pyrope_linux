@@ -223,6 +223,28 @@ int32_t	CNX_InterleaverFilter::Stop( void )
 }
 
 //------------------------------------------------------------------------------
+int32_t CNX_InterleaverFilter::Flush( void )
+{
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	CNX_AutoLock lock ( &m_hReceiveLock );
+
+	for( uint32_t i = 0; i < m_InterleaverChannel; i++ )
+	{
+		while( 1 )
+		{
+			if( !m_InterleaverQueue[i].IsReady() ) break;
+
+			CNX_MuxerSample *pOutSample = NULL;
+			m_InterleaverQueue[i].PopSample( (CNX_Sample**)&pOutSample );
+			if( pOutSample ) ReleaseSample( pOutSample );
+		}
+	}
+
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	return true;
+}
+
+//------------------------------------------------------------------------------
 int32_t CNX_InterleaverFilter::GetStatistics( NX_FILTER_STATISTICS *pStatistics )
 {
 	NX_ASSERT( NULL != pStatistics );

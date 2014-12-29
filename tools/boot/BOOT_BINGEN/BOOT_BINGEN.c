@@ -338,8 +338,7 @@ int main(int argc, char **argv)
 	free(Out_Buffer);
 
 NOMAL_END:
-    printf("%s: return %d\n", __func__, ret);
-	return 0;
+	return ret;
 
 ERR_END:
 	fclose(InFile_fd);

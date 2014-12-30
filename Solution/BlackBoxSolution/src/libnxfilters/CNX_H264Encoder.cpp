@@ -100,7 +100,7 @@ void CNX_H264Encoder::Init( NX_VIDENC_CONFIG *pConfig )
 		m_EncInfo.enableRC			= 1;
 		m_EncInfo.RCAlgorithm		= 1;					// 0:Hardware / 1:Nexell
 		m_EncInfo.bitrate			= pConfig->bitrate;
-		m_EncInfo.initialQp			= 10;
+		m_EncInfo.initialQp			= 0;
 		m_EncInfo.maximumQp			= 51;
 		m_EncInfo.disableSkip		= true;
 		

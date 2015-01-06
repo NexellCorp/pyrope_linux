@@ -100,7 +100,7 @@ int main(int argc, char **argv)
 				break;
 	      	case 'e':
 	      		launchaddr	= HexAtoInt(optarg);
-	        	break;	
+	        	break;		
 	      	case 'u':
 	      		device_portnum = HexAtoInt(optarg);
 	        	break;	  			
@@ -157,7 +157,7 @@ int main(int argc, char **argv)
 		{
 			OutputSize = NXP4330_SRAM_SIZE;
 		}
-		else if( (0 == strcmp( cpu_name, "NXP5430" )) || 0 == strcmp( cpu_name, "S5P6818" ) )
+		else if( (0 == strcmp( cpu_name, "NXP5430" )) || (0 == strcmp( cpu_name, "S5P6818" )) )
 		{
 			OutputSize = InputSize + NSIHSIZE;
 			if( OutputSize >= (NXP5430_SRAM_SIZE - ROMBOOT_STACK_SIZE) )
@@ -166,7 +166,7 @@ int main(int argc, char **argv)
 				printf("Calcurate image Size : %d \r\n", OutputSize );
 				printf("Return Error End!!\r\n");
 				goto ERR_END;
-			}
+			}		
 		}		
 		else if(0 == strcmp( cpu_name, "S5P4418" ))
 		{
@@ -202,8 +202,9 @@ int main(int argc, char **argv)
 		MallocSize = OutputSize;
 
     Out_Buffer 	= (U8*)malloc( MallocSize );
-	memset(Out_Buffer , 0xFF, MallocSize);		// set 0 to rest area
+	memset(Out_Buffer , 0xFF, MallocSize);	
 	
+
  	if( NSIHSIZE != ProcessNSIH( nsih_name, Out_Buffer ) )
 	{
 		printf("ERROR : Failed to process NSIH(%s).\n", argv[3] );
@@ -215,35 +216,35 @@ int main(int argc, char **argv)
         printf("File Read Failed. \r\n");
         return CFAILED;
 	}
-	
+
 #if SECURE_BOOT
 	// Secure Boot <-- Decript Issue ( 16Byte Convert )
 	if( ((InputSize % 16) != 0) )	
 		InputSize = ((InputSize / 16) * 16);
 #endif
+
+	//if( (0 == strcmp( option_name, "3rdboot" )) || (0 == strcmp( option_name, "2ndboot" )) )
 	{	
 		pBootInfo = (struct NX_SecondBootInfo*)Out_Buffer;
 
         if( device_portnum != CFAILED )
         {
-    		pBootInfo->DBI.SDMMCBI.PortNumber = (U8)device_portnum;     // Each Device Port 
+    		pBootInfo->DBI.SDMMCBI.PortNumber = (U8)device_portnum;     
         }
 		if( device_addr != CFAILED )
 		{
-            pBootInfo->DEVICEADDR = device_addr;                        // Each Device Address
+            pBootInfo->DEVICEADDR = device_addr;                        
 		}	
+		
+		pBootInfo->LOADSIZE			= InputSize;	
 
-		pBootInfo->LOADSIZE			= InputSize;
-	
         if( loadaddr != CFAILED )
     		pBootInfo->LOADADDR			= loadaddr; 
         if( launchaddr != CFAILED )
 	    	pBootInfo->LAUNCHADDR		= launchaddr;
 
-		pBootInfo->SIGNATURE		= HEADER_ID;		// Signature (NSIH)
-
+		pBootInfo->SIGNATURE		= HEADER_ID;		
         pBootInfo->DBI.SDMMCBI.CRC32 = __calc_crc((void*)(Out_Buffer + NSIHSIZE), (InputSize) );
-
 		if( (InputSize + NSIHSIZE) <= (NXP4330_SRAM_SIZE-16) )
 		{
 			uCrc.iCrc = __calc_crc((void*)(Out_Buffer), (OutputSize-16) );		
@@ -273,7 +274,7 @@ int main(int argc, char **argv)
         boot_mode = "UART";
 
 	fwrite(Out_Buffer, 1, OutputSize, OutFile_fd);		
-	print_bingen_info();									
+	print_bingen_info();			
 
 #if 0
 	if( (0 == strcmp( view_option, "viewer" )) ){
@@ -460,19 +461,6 @@ CBOOL	NX_SHELLU_HexDump	( U32 SrcAddr, U32 PrintDataSize, U32 PrintDataWidth )
 }
 #endif
 
-static inline U32 iget_fcs(U32 fcs, U32 data)
-{
-	register int i;
-	fcs ^= data;
-	for(i=0; i<32; i++)
-	{
-		if(fcs & 0x01)
-			fcs ^= POLY;
-		fcs >>= 1;
-	}
-	return fcs;
-}
-
 static unsigned int globalk = 0;
 unsigned int get_fcs(unsigned int fcs, unsigned char data)
 {
@@ -484,33 +472,9 @@ unsigned int get_fcs(unsigned int fcs, unsigned char data)
 	   		fcs ^= POLY; 
 	   fcs >>= 1;
 	}
-#if 0
-	if( fcs == 0x01729E99 )
-		printf("[%d]St FCS Match : %8X\r\n", globalk, fcs );
-	else
-		printf("[%d]St FCS Not Match : %8X\r\n", globalk, fcs );
-	globalk += 1;
-//#else
-	if( ((globalk++) % 8) == 0 )
-		printf("\r\n[%d]: ", globalk);
-	printf("%8X ", fcs );
-#endif
 	return fcs;
 }
 
-
-static inline unsigned int __icalc_crc (void *addr, int len)
-{
-	U32 *c = (U32*)addr;
-	U32 crc = 0, chkcnt = ((len+3)/4);
-	U32 i;
-
-	for (i = 0; chkcnt > i; i += CHKSTRIDE, c += CHKSTRIDE) {
-		crc = iget_fcs(crc, *c);
-	}
-
-	return crc;
-}
 
 static inline unsigned int __calc_crc (void *addr, int len)
 {
@@ -639,7 +603,7 @@ static void usage(void)
 	printf(" Usage : This will tell you How to Use Help.					          \n");
 	printf("--------------------------------------------------------------------------\n" );
 	printf("   -h [HELP]                     : show usage                             \n");
-	printf("   -c [NXP4330/NXP5430/S5P4418]  : chip name         (mandatory)          \n");	
+	printf("   -c [S5P6818/S5P4418]          : chip name         (mandatory)          \n");	
 	printf("   -t [2nboot/3rdboot]           : What is the Boot? (mandatory)          \n");
 	printf("   	->[2ndboot]                                                           \n");
 	printf("   	->[3rdboot]              	   	    	                              \n");

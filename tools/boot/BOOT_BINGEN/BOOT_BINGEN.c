@@ -2,7 +2,10 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
+
+#include <ctype.h>
 
 #include "BOOT_BINGEN.h"
 
@@ -14,19 +17,19 @@ static U8* cpu_name			= NULL;
 static U8* option_name		= NULL;
 static U8* boot_mode		= NULL;
 static U8* input_name 		= NULL;
-static U8* nsih_name 		= NULL;
+static U8* nsih_name 		= NULL; 
 static U8* output_name		= NULL;
 
 static U8* SwapEnb			= NULL;
 
-static U32 device_addr      = NULL;
-static U32 device_portnum	= NULL;
+static U32 device_addr      = CFAILED;
+static U32 device_portnum	= CFAILED;
 
-static U32 OutputSize		= NULL;
+static U32 OutputSize		= NULL; 
 static U32 InputSize		= NULL;
 
-static U32 loadaddr			= NULL;
-static U32 launchaddr		= NULL;
+static U32 loadaddr			= CFAILED;
+static U32 launchaddr		= CFAILED;
 
 int main(int argc, char **argv)
 {
@@ -52,18 +55,15 @@ int main(int argc, char **argv)
 	CRC uCrc;
 
 	/* Pre-Fix  Default (Name & Value) */
-	cpu_name	= "NXP4330";
+	cpu_name	= "S5P4418";
 	option_name	= "2ndboot";
 	boot_mode	= ".";
 
-	nsih_name	= "NSIH.txt";
+	nsih_name	= "NSIH.txt"; 
 	input_name	= "pyrope_2ndboot_spi.bin";
 	output_name	= "2ndboot_spi.bin";
 
 	OutputSize	= 16*1024;
-
-//	loadaddr	= 0x40100000;
-//	launchaddr	= 0x40100000;
 
     if( argc == CTRUE )
     {
@@ -71,7 +71,7 @@ int main(int argc, char **argv)
         return CTRUE;
     }
 
-	while( -1 !=(param_opt = getopt( argc, argv, "h:c:t:n:i:o:l:e:s:b:a:u:v:")))
+	while( -1 !=(param_opt = getopt( argc, argv, "h:c:t:n:i:o:l:e:a:u:v:")))
 	{
       	switch(param_opt)
       	{
@@ -80,11 +80,13 @@ int main(int argc, char **argv)
 	      		return CTRUE;
 	      	case 'c':
 	      		cpu_name	= strdup(optarg);
-	      		break;
+	      		to_upper(cpu_name);
+	      		break;				
 			case 't':
-				option_name = strdup(optarg);
-				break;
-	      	case 'n':
+				option_name = strdup(optarg);	
+				to_lower(option_name);
+				break;			
+	      	case 'n': 
 	        	nsih_name 	= strdup(optarg);
 	        	break;
 	      	case 'i':
@@ -92,31 +94,22 @@ int main(int argc, char **argv)
 	        	break;
 	      	case 'o':
 	      		output_name = strdup(optarg);
-	        	break;
+	        	break;      	
 			case 'l':
 				loadaddr 	= HexAtoInt(optarg);
 				break;
 	      	case 'e':
 	      		launchaddr	= HexAtoInt(optarg);
-	        	break;
-            // Not Required Option
-	        case 's':
-				OutputSize 	= atoi(optarg);
-				printf("The Size you choose is Binary %dKB.\r\n", OutputSize );
+	        	break;	
 	      	case 'u':
 	      		device_portnum = HexAtoInt(optarg);
-	        	break;
-			case 'b':
-				boot_mode 	= strdup(optarg);
-				break;
+	        	break;	  			
 			case 'a':
-				device_addr	= HexAtoInt(optarg);
-				break;
-            // Debug Option
+				device_addr	= HexAtoInt(optarg);					
+				break;	
 			case 'v':
 				view_option	= strdup(optarg);
 				break;
-			// Unknown Option
 			default:
 	        	printf("unknown option_num parameter\r\n");
 	        	break;
@@ -136,29 +129,11 @@ int main(int argc, char **argv)
 		printf("Did not enter the Binary files.\r\n");
 		printf("This has been used as the default pyrope_secondboot.bin.\r\n");
 	}
-	//--------------------------------------------------------------------------
-#if 0
-	strncpy( output_name, cpu_name, 7 );
-	strncat( output_name, "_", 1 );
-	strncat( output_name, boot_mode, 3 );
-	strncat( output_name, "_", 1 );
-	strncat( output_name, option_name, 7 );
-
-    InFile_fd	= fopen(input_name , "r");
-    OutFile_fd	= fopen(output_name, "w");
-//#else
-	// Base Folder /bin, /output, /nsih + user file name
-	strcat(inFile_Name  , input_name );
-	strcat(outFile_Name , output_name);
-	strcat(nsihFile_Name, nsih_name  );
-	InFile_fd	= fopen(inFile_Name , "r");
-    OutFile_fd	= fopen(outFile_Name, "wb");
-#endif
 
     InFile_fd	= fopen(input_name , "r");
     OutFile_fd	= fopen(output_name, "w");
 
-    if((!InFile_fd))
+    if((!InFile_fd)) 
     {
     	printf("Input File open failed!! check filename!!\n");
     	ret = FALSE;
@@ -172,52 +147,50 @@ int main(int argc, char **argv)
     	goto ERR_END;
     }
 
-	/* input file size check */
 	fseek( InFile_fd, 0, SEEK_END );
 	InputSize = ftell ( InFile_fd );
 	fseek( InFile_fd, 0, SEEK_SET );
 
-	/* Ourput Size Calcurate */
-	//--------------------------------------------------------------------------
 	if( 0 == strcmp( option_name, "2ndboot" ) )
 	{
 		if( (0 == strcmp( cpu_name, "NXP4330" )) )
 		{
 			OutputSize = NXP4330_SRAM_SIZE;
 		}
-		else if( 0 == strcmp( cpu_name, "NXP5430" ))
+		else if( (0 == strcmp( cpu_name, "NXP5430" )) || 0 == strcmp( cpu_name, "S5P6818" ) )
 		{
 			OutputSize = InputSize + NSIHSIZE;
-			if( OutputSize >= (NXP5430_SRAM_SIZE - NSIHSIZE) )
+			if( OutputSize >= (NXP5430_SRAM_SIZE - ROMBOOT_STACK_SIZE) )
 			{
 				printf("The image is Generated exceeds 64KB. The Creation failed! \r\n");
 				printf("Calcurate image Size : %d \r\n", OutputSize );
 				printf("Return Error End!!\r\n");
 				goto ERR_END;
 			}
-		}
+		}		
 		else if(0 == strcmp( cpu_name, "S5P4418" ))
 		{
-			OutputSize = InputSize + NSIHSIZE;
-			if( OutputSize >= (S5P4418_SRAM_SIZE - NSIHSIZE) )
+			OutputSize = InputSize + NSIHSIZE;	
+			if( OutputSize >= (S5P4418_SRAM_SIZE - ROMBOOT_STACK_SIZE) )
 			{
 				printf("The image is Generated exceeds 28KB. The Creation failed! \r\n");
 				printf("Calcurate image Size : %d \r\n", OutputSize );
 				printf("Return Error End!!\r\n");
 				goto ERR_END;
+			}		
+			else if( OutputSize < NXP4330_SRAM_SIZE ) // S5P 4418 BinGen Size < 16*1024
+			{
+                OutputSize = NXP4330_SRAM_SIZE;
 			}
 		}
 		else
-			printf("CPU name is unknown. \r\n");
+			printf("CPU name is unknown. \r\n");     
 
 	}
 	else if( 0 == strcmp( option_name, "3rdboot" ) )
 		OutputSize = InputSize + NSIHSIZE;
-	//--------------------------------------------------------------------------
 
-	/* File Descript Check & Maximum Size */
-	//--------------------------------------------------------------------------
-	if( OutputSize == 0 )
+	if( OutputSize == 0 )	
 	{
 		printf("Did not enter the Filesize files.\r\n");
 		goto ERR_END;
@@ -227,124 +200,100 @@ int main(int argc, char **argv)
 		MallocSize = ((OutputSize / BLOCKSIZE) + 1) * BLOCKSIZE;
 	else
 		MallocSize = OutputSize;
-	//--------------------------------------------------------------------------
+
     Out_Buffer 	= (U8*)malloc( MallocSize );
 	memset(Out_Buffer , 0xFF, MallocSize);		// set 0 to rest area
-
-	/* Read to ProcessNSIH */
-	//--------------------------------------------------------------------------
+	
  	if( NSIHSIZE != ProcessNSIH( nsih_name, Out_Buffer ) )
-	// translate text file to 512B binary
-	/* | 512 NSIH | (16KB - 512 - 16) second boot | 4 CRC | 12 dummy |	==> total size is 16KB */
 	{
 		printf("ERROR : Failed to process NSIH(%s).\n", argv[3] );
 		ret = FALSE;
 		goto ERR_END;
 	}
-	fread(Out_Buffer + NSIHSIZE, 1, InputSize, InFile_fd);
-	//--------------------------------------------------------------------------
-
-#if 0
-	NX_SHELLU_HexDump( (U32*)Out_Buffer + (NSIHSIZE/4), InputSize, 8 );
-#endif
-
-	/*  CRC Check for SPI, SD, UART, ETC */
-	//---------------------------------------------------------------------------------------
+	if( 0 > fread(Out_Buffer + NSIHSIZE, 1, InputSize, InFile_fd) )
+	{
+        printf("File Read Failed. \r\n");
+        return CFAILED;
+	}
+	
 #if SECURE_BOOT
 	// Secure Boot <-- Decript Issue ( 16Byte Convert )
-	if( ((InputSize % 16) != 0) )
+	if( ((InputSize % 16) != 0) )	
 		InputSize = ((InputSize / 16) * 16);
 #endif
-	//---------------------------------------------------------------------------------------
-
-	/*  2ndboot & 3rdboot Header Modify Information. */
-	//---------------------------------------------------------------------------------------
-	//if( (0 == strcmp( option_name, "3rdboot" )) || (0 == strcmp( option_name, "2ndboot" )) )
-	{
+	{	
 		pBootInfo = (struct NX_SecondBootInfo*)Out_Buffer;
 
-		// Device Dependency
-		//------------------------------------------------------------------------//
-		// Not Required Option (NSIH Default)
-		//-------------------------------------------------------------------------
-		if( 0 == strcmp( boot_mode, "SD" ) )
-			pBootInfo->DEVICEADDR         = 0x8000;
-		else if( 0 == strcmp( boot_mode, "SPI" ) )
-		{
-			pBootInfo->DEVICEADDR		  = 0x10000;
-			pBootInfo->DBI.SPIBI.AddrStep = 3; 			            // (0:8Bit, 1:16Bit, 3:24Bit)
-		}
-        if( device_portnum != 0 )
+        if( device_portnum != CFAILED )
         {
-    		pBootInfo->DBI.SDMMCBI.PortNumber = (U8)device_portnum;     // Each Device Port
+    		pBootInfo->DBI.SDMMCBI.PortNumber = (U8)device_portnum;     // Each Device Port 
         }
-		if( device_addr != 0 )
+		if( device_addr != CFAILED )
 		{
             pBootInfo->DEVICEADDR = device_addr;                        // Each Device Address
-		}
-		//------------------------------------------------------------------------
-		// Output Size
-		if( (0 != strcmp( cpu_name, "NXP4330" )) )
-			pBootInfo->LOADSIZE			= InputSize;
-		else
-			pBootInfo->LOADSIZE			= InputSize;  //OutputSize;
+		}	
 
-		//------------------------------------------------------------------------//
-        // NSIH Default ( Load Address, Launch Address )
-        if( loadaddr != 0 )
-    		pBootInfo->LOADADDR			= loadaddr;
-        if( launchaddr != 0 )
+		pBootInfo->LOADSIZE			= InputSize;
+	
+        if( loadaddr != CFAILED )
+    		pBootInfo->LOADADDR			= loadaddr; 
+        if( launchaddr != CFAILED )
 	    	pBootInfo->LAUNCHADDR		= launchaddr;
 
 		pBootInfo->SIGNATURE		= HEADER_ID;		// Signature (NSIH)
-		//------------------------------------------------------------------------//
+
         pBootInfo->DBI.SDMMCBI.CRC32 = __calc_crc((void*)(Out_Buffer + NSIHSIZE), (InputSize) );
-		/* CRC - 2ndboot (16KB-16  ) */
-		// NXP4330 && Secondboot
+
 		if( (InputSize + NSIHSIZE) <= (NXP4330_SRAM_SIZE-16) )
 		{
-			uCrc.iCrc = __calc_crc((void*)(Out_Buffer), (OutputSize-16) );
+			uCrc.iCrc = __calc_crc((void*)(Out_Buffer), (OutputSize-16) );		
 			for(i = 0; i < CRCSIZE; i++)
-			{
+			{	
 				Out_Buffer[OutputSize-16+i] = uCrc.chCrc[i];
-				//printf("(BASEADDR + 0x%X) - CRC[%d]: %X(%X) \r\n",
-				//(OutputSize-16+i), i, Out_Buffer[OutputSize-16+i], uCrc.chCrc[i]);
+            #if 0
+				printf("(BASEADDR + 0x%X) - CRC[%d]: %X(%X) \r\n", 
+				(OutputSize-16+i), i, Out_Buffer[OutputSize-16+i], uCrc.chCrc[i]);
+		    #endif
 			}
-		}
-		//------------------------------------------------------------------------//
+		}		
+	}	
 
-	#ifdef BOOT_DEBUG
-		NX_DEBUG_MSG("LOADSIZE 	: %8X \r\n", pBootInfo->LOADSIZE   );
-		NX_DEBUG_MSG("LOADADDR 	: %8X \r\n", pBootInfo->LOADADDR   );
-		NX_DEBUG_MSG("LAUNCHADDR 	: %8X \r\n", pBootInfo->LAUNCHADDR );
-		NX_DEBUG_MSG("SIGNATURE 	: %8X \r\n", pBootInfo->SIGNATURE  );
-		NX_DEBUG_MSG("CRC32 		: %8X \r\n", pBootInfo->DBI.SDMMCBI.CRC32 );
-	#endif
-	}
-	//---------------------------------------------------------------------------------------
+    U8* pBoodMode = (U8*)(&pBootInfo->DBI.SPIBI._Reserved1);
+    if( pBoodMode[3] == BOOT_FROM_USB )
+        boot_mode = "USB";
+    else if( pBoodMode[3] == BOOT_FROM_SPI )
+        boot_mode = "SPI";
+    else if( pBoodMode[3] == BOOT_FROM_NAND )
+        boot_mode = "NAND";
+    else if( pBoodMode[3] == BOOT_FROM_SDMMC )
+        boot_mode = "SDMMC";
+    else if( pBoodMode[3] == BOOT_FROM_SDFS )
+        boot_mode = "SDFS";
+    else if( pBoodMode[3] == BOOT_FROM_UART )
+        boot_mode = "UART";
 
-	fwrite(Out_Buffer, 1, OutputSize, OutFile_fd);				// Write image
-	print_bingen_info();										// Bingen Debug Mesage (Infomation desk)
+	fwrite(Out_Buffer, 1, OutputSize, OutFile_fd);		
+	print_bingen_info();									
 
 #if 0
 	if( (0 == strcmp( view_option, "viewer" )) ){
 		//print_hexdump( (U32*)Out_Buffer + (NSIHSIZE/4), InputSize );
 		NX_SHELLU_HexDump( (U32*)Out_Buffer, OutputSize, 8 ); 	}
 #endif
-
+		
 	fclose(InFile_fd);
 	fclose(OutFile_fd);
 
 	free(Out_Buffer);
 
 NOMAL_END:
-	return ret;
+	return 0;
 
 ERR_END:
 	fclose(InFile_fd);
 	fclose(OutFile_fd);
 
-	free(Out_Buffer);
+	free(Out_Buffer);	
 
 	return -1;
 }
@@ -352,16 +301,39 @@ ERR_END:
 void print_hexdump( U32* pdwBuffer, U32 Size )
 {
 	register int i = 0;
-
+	
 	for(i = 0; i < Size/4; i++)
 	{
 		printf("%8X  ", pdwBuffer[i] );
 		if( ((i+1) % 8) == 0 )
-			printf("\r\n");
+			printf("\r\n");	
 	}
 	printf("\r\n");
-
 }
+
+void to_upper( char* string )
+{
+    char*   str = (char*)string;
+    int     ndx = 0;
+
+    for(ndx = 0; ndx < strlen(str); ndx++)
+    {
+        str[ndx] = (char)toupper(str[ndx]);
+    }
+}
+
+void to_lower( char* string )
+{
+    char*   str = (char*)string;
+    int     ndx = 0;
+
+    for(ndx = 0; ndx < strlen(str); ndx++)
+    {
+        str[ndx] = (char)tolower(str[ndx]);
+    }
+}
+
+
 #if 0
 //------------------------------------------------------------------------------
 // NX_SHELLU_HexDump
@@ -508,8 +480,8 @@ unsigned int get_fcs(unsigned int fcs, unsigned char data)
 	fcs ^= (unsigned int)data;
 	for(i = 0; i < 8; i++)
 	{
-	   if(fcs & 0x01)
-	   		fcs ^= POLY;
+	   if(fcs & 0x01) 
+	   		fcs ^= POLY; 
 	   fcs >>= 1;
 	}
 #if 0
@@ -660,30 +632,27 @@ U32 HexAtoInt( const char *string )
 static void usage(void)
 {
 	printf("--------------------------------------------------------------------------\n");
-	printf(" Release  Version         : Ver.%03d                                      \n", BOOT_BINGEN_VER );
+	printf(" Release  Version         : Ver.%04d                                      \n", BOOT_BINGEN_VER );
 	printf(" Author & Version Manager : Deoks (S/W 1Team)                             \n");
 	printf("--------------------------------------------------------------------------\n");
-
+	
 	printf(" Usage : This will tell you How to Use Help.					          \n");
 	printf("--------------------------------------------------------------------------\n" );
 	printf("   -h [HELP]                     : show usage                             \n");
-	printf("   -c [NXP4330/NXP5430/S5P4418]  : What is the cpu?	   			          \n");
-	printf("   -t [2nboot/3rdboot]           : What is the Boot?	   		          \n");
-	printf("   	->[2ndboot]              : NXP4330 is fixed to 16KB 2ndboot size.     \n");
-	printf("   	->[3rdboot]              : 3rdboot size is flexible.	   	    	  \n");
-	printf("   -n [file name]                : [NSIH] file name	   					  \n");
-	printf("   -i [file name]                : [INPUT]file name      				  \n");
-	printf("   -o [file name]                : [OUTPUT]file name	   				  \n");
-	printf("   -l [load address]             : Will address run the following code?	  \n");
-	printf("   	-> Default Load	  Address : 0x40100000   					          \n");
-	printf("   -e [launch address]           : Will address run the following code?	  \n");
-	printf("   	-> Default Launch Address : 0x40100000   					          \n");
+	printf("   -c [NXP4330/NXP5430/S5P4418]  : chip name         (mandatory)          \n");	
+	printf("   -t [2nboot/3rdboot]           : What is the Boot? (mandatory)          \n");
+	printf("   	->[2ndboot]                                                           \n");
+	printf("   	->[3rdboot]              	   	    	                              \n");
+	printf("   -n [file name]                : [NSIH] file name	 (mandatory)     	  \n");
+	printf("   -i [file name]                : [INPUT]file name  (mandatory)		  \n");
+	printf("   -o [file name]                : [OUTPUT]file name (mandatory)    	  \n");
+	printf("   -l [load address]             : Binary Load  Address              	  \n");
+	printf("   	-> Default Load	  Address : Default NSIH.txt   				          \n");			
+	printf("   -e [launch address]           : Binary Launch Addres             	  \n");
+	printf("   	-> Default Launch Address : Default NSIH.txt   				          \n");
 	printf("--------------------------------------------------------------------------\n");
     printf("   This Option is Not Required. (if you do not use NSIH.txt Default.)     \n");
     printf("--------------------------------------------------------------------------\n");
-	printf("   -b [boot mode]                : What is the Boot Mode? (Prefix Set) 	  \n");
-	printf("   	-> SPI (Device Addr : 0x10000, Address Step : 3 (24Bit))              \n");
-	printf("   	-> SD  (Device Addr : 0x8000)       					              \n");
 	printf("   -a [device address]           : What is the Device Address?   		  \n");
 	printf("   -u [device port]              : device channel                         \n");
     printf("--------------------------------------------------------------------------\n");
@@ -691,7 +660,7 @@ static void usage(void)
     printf(" The current version has not been applied to the NAND BINGEN version..    \n");
     printf("--------------------------------------------------------------------------\n");
 	printf("\n");
-	printf(" Usage: How to use the program? 			                              \n");
+	printf(" Usage: How to use the program? 			                              \n"); 
 	printf(" Ubuntu  > How to use?                                                    \n");
 	printf("  #>./BOOT_BINGEN -h 0 or ./BOOT_BINGEN \n");
 	printf("  #>./BOOT_BINGEN -c NXP4330 -t 2ndboot -b SPI -n NXP4330_NSIH_V05_spi_800.txt -i pyrope_2ndboot_spi.bin -o 2ndboot_spi.bin \n" );
@@ -704,7 +673,7 @@ static void usage(void)
 	printf("  #>BOOT_BINGEN.exe -c NXP4330 -t 2ndboot -b SPI -n NXP4330_NSIH_V05_spi_800.txt -i pyrope_2ndboot_spi.bin -o 2ndboot_spi.bin \n" );
 	printf("  #>BOOT_BINGEN.exe -c NXP4330 -t 2ndboot -b SD  -n NXP4330_NSIH_V05_sd_800.txt  -i pyrope_2ndboot_sdmmc.bin -o 2ndboot_sdmmc.bin \n" );
 	printf("  #>BOOT_BINGEN.exe -c NXP4330 -t 3rdboot -b SPI -n NXP4330_NSIH_V05_spi_800.txt -i u-boot.bin -o 3rdboot_spi.bin -l 40100000 -e 40100000 \n" );
-	printf("  #>BOOT_BINGEN.exe -c NXP4330 -t 3rdboot -b SD  -n NXP4330_NSIH_V05_sd_800.txt  -i u-boot.bin -o 3rdboot_sdmmc.bin -l 40100000 -e 40100000 \n" );
+	printf("  #>BOOT_BINGEN.exe -c NXP4330 -t 3rdboot -b SD  -n NXP4330_NSIH_V05_sd_800.txt  -i u-boot.bin -o 3rdboot_sdmmc.bin -l 40100000 -e 40100000 \n" );	
 
 	printf("\n");
 }
@@ -722,27 +691,18 @@ static void print_bingen_info( void )
 	printf( "----------------------------------------------------\n" );
 	printf( " NSIH(Header) Information.  \n" );
 	printf( " %s Binary Boot Mode 	\n", boot_mode );
-
-	if( (0 == strcmp( boot_mode, "SPI" ))
+	
+	if( (0 == strcmp( boot_mode, "SPI" )) 
 	|| (pBootInfo->DBI.SPIBI._Reserved1 == 0x01000000 ) )
 		printf( "  -> Addr  Step : %8Xh \r\n", pBootInfo->DBI.SPIBI.AddrStep );
 	else
 		printf( "  -> DevicePort : %8Xh \r\n", pBootInfo->DBI.SDMMCBI.PortNumber );
-
+	
 	printf( "  -> DeviceAddr : %8Xh \r\n", pBootInfo->DEVICEADDR );
 	printf( "  -> LoadSize	: %8Xh \r\n", pBootInfo->LOADSIZE   );
 	printf( "  -> LoadAddr	: %8Xh \r\n", pBootInfo->LOADADDR   );
 	printf( "  -> LauchAddr	: %8Xh \r\n", pBootInfo->LAUNCHADDR );
 	printf( "  -> SigNature	: %8Xh \r\n", pBootInfo->SIGNATURE );
 	printf( "  -> CRC32	: %8Xh \r\n", pBootInfo->DBI.SDMMCBI.CRC32 );
-#if SWAP_ENABLE
-	printf( "  -> SWAP	:  %8s \r\n", SwapEnb );
-#endif
-#if 0
-	printf("----------------------------------------------------\n");
-	printf(" Release  Version         : Ver.%03d                \n", BOOT_BINGEN_VER );
-	printf(" Author & Version Manager : Deoks (S/W 1Team)       \n");
-	printf("----------------------------------------------------\n");
-#endif
 }
 

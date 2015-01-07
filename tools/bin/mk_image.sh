@@ -27,7 +27,8 @@ function usage()
 	echo "  -n builded image name, default image.img							"
 	echo "  -s image size, default 16384KB (unit KB)							"
 #	echo "  -l set loop device   (default loop1) 								"
-	echo "  -f image format, default ext2 (support ext2, ext4, fat16, fat32) 	"
+	echo "  -f image format, default ext2 (support ext2, ext4, vfat) 			"
+#	echo "  -f image format, default ext2 (support ext2, ext4, fat16, fat32, vfat) 	"
 #	echo "  -d build device node (default no)	 	"
 #	echo "  -e set external mknode shell path	 	"
 #	echo "  clean rm *.gz			 			    "
@@ -209,6 +210,10 @@ function build_image()
 			mount_cmd='mount -o loop';;
 	ext4)  	mkfs_cmd='mke2fs -t ext4'
 			mount_cmd='mount -o loop';;
+	vfat) 	mkfs_cmd='mkfs.vfat'
+			user=$(id | sed 's/^uid=//;s/(.*$//')
+			mount_cmd="mount -t vfat -o rw,uid=$user,gid=$user";;
+
 	fat16) 	mkfs_cmd='mkfs.vfat -F 16'
 			user=$(id | sed 's/^uid=//;s/(.*$//')
 			mount_cmd="mount -t vfat -o rw,uid=$user,gid=$user";;

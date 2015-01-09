@@ -16,17 +16,20 @@
 
 #define CBOOL	char
 
-#define CTRUE	TRUE
-#define CFALSE	FALSE
+#define CTRUE	    TRUE
+#define CFALSE	    FALSE
+#define CFAILED     (-1)
 
 #define NSIHSIZE	(0x200)	
 #define CRCSIZE		(4)
 
 #define BLOCKSIZE	(0x200)
 
+#define ROMBOOT_STACK_SIZE          (4*1024)        
+
 #define NXP4330_SRAM_SIZE			(16*1024)
 #define NXP5430_SRAM_SIZE			(64*1024)
-#define S5P4418_SRAM_SIZE			(28*1024)
+#define S5P4418_SRAM_SIZE			(32*1024)
 
 #define SECONDBOOT_FSIZENCRC		(16*1024)
 #define SECONDBOOT_SSIZENCRC		(8*1024)
@@ -36,9 +39,7 @@
 
 #define SECURE_BOOT					(0)
 
-#define BOOT_BINGEN_VER				(91)
-
-#define SWAP_ENABLE					(0)
+#define BOOT_BINGEN_VER				(911)
 
 enum
 {
@@ -55,6 +56,16 @@ typedef union crc
 /* Secondboot Header -> Structure, Base Address ...ETC 													*/
 //------------------------------------------------------------------------------------------------------//
 #define HEADER_ID		((((U32)'N')<< 0) | (((U32)'S')<< 8) | (((U32)'I')<<16) | (((U32)'H')<<24))
+
+enum
+{
+    BOOT_FROM_USB   = 0UL,
+    BOOT_FROM_SPI   = 1UL,
+    BOOT_FROM_NAND  = 2UL,
+    BOOT_FROM_SDMMC = 3UL,
+    BOOT_FROM_SDFS  = 4UL,
+    BOOT_FROM_UART  = 5UL
+};
 
 struct NX_NANDBootInfo
 {
@@ -144,6 +155,9 @@ struct NX_SecondBootInfo
 	U32 SIGNATURE;			// 0x1FC	"NSIH"
 };
 //------------------------------------------------------------------------------------------------------//
+
+void to_upper( char* string );
+void to_lower( char* string );
 
 CBOOL	NX_SHELLU_HexDump	( U32 SrcAddr, U32 PrintDataSize, U32 PrintDataWidth );
 

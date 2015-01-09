@@ -1,178 +1,201 @@
 #include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>	//	getopt & optarg
+#include <unistd.h>
 #include <pthread.h>
-#include <signal.h>
-#include <poll.h>
 #include <fcntl.h>
 
+#include <sys/time.h>
+#include <sys/ioctl.h>
+#include <linux/fb.h>
+
+#include <nx_dsp.h>
 #include <NX_FilterMoviePlay.h>
-#include <uevent.h>
 
-#define ON	1
-#define OFF	0
+#define	EVENT_ENABLE_VIDEO					0x0010
+#define	EVENT_VIDEO_ENABLED					0x0020
+#define	EVENT_CHANGE_DEFAULT_BUFFERING_TIME	0x0030
+#define	EVENT_CHANGE_STREAM_INFO			0x0040
+#define	EVENT_END_OF_STREAM					0x1000
+#define	EVENT_DEMUX_ERROR					0x10000					
+#define	EVENT_VIDEO_DECODER_ERROR			0x10001
+#define	EVENT_VIDEO_RENDER_ERROR			0x10002
+#define	EVENT_AUDIO_DECODER_ERROR			0x10003
+#define	EVENT_AUDIO_CONVERT_ERROR			0x10004
+#define	EVENT_AUDIO_RENDER_ERROR			0x10005
 
-#define	SCREEN_WIDTH	1024
-#define	SCREEN_HEIGHT	600
+//#define SEEK_TEST
 
-typedef struct CommandBuffer{
-	int		cmd_cnt;	
-	char	cmd[10][10];	
-}CommandBuffer;
+typedef struct AppData{
+	MP_HANDLE 		hPlayer;
+	char			*pUri;
+	Media_Info		mediaInfo;	
+	
+	int32_t			vidReqNumber;
+	int32_t			audReqNumber;
 
-#define			MAX_COMMAND_QUEUE		1024
-pthread_mutex_t	CmdMutex;
-pthread_mutex_t	HdmiMutex;
-pthread_t		hHdmiThread;
-pthread_t		hCmdThread;
+	int32_t			volume;
 
+	int32_t 		dspPort;
+	int32_t			dspModule;
+	int32_t			dspWidth;
+	int32_t			dspHeight;
 
-char uri_tmp[1024];
-unsigned int  position_save = 0;
+	int32_t			bRun;
+} AppData;
 
-typedef struct Static_player_st{
-	int display;
-	int	hdmi_detect;
-	int	hdmi_detect_init;
-	int	volume;
-	int	audio_request_track_num;
-	int	video_request_track_num;
-}Static_player_st;
-
-Static_player_st	static_player;
-
-struct AppData{
-	MP_HANDLE hPlayer;
-};
-
-
-
-typedef struct AppData AppData;
-
-#define		EVENT_ENABLE_VIDEO					(0x0010)		//	Require Video Layer Control
-#define		EVENT_VIDEO_ENABLED					(0x0020)		//	Video Layer Enabled : Enabled Display
-#define		EVNT_CHANGE_DEFAULT_BUFFERING_TIME	(0x0030)		//	Change default buffering time
-#define		EVENT_CHANGE_STREAM_INFO			(0x0040)		//	Change Stream Information
-
-#define		EVENT_END_OF_STREAM					(0x1000)		//	End of stream event
-
-#define		EVENT_DEMUX_ERROR					(0x10000)					
-#define		EVENT_VIDEO_DECODER_ERROR			(EVENT_DEMUX_ERROR + 1)		
-#define		EVENT_VIDEO_RENDER_ERROR			(EVENT_VIDEO_DECODER_ERROR + 1)		//	
-#define		EVENT_AUDIO_DECODER_ERROR			(EVENT_VIDEO_RENDER_ERROR + 1)		//	
-#define		EVENT_AUDIO_CONVERT_ERROR			(EVENT_AUDIO_DECODER_ERROR + 1)		//	
-#define		EVENT_AUDIO_RENDER_ERROR			(EVENT_AUDIO_CONVERT_ERROR + 1)		//	
-
-typedef struct AppData AppData;
-static void callback(void *privateDesc, unsigned int EventType, unsigned int EventData, unsigned int param2)
+static void cbEventCallback( void *privateDesc, unsigned int EventType, unsigned int EventData, unsigned int param2 )
 {
+	AppData *pAppData = (AppData*)privateDesc;
 
-	if (EventType == EVENT_END_OF_STREAM)
+	if( EventType == EVENT_END_OF_STREAM )
 	{
-		printf("App : callback(privateDesc = %d)\n", privateDesc);
-		if (privateDesc)
+		printf("%s(): End of stream. ( privateDesc = 0x%08x )\n", __func__, (int32_t)pAppData );
+		if( pAppData )
 		{
-			AppData *appData = (AppData*)privateDesc;
-			if (appData->hPlayer)
-			{
-				printf("NX_MPStop ++\n");
-				NX_MPStop(appData->hPlayer);
-				printf("NX_MPStop --\n");
-			}
+			pAppData->bRun = false;
 		}
-		printf("CALLBACK_MSG_EOS\n");
 	}
-	else if (EventType == EVENT_DEMUX_ERROR)
+	else if( EventType == EVENT_DEMUX_ERROR )
 	{
-		printf("Cannot Play Contents\n");
-
+		printf("%s(): Cannot play contents.\n", __func__);
+		if( pAppData )
+		{
+			pAppData->bRun = false;
+			
+		}
 	}
-
 }
 
-void print_usage(const char *appName)
+static int32_t GetScreenInfo( int32_t *width, int32_t *height )
 {
-	printf( "usage: %s [options]\n", appName );
-	printf( "    -f [file name]     : file name\n" );
-	printf( "    -s                 : shell command mode\n" );
+	int32_t fb;
+	struct  fb_var_screeninfo  fbvar;
+
+	*width = *height = 0;
+
+	fb = open( "/dev/fb0", O_RDWR);
+	ioctl( fb, FBIOGET_VSCREENINFO, &fbvar);
+
+	*width  = fbvar.xres;
+	*height = fbvar.yres;
+	if( fb ) close( fb );
+
+	return 0;
 }
 
-int main( int argc, char *argv[] )
+#ifdef SEEK_TEST
+static int64_t GetTickCount( void )
+{
+	struct timeval	tv;
+	struct timezone	zv;
+	gettimeofday( &tv, &zv );
+
+	return ((int64_t)tv.tv_sec)*1000 + (int64_t)(tv.tv_usec/1000);		
+}
+#endif
+
+static void print_usage( const char *appName )
+{
+	printf("usage: %s [options]\n", appName);
+	printf(" -f [file name]     : file name\n");
+}
+
+int32_t main( int32_t argc, char *argv[] )
 {	
+	int32_t opt = 0;
+	uint32_t duration = 0, position = 0;
 
-	int opt = 0, count = 0;
-	unsigned int duration = 0, position = 0;
-	int shell_mode = 0;
-	static char uri[2048];
-	MP_HANDLE handle = NULL;
+#ifdef SEEK_TEST
+	int64_t prevTime = GetTickCount();
+#endif
 
-	int audio_request_track_num = 1;						//multi track, default 0
-	int video_request_track_num = 1;						//multi track, default 0
-
-	Media_Info media_info;
-
-	int display = DISPLAY_LCD;
-
-
-	int volumem, dspModule = 0, dspPort = 0;			//	Currently can support only dspModule = 0 and dspPort = 0
-
-	if( 2>argc )
+	AppData appData;
+	memset( &appData, 0x00, sizeof(appData) );
+	if( 2 > argc )
 	{
 		print_usage( argv[0] );
-		return 0;
+		return -1;
 	}
 
-	while( -1 != (opt=getopt(argc, argv, "hsf:")))
+	while( -1 != (opt=getopt(argc, argv, "hf:")))
 	{
 		switch( opt ){
-			case 'h':	print_usage(argv[0]);		return 0;
-			case 'f':	strcpy(uri, optarg);		break;
-			case 's':	shell_mode = 1;				break;		//test -f test.mp4 -s
-			default:								break;
+			case 'h':
+				print_usage( argv[0] );
+				return 0;
+			case 'f':
+				appData.pUri = strdup( optarg );
+				break;
+			default:
+				break;
 		}
 	}
 
-	if( shell_mode )
-	{
-//		return shell_main( uri );
+	if( !appData.pUri ) {
+		print_usage(argv[0]);
+		return -1;
 	}
 
+	// Confiugratino Parameter
+	appData.vidReqNumber 	= 1;
+	appData.audReqNumber 	= 1;
 
-	//
-//	NX_DspVideoSetPriority(0, 0);
-	NX_MPSetFileName(&handle, uri, &media_info);
+	appData.volume			= 100;
 
-	printf("NX_MPOpen ++\n");
-	NX_MPOpen(handle, audio_request_track_num, video_request_track_num, display,	(void *)&volumem, (void *)&dspModule, (void *)&dspPort,
-		&callback, NULL);
+	appData.dspPort			= DISPLAY_PORT_LCD;
+	appData.dspModule		= DISPLAY_MODULE_MLC0;
 	
-	if( handle )
+	appData.bRun			= true;
+	GetScreenInfo( &appData.dspWidth, &appData.dspHeight );
+
+	NX_DspVideoSetPriority( DISPLAY_PORT_LCD, DISPLAY_MODULE_MLC0 );
+	NX_MPSetFileName( &appData.hPlayer, appData.pUri, &appData.mediaInfo );
+
+	if( !appData.hPlayer )
+		return -1;
+
+	NX_MPOpen( appData.hPlayer,
+		appData.audReqNumber, appData.vidReqNumber, 
+		DISPLAY_LCD, 
+		(void *)&appData.volume, 
+		(void *)&appData.dspModule, (void *)&appData.dspPort,
+		&cbEventCallback, 
+		&appData);
+	
+	NX_MPPlay( appData.hPlayer, 1 );
+	NX_MPSetVolume( appData.hPlayer, appData.volume );
+	NX_MPSetDspPosition( appData.hPlayer, appData.dspModule, appData.dspPort, 0, 0, appData.dspWidth, appData.dspHeight );
+
+	while( appData.bRun )
 	{
+#ifdef SEEK_TEST
+		if( 10000 < (GetTickCount() - prevTime) ) {
+			prevTime = GetTickCount();
 
-		printf("Init Play Done\n");
+			NX_MPGetCurDuration( appData.hPlayer, &duration );
+			NX_MPGetCurPosition( appData.hPlayer, &position );
 
-		if( NX_MPPlay( handle, 1 ) != 0 )
-		{
-			printf("NX_MPPlay failed\n");
+			printf("curPos = %d, seekPos = %d\n", position, position - 5000);
+			NX_MPSeek( appData.hPlayer, position - 5000);
 		}
-		printf("Start Play Done\n");
-	}
-	count = 0;
 
-	//	We are set always full screen mode.
-	NX_MPSetDspPosition(handle, dspModule, dspPort, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+		usleep( 100000 );	
+#else
+		NX_MPGetCurDuration( appData.hPlayer, &duration );
+		NX_MPGetCurPosition( appData.hPlayer, &position );
+		printf("position( %d mSec ) / duration( %d mSec )\n", position, duration);
 
-	while(1)
-	{
-		usleep(300000);
-
-		NX_MPGetCurDuration(handle, &duration);
-		NX_MPGetCurPosition(handle, &position);
-
-		printf("Postion : %d / %d msec\n", position, duration);
-
-		count ++;	
+		usleep( 500000 );
+#endif		
 	}
 
+	if( appData.hPlayer) NX_MPStop( appData.hPlayer );
+	if( appData.hPlayer) NX_MPClose( appData.hPlayer );
+
+	if( appData.pUri ) free( appData.pUri );
+
+	return 0;
 }

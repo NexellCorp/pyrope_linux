@@ -18,6 +18,10 @@
 //------------------------------------------------------------------------------
 
 #include <string.h>
+
+#include <nx_alloc_mem.h>
+#include <nx_fourcc.h>
+
 #include <CNX_VRFilter.h>
 
 #define	NX_DTAG	"[CNX_VRFilter] "
@@ -27,10 +31,13 @@
 CNX_VRFilter::CNX_VRFilter( void )
 	: m_bInit( false )
 	, m_bRun( false )
+	, m_bPause( false )
+	, m_bPauseDisplay( false )
 	, m_bEnable( false )
 	, m_bEnableHdmi( false )
 	, m_hDsp( NULL )
 	, m_pPrevVideoSample( NULL )
+	, m_hPauseVideoMemory( NULL )
 {
 	memset( &m_DisplayInfo, 0x00, sizeof(DISPLAY_INFO) );
 	pthread_mutex_init( &m_hLock, NULL );
@@ -79,6 +86,8 @@ void	CNX_VRFilter::Init( NX_VIDRENDER_CONFIG *pConfig )
 		m_DisplayInfo.dspDstRect.right	= pConfig->dspRight;
 		m_DisplayInfo.dspDstRect.bottom	= pConfig->dspBottom;
 
+		m_hPauseVideoMemory = NX_VideoAllocateMemory( 4096, m_DisplayInfo.width, m_DisplayInfo.height, NX_MEM_MAP_LINEAR, FOURCC_MVS0 );
+
 		m_bInit = true;
 	}
 	
@@ -94,6 +103,10 @@ void	CNX_VRFilter::Deinit( void )
 	if( true == m_bInit )
 	{
 		if( m_bRun )	Stop();
+		
+		if( m_hPauseVideoMemory ) 
+			NX_FreeVideoMemory( m_hPauseVideoMemory );
+
 		m_bInit = false;
 	}
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
@@ -107,23 +120,31 @@ int32_t	CNX_VRFilter::Receive( CNX_Sample *pSample )
 	CNX_VideoSample *pVideoSample = (CNX_VideoSample *)pSample;
 	NX_ASSERT( NULL != pVideoSample );
 
-	if( m_bEnable || m_bEnableHdmi ) {
-		pVideoSample->Lock();
-		if( m_hDsp ) NX_DspQueueBuffer( m_hDsp, pVideoSample->GetVideoMemory() );
+	if( m_bPause == false ) 
+	{
+		if( m_bEnable || m_bEnableHdmi ) {
+			pVideoSample->Lock();
+			if( m_hDsp ) NX_DspQueueBuffer( m_hDsp, pVideoSample->GetVideoMemory() );
 
-		Deliver( pSample );		
+			Deliver( pSample );		
 
-		if( m_pPrevVideoSample ) {
-			if( m_hDsp ) NX_DspDequeueBuffer( m_hDsp );
-			m_pPrevVideoSample->Unlock();
+			if( m_bPauseDisplay ) {
+				if( m_hDsp ) NX_DspDequeueBuffer( m_hDsp );
+				m_bPauseDisplay = false;
+			}
+
+			if( m_pPrevVideoSample ) {
+				if( m_hDsp ) NX_DspDequeueBuffer( m_hDsp );
+				m_pPrevVideoSample->Unlock();
+			}
+
+			m_pPrevVideoSample = pVideoSample;
 		}
-
-		m_pPrevVideoSample = pVideoSample;
-	}
-	else {
-		pVideoSample->Lock();
-		Deliver( pSample );
-		pVideoSample->Unlock();
+		else {
+			pVideoSample->Lock();
+			Deliver( pSample );
+			pVideoSample->Unlock();
+		}
 	}
 
 	return true;
@@ -169,6 +190,43 @@ int32_t	CNX_VRFilter::Stop( void )
 	}
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return true;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_VRFilter::Pause( int32_t enable )
+{
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	CNX_AutoLock lock( &m_hLock );
+
+	if( m_bPause == enable ) {
+		NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );		
+		return -1;
+	}
+
+	if( enable == true ) {
+		if( m_pPrevVideoSample == NULL ) {
+			NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );		
+			return -1;
+		}
+
+		NX_VID_MEMORY_HANDLE hVideoMemory = m_pPrevVideoSample->GetVideoMemory();
+		memcpy( (unsigned char*)m_hPauseVideoMemory->luVirAddr, (unsigned char*)hVideoMemory->luVirAddr, hVideoMemory->luStride * hVideoMemory->imgHeight);
+		memcpy( (unsigned char*)m_hPauseVideoMemory->cbVirAddr, (unsigned char*)hVideoMemory->cbVirAddr, hVideoMemory->cbStride * hVideoMemory->imgHeight / 2);
+		memcpy( (unsigned char*)m_hPauseVideoMemory->crVirAddr, (unsigned char*)hVideoMemory->crVirAddr, hVideoMemory->crStride * hVideoMemory->imgHeight / 2);
+
+		if( m_hDsp ) {
+			NX_DspQueueBuffer( m_hDsp, m_hPauseVideoMemory );
+			NX_DspDequeueBuffer( m_hDsp );
+			m_pPrevVideoSample->Unlock();
+			m_pPrevVideoSample = NULL;
+
+			m_bPauseDisplay = true;
+		}
+	}
+	m_bPause = enable;
+
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	return 0;
 }
 
 //------------------------------------------------------------------------------

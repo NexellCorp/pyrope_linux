@@ -52,6 +52,7 @@ public:
 	//------------------------------------------------------------------------
 	//	External Interfaces
 	//------------------------------------------------------------------------
+			int32_t Pause( int32_t enable );
 			int32_t	EnableRender( uint32_t enable );
 			int32_t EnableHdmiRender( uint32_t enable );
 			
@@ -62,20 +63,25 @@ protected:
 	//------------------------------------------------------------------------
 	//	Filter status
 	//------------------------------------------------------------------------
-	int32_t				m_bInit;
-	int32_t				m_bRun;
-	int32_t				m_bEnable;
-	int32_t				m_bEnableHdmi;
-	pthread_mutex_t		m_hLock;
+	int32_t					m_bInit;
+	int32_t					m_bRun;
+	int32_t					m_bPause;
+	int32_t					m_bPauseDisplay;
+	int32_t					m_bEnable;
+	int32_t					m_bEnableHdmi;
+	pthread_mutex_t			m_hLock;
 	//------------------------------------------------------------------------
 	//	Display
 	//------------------------------------------------------------------------
-	DISPLAY_HANDLE		m_hDsp;
-	DISPLAY_INFO		m_DisplayInfo;
+	DISPLAY_HANDLE			m_hDsp;
+	DISPLAY_INFO			m_DisplayInfo;
 	//------------------------------------------------------------------------
 	//	Input / Output Buffer
 	//------------------------------------------------------------------------
-	CNX_VideoSample		*m_pPrevVideoSample;
+	CNX_VideoSample			*m_pCurVideoSample;
+	CNX_VideoSample			*m_pPrevVideoSample;
+
+	NX_VID_MEMORY_HANDLE	m_hPauseVideoMemory;
 };
 
 #endif //	__cplusplus

@@ -23,7 +23,7 @@
 #include <CNX_RefClock.h>
 #include <NX_FilterConfigTypes.h>
 
-#include <CNX_VIPCaptureFilter.h>
+#include <CNX_VIPFilter.h>
 #include <CNX_VRFilter.h>
 #include <CNX_H264Encoder.h>
 #include <CNX_AudCaptureFilter.h>
@@ -61,11 +61,11 @@ public:
 	virtual int32_t	Deinit( void );
 	
 	virtual int32_t SetFileName( char *pFileName );
-	virtual int32_t	Start( int32_t encode );
+	virtual int32_t	Start( int32_t bEncode );
 	virtual int32_t Stop( void );
 
 	virtual int32_t Capture( char *pFileName );
-	virtual int32_t EnableEncode( int32_t enable );
+	virtual int32_t EnableEncode( int32_t bEnable );
 
 	virtual int32_t RegisterNotifyCallback( uint32_t (*cbNotify)(uint32_t, uint8_t *, uint32_t) );
 
@@ -79,7 +79,7 @@ private:
 	CNX_RefClock 			*m_pRefClock;
 	CNX_Mp4Notify			*m_pNotifier;
 
-	CNX_VIPCaptureFilter	*m_pVipFilter;
+	CNX_VIPFilter			*m_pVipFilter;
 	CNX_VRFilter			*m_pVrFilter;
 	CNX_H264Encoder			*m_pAvcEncFilter;
 
@@ -90,7 +90,8 @@ private:
 	CNX_Mp4MuxerFilter		*m_pMp4MuxerFilter;
 
 	// Configuration
-	NX_VIPCAPTURE_CONFIG	m_VipConfig;
+	NX_VIP_CONFIG			m_VipConfig;
+	NX_VIP_CONFIG			m_VipCaptureConfig;
 	NX_VIDRENDER_CONFIG		m_VidRenderConfig;
 	NX_VIDENC_CONFIG		m_VidEncConfig;
 
@@ -101,12 +102,9 @@ private:
 	NX_MP4MUXER_CONFIG		m_Mp4MuxerConfig;
 
 private:
-	NX_MGR_MODE				m_Mode;
-
 	int32_t					m_bInit;
 	int32_t					m_bRun;
-	int32_t					m_bEncoding;
-
+	int32_t					m_bEncode;
 	pthread_mutex_t			m_hLock;
 
 	static CNX_Mp4Manager	*m_psInstance;

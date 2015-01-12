@@ -40,6 +40,8 @@ typedef struct AppData{
 
 	int32_t 		dspPort;
 	int32_t			dspModule;
+	int32_t			dspX;
+	int32_t			dspY;
 	int32_t			dspWidth;
 	int32_t			dspHeight;
 
@@ -82,6 +84,32 @@ static int32_t GetScreenInfo( int32_t *width, int32_t *height )
 	*width  = fbvar.xres;
 	*height = fbvar.yres;
 	if( fb ) close( fb );
+
+	return 0;
+}
+
+static int32_t GetScreenPosition( int32_t streamWidth, int32_t streamHeight, int32_t *dspX, int32_t *dspY, int32_t *dspWidth, int32_t *dspHeight )
+{
+	int32_t scrWidth, scrHeight;
+	double ratioX, ratioY;
+
+	GetScreenInfo( &scrWidth, &scrHeight );
+
+	ratioX = (double)scrWidth / (double)streamWidth;
+	ratioY = (double)scrHeight / (double)streamHeight;
+
+	if( ratioX > ratioY ) {
+		*dspWidth = streamWidth * ratioY;
+		*dspHeight = scrHeight;
+		*dspX = abs(scrWidth - *dspWidth) / 2;
+		*dspY = 0;
+	}
+	else {
+		*dspWidth = scrWidth;
+		*dspHeight = streamHeight * ratioX;
+		*dspY = abs(scrHeight - *dspHeight) / 2;
+		*dspX = 0;
+	}
 
 	return 0;
 }
@@ -163,11 +191,20 @@ int32_t main( int32_t argc, char *argv[] )
 		(void *)&appData.volume, 
 		(void *)&appData.dspModule, (void *)&appData.dspPort,
 		&cbEventCallback, 
-		&appData);
+		&appData );
 	
 	NX_MPPlay( appData.hPlayer, 1 );
 	NX_MPSetVolume( appData.hPlayer, appData.volume );
-	NX_MPSetDspPosition( appData.hPlayer, appData.dspModule, appData.dspPort, 0, 0, appData.dspWidth, appData.dspHeight );
+
+	GetScreenPosition( 
+		appData.mediaInfo.VideoInfo[appData.vidReqNumber - 1].Width, 
+		appData.mediaInfo.VideoInfo[appData.vidReqNumber - 1].Height,
+		&appData.dspX, &appData.dspY, &appData.dspWidth, &appData.dspHeight );
+
+	NX_MPSetDspPosition( 
+		appData.hPlayer, 
+		appData.dspModule, appData.dspPort, 
+		appData.dspX, appData.dspY, appData.dspWidth, appData.dspHeight );
 
 	while( appData.bRun )
 	{

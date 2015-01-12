@@ -283,8 +283,10 @@ void	CNX_AudCaptureFilter::ThreadLoop( void )
 
 	if( m_pRefClock ){
 		m_PrevAudioSampleTime = m_pRefClock->GetCorrectTickCount();
+		m_TotalReadSampleSize = 0;
 	} else{
 		m_PrevAudioSampleTime = NX_GetTickCount();
+		m_TotalReadSampleSize = 0;
 	}
 
 	while( !m_bThreadExit )

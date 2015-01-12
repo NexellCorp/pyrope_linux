@@ -31,10 +31,11 @@
 CNX_InterleaverFilter::CNX_InterleaverFilter()
 	: m_bInit( false )
 	, m_bRun( false )
+	, m_bEnableDeliver( true )
 	, m_bStartInterleaver( false )
 {
 	memset( &m_FilterStatistics, 0x00, sizeof(NX_FILTER_STATISTICS) );
-	pthread_mutex_init( &m_hReceiveLock, NULL );
+	pthread_mutex_init( &m_hLock, NULL );
 	pthread_mutex_init( &m_hStatisticsLock, NULL );
 }
 
@@ -43,7 +44,7 @@ CNX_InterleaverFilter::~CNX_InterleaverFilter()
 {
 	if( true == m_bInit )
 		Deinit();
-	pthread_mutex_destroy( &m_hReceiveLock );
+	pthread_mutex_destroy( &m_hLock );
 	pthread_mutex_destroy( &m_hStatisticsLock );
 }
 
@@ -68,7 +69,9 @@ void CNX_InterleaverFilter::Deinit()
 //------------------------------------------------------------------------------
 int32_t	CNX_InterleaverFilter::Receive( CNX_Sample *pSample)
 {
-	CNX_AutoLock lock ( &m_hReceiveLock );
+	CNX_AutoLock lock ( &m_hLock );
+	if( !m_bEnableDeliver )
+		return true;
 
 	int32_t bLoop = true;
 
@@ -92,12 +95,14 @@ int32_t	CNX_InterleaverFilter::Receive( CNX_Sample *pSample)
 	flags		= ((CNX_MuxerSample*)pSample)->GetFlags();
 	
 	// 2. Video / Audio sync
-	if( type == CNX_MuxerSample::DATA_VIDEO0 ) 
-		m_bStartInterleaver = true;
-	
 	if( m_bStartInterleaver == false ) {
-		pSample->Unlock();
-		return false;
+		if( type == CNX_MuxerSample::DATA_VIDEO0 ) {
+			m_bStartInterleaver = true;
+		}
+		else {
+			pSample->Unlock();
+			return false;
+		}
 	}
 
 	// 3. Prepare Destination Sample
@@ -169,8 +174,8 @@ int32_t	CNX_InterleaverFilter::Receive( CNX_Sample *pSample)
 
 		// b. Fastest samples deliver.
 		m_InterleaverQueue[type].PopSample( (CNX_Sample**)&pOutSample );
-		Deliver( pOutSample );
 		//NxDbgMsg( NX_DBG_DEBUG, (TEXT("[ID = %d][TimeStamp = %lld]\n"), ((CNX_MuxerSample*)pOutSample)->GetDataType(), ((CNX_MuxerSample*)pOutSample)->GetTimeStamp()) );
+		Deliver( pOutSample );
 		
 		// c. Loop until Interleaver Queue Empty.
 		for(uint32_t i = 0; i < m_InterleaverChannel; i++)
@@ -209,6 +214,7 @@ int32_t	CNX_InterleaverFilter::Run( void )
 {
 	if( m_bRun == false ) {
 		m_bRun = true;
+		m_bStartInterleaver = false;
 	}
 	return true;
 }
@@ -218,27 +224,20 @@ int32_t	CNX_InterleaverFilter::Stop( void )
 {
 	if( true == m_bRun ) {
 		m_bRun = false;
+		m_bStartInterleaver = false;
 	}
 	return true;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_InterleaverFilter::Flush( void )
+int32_t	CNX_InterleaverFilter::EnableDeliver( uint32_t enable )
 {
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
-	CNX_AutoLock lock ( &m_hReceiveLock );
+	CNX_AutoLock lock( &m_hLock );
+	NxDbgMsg( NX_DBG_INFO, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnableDeliver)?"Enable":"Disable", (enable)?"Enable":"Disable") );
 
-	for( uint32_t i = 0; i < m_InterleaverChannel; i++ )
-	{
-		while( 1 )
-		{
-			if( !m_InterleaverQueue[i].IsReady() ) break;
-
-			CNX_MuxerSample *pOutSample = NULL;
-			m_InterleaverQueue[i].PopSample( (CNX_Sample**)&pOutSample );
-			if( pOutSample ) ReleaseSample( pOutSample );
-		}
-	}
+	Flush();
+	m_bEnableDeliver = enable;
 
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return true;
@@ -263,5 +262,27 @@ int32_t CNX_InterleaverFilter::GetStatistics( NX_FILTER_STATISTICS *pStatistics 
 	memcpy( pStatistics, &m_FilterStatistics, sizeof(NX_FILTER_STATISTICS) );
 	pthread_mutex_unlock( &m_hStatisticsLock );
 
+	return true;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_InterleaverFilter::Flush( void )
+{
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+
+	for( uint32_t i = 0; i < m_InterleaverChannel; i++ )
+	{
+		while( 1 )
+		{
+			if( !m_InterleaverQueue[i].IsReady() ) break;
+
+			CNX_MuxerSample *pOutSample = NULL;
+			m_InterleaverQueue[i].PopSample( (CNX_Sample**)&pOutSample );
+			if( pOutSample ) ReleaseSample( pOutSample );
+		}
+	}
+
+	m_bStartInterleaver = false;
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return true;
 }

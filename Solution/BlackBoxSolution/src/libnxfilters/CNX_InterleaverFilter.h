@@ -193,8 +193,11 @@ public:
 	//------------------------------------------------------------------------
 	//	External Interfaces
 	//------------------------------------------------------------------------
-			int32_t		Flush( void );
+			int32_t		EnableDeliver( uint32_t enable );
 			int32_t 	GetStatistics( NX_FILTER_STATISTICS *pStatistics );
+
+private:
+			int32_t		Flush( void );
 
 protected:
 	//------------------------------------------------------------------------
@@ -202,6 +205,8 @@ protected:
 	//------------------------------------------------------------------------
 	int32_t				m_bInit;
 	int32_t				m_bRun;
+	int32_t				m_bEnableDeliver;
+	pthread_mutex_t		m_hLock;
 	//------------------------------------------------------------------------
 	//	Input / Output Buffer
 	//------------------------------------------------------------------------
@@ -209,9 +214,6 @@ protected:
 
 	CNX_InterleaverQueue	m_InterleaverQueue[MAX_CHANNEL];
 	uint32_t				m_InterleaverChannel;
-
-	pthread_mutex_t			m_hReceiveLock;
-
 	int32_t					m_bStartInterleaver;
 	//------------------------------------------------------------------------
 	//	Statistics Infomation

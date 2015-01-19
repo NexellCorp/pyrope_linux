@@ -24,6 +24,10 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <fcntl.h>
+
+#include <sys/ioctl.h>
+#include <linux/fb.h>
 
 #include <nx_dsp.h>
 #include <INX_Mp4Manager.h>
@@ -32,20 +36,11 @@ uint32_t cbNotifier( uint32_t eventCode, uint8_t *pEventData, uint32_t dataSize 
 
 static INX_Mp4Manager *pMp4Manager = NULL;
 
-static Mp4ManagerConfig defCamConfig = {
-	NX_MGR_MODE_CAMCODER,
-	3, 640, 480, 15, 
-	6000000,
-	true,
-	0, 0, 640, 480
-};
-
-static Mp4ManagerConfig defPicConfig = {
-	NX_MGR_MODE_PICTURE,
-	3, 1024, 768, 15, 
-	6000000,
-	false,
-	0, 0, 640, 480
+static Mp4ManagerConfig defConfig = {
+	0, 1280, 720, 30, 6000000,	// Cam/Enc	: Port, Width, Height, Fps, Bitrate
+	true,						// Audio 	: Enable
+	0, 0, 640, 480,				// Display	: Left, Top, Right, Bottom
+	1600, 1200					// Capture	: Width, Height
 };
 
 static void signal_handler(int sig)
@@ -81,26 +76,71 @@ static void register_signal(void)
 	signal( SIGABRT, signal_handler );
 }
 
+static int32_t GetDisplayPosition( int32_t srcWidth, int32_t srcHeight, int32_t *dspLeft, int32_t *dspTop, int32_t *dspRight, int32_t *dspBottom )
+{
+	// a. Get Screen size.
+	int32_t fb;
+	struct  fb_var_screeninfo  fbvar;
+	int32_t scrWidth, scrHeight;
+
+	if( 0 > (fb = open( "/dev/fb0", O_RDWR)) ) {
+		printf("%s(): fb open fail.\n", __func__);
+		return -1;
+	}
+
+	ioctl( fb, FBIOGET_VSCREENINFO, &fbvar);
+	if( fb ) close( fb );
+
+	scrWidth  = fbvar.xres;
+	scrHeight = fbvar.yres;
+
+	// b. Calculate Screen Position.
+	int32_t dspX, dspY, dspWidth, dspHeight;
+	double ratioX, ratioY;
+
+	ratioX = (double)scrWidth / (double)srcWidth;
+	ratioY = (double)scrHeight / (double)srcHeight;
+
+	if( ratioX > ratioY ) {
+		dspWidth = srcWidth * ratioY;
+		dspHeight = scrHeight;
+		dspX = abs(scrWidth - dspWidth) / 2;
+		dspY = 0;
+	}
+	else {
+		dspWidth = scrWidth;
+		dspHeight = srcHeight * ratioX;
+		dspY = abs(scrHeight - dspHeight) / 2;
+		dspX = 0;
+	}
+
+	*dspLeft	= dspX;
+	*dspTop		= dspY;
+	*dspRight	= dspX + dspWidth;
+	*dspBottom	= dspY + dspHeight;
+
+	return 0;
+}
+
 static void shell_usage( void )
 {
 	printf("\n");
 	//      0         1         2         3         4         5         6         7
 	//      01234567890123456789012345678901234567890123456789012345678901234567890123456789
-	printf("--------------------------------------------------------------------------------\n");
-	printf("                         MP4 Encoding Test Application                          \n");
-	printf("--------------------------------------------------------------------------------\n");
-	printf(" startcam [enable] or startcam [enable] [filename] : start camcoder mode.       \n");
-	printf(" startpic                                          : start picture mode.        \n");
-	printf(" stop                                              : stop.                      \n");
-	printf(" chgenc [enable] or chgenc [enable] [filename]     : change encoding enable.    \n");
-	printf(" capture or capture [filename]                     : jpeg capture.              \n");
-	printf(" help                                              : print usage.               \n");
-	printf(" exit                                              : exit application.          \n");
-	printf("--------------------------------------------------------------------------------\n");
-	printf(" parameters :                                                                   \n");
-	printf("   [enable]    : recording enable. ( 0 : disable, 1 : enable)                   \n");
-	printf("   [filename]  : fullpath of filename. ( text )                                 \n");
-	printf("--------------------------------------------------------------------------------\n");
+	printf("-----------------------------------------------------------------------\n");
+	printf("                     MP4 Encoding Test Application                     \n");
+	printf("-----------------------------------------------------------------------\n");
+	printf(" start [enable] [filename]               : start.                      \n");
+	printf(" stop                                    : stop.                       \n");
+	printf(" enc [enable] or enc [enable] [filename] : change encoding enable.     \n");
+	printf(" capture or capture [filename]           : jpeg capture.               \n");
+	printf(" help                                    : print usage.                \n");
+	printf(" exit                                    : exit application.           \n");
+	printf("-----------------------------------------------------------------------\n");
+	printf(" parameters :                                                          \n");
+	printf("   [enable]    : recording enable. ( 0 : disable, 1 : enable)          \n");
+	printf("   [filename]  : fullpath of filename. ( text )                        \n");
+	printf("-----------------------------------------------------------------------\n");
 	printf("\n");
 }
 
@@ -162,17 +202,15 @@ static int32_t shell_main( void )
 		else if( !strcmp( cmd[0], "help" ) ) {
 			shell_usage();
 		}
-		else if( !strcmp( cmd[0], "startcam" ) ) {
-			printf("Start Camcoder mode.\n");
-			
+		else if( !strcmp( cmd[0], "start" ) ) {
 			if( cmdCnt > 1 ) {
 				if( strcmp(cmd[1], "0") && strcmp(cmd[1], "1" ) ) {
 					printf("invalid options.\n");
 					continue;
 				}
 
-				pMp4Manager->Init( &defCamConfig );
-				pMp4Manager->RegisterNotifyCallback( cbNotifier );
+				pMp4Manager->Init( &defConfig );
+				pMp4Manager->RegisterNotifyCallback( &cbNotifier );
 
 				if( cmd[2][0] != 0x00 ) {
 					char fileName[1024];
@@ -180,19 +218,8 @@ static int32_t shell_main( void )
 					pMp4Manager->SetFileName( fileName );
 				}
 
+				printf("Start.\n");
 				pMp4Manager->Start( atoi(cmd[1]) );
-			}
-		}
-		else if( !strcmp( cmd[0], "startpic") ) {
-			printf("Start Picture mode.\n");
-
-			if( cmdCnt == 1 ) {
-				pMp4Manager->Init( &defPicConfig );
-				pMp4Manager->RegisterNotifyCallback( cbNotifier );
-				pMp4Manager->Start();
-			}
-			else {
-				printf("invalid options.\n");
 			}
 		}
 		else if( !strcmp( cmd[0], "stop") ) {
@@ -201,9 +228,7 @@ static int32_t shell_main( void )
 			pMp4Manager->Stop();
 			pMp4Manager->Deinit();
 		}
-		else if( !strcmp( cmd[0], "chgenc" ) ) {
-			printf("Change encoding enable.\n");
-
+		else if( !strcmp( cmd[0], "enc" ) ) {
 			if( cmdCnt > 1 ) {
 				if( strcmp(cmd[1], "0") && strcmp(cmd[1], "1" ) ) {
 					printf("invalid options.\n");
@@ -216,6 +241,7 @@ static int32_t shell_main( void )
 					pMp4Manager->SetFileName( fileName );
 				}
 
+				printf("Encoding %s.\n", !atoi(cmd[1]) ? "Enable" : "Disable");
 				pMp4Manager->EnableEncode( atoi(cmd[1]) );
 			}
 		}
@@ -282,7 +308,8 @@ int main(void)
 	printf("##################################################################################\n");
 
 	NX_DspVideoSetPriority( DISPLAY_MODULE_MLC0, 0 );
-	
+	GetDisplayPosition( defConfig.width, defConfig.height, &defConfig.dspLeft, &defConfig.dspTop, &defConfig.dspRight, &defConfig.dspBottom );
+
 	register_signal();
 	shell_main();
 

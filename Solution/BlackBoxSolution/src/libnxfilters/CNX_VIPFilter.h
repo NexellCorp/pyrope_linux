@@ -71,11 +71,13 @@ public:
 	//	External Interfaces
 	//------------------------------------------------------------------------
 			void 		SetJpegFileName( uint8_t *pFileName );
-			int32_t		EnableCapture( void );
-			int32_t		EnableResizeCapture( NX_VIP_CONFIG *pConfig );
 			int32_t		RegJpegFileNameCallback( int32_t(*cbFunc)( uint8_t *, uint32_t ) );
-			int32_t  	GetStatistics( NX_FILTER_STATISTICS *pStatistics );
 
+			int32_t		Capture( void );
+			int32_t		CaptureResize( NX_VIP_CONFIG *pConfig );
+
+			int32_t  	GetStatistics( NX_FILTER_STATISTICS *pStatistics );
+			
 protected:
 	//------------------------------------------------------------------------
 	//	Filter status
@@ -88,6 +90,7 @@ protected:
 	//------------------------------------------------------------------------	
 	int32_t					m_bThreadExit;
 	pthread_t				m_hThread;
+	pthread_mutex_t			m_hLock;
 	//------------------------------------------------------------------------
 	//	Video Input
 	//------------------------------------------------------------------------
@@ -106,9 +109,13 @@ protected:
 	//------------------------------------------------------------------------
 	//	For Capture
 	//------------------------------------------------------------------------
+	CNX_Semaphore			*m_pSemCapture;
+	CNX_Semaphore			*m_pSemCaptureRun;
 	INX_JpegCapture			*m_pJpegCapture;
+
 	uint8_t					m_JpegFileName[1024];
-	int32_t					m_bCaptured;
+	int32_t					m_bCapture;
+	int32_t					m_bCaptureResize;
 	pthread_mutex_t			m_hCaptureLock;
 	//------------------------------------------------------------------------
 	//	Statistics Infomation

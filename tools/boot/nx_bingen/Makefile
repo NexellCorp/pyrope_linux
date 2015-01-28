@@ -3,7 +3,7 @@
 INC =
 LIBS =
 CC = gcc
-CFLAGS = -O2 $(INC)
+CFLAGS = -g -O2 -DDEBUG $(INC)
 LDFLAGS = -static
 
 

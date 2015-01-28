@@ -39,8 +39,9 @@
 
 #include "NSIH.h"
 #include "GEN_NANDBOOTEC.h"
+#include "nx_bingen.h"
 
-#define	VERSION_STR	"0.9.4"
+#define	VERSION_STR	"0.9.9"
 
 
 /* PRINT MACRO */
@@ -169,13 +170,39 @@ static size_t get_file_size( FILE *fd )
 	return fileSize;
 }
 
+static unsigned int get_fcs(unsigned int fcs, unsigned char data)
+{
+	register int i;
+	fcs ^= (unsigned int)data;
+	for(i = 0; i < 8; i++)
+	{
+	   if(fcs & 0x01) 
+	   		fcs ^= POLY; 
+	   fcs >>= 1;
+	}
+	return fcs;
+}
+
+
+static inline unsigned int __calc_crc(void *addr, int len)
+{
+	U8 *c = (U8*)addr;
+	U32 crc = 0;
+	int i;
+	for (i = 0; len > i; i++)
+	{
+		crc = get_fcs(crc, c[i]);
+	}
+	return crc;
+}
+
 //
 //	end of utilities functions
 //
 //////////////////////////////////////////////////////////////////////////////
 
 
-static int update_bootinfo (unsigned char *parsed_nsih, const build_info_t *BUILD_INFO, const unsigned int BinFileSize)
+static int update_bootinfo(unsigned char *parsed_nsih, const build_info_t *BUILD_INFO, const unsigned int BinFileSize, int crc)
 {
 	struct NX_SecondBootInfo *bootinfo;
 
@@ -188,9 +215,10 @@ static int update_bootinfo (unsigned char *parsed_nsih, const build_info_t *BUIL
 	if (BUILD_INFO->launchaddr)
 	bootinfo->LAUNCHADDR		= BUILD_INFO->launchaddr;
 	bootinfo->SIGNATURE			= HEADER_ID;
+	bootinfo->DBI.NANDBI.CRC32	= crc;
 
-	pr_debug ("bootinfo sz: %d loadaddr: 0x%x, launchaddr 0x%x\n",
-		bootinfo->LOADSIZE, bootinfo->LOADADDR, bootinfo->LAUNCHADDR);
+	pr_debug ("bootinfo sz: %d loadaddr: 0x%x, launchaddr 0x%x, crc: 0x%x\n",
+		bootinfo->LOADSIZE, bootinfo->LOADADDR, bootinfo->LAUNCHADDR, crc);
 
 	return 0;
 }
@@ -211,6 +239,7 @@ static int merge_nsih_secondboot(const char *in_file, const char *out_file, cons
 
 	struct NX_SecondBootInfo *bootinfo;
 	int is_2ndboot = (BUILD_INFO->image_type) == BUILD_2NDBOOT ? 1 : 0;
+	int crc = 0;
 
 	nish_fd = fopen(BUILD_INFO->nsih_file, "rb");
 	in_fd = fopen(in_file, "rb");
@@ -255,8 +284,6 @@ static int merge_nsih_secondboot(const char *in_file, const char *out_file, cons
 	}
 	ret = 0;
 
-	update_bootinfo (out_buf, BUILD_INFO, in_file_size);
-
 
 	read_size = fread( out_buf + NSIH_BIN_SIZE, 1, in_file_size, in_fd );
 	if( read_size != in_file_size )
@@ -265,6 +292,25 @@ static int merge_nsih_secondboot(const char *in_file, const char *out_file, cons
 		ret = -1;
 		goto ERROR_EXIT;
 	}
+
+	/* CRC */
+    crc = __calc_crc((void*)(out_buf + read_size), in_file_size);
+
+	/* update bootinfo after parsing NSIH */
+	update_bootinfo(out_buf, BUILD_INFO, in_file_size, crc);
+
+	if (is_2ndboot)
+	{
+		CRC uCrc;
+		int i;
+
+		uCrc.iCrc = __calc_crc((void*)out_buf, (out_buf_size-16) );
+		for(i = 0; i < CRCSIZE; i++)
+		{	
+			out_buf[out_buf_size-16+i] = uCrc.chCrc[i];
+		}
+	}
+
 
 	write_size = fwrite( out_buf, 1, out_buf_size, out_fd );
 	if( write_size != out_buf_size )
@@ -302,40 +348,18 @@ static int first_stage (FILE *eccgen_fp, const char *in_file, build_info_t *BUIL
 	unsigned int BinFileSize, MergeFileSize, SrcLeft, SrcReadSize, DstSize, DstTotalSize;
 	static unsigned int pdwSrcData[7*NX_BCH_SECTOR_MAX/4], pdwDstData[8*NX_BCH_SECTOR_MAX/4];
 
-	unsigned char *parsed_nsih	= NULL;
-	unsigned char *copy_buffer	= NULL;
+	unsigned char *merge_buffer	= NULL;
 	unsigned long copy_leftlen	= 0;
 	unsigned long merged_size	= 0;
 	int is_2ndboot				= (BUILD_INFO->image_type) == BUILD_2NDBOOT ? 1 : 0;
 	unsigned int align;
+	int crc;
 
 	int ret = 0;
 	size_t sz;
 
+	size_t read_size = 0;
 
-
-	//--------------------------------------------------------------------------
-	// NSIH parsing
-
-	/* prepare buffer for parsed nsih */
-	parsed_nsih = malloc (iSectorSize);
-	if (!parsed_nsih)
-	{
-		pr_error ("Not enough memory. (NSIH parsing)");
-		ret = -1;
-		goto out;
-	}
-	memset (parsed_nsih, 0xff, iSectorSize);
-
-
-	/* parsing nsih */
-	ret = ProcessNSIH (BUILD_INFO->nsih_file, parsed_nsih);
-	if (ret != NSIH_LEN)
-	{
-		pr_error ("NSIH Parsing failed.\n");
-		ret = -1;
-		goto out;
-	}
 
 
 	//--------------------------------------------------------------------------
@@ -349,58 +373,80 @@ static int first_stage (FILE *eccgen_fp, const char *in_file, build_info_t *BUIL
 	}
 
 	BinFileSize = get_file_size (bin_fp);
-	pr_debug ("BinFileSize : %d\n", BinFileSize);
-
-	/* update bootinfo */
-	update_bootinfo (parsed_nsih, BUILD_INFO, BinFileSize);
+	pr_debug ("[Merge Stage] BinFileSize : %d\n", BinFileSize);
 
 
-	/* merge : ParsedNSIH + BinFile */
-	merge_fp = tmpfile ();
-	if (!merge_fp)
-	{
-		pr_error ("failed to create tmp file.\n");
-		ret = -1;
-		goto out;
-	}
 
-	/* write ParsedNSIH */
-	if (is_2ndboot)
-		sz = fwrite (parsed_nsih, 1, NSIH_LEN, merge_fp);
-	else
-		/* NSIH + (0xff * (iSectorSize - NSIH_LEN)) */
-		sz = fwrite (parsed_nsih, 1, iSectorSize, merge_fp);
 
-	
-	copy_buffer = malloc (COPY_LEN);
-	if (!copy_buffer)
+	/* just for convenience, with 2ndboot */
+	sz = (is_2ndboot) ? NSIH_LEN : iSectorSize;
+
+	/* get MergeFileSize */
+	align = (is_2ndboot) ? MAX_2NDBOOT : BUILD_INFO->page_size;
+
+
+	/* prepare merge buffer */
+	MergeFileSize = ALIGN(BinFileSize + sz, align);
+	pr_debug ("MergeFileSize: %u\n", MergeFileSize);
+
+	merge_buffer = malloc (MergeFileSize);
+	if (!merge_buffer)
 	{
 		pr_error ("Not enough memory. (merge)\n");
 		ret = -1;
 		goto out;
 	}
+	memset (merge_buffer, 0xff, MergeFileSize);
 
 
-	/* get MergeFileSize */
-	align = (is_2ndboot) ? MAX_2NDBOOT : BUILD_INFO->page_size;
 
-	MergeFileSize = ALIGN(BinFileSize + sz, align);
-	pr_debug ("MergeFileSize: %u\n", MergeFileSize);
-
-	copy_leftlen = MergeFileSize;
-
-	while (copy_leftlen > 0) {
-		unsigned long io_size = (copy_leftlen > COPY_LEN) ? COPY_LEN : copy_leftlen;
-		pr_debug ("io size: %lu\n", io_size);
-
-		memset (copy_buffer, 0xff, COPY_LEN);
-		sz = fread (copy_buffer, 1, io_size, bin_fp);
-		fwrite (copy_buffer, 1, COPY_LEN, merge_fp);
-
-		copy_leftlen -= io_size;
+	/* parsing NSIH */
+	ret = ProcessNSIH (BUILD_INFO->nsih_file, merge_buffer);
+	if (ret != NSIH_LEN)
+	{
+		pr_error ("NSIH Parsing failed.\n");
+		ret = -1;
+		goto out;
 	}
 
-	free (copy_buffer);
+
+	/* read input binary */
+	read_size = fread (merge_buffer + sz, 1, BinFileSize, bin_fp);
+	if( read_size != BinFileSize )
+	{
+		pr_error ("File read error.\n");
+		ret = -1;
+		goto out;
+	}
+
+
+	/* CRC */
+    crc = __calc_crc((void*)(merge_buffer + sz), MergeFileSize);
+
+	/* update bootinfo after parsing NSIH */
+	update_bootinfo(merge_buffer, BUILD_INFO, MergeFileSize, crc);
+
+
+	/* write merge buffer */
+    /* merge : ParsedNSIH + BinFile */
+    merge_fp = tmpfile ();
+    if (!merge_fp)
+	{
+		printf ("Cannot open tmpfile.\n");
+		ret = -1;
+		goto out;
+	}
+	fwrite (merge_buffer, 1, MergeFileSize, merge_fp);
+
+	free (merge_buffer);
+	merge_buffer = NULL;
+
+
+
+
+
+	//--------------------------------------------------------------------------
+	// EccGen Processing
 
 	rewind (merge_fp);
 
@@ -459,8 +505,8 @@ static int first_stage (FILE *eccgen_fp, const char *in_file, build_info_t *BUIL
 
 
 out:
-	if (parsed_nsih)
-		free (parsed_nsih);
+	if (merge_buffer)
+		free (merge_buffer);
 	if (bin_fp)
 		fclose (bin_fp);
 	if (merge_fp)
@@ -511,7 +557,7 @@ static int second_stage(const char *out_file, FILE *eccgen_fp, const build_info_
 	/* size calc. */
 	rewind (eccgen_fp);
 	BinFileSize = get_file_size (eccgen_fp);
-	pr_debug ("eccgen BinFileSize: %d\n", BinFileSize);
+	pr_debug ("[ECCGEN Stage] BinFileSize: %d\n", BinFileSize);
 
 	if (BUILD_INFO->image_type == BUILD_2NDBOOT)
 		payload_in_page = MIN (payload_in_page, ROMBOOT_MAXPAGE);
@@ -724,8 +770,6 @@ int main (int argc, char** argv)
 	BUILD_INFO.page_size = page_size;
 
 
-	//                 1         2         3         4         5         6         7         8
-	//        12345678901234567890123456789012345678901234567890123456789012345678901234567890
 	printf("\n==============================================================================\n");
 	printf(" Type        : %s\n", bin_type);
 	printf(" Device      : %s\n", dev_type);
@@ -740,11 +784,19 @@ int main (int argc, char** argv)
 	printf("==============================================================================\n");
 
 	//  make image
+#if 1
+	if (device_type == DEVICE_NAND) {
+		if (image_type == BUILD_2NDBOOT)
+			merge_nsih_secondboot (in_file, out_file, &BUILD_INFO);
+		else
+			make_image (out_file, in_file, &BUILD_INFO);
+	}
+#else
 	if (device_type == DEVICE_NAND)
 		make_image (out_file, in_file, &BUILD_INFO);
 	else
 		merge_nsih_secondboot (in_file, out_file, &BUILD_INFO);
+#endif
 
 	return 0;
 }
-

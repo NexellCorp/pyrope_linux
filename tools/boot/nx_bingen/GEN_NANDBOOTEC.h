@@ -2,23 +2,8 @@
 #define	__GEN_NANDBOOTEC_h__
 
 
-#define MAX_2NDBOOT			(16384)
-#define ROMBOOT_MAXPAGE		(4096)
-
-#define NSIH_LEN			(512)
-#define COPY_LEN			(8192)
 
 
-/* UTIL MACRO */
-#define __ALIGN(x, a)		__ALIGN_MASK(x, (a) - 1)
-#define __ALIGN_MASK(x, mask)	(((x) + (mask)) & ~(mask))
-
-#define ALIGN(x, a)		__ALIGN((x), (a))
-#define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
-
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-#define IS_POWER_OF_2(n)	((n) && ((n) & ((n)-1)) == 0)
 
 
 //--------------------------------------------------------------------------

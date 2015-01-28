@@ -1,31 +1,71 @@
-//-----------------------------------------------------------------------------
-//	Copyright (C) 2012 Nexell Co., All Rights Reserved
-//	Nexell Co. Proprietary < Confidential
-//
-//	NEXELL INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
-//	AND WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING
-//	BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS
-//	FOR A PARTICULAR PURPOSE.
-//
-//	Module		: second boot
-//	File		: secondboot.h
-//	Description	: This must be synchronized with NSIH.txt
-//	Author		: Firmware Team
-//	History		:
-// 				Hans 2013-06-23 Create
-//------------------------------------------------------------------------------
-#ifndef __NX_SECONDBOOT_H__
-#define __NX_SECONDBOOT_H__
+#ifndef __BOOT_BINGEN_H__
+#define __BOOT_BINGEN_H__
 
-#include <stdint.h>
-typedef uint8_t			U8;
-typedef uint16_t		U16;
-typedef uint32_t		U32;
+#define POLY 0x04C11DB7L
 
+#define BOOT_DEBUG	
+#define NX_DEBUG_MSG(...)
+
+
+#define S32 int
+#define S16 short
+#define S8	char
+#define U32 unsigned int
+#define U16 unsigned short
+#define U8  unsigned char
+
+#define CBOOL	char
+
+#define CTRUE	    TRUE
+#define CFALSE	    FALSE
+#define CFAILED     (-1)
+
+#define NSIHSIZE	(0x200)	
+#define CRCSIZE		(4)
+
+#define BLOCKSIZE	(0x200)
+
+#define ROMBOOT_STACK_SIZE          (4*1024)        
+
+#define NXP4330_SRAM_SIZE			(16*1024)
+#define NXP5430_SRAM_SIZE			(64*1024)
+#define S5P4418_SRAM_SIZE			(32*1024)
+
+#define SECONDBOOT_FSIZENCRC		(16*1024)
+#define SECONDBOOT_SSIZENCRC		(8*1024)
+#define SECONDBOOT_FSIZE			(SECONDBOOT_FSIZENCRC-(128/8))
+#define SECONDBOOT_SSIZE			(SECONDBOOT_SSIZENCRC-(128/8))
+#define CHKSTRIDE					8
+
+#define SECURE_BOOT					(0)
+
+#define BOOT_BINGEN_VER				(912)
 
 /* S5P4418 */
 #define ARCH_S5P4418
 
+
+/* For NAND Device */
+#define ROMBOOT_MAXPAGE		(4096)
+#define ARCH_NXP4330
+
+
+
+enum
+{
+	FALSE,
+	TRUE,
+};
+
+typedef union crc
+{
+	int iCrc;
+	char chCrc[4];
+} CRC;
+
+/* Secondboot Header -> Structure, Base Address ...ETC 													*/
+/* NSIH VER:2015.01.26 */
+//------------------------------------------------------------------------------------------------------//
 #define HEADER_ID		((((U32)'N')<< 0) | (((U32)'S')<< 8) | (((U32)'I')<<16) | (((U32)'H')<<24))
 
 enum
@@ -125,15 +165,15 @@ struct NX_DDRInitInfo
 
 struct NX_SecondBootInfo
 {
-	U32 VECTOR[8];			// 0x000 ~ 0x01C
-	U32 VECTOR_Rel[8];		// 0x020 ~ 0x03C
+	U32 VECTOR[8];					// 0x000 ~ 0x01C
+	U32 VECTOR_Rel[8];				// 0x020 ~ 0x03C
 
-	U32 DEVICEADDR;			// 0x040
+	U32 DEVICEADDR;					// 0x040			// 3rd boot image start address
 
-	U32 LOADSIZE;			// 0x044
-	U32 LOADADDR;			// 0x048
-	U32 LAUNCHADDR;			// 0x04C
-	union NX_DeviceBootInfo DBI;	// 0x050~0x05C
+	U32 LOADSIZE;					// 0x044
+	U32 LOADADDR;					// 0x048
+	U32 LAUNCHADDR;					// 0x04C
+	union NX_DeviceBootInfo DBI;	// 0x050~0x058
 
 	U32 PLL[4];						// 0x05C ~ 0x068
 	U32 PLLSPREAD[2];				// 0x06C ~ 0x070
@@ -159,22 +199,23 @@ struct NX_SecondBootInfo
 };
 //------------------------------------------------------------------------------------------------------//
 
-// [0] : Use ICache
-// [1] : Change PLL
-// [2] : Decrypt
-// [3] : Suspend Check
+void to_upper( char* string );
+void to_lower( char* string );
 
-#ifdef __cplusplus
-extern "C"
-{
+CBOOL	NX_SHELLU_HexDump	( U32 SrcAddr, U32 PrintDataSize, U32 PrintDataWidth );
+
+void print_hexdump( U32* pdwBuffer, U32 Size );
+
+static inline U32 iget_fcs(U32 fcs, U32 data);
+static inline U32 get_fcs(U32 fcs, U8 data);
+
+static inline unsigned int __icalc_crc (void *addr, int len);
+static inline unsigned int __calc_crc(void *addr, int len);
+int ProcessNSIH( const char *pfilename, U8 *pOutData );
+U32 HexAtoInt( const char *string );
+
+static void usage(void);
+static void print_bingen_info( void );
+
+
 #endif
-
-#define	NSIH_BIN_SIZE	512
-
-int ProcessNSIH (const char *pfilename, unsigned char *pOutData);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif //__NX_SECONDBOOT_H__

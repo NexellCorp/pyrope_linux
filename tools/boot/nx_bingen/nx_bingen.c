@@ -196,6 +196,21 @@ static inline unsigned int __calc_crc(void *addr, int len)
 	return crc;
 }
 
+U32 iget_fcs(U32 fcs, U32 data)
+{
+    int i;
+
+    fcs ^= data;
+    for(i = 0; i < 32; i++)
+    {
+        if(fcs & 0x01)
+            fcs ^= POLY;
+        fcs >>= 1;
+    }
+
+    return fcs;
+}
+
 //
 //	end of utilities functions
 //
@@ -346,6 +361,7 @@ static int first_stage (FILE *eccgen_fp, const char *in_file, build_info_t *BUIL
 {
 	FILE	*bin_fp = NULL, *merge_fp = NULL;
 	unsigned int BinFileSize, MergeFileSize, SrcLeft, SrcReadSize, DstSize, DstTotalSize;
+	unsigned int BinFileSize_align;
 	static unsigned int pdwSrcData[7*NX_BCH_SECTOR_MAX/4], pdwDstData[8*NX_BCH_SECTOR_MAX/4];
 
 	unsigned char *merge_buffer	= NULL;
@@ -353,7 +369,7 @@ static int first_stage (FILE *eccgen_fp, const char *in_file, build_info_t *BUIL
 	unsigned long merged_size	= 0;
 	int is_2ndboot				= (BUILD_INFO->image_type) == BUILD_2NDBOOT ? 1 : 0;
 	unsigned int align;
-	int crc;
+	int crc = 0;
 
 	int ret = 0;
 	size_t sz;
@@ -387,7 +403,8 @@ static int first_stage (FILE *eccgen_fp, const char *in_file, build_info_t *BUIL
 
 	/* prepare merge buffer */
 	MergeFileSize = ALIGN(BinFileSize + sz, align);
-	pr_debug ("MergeFileSize: %u\n", MergeFileSize);
+	BinFileSize_align = ALIGN(BinFileSize, sz);
+	pr_debug ("MergeFileSize: %u, BinFileSize aligned: %u\n", MergeFileSize, BinFileSize_align);
 
 	merge_buffer = malloc (MergeFileSize);
 	if (!merge_buffer)
@@ -421,10 +438,16 @@ static int first_stage (FILE *eccgen_fp, const char *in_file, build_info_t *BUIL
 
 
 	/* CRC */
-    crc = __calc_crc((void*)(merge_buffer + sz), MergeFileSize);
+//    crc = __calc_crc((void*)(merge_buffer + sz), BinFileSize_align);
+	do {
+		int i;
+
+		for(i = 0; i < BinFileSize_align>>2; i++)
+			crc = iget_fcs(crc, *(U32*)(merge_buffer + sz + (i*4)));
+	} while(0);
 
 	/* update bootinfo after parsing NSIH */
-	update_bootinfo(merge_buffer, BUILD_INFO, MergeFileSize, crc);
+	update_bootinfo(merge_buffer, BUILD_INFO, BinFileSize_align, crc);
 
 
 	/* write merge buffer */

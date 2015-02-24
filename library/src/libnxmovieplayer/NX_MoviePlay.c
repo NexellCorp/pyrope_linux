@@ -1264,8 +1264,6 @@ MP_RESULT NX_MPPlay( MP_HANDLE handle, float speed )
 		return ERROR;
 	}
 
-//	handle->seek_state = 0;	
-//	handle->pause_state = 0;	
 	FUNC_OUT();
 	return	ERROR_NONE;
 }
@@ -1287,7 +1285,7 @@ MP_RESULT NX_MPPause(MP_HANDLE hande)
 		ErrMsg("%s() : Sate change failed!!!(ret=%d)\n", __func__, ret);
 		return ERROR;
 	}
-//	handle->pause_state = 1;	
+
 	FUNC_OUT();
 
 	return	ERROR_NONE;
@@ -1304,16 +1302,19 @@ MP_RESULT NX_MPStop(MP_HANDLE handle)
 		ErrMsg("%s() : invalid state or invalid operation.(%p,%d)\n", __func__, handle, handle->pipeline_is_linked);
 		return ERROR;
 	}
-	ret = gst_element_set_state (handle->pipeline, GST_STATE_READY);
+//	ret = gst_element_set_state (handle->pipeline, GST_STATE_READY);
+	ret = gst_element_set_state (handle->pipeline, GST_STATE_NULL);
+	
 	if( GST_STATE_CHANGE_FAILURE == ret ){
 		ErrMsg("%s() : Sate change failed!!!(ret=%d)\n", __func__, ret);
 		return ERROR;
 	}
+
 	FUNC_OUT();
 	return	ERROR_NONE;
 }
 
-MP_RESULT NX_MPSeek(MP_HANDLE hande, unsigned int seekTime)
+MP_RESULT NX_MPSeek(MP_HANDLE handle, unsigned int seekTime)
 {
 	GstState state, pending;
 	GstStateChangeReturn ret;
@@ -1322,28 +1323,28 @@ MP_RESULT NX_MPSeek(MP_HANDLE hande, unsigned int seekTime)
 	milliSeconds = seekTime;
 	seekTimeUs = (gint64)milliSeconds*1000000;
 	FUNC_IN();
-	if( !hande || !hande->pipeline_is_linked )
+	if( !handle || !handle->pipeline_is_linked )
 	{
-		ErrMsg("%s() : invalid state or invalid operation.(%p,%d)\n", __func__, hande, hande->pipeline_is_linked);
+		ErrMsg("%s() : invalid state or invalid operation.(%p,%d)\n", __func__, handle, handle->pipeline_is_linked);
 		return ERROR;
 	}
 
-	if(   (hande->TymediaInfo.AudioInfo[hande->audio_select_track_num].ACodecType == AUDIO_TYPE_RA ) 
-		||(hande->TymediaInfo.AudioInfo[hande->audio_select_track_num].ACodecType == AUDIO_TYPE_DTS )
+	if(   (handle->TymediaInfo.AudioInfo[handle->audio_select_track_num].ACodecType == AUDIO_TYPE_RA ) 
+		||(handle->TymediaInfo.AudioInfo[handle->audio_select_track_num].ACodecType == AUDIO_TYPE_DTS )
 		)
 	{
 		g_printf(" Not Support Seek RA, DTS !!!\n");
 		return	ERROR_NONE;
 	}
 
-	ret = gst_element_get_state( hande->pipeline, &state, &pending, 500000000 );		//	wait 500 msec
+	ret = gst_element_get_state( handle->pipeline, &state, &pending, 500000000 );		//	wait 500 msec
 
 	if( GST_STATE_CHANGE_FAILURE != ret )
 	{
 		if( state == GST_STATE_PLAYING || state == GST_STATE_PAUSED || state == GST_STATE_READY )
 		{  
 
-			if (!gst_element_seek_simple (hande->pipeline, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_KEY_UNIT , seekTimeUs))
+			if (!gst_element_seek_simple (handle->pipeline, GST_FORMAT_TIME, GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_KEY_UNIT , seekTimeUs))
 			{
 				g_printerr ("Seek failed (%d msec)\n", milliSeconds);
 				return ERROR;
@@ -1361,7 +1362,6 @@ MP_RESULT NX_MPSeek(MP_HANDLE hande, unsigned int seekTime)
 		return ERROR;
 	}
 
-//	pAppData->seek_state = 1;	
 	FUNC_OUT();
 	return	ERROR_NONE;
 }
@@ -1395,19 +1395,19 @@ MP_RESULT NX_MPGetCurDuration(MP_HANDLE handle, unsigned int *duration)
 		}
 		else
 		{
-			DbgMsg("============ Invalid Status\n");
+			//DbgMsg("============ Invalid Status\n");
 			return ERROR;	//	Invalid state
 		}
 	}
 	else
 	{
-		DbgMsg("============ Invalid Status 2\n");
+		//DbgMsg("============ Invalid Status 2\n");
 		return ERROR;
 	}
 
 
-	DbgMsg( "state(%d) , GST_STATE_PLAYING(%d) , GST_STATE_PAUSED(%d) , GST_STATE_READY(%d)\n",
-		state, GST_STATE_PLAYING, GST_STATE_PAUSED, GST_STATE_READY );
+//	DbgMsg( "state(%d) , GST_STATE_PLAYING(%d) , GST_STATE_PAUSED(%d) , GST_STATE_READY(%d)\n",
+//		state, GST_STATE_PLAYING, GST_STATE_PAUSED, GST_STATE_READY );
 
 	FUNC_OUT();
 

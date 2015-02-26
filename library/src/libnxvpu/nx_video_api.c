@@ -1078,29 +1078,33 @@ VID_ERROR_E NX_VidDecDecodeFrame( NX_VID_DEC_HANDLE hDec, NX_VID_DEC_IN *pstDecI
 	pstDecOut->outDecIdx = decArg.indexFrameDecoded;
 	pstDecOut->width     = decArg.outRect.right;
 	pstDecOut->height    = decArg.outRect.bottom;
-	pstDecOut->picType[DECODED_FRAME] = ( decArg.picType != 7 ) ? ( decArg.picType ) : ( PIC_TYPE_UNKNOWN );
+	//pstDecOut->picType[DECODED_FRAME] = ( decArg.picType != 7 ) ? ( decArg.picType ) : ( PIC_TYPE_UNKNOWN );
+	pstDecOut->picType   = PIC_TYPE_UNKNOWN;
 
 	pstDecOut->strmReadPos  = decArg.strmReadPos;
 	pstDecOut->strmWritePos = decArg.strmWritePos;
 
 	if ( decArg.numOfErrMBs == 0 )
-		pstDecOut->outFrmReliable_0_100[DECODED_FRAME] = ( pstDecOut->outDecIdx < 0 ) ? ( 0 ) : ( 100 );
+		pstDecOut->outFrmReliable_0_100/*[DECODED_FRAME]*/ = ( pstDecOut->outDecIdx < 0 ) ? ( 0 ) : ( 100 );
 	else
 	{
 		int TotalMbNum = ( (decArg.outWidth + 15) >> 4 ) * ( (decArg.outHeight + 15) >> 4 );
-		pstDecOut->outFrmReliable_0_100[DECODED_FRAME] = (TotalMbNum - decArg.numOfErrMBs) * 100 / TotalMbNum;
+		pstDecOut->outFrmReliable_0_100/*[DECODED_FRAME]*/ = (TotalMbNum - decArg.numOfErrMBs) * 100 / TotalMbNum;
 	}
 
-	DecoderPutDispInfo( hDec, pstDecOut->outDecIdx, &decArg, pstDecIn->timeStamp, pstDecOut->outFrmReliable_0_100[DECODED_FRAME] );
+	DecoderPutDispInfo( hDec, pstDecOut->outDecIdx, &decArg, pstDecIn->timeStamp, pstDecOut->outFrmReliable_0_100/*[DECODED_FRAME]*/ );
 
 	if( (pstDecOut->outImgIdx >= 0) && (pstDecOut->outImgIdx < hDec->numFrameBuffers) )
 	{
 		int32_t iIdx = pstDecOut->outImgIdx;
 		pstDecOut->outImg = *hDec->hFrameBuffer[ iIdx ];
-		pstDecOut->timeStamp[FIRST_FIELD] = hDec->timeStamp[ iIdx ][ FIRST_FIELD ];
-		pstDecOut->timeStamp[SECOND_FIELD] = ( hDec->timeStamp[ iIdx ][ SECOND_FIELD ] != -10 ) ? ( hDec->timeStamp[ iIdx ][ SECOND_FIELD ] ) : ( -1 );
-		pstDecOut->picType[DISPLAY_FRAME] = hDec->picType[ iIdx ];
-		pstDecOut->outFrmReliable_0_100[DISPLAY_FRAME] = hDec->FrmReliable_0_100[ iIdx ];
+		//pstDecOut->timeStamp[FIRST_FIELD] = hDec->timeStamp[ iIdx ][ FIRST_FIELD ];
+		//pstDecOut->timeStamp[SECOND_FIELD] = ( hDec->timeStamp[ iIdx ][ SECOND_FIELD ] != -10 ) ? ( hDec->timeStamp[ iIdx ][ SECOND_FIELD ] ) : ( -1 );
+		pstDecOut->timeStamp = ( hDec->timeStamp[ iIdx ][ SECOND_FIELD ] != -10 ) ? ( hDec->timeStamp[ iIdx ][ SECOND_FIELD ] ) : ( -1 );
+       if ( pstDecOut->timeStamp == -1 ) pstDecOut->timeStamp = hDec->timeStamp[ iIdx ][ FIRST_FIELD ];
+
+		pstDecOut->picType/*[DISPLAY_FRAME]*/ = hDec->picType[ iIdx ];
+		//pstDecOut->outFrmReliable_0_100[DISPLAY_FRAME] = hDec->FrmReliable_0_100[ iIdx ];
 		pstDecOut->isInterlace = hDec->isInterlace[ iIdx ];
 		pstDecOut->topFieldFirst = hDec->topFieldFirst[ iIdx ];
 		pstDecOut->multiResolution = hDec->multiResolution[ iIdx ];
@@ -1137,8 +1141,9 @@ VID_ERROR_E NX_VidDecDecodeFrame( NX_VID_DEC_HANDLE hDec, NX_VID_DEC_IN *pstDecI
 	else
 	{
 		pstDecOut->outImgIdx = -1;
-		pstDecOut->timeStamp[FIRST_FIELD] = -1;
-		pstDecOut->timeStamp[SECOND_FIELD] = -1;
+		//pstDecOut->timeStamp[FIRST_FIELD] = -1;
+		//pstDecOut->timeStamp[SECOND_FIELD] = -1;
+		pstDecOut->timeStamp = -1;
 	}
 
 	NX_RelMsg( 0, ("NX_VidDecDecodeFrame() Resol:%dx%d, picType=%d, imgIdx = %d\n", pstDecOut->width, pstDecOut->height, pstDecOut->picType, pstDecOut->outImgIdx) );

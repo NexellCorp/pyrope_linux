@@ -217,7 +217,7 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 		decIn.eos = ( decIn.strmSize > 0 || frameCount == 0 ) ? (0) : (1);
 
 #ifdef _ERROR_AND_SEEK_
-		if ( (decOut.outFrmReliable_0_100 != 100) && (decOut.outDecIdx >= 0) && (decIn.strmSize > 0) && (frameCount > 0) )
+		if ( (decOut.outFrmReliable_0_100[DEC_DECODED_FRAME] != 100) && (decOut.outDecIdx >= 0) && (decIn.strmSize > 0) && (frameCount > 0) )
 		{
 			int32_t iFrameType;
 			int32_t iCheckType = ( vpuCodecType == NX_AVC_DEC ) ? ( PIC_TYPE_IDR ) : ( PIC_TYPE_I );
@@ -258,8 +258,8 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 		totalTime += (endTime - startTime);
 
 		printf("Frame[%5d]: size=%6d, DspIdx=%2d, DecIdx=%2d, InTimeStamp=%7lld, outTimeStamp=%7lld, %7lld, time=%6lld, interlace=%d(%d), Reliable=%3d, %3d, type = %d, %d, MultiResol=%d, upW=%d, upH=%d\n",
-			frameCount, decIn.strmSize, decOut.outImgIdx, decOut.outDecIdx, decIn.timeStamp, decOut.timeStamp[FIRST_FIELD], decOut.timeStamp[SECOND_FIELD], (endTime-startTime), decOut.isInterlace, decOut.topFieldFirst,
-			decOut.outFrmReliable_0_100[DECODED_FRAME], decOut.outFrmReliable_0_100[DISPLAY_FRAME], decOut.picType[DECODED_FRAME], decOut.picType[DISPLAY_FRAME], decOut.multiResolution, decOut.upSampledWidth, decOut.upSampledHeight);
+			frameCount, decIn.strmSize, decOut.outImgIdx, decOut.outDecIdx, decIn.timeStamp, decOut.timeStamp/*[FIRST_FIELD]*/, 0/*decOut.timeStamp[SECOND_FIELD]*/, (endTime-startTime), decOut.isInterlace, decOut.topFieldFirst,
+			decOut.outFrmReliable_0_100/*[DECODED_FRAME]*/, 0/*decOut.outFrmReliable_0_100[DISPLAY_FRAME]*/, decOut.picType/*[DECODED_FRAME]*/, 0/*decOut.picType[DISPLAY_FRAME]*/, decOut.multiResolution, decOut.upSampledWidth, decOut.upSampledHeight);
 		//printf("(%2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x)\n", decIn.strmBuf[0], decIn.strmBuf[1], decIn.strmBuf[2], decIn.strmBuf[3], decIn.strmBuf[4], decIn.strmBuf[5], decIn.strmBuf[6], decIn.strmBuf[7],
 		//	decIn.strmBuf[8], decIn.strmBuf[9], decIn.strmBuf[10], decIn.strmBuf[11], decIn.strmBuf[12], decIn.strmBuf[13], decIn.strmBuf[14], decIn.strmBuf[15]);
 

@@ -47,6 +47,7 @@ enum{
 	TYPE_AC3,
 	TYPE_DTS,
 	TYPE_3GP,
+	DEMUX_TYPE_ANNODEX,		//oggdemux
 };
 
 //	audio codec type

@@ -104,7 +104,7 @@ static const char *DemuxTypeString[DEMUX_TYPE_NUM] =
 	"audio/x-ac3",						//audio ac3
 	"audio/x-dts",						//audio dts
 	"application/x-3gp",
-	"NULL",
+	"application/x-annodex",			//oggdemux
 	"NULL",
 	"NULL",
 };
@@ -430,6 +430,11 @@ static int demux_element_search(MP_HANDLE handle)
 			break;
 		}
 	case DEMUX_TYPE_OGGDEMUX:
+		{
+			handle->demuxer = gst_element_factory_make ("oggdemux", "demuxer" );		//theroa  .ogg
+			break;
+		}
+	case DEMUX_TYPE_ANNODEX:
 		{
 			handle->demuxer = gst_element_factory_make ("oggdemux", "demuxer" );		//theroa  .ogg
 			break;

@@ -49,7 +49,7 @@
 #define E_TVOUT_NAME                    "NXP TVOUT"
 
 #ifndef ANDROID
-#if 0
+#if 1
 #define ALOGD(x...)
 #define ALOGE(x...)
 #else
@@ -62,10 +62,7 @@
         fprintf(stderr, "\n"); \
     } while (0);
 #endif
-#define ALOGV(x...) do { \
-        fprintf(stderr, x); \
-        fprintf(stderr, "\n"); \
-    } while (0);
+#define ALOGV(x...)
 #endif
 /* private class for nexell v4l2 interface */
 class V4l2NexellPrivate {

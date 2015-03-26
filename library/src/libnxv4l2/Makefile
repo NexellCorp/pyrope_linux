@@ -5,6 +5,9 @@ include ../../../build.env
 LIB_INSTALL	:=	../../lib
 INC_INSTALL	:= 	../../include
 
+CROSS := arm-cortex_a9-linux-gnueabi-
+CXX := $(CROSS)g++
+
 ######################################################################
 # Build Options
 CFLAGS		:= -O2 -g -fpic
@@ -41,22 +44,26 @@ DSP_TARGET		:= $(DSP_LIBNAME).so
 OBJS			:= $(COBJS) $(CPPOBJS)
 
 all: $(NXV4L2_TARGET) $(V4L2_TARGET) $(VIP_TARGET) $(DSP_TARGET)
+#all: $(NXV4L2_TARGET)
 
-$(NXV4L2_TARGET): depend $(NXV4L2_OBJS)
+$(NXV4L2_TARGET): $(NXV4L2_OBJS)
 	$(CC) $(LDFLAGS) -shared -Wl,-soname,$(NXV4L2_TARGET) -o $@ $(NXV4L2_OBJS)
 #	$(AR) $(ARFLAGS) $(NXV4L2_LIBNAME).a $(NXV4L2_OBJS)
 
-$(V4L2_TARGET):	depend $(V4L2_OBJS)
+$(V4L2_TARGET):	$(V4L2_OBJS)
 	$(CC) $(LDFLAGS) -shared -Wl,-soname,$(V4L2_TARGET) -o $@ $(V4L2_OBJS)
 #	$(AR) $(ARFLAGS) $(V4L2_LIBNAME).a $(V4L2_OBJS)
 
-$(VIP_TARGET): depend $(VIP_OBJS)
+$(VIP_TARGET):  $(VIP_OBJS)
 	$(CC) $(LDFLAGS) -shared -Wl,-soname,$(VIP_TARGET) -o $@ $(VIP_OBJS) $(LIBRARY)
 #	$(AR) $(ARFLAGS) $(VIP_LIBNAME).a $(VIP_OBJS)
 
-$(DSP_TARGET): depend $(DSP_OBJS)
+$(DSP_TARGET): $(DSP_OBJS)
 	$(CC) $(LDFLAGS) -shared -Wl,-soname,$(DSP_TARGET) -o $@ $(DSP_OBJS) $(LIBRARY)
 #	$(AR) $(ARFLAGS) $(DSP_LIBNAME).a $(DSP_OBJS)
+
+%o:%cpp
+	$(CXX) $(CPPFLAGS) -c $< -o $@
 
 clean:
 	rm -f *.o *.a *.so *.so.* .depend

@@ -88,7 +88,7 @@ static const char *DemuxTypeString[DEMUX_TYPE_NUM] =
 	"audio/x-ac3",						//audio ac3
 	"audio/x-dts",						//audio dts
 	"application/x-3gp",
-	"NULL",
+	"application/x-annodex",			//oggdemux
 	"NULL",
 	"NULL",
 };
@@ -606,7 +606,7 @@ static void cb_typefind_demux (GstElement *typefind,
 	loop = ty_handle->loop;
 
 	type = gst_caps_to_string (caps);
-	//DbgMsg("Media type %s found, probability %d%%\n", type, probability);
+	//g_print("Media type %s found, probability %d%%\n", type, probability);
 
 	ty_handle->TymediaInfo->DemuxType = -1;
 
@@ -978,7 +978,7 @@ static int typefind_codec_info( TYMEDIA_INFO *ty_media_handle, const char *uri, 
 		}
 	}else if( (demux_type == DEMUX_TYPE_QTDEMUX) || (demux_type == TYPE_3GP)) {
 		ty_handle.demux = gst_element_factory_make ("qtdemux", "demux");
-	}else if(demux_type == DEMUX_TYPE_OGGDEMUX) {
+	}else if( (demux_type == DEMUX_TYPE_OGGDEMUX) || (demux_type == DEMUX_TYPE_ANNODEX) ) {
 		ty_handle.demux = gst_element_factory_make ("oggdemux", "demux");
 	}else if(demux_type == DEMUX_TYPE_RMDEMUX) {
 		ty_handle.demux = gst_element_factory_make ("rmdemux", "demux");
@@ -1279,7 +1279,7 @@ static int find_avcodec_num( TYMEDIA_INFO *ty_media_handle, const char *uri )
 		ty_handle.audio_parse = gst_element_factory_make ("mpegaudioparse", "parse_audio");
 	}else if( (demux_type == DEMUX_TYPE_QTDEMUX) || (demux_type == TYPE_3GP)) {
 		ty_handle.demux = gst_element_factory_make ("qtdemux", "demux");
-	}else if(demux_type == DEMUX_TYPE_OGGDEMUX) {
+	}else if( (demux_type == DEMUX_TYPE_OGGDEMUX) || (demux_type == DEMUX_TYPE_ANNODEX)) {
 		ty_handle.demux = gst_element_factory_make ("oggdemux", "demux");
 	}else if(demux_type == DEMUX_TYPE_RMDEMUX) {
 		ty_handle.demux = gst_element_factory_make ("rmdemux", "demux");

@@ -43,6 +43,9 @@ unsigned int get_size(int format, int num, int width, int height)
     case V4L2_PIX_FMT_YUV444:
         size = width * height;
         break;
+    case V4L2_PIX_FMT_RGB32:
+        size = width * height * 4;
+        break;
     default:
         size = width * height * 2;
         break;

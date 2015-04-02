@@ -57,12 +57,10 @@ int main(int argc, char *argv[])
 
     if (module == 0) {
         s.useClipper0 = true;
-        s.useDecimator0 = true;
         clipper_id = nxp_v4l2_clipper0;
         sensor_id = nxp_v4l2_sensor0;
     } else {
         s.useClipper1 = true;
-        s.useDecimator1 = true;
         clipper_id = nxp_v4l2_clipper1;
         sensor_id = nxp_v4l2_sensor1;
     }
@@ -127,7 +125,7 @@ int main(int argc, char *argv[])
             started_out = true;
         }
 
-        if (out_q_count >= MAX_BUFFER_COUNT) {
+        if (out_q_count >= 2) {
             CHECK_COMMAND(v4l2_dqbuf(video_id, buf->plane_num, &out_dq_index, NULL));
             out_q_count--;
         }

@@ -5,6 +5,17 @@
 
 #define MAX_BUFFER_COUNT 4
 
+#ifndef ALIGN
+#define ALIGN(x, a) (((x) + (a) - 1) & ~((a) - 1))
+#endif
+
+#define YUV_STRIDE_ALIGN_FACTOR     64
+#define YUV_VSTRIDE_ALIGN_FACTOR    16
+
+#define YUV_STRIDE(w)    ALIGN(w, YUV_STRIDE_ALIGN_FACTOR)
+#define YUV_YSTRIDE(w)   (ALIGN(w/2, YUV_STRIDE_ALIGN_FACTOR) * 2)
+#define YUV_VSTRIDE(h)   ALIGN(h, YUV_VSTRIDE_ALIGN_FACTOR)
+
 #define CHECK_COMMAND(command) do { \
         int ret = command; \
         if (ret < 0) { \
@@ -12,7 +23,6 @@
             return ret; \
         } \
     } while (0)
-
 
 unsigned int get_size(int format, int num, int width, int height)
 {
@@ -24,6 +34,7 @@ unsigned int get_size(int format, int num, int width, int height)
         size = (width * height) * 2;
         break;
     case V4L2_PIX_FMT_YUV420M:
+#if 0
         if (num == 0) {
             size = width * height;
         } else {
@@ -31,6 +42,15 @@ unsigned int get_size(int format, int num, int width, int height)
             size = (width * height) >> 1;
             // size = (width * height);
         }
+#else
+        if (num == 0) {
+            // y
+            size = YUV_YSTRIDE(width) * YUV_VSTRIDE(height);
+        } else {
+            // cb, cr
+            size = YUV_STRIDE(width/2) * YUV_VSTRIDE(height/2);
+        }
+#endif
         break;
     case V4L2_PIX_FMT_YUV422P:
         if (num == 0) {
@@ -42,9 +62,6 @@ unsigned int get_size(int format, int num, int width, int height)
         break;
     case V4L2_PIX_FMT_YUV444:
         size = width * height;
-        break;
-    case V4L2_PIX_FMT_RGB32:
-        size = width * height * 4;
         break;
     default:
         size = width * height * 2;
@@ -100,4 +117,3 @@ int alloc_buffers(int ion_fd, int count, struct nxp_vid_buffer *bufs, int width,
 
     return 0;
 }
-

@@ -15,8 +15,6 @@
 //				Hans 2014.01.13 Excel Generator
 //				Hans 2013.06.23 Create
 //------------------------------------------------------------------------------
-// Excel sheet version - 0.5.0
-//------------------------------------------------------------------------------
 // This must be synchronized with SecondBoot.h
 //------------------------------------------------------------------------------
 // Nexell System Infomation Header
@@ -43,13 +41,13 @@ FFFF021C	// 0x03C : SRAMBASE + Header
 //------------------------------------------------------------------------------
 // Main Bootloader Load Info
 //------------------------------------------------------------------------------
-00010000	// 0x040 : Device Read Address from 2ndboot Device.
+00008000	// 0x040 : Device Read Address from 2ndboot Device.
 00040000	// 0x044 : Load Size for 2ndboot.
-FFFF0000	// 0x048 : Load Address for 2ndboot.
-FFFF0000	// 0x04C : Launch Address for 2ndboot.
+40100000	// 0x048 : Load Address for 2ndboot.
+40100000	// 0x04C : Launch Address for 2ndboot.
 
-00000003	// 0x050	[31:24] - Channel number, [23:0] - AddrStep
-01000000	// 0x054	Boot From SPI	[31:24] - 0: USB, 1: SPI, 2: NAND, 3:SDMMC, 4: SDFS
+00000000	// 0x050	[7:0] - Channel number
+00000000	// 0x054	Boot From SDMMC
 00000000	// 0x058
 
 //------------------------------------------------------------------------------
@@ -73,24 +71,25 @@ FFFF0000	// 0x04C : Launch Address for 2ndboot.
 // MCU-D registers
 //------------------------------------------------------------------------------
 // Mem Controller Configuration
-03100301	// 0x088	/Chip Num:1	/Chip Row:15	/Bus Width:16	/Chip Col:10
+00000301	// 0x088	/Chip Num:1	/Chip Row:15	/Bus Width:16
 004007C0	// 0x08C	256x16x1CS
-06000B08	// 0x090	/CWL:8	/CL:11	/MR1_AL:0	/MR0_WR:6
+1C0B0803	// 0x090	/CWL:8	/WL:8	/RL,CL:11
 
 // DDR PHY delay timing Configuration
 0C0C0C0C	// 0x094
-08080808	// 0x098
+02020202	// 0x098
 
 // DDR AC Timing Configuration
-0000401B	// 0x09C	/tPZQ:128000us
-00000618	// 0x0A0	/Refresh Interval:7.8us
-6836650E	// 0x0A4	/tRFC:260ns(tCK)	/tRRD:7.5ns(tCK)	/tRP:13.75ns(tCK)	/tRCD:13.75ns(tCK)	/tRC:48.75ns(tCK)	/tRAS:35ns(tCK)
-3631880B	// 0x0A8	/tWTR:7.5ns(tCK)	/tWR:15ns(tCK)	/tRTP:7.5ns(tCK)
-41000A26	// 0x0AC	/tFAW:40ns(tCK)	/tXSR:256ns(tCK)	/tXP:24ns(tCK)	/tCKE:5ns(tCK)
+00000618	// 0x09C	/Refresh Interval:7.8us
+6846650E	// 0x0A0	/tRFC:260ns(tCK)	/tRRD:7.5ns(tCK)	/tRP:13.75ns(tCK)	/tRCD:13.75ns(tCK)	/tRC:48.75ns(tCK)	/tRAS:35ns(tCK)
+4641880B	// 0x0A4	/tWTR:7.5ns(tCK)	/tWR:15ns(tCK)	/tRTP:7.5ns(tCK)
+42000334	// 0x0A8	/tFAW:40ns(tCK)	/tXSR:512ns(tCK)	/tXP:6ns(tCK)	/tCKE:5ns(tCK)
 
 //------------------------------------------------------------------------------
-// STUB
+// AXI Master Priority registers
 //------------------------------------------------------------------------------
+// Bottom Bus
+00000000	// 0x0AC
 00000000	// 0x0B0
 00000000	// 0x0B4
 00000000	// 0x0B8
@@ -122,6 +121,8 @@ FFFF0000	// 0x04C : Launch Address for 2ndboot.
 00000000	// 0x120
 00000000	// 0x124
 00000000	// 0x128
+
+// Display Bus
 00000000	// 0x12C
 00000000	// 0x130
 00000000	// 0x134
@@ -154,6 +155,10 @@ FFFF0000	// 0x04C : Launch Address for 2ndboot.
 00000000	// 0x1A0
 00000000	// 0x1A4
 00000000	// 0x1A8
+
+//------------------------------------------------------------------------------
+// STUB
+//------------------------------------------------------------------------------
 00000000	// 0x1AC
 00000000	// 0x1B0
 00000000	// 0x1B4
@@ -173,7 +178,7 @@ FFFF0000	// 0x04C : Launch Address for 2ndboot.
 00000000	// 0x1EC
 00000000	// 0x1F0
 00000000	// 0x1F4
-44180500	// 0x1F8, BuildInfo
+00000000	// 0x1F8
 
 //------------------------------------------------------------------------------
 // Signature

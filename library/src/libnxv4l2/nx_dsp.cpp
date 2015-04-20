@@ -18,6 +18,8 @@
 //------------------------------------------------------------------------------
 
 #include <stdio.h>
+#include <stdbool.h>
+
 #include <string.h>
 #include <stdlib.h>
 
@@ -372,7 +374,7 @@ int32_t NX_DspVideoSetPosition( DISPLAY_HANDLE hDisplay, DSP_IMG_RECT *pRect )
 		if( 0 > v4l2_set_crop_with_pad(hDisplay->hPrivate, hDisplay->mlcId, 0, pRect->left, pRect->top, pRect->right-pRect->left, pRect->bottom-pRect->top) )
 		{
 			printf("%s():Line(%d) Error : v4l2_set_crop failed(%p,%d,%d,%d,%d,%d)!!!\n",
-				__func__, __LINE__, hDisplay->hPrivate, hDisplay->mlcId, 0, pRect->left, pRect->top, pRect->right-pRect->left, pRect->bottom-pRect->top );
+				__func__, __LINE__, hDisplay->hPrivate, hDisplay->mlcId, pRect->left, pRect->top, pRect->right-pRect->left, pRect->bottom-pRect->top );
 			return -1;
 		}
 
@@ -395,7 +397,7 @@ int32_t NX_DspVideoSetPriority( int32_t module, int32_t priority )
 		mlcId = nxp_v4l2_mlc0_video;
 	}
 	else if( module == DISPLAY_MODULE_MLC1 ) {
-		s.useMlc0Video	= false;
+		s.useMlc1Video	= true;
 		mlcId = nxp_v4l2_mlc1_video;
 	}
 	else {
@@ -429,7 +431,7 @@ int32_t NX_DspVideoGetPriority( int32_t module, int32_t *priority )
 		mlcId = nxp_v4l2_mlc0_video;
 	}
 	else if( module == DISPLAY_MODULE_MLC1 ) {
-		s.useMlc0Video	= false;
+		s.useMlc1Video	= true;
 		mlcId = nxp_v4l2_mlc1_video;
 	}
 	else {

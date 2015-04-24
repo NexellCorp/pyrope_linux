@@ -288,6 +288,7 @@ struct vrSurfaceSource
 #endif
 	unsigned int        width        ;
 	unsigned int        height       ;
+	unsigned int        total_texture_src_height[VR_INPUT_MODE_YUV_MAX];
 	GLuint              texture_name[VR_INPUT_MODE_YUV_MAX] ;
 	/* 
 	case VR_FEATURE_SEPERATE_FD_USE => use Y,U,V
@@ -1822,6 +1823,7 @@ HSURFSOURCE vrCreateDeinterlaceSource  (unsigned int uiStride, unsigned int uiWi
 			pixmap_stride = uiStride;
 			pixmap_width = uiWidth;
 			pixmap_height = uiHeight;
+			result->total_texture_src_height[i] = pixmap_height;
 		}
 		else if(1 == i)
 		{
@@ -1829,6 +1831,7 @@ HSURFSOURCE vrCreateDeinterlaceSource  (unsigned int uiStride, unsigned int uiWi
 			pixmap_stride = uiWidth/2 + (uiStride-uiWidth)/2;
 			pixmap_width = uiWidth/2;
 			pixmap_height = uiHeight*2 + uiHeight/2;
+			result->total_texture_src_height[i] = pixmap_height;
 			#if (VR_FEATURE_INPUT_HEIGHT_ALIGN_BYTE > 0)
 			{
 				//add Y align blank offset
@@ -1849,6 +1852,7 @@ HSURFSOURCE vrCreateDeinterlaceSource  (unsigned int uiStride, unsigned int uiWi
 			pixmap_stride = uiWidth/2 + (uiStride-uiWidth)/2;
 			pixmap_width = uiWidth/2;
 			pixmap_height = uiHeight*2 + uiHeight;
+			result->total_texture_src_height[i] = pixmap_height;
 			#if (VR_FEATURE_INPUT_HEIGHT_ALIGN_BYTE > 0)
 			{
 				unsigned int y_height, y_align_blank_height = 0;
@@ -1975,6 +1979,7 @@ HSURFSOURCE vrCreateScaleSource  (unsigned int uiStride, unsigned int uiWidth, u
 			pixmap_stride = uiStride;
 			pixmap_width = uiWidth;
 			pixmap_height = uiHeight;
+			result->total_texture_src_height[i] = pixmap_height;
 		}
 		else if(1 == i)
 		{
@@ -1982,6 +1987,7 @@ HSURFSOURCE vrCreateScaleSource  (unsigned int uiStride, unsigned int uiWidth, u
 			pixmap_stride = uiWidth/2 + (uiStride-uiWidth)/2;
 			pixmap_width = uiWidth/2;
 			pixmap_height = uiHeight*2 + uiHeight/2;			
+			result->total_texture_src_height[i] = pixmap_height;
 			#if (VR_FEATURE_INPUT_HEIGHT_ALIGN_BYTE > 0)
 			{
 				//add Y align blank offset
@@ -2002,6 +2008,7 @@ HSURFSOURCE vrCreateScaleSource  (unsigned int uiStride, unsigned int uiWidth, u
 			pixmap_stride = uiWidth/2 + (uiStride-uiWidth)/2;
 			pixmap_width = uiWidth/2;
 			pixmap_height = uiHeight*2 + uiHeight;
+			result->total_texture_src_height[i] = pixmap_height;
 			#if (VR_FEATURE_INPUT_HEIGHT_ALIGN_BYTE > 0)
 			{
 				unsigned int y_height, y_align_blank_height = 0;
@@ -2153,6 +2160,7 @@ HSURFSOURCE vrCreateCvt2YuvSource  (unsigned int uiStride, unsigned int uiWidth,
 		result->texture_name[i] = textureName;
 		result->src_native_pixmaps[i]= pixmapInput;
 		result->src_pixmap_images[i] = eglImage   ;		
+		result->total_texture_src_height[i] = pixmap_height;
 		
 		VR_INFO("", VR_GRAPHIC_DBG_SOURCE, "size(%dx%d, %d)\n", pixmap_width, pixmap_height, pixmap_stride);		
 	}
@@ -2227,6 +2235,7 @@ HSURFSOURCE vrCreateCvt2RgbaSource  (unsigned int uiStride, unsigned int uiWidth
 			pixmap_stride = uiStride;
 			pixmap_width = uiWidth;
 			pixmap_height = uiHeight;
+			result->total_texture_src_height[i] = pixmap_height;
 		}
 		else if(1 == i)
 		{
@@ -2234,6 +2243,7 @@ HSURFSOURCE vrCreateCvt2RgbaSource  (unsigned int uiStride, unsigned int uiWidth
 			pixmap_stride = uiWidth/2 + (uiStride-uiWidth)/2;
 			pixmap_width = uiWidth/2;
 			pixmap_height = uiHeight*2 + uiHeight/2;
+			result->total_texture_src_height[i] = pixmap_height;
 			#if (VR_FEATURE_INPUT_HEIGHT_ALIGN_BYTE > 0)
 			{
 				//add Y align blank offset
@@ -2254,6 +2264,7 @@ HSURFSOURCE vrCreateCvt2RgbaSource  (unsigned int uiStride, unsigned int uiWidth
 			pixmap_stride = uiWidth/2 + (uiStride-uiWidth)/2;
 			pixmap_width = uiWidth/2;
 			pixmap_height = uiHeight*2 + uiHeight;
+			result->total_texture_src_height[i] = pixmap_height;
 			#if (VR_FEATURE_INPUT_HEIGHT_ALIGN_BYTE > 0)
 			{
 				unsigned int y_height, y_align_blank_height = 0;
@@ -2785,9 +2796,9 @@ void vrRunDeinterlace( HSURFTARGET hTarget, HSURFSOURCE hSource )
 	
 	//set U coord
 	//min y
-	aSquareTexCoord[1][3] = aSquareTexCoord[1][5] = 4.f/6.f;
+	aSquareTexCoord[1][3] = aSquareTexCoord[1][5] = 4.f/5.f;
 	//max y
-	aSquareTexCoord[1][1] = aSquareTexCoord[1][7] = 5.f/6.f;
+	//aSquareTexCoord[1][1] = aSquareTexCoord[1][7] = 1.f;
 #endif
 
 	if(hSource->stride != hSource->width)
@@ -2854,7 +2865,7 @@ void vrRunDeinterlace( HSURFTARGET hTarget, HSURFSOURCE hSource )
 		GL_CHECK(glEnableVertexAttribArray(pshader->iLocPosition));
 		GL_CHECK(glEnableVertexAttribArray(pshader->iLocTexCoord[0]));
 
-		GL_CHECK(glUniform1f(pshader->iLocInputHeight, hSource->height));
+		GL_CHECK(glUniform1f(pshader->iLocInputHeight, hSource->total_texture_src_height[i]));
 		GL_CHECK(glUniform1i(pshader->iLocMainTex[0], VR_INPUT_MODE_DEINTERLACE));
 		GL_CHECK(glUniform1i(pshader->iLocRefTex, VR_INPUT_MODE_DEINTERLACE_REF));
 
@@ -2957,9 +2968,9 @@ void vrRunScale( HSURFTARGET hTarget, HSURFSOURCE hSource )
 
 	//set U coord
 	//min y
-	aSquareTexCoord[1][3] = aSquareTexCoord[1][5] = 4.f/6.f;
+	aSquareTexCoord[1][3] = aSquareTexCoord[1][5] = 4.f/5.f;
 	//max y
-	aSquareTexCoord[1][1] = aSquareTexCoord[1][7] = 5.f/6.f;	
+	//aSquareTexCoord[1][1] = aSquareTexCoord[1][7] = 1.f;	
 	
 	VR_INFO("", VR_GRAPHIC_DBG_HEIGHT_ALIGN, "U(%f), V(%f)\n", 4.f/6.f, 5.f/6.f);		
 #endif
@@ -3213,9 +3224,9 @@ void  vrRunCvt2Rgba( HSURFTARGET hTarget, HSURFSOURCE hSource)
 
 	//set U coord
 	//min y
-	aSquareTexCoord[VR_INPUT_MODE_U][3] = aSquareTexCoord[VR_INPUT_MODE_U][5] = 4.f/6.f;
+	aSquareTexCoord[VR_INPUT_MODE_U][3] = aSquareTexCoord[VR_INPUT_MODE_U][5] = 4.f/5.f;
 	//max y
-	aSquareTexCoord[VR_INPUT_MODE_U][1] = aSquareTexCoord[VR_INPUT_MODE_U][7] = 5.f/6.f;
+	//aSquareTexCoord[VR_INPUT_MODE_U][1] = aSquareTexCoord[VR_INPUT_MODE_U][7] = 1.f;
 	//set V coord
 	//min y
 	aSquareTexCoord[VR_INPUT_MODE_V][3] = aSquareTexCoord[VR_INPUT_MODE_V][5] = 5.f/6.f;

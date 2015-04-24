@@ -16,7 +16,6 @@ const char deinterace_vertex_shader[] = {
 	varying vec2 v_tex2;											\n\
 	varying vec2 v_tex3;											\n\
 	varying vec2 v_tex4;											\n\
-	varying vec2 v_tex5;											\n\
 	varying vec2 v_offset_y;										\n\
 																	\n\
 	void main()														\n\
@@ -30,13 +29,13 @@ const char deinterace_vertex_shader[] = {
 		v_tex2 = a_v2TexCoord;										\n\
 		v_tex3 = a_v2TexCoord + vec2(0.0,(size_of_texel* 1.0));		\n\
 		v_tex4 = a_v2TexCoord + vec2(0.0,(size_of_texel* 2.0));		\n\
-		v_tex5 = a_v2TexCoord + vec2(0.0,(size_of_texel* 3.0));		\n\
 																	\n\
 		gl_Position = a_v4Position;									\n\
 	}																\n\
 "
 };
 
+#if 1
 const char deinterace_frag_shader[] = {
 " 	#version 100																	\n\
 																					\n\
@@ -46,14 +45,12 @@ const char deinterace_frag_shader[] = {
 	uniform float u_fTexHeight;														\n\
 	uniform sampler2D diffuse;														\n\
 	uniform sampler2D ref_tex;														\n\
-	uniform sampler2D filter_frac_tex;												\n\
 																					\n\
 	varying vec2 v_tex0;															\n\
 	varying vec2 v_tex1;															\n\
 	varying vec2 v_tex2;															\n\
 	varying vec2 v_tex3;															\n\
 	varying vec2 v_tex4;															\n\
-	varying vec2 v_tex5;															\n\
 	varying vec2 v_offset_y;														\n\
 																					\n\
 	void main()																		\n\
@@ -82,6 +79,48 @@ const char deinterace_frag_shader[] = {
 	}																				\n\
 "
 };
+#else
+const char deinterace_frag_shader[] = {
+" 	#version 100																	\n\
+																					\n\
+	//precision mediump float;														\n\
+	precision highp float;															\n\
+																					\n\
+	uniform float u_fTexHeight;														\n\
+	uniform sampler2D diffuse;														\n\
+	uniform sampler2D ref_tex;														\n\
+																					\n\
+	varying vec2 v_tex0;															\n\
+	varying vec2 v_tex1;															\n\
+	varying vec2 v_tex2;															\n\
+	varying vec2 v_tex3;															\n\
+	varying vec2 v_tex4;															\n\
+	varying vec2 v_offset_y;														\n\
+																					\n\
+	void main()																		\n\
+	{																				\n\
+		vec4 tval0 = vec4(0.0, 0.0, 0.0, 0.0), tval1 = vec4(0.0, 0.0, 0.0, 0.0);	\n\
+																					\n\
+		//	 deinterface without scaling											\n\
+		vec4 y0_frac = texture2D(ref_tex, v_offset_y);								\n\
+		if( y0_frac.x == 1.0 )														\n\
+		{																			\n\
+			tval0 += texture2D(diffuse, v_tex1) * ( 1.0/2.0);						\n\
+			tval0 += texture2D(diffuse, v_tex3) * ( 1.0/2.0);						\n\
+		}																			\n\
+		else //even																	\n\
+		{																			\n\
+			tval0 = texture2D(diffuse, v_tex2);										\n\
+		}																			\n\
+																					\n\
+		gl_FragColor = tval0;														\n\
+																					\n\
+		//for debugging																\n\
+		//gl_FragColor = texture2D(diffuse, v_v2TexCoord.xy);						\n\
+	}																				\n\
+"
+};
+#endif
 
 const char scaler_vertex_shader[] = {
 "									\n\

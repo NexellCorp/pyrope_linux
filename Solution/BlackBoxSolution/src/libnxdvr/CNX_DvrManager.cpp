@@ -101,7 +101,7 @@ CNX_DvrManager::CNX_DvrManager()
 	, m_NormalDuration( 0 )
 	, m_EventDuration( 0 )
 	, m_EventBufferDuration( 0 )
-	, m_bThreadExit( false )
+	, m_bThreadExit( true )
 	, NormalFileNameCallbackFunc( NULL )
 	, EventFileNameCallbackFunc( NULL )
 	, ParkingFileNameCallbackFunc( NULL )
@@ -554,10 +554,12 @@ int32_t CNX_DvrManager::StartManager( void )
 {
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 
-	m_bThreadExit = false;
-	if( 0 > pthread_create( &this->m_hThread, NULL, this->ThreadMain, this ) ) {
-		NxDbgMsg( NX_DBG_ERR, ("%s[%s] Fail, Create Thread\n", NX_DTAG, __func__) );
-		return -1;
+	if( m_bThreadExit ) {
+		m_bThreadExit = false;
+		if( 0 > pthread_create( &this->m_hThread, NULL, this->ThreadMain, this ) ) {
+			NxDbgMsg( NX_DBG_ERR, ("%s[%s] Fail, Create Thread\n", NX_DTAG, __func__) );
+			return -1;
+		}
 	}
 
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
@@ -569,8 +571,11 @@ int32_t CNX_DvrManager::StopManager( void )
 {
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	
-	m_bThreadExit = true;
-	pthread_join( m_hThread, NULL );
+	if( !m_bThreadExit ) {
+		m_bThreadExit = true;
+		pthread_join( m_hThread, NULL );
+		m_hThread = 0x00;
+	}
 
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return 0;
@@ -747,6 +752,8 @@ void CNX_DvrManager::ThreadLoop( void )
 		usleep(10000);
 	}
 
+	StopWriting();
+
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 }
 
@@ -851,6 +858,9 @@ int32_t CNX_DvrManager::Deinit( void )
 			SAFE_DELETE_FILTER( m_pHlsFilter );
 			SAFE_DELETE_FILTER( m_pRtpFilter );
 		}
+
+		SAFE_DELETE_FILTER( m_pNotifier );
+		SAFE_DELETE_FILTER( m_pRefClock );
 	}
 
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
@@ -942,11 +952,11 @@ int32_t CNX_DvrManager::Stop( void )
 
 			SAFE_STOP_FILTER( m_pVipFilter[i] );
 			SAFE_STOP_FILTER( m_pMdFilter[i] );
-			SAFE_STOP_FILTER( m_pVrFilter[i] );
 			SAFE_STOP_FILTER( m_pEffectFilter[i] );
 			SAFE_STOP_FILTER( m_pOverlayFilter[i] );
-			SAFE_STOP_FILTER( m_pAvcEncFilter[i] );
+			SAFE_STOP_FILTER( m_pVrFilter[i] );
 			//SFAE_STOP_FILTER( m_pMp4EncFilter[i] );
+			SAFE_STOP_FILTER( m_pAvcEncFilter[i] );
 		}
 
 		for( int32_t i = 0; i < m_AudioNum; i++ )
@@ -963,12 +973,12 @@ int32_t CNX_DvrManager::Stop( void )
 
 		{
 			SAFE_STOP_FILTER( m_pInterleaverFilter );
-			SAFE_STOP_FILTER( m_pHlsFilter );
 			SAFE_STOP_FILTER( m_pRtpFilter );
+			SAFE_STOP_FILTER( m_pHlsFilter );
 			SAFE_STOP_FILTER( m_pTsMuxerFilter );
 			SAFE_STOP_FILTER( m_pBufferingFilter );
-			SAFE_STOP_FILTER( m_pFileWriter );
 			SAFE_STOP_FILTER( m_pMp4MuxerFilter );
+			SAFE_STOP_FILTER( m_pFileWriter );			
 			SAFE_STOP_FILTER( m_pNotifier );
 		}
 
@@ -1021,7 +1031,7 @@ int32_t CNX_DvrManager::SetCapture( int32_t channel )
 
 	// b. capture channel
 	if( m_pVipFilter[channel] )
-		m_pVipFilter[channel]->EnableCapture();
+		m_pVipFilter[channel]->Capture();
 	
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return 0;

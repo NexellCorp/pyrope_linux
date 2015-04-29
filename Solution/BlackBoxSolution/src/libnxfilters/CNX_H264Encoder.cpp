@@ -32,7 +32,6 @@
 #define	NEW_SCHED_PRIORITY	25
 #define MAX_VID_QCOUNT		64
 
-#define AUD_TEST			0
 #define	DUMP_H264			0
 
 #if( DUMP_H264 )
@@ -41,11 +40,31 @@ static FILE *outFp = NULL;
 static int32_t bFileOpen = false;
 #endif
 
+#if(0)
+static void dumpdata( void *data, int len, const char *msg )
+{
+	int i=0;
+	unsigned char *byte = (unsigned char *)data;
+	printf("Dump Data : %s", msg);
+	for( i=0 ; i<len ; i ++ )
+	{
+		if( i!=0 && i%32 == 0 ) printf("\n\t");
+		printf("%.2x", byte[i] );
+		if( i%4 == 3 ) printf(" ");
+	}
+	printf("\n");
+}
+#else
+static void dumpdata( void *data, int len, const char *msg )
+{
+}
+#endif
+
 //------------------------------------------------------------------------------
 CNX_H264Encoder::CNX_H264Encoder()
 	: m_bInit( false )
 	, m_bRun( false )
-	, m_bEnableDeliver( true )
+	, m_bEnable( true )
 	, m_bThreadExit( true )
 	, m_hThread( 0x00 )
 	, m_PacketID( 0 )
@@ -86,8 +105,6 @@ void CNX_H264Encoder::Init( NX_VIDENC_CONFIG *pConfig )
 
 	if( false == m_bInit )
 	{
-		m_hEnc = NX_VidEncOpen( NX_AVC_ENC, NULL );
-
 		memset( &m_EncInfo, 0, sizeof(m_EncInfo) );
 
 		m_EncInfo.width				= pConfig->width;
@@ -118,9 +135,8 @@ void CNX_H264Encoder::Init( NX_VIDENC_CONFIG *pConfig )
 		// m_EncInfo.mirDirection	=;
 		// m_EncInfo.jpgQuality		=;
 
-		NxDbgMsg( NX_DBG_INFO, (TEXT("width=%d, height=%d, bitrate=%d, fps=%d\n"), m_EncInfo.width, m_EncInfo.height, m_EncInfo.bitrate, m_EncInfo.fpsNum / m_EncInfo.fpsDen) );
+		NxDbgMsg( NX_DBG_INFO, (TEXT("[Video|Encoder] Width=%d, Height=%d, Bitrate=%d, FPS=%d\n"), m_EncInfo.width, m_EncInfo.height, m_EncInfo.bitrate, m_EncInfo.fpsNum / m_EncInfo.fpsDen) );
 
-		NX_VidEncInit( m_hEnc, &m_EncInfo );
 		AllocateBuffer( NUM_ALLOC_BUFFER );
 		m_bInit = true;
 
@@ -142,11 +158,6 @@ void CNX_H264Encoder::Deinit( void )
 	if( true == m_bInit )
 	{
 		if( m_bRun )	Stop();
-		if( NULL != m_hEnc ) {
-			NX_VidEncClose( m_hEnc );
-			m_hEnc = NULL;
-		}
-
 		m_bInit = false;
 	}
 
@@ -166,7 +177,7 @@ int32_t	CNX_H264Encoder::Receive( CNX_Sample *pSample )
 	CNX_AutoLock lock( &m_hLock );
 	NX_ASSERT( NULL != pSample );
 
-	if( !m_bEnableDeliver ) 
+	if( !m_bEnable ) 
 		return true;
 
 #if( DUMP_H264 )
@@ -208,6 +219,11 @@ int32_t	CNX_H264Encoder::Run( void )
 		m_bThreadExit 	= false;
 		NX_ASSERT( !m_hThread );
 
+		if( !m_hEnc ) {
+			m_hEnc = NX_VidEncOpen( NX_AVC_ENC, NULL );
+			NX_VidEncInit( m_hEnc, &m_EncInfo );
+		}
+
 		if( 0 > pthread_create( &this->m_hThread, NULL, this->ThreadMain, this ) ) {
 			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __func__) );
 			return false;
@@ -230,6 +246,11 @@ int32_t	CNX_H264Encoder::Stop( void )
 		pthread_join( m_hThread, NULL );
 		m_hThread = 0x00;
 		m_bRun = false;
+
+		if( NULL != m_hEnc ) {
+			NX_VidEncClose( m_hEnc );
+			m_hEnc = NULL;
+		}
 	}
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return true;
@@ -265,8 +286,8 @@ void CNX_H264Encoder::FreeBuffer( void )
 	{
 		//NX_ASSERT(NULL != m_OutBuf[i]);
 	}
-	m_pSemIn->Post();		//	Send Dummy
-	m_pSemOut->Post();		//	Send Dummy
+	m_pSemIn->Post();
+	m_pSemOut->Post();
 	m_iNumOfBuffer = 0;
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 }
@@ -411,11 +432,7 @@ int32_t CNX_H264Encoder::EncodeVideo( CNX_VideoSample *pInSample, CNX_MuxerSampl
 {
 	NX_VID_ENC_IN	encIn;
 	NX_VID_ENC_OUT	encOut;
-
 	uint64_t timeStamp = pInSample->GetTimeStamp();
-
-	// static uint64_t maxInterval = 0;
-	// uint64_t interval = NX_GetTickCount();
 
 	memset( &encIn, 0x00, sizeof(encIn) );
 	encIn.pImage		= pInSample->GetVideoMemory();
@@ -429,69 +446,27 @@ int32_t CNX_H264Encoder::EncodeVideo( CNX_VideoSample *pInSample, CNX_MuxerSampl
 		{
 			unsigned char *encBuffer = NULL;
 			unsigned char *seqBuffer = NULL;
-#if( AUD_TEST )
-			unsigned char *audBuffer = NULL;
-			unsigned char audTemp[6] = { 0x00, 0x00, 0x00, 0x01, 0x09, 0x10 };
-#endif
-
-#if( AUD_TEST )
-			int32_t encSize = 0, seqSize = 0, audSize = 0;
-#else			
 			int32_t encSize = 0, seqSize = 0;
-#endif			
 
-#if 1		// move to "MP4 Muxer" / "TS Muxer"
-
-#if( AUD_TEST )
-			if( m_EncInfo.enableAUDelimiter ) {
-				audSize = sizeof(audTemp);
-				audBuffer = (unsigned char *)malloc( audSize );
-				memcpy( audBuffer, audTemp, audSize );
-			}
-#endif
-
+#if 1		
+			// move to "MP4 Muxer" / "TS Muxer"
 			if(encOut.frameType) {
 				seqBuffer = (unsigned char *)malloc( MAX_SEQ_BUF_SIZE );
 				NX_VidEncGetSeqInfo( m_hEnc, seqBuffer, &seqSize );
 			}
 #endif			
 
-#if( AUD_TEST )
-			encSize = encOut.bufSize + seqSize + audSize;
-#else			
 			encSize = encOut.bufSize + seqSize;
-#endif			
 			encBuffer = (unsigned char*) malloc( encSize );
 			
-#if( AUD_TEST )
-			if( NULL != audBuffer ) {
-				memcpy( encBuffer, audBuffer, audSize );
-				free(audBuffer);
-				audBuffer = NULL;
-			}
-#endif
 			if( NULL != seqBuffer ) {
-#if( AUD_TEST )
-				memcpy( encBuffer + audSize, seqBuffer, seqSize );
-#else				
 				memcpy( encBuffer, seqBuffer, seqSize );
-#endif				
 				free(seqBuffer);
 				seqBuffer = NULL;
 				
-				// printf("SPS PPS ( ");
-				// for(int32_t i = 0; i < audSize + seqSize; i++)
-				// {
-				// 	printf("0x%02x ", encBuffer[i] );
-				// }
-				// printf(")\n");
-
+				dumpdata( encBuffer, seqSize, "SPS/PPS\n\t");
 			}
-#if( AUD_TEST )			
-			memcpy( encBuffer + seqSize + audSize, encOut.outBuf, encOut.bufSize );
-#else			
 			memcpy( encBuffer + seqSize, encOut.outBuf, encOut.bufSize );
-#endif			
 
 			pOutSample->SetOwner( this );
 			pOutSample->SetBuffer( encBuffer, encSize );
@@ -499,17 +474,14 @@ int32_t CNX_H264Encoder::EncodeVideo( CNX_VideoSample *pInSample, CNX_MuxerSampl
 			pOutSample->SetTimeStamp( timeStamp );
 			pOutSample->SetActualDataLength( encSize );
 			pOutSample->SetSyncPoint( encOut.frameType );
-
+			pOutSample->SetFlags( false );
+			
 #if( DUMP_H264 )
 			if( outFp ) {
 				fwrite( encBuffer, 1, encSize, outFp );
 			}
 #endif
-			// interval = NX_GetTickCount() - interval;
-			// if( interval > maxInterval ) {
-			// 	maxInterval = interval;
-			// 	printf("Interval is %lld\n", interval);
-			// }
+
 			return encSize;
 		}
 		return 0;
@@ -519,49 +491,62 @@ int32_t CNX_H264Encoder::EncodeVideo( CNX_VideoSample *pInSample, CNX_MuxerSampl
 }
 
 //----------------------------------------------------------------------------
-//	External Interfacesc
-//----------------------------------------------------------------------------
-int32_t CNX_H264Encoder::SetPacketID( uint32_t PacketID )
+int32_t	CNX_H264Encoder::EnableFilter( uint32_t enable )
 {
-	m_PacketID = PacketID;
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	CNX_AutoLock lock( &m_hLock );
+
+	NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnable)?"Enable":"Disable", (enable)?"Enable":"Disable") );
+
+	m_bEnable = enable;
+
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return true;
 }
 
+//------------------------------------------------------------------------------
+int32_t CNX_H264Encoder::SetPacketID( uint32_t PacketID )
+{
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	
+	NxDbgMsg( NX_DBG_DEBUG, (TEXT("Packet ID = %d\n"), PacketID) );
+	m_PacketID = PacketID;
+
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	return true;
+}
+
+//------------------------------------------------------------------------------
 int32_t CNX_H264Encoder::GetDsiInfo( uint8_t *dsiInfo, int32_t *dsiSize )
 {
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	if( m_bInit ) {
+		if( !m_hEnc ) {
+			m_hEnc = NX_VidEncOpen( NX_AVC_ENC, NULL );
+			NX_VidEncInit( m_hEnc, &m_EncInfo );
+		}
+
 		NX_VidEncGetSeqInfo( m_hEnc, dsiInfo, dsiSize );
-		
-		//NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s(): DSI Infomation( size = %d ) :: "), __func__, *dsiSize) );
-		//for(int32_t i = 0; i < *dsiSize; i++)
-		//{
-		//	printf("0x%02x ", dsiInfo[i] );
-		//}
-		//NxDbgMsg( NX_DBG_DEBUG, (TEXT("\n")) );
+		dumpdata( dsiInfo, *dsiSize, "H264 Encoder DSI\n\t" );
+
+		if( m_hEnc ) {
+			NX_VidEncClose( m_hEnc );
+			m_hEnc = NULL;
+		}
 	}
 	else {
-		// not initialize
+		NxDbgMsg( NX_DBG_ERR, (TEXT("Fail, Get DSI infomation.\n")) );
 	}
 
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t  CNX_H264Encoder::GetStatistics( NX_FILTER_STATISTICS *pStatistics )
 {
-	return true;
-}
-
-//------------------------------------------------------------------------------
-int32_t	CNX_H264Encoder::EnableDeliver( uint32_t enable )
-{
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
-	CNX_AutoLock lock( &m_hLock );
-
-	NxDbgMsg( NX_DBG_INFO, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnableDeliver)?"Enable":"Disable", (enable)?"Enable":"Disable") );
-
-	m_bEnableDeliver = enable;
-
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );	
 	return true;
 }
+

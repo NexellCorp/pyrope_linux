@@ -58,6 +58,7 @@ CNX_VIPFilter::CNX_VIPFilter()
 	: JpegFileNameFunc( NULL )
 	, m_bInit( false )
 	, m_bRun( false )
+	, m_bPause( false )
 	, m_bThreadExit( true )
 	, m_hThread( 0 )
 	, m_hVip( NULL )
@@ -66,21 +67,21 @@ CNX_VIPFilter::CNX_VIPFilter()
 	, m_bCapture( false )
 	, m_bCaptureResize( false )
 {
-	for( int32_t i = 0; i < MAX_BUFFER; i++) {
-		m_VideoMemory[i] = NULL;
-	}
-
 	m_pRefClock			= CNX_RefClock::GetSingletonPtr();
 	m_pSemOut			= new CNX_Semaphore(MAX_BUFFER, 0);
+	m_pSemPause			= new CNX_Semaphore(1, 0);
 	m_pSemCapture		= new CNX_Semaphore(1, 0);
 	m_pSemCaptureRun	= new CNX_Semaphore(1, 0);
 	m_pJpegCapture		= new INX_JpegCapture();
 	m_pOutStatistics	= new CNX_Statistics();
+	
+	NX_ASSERT( m_pSemOut );
+
+	for( int32_t i = 0; i < MAX_BUFFER; i++)
+		m_VideoMemory[i] = NULL;
 
 	memset( m_JpegFileName, 0x00, sizeof(m_JpegFileName) );
-
-	NX_ASSERT( m_pSemOut );
-	pthread_mutex_init( &m_hCaptureLock, NULL );
+	pthread_mutex_init( &m_hLock, NULL );
 }
 
 //------------------------------------------------------------------------------
@@ -89,9 +90,10 @@ CNX_VIPFilter::~CNX_VIPFilter()
 	if( true == m_bInit )
 		Deinit();
 
-	pthread_mutex_destroy( &m_hCaptureLock );
+	pthread_mutex_destroy( &m_hLock );
 
 	delete m_pSemOut;
+	delete m_pSemPause;
 	delete m_pSemCapture;
 	delete m_pSemCaptureRun;
 	delete m_pJpegCapture;
@@ -119,6 +121,9 @@ void CNX_VIPFilter::Init( NX_VIP_CONFIG *pConfig )
 		m_VipInfo.cropHeight	= pConfig->height;
 		m_VipInfo.outWidth		= pConfig->width;
 		m_VipInfo.outHeight		= pConfig->height;
+
+		NxDbgMsg( NX_DBG_INFO, (TEXT("[Video|Capture] Port = %d, Width = %d, Height = %d, Fps = %d\n"), 
+			pConfig->port, pConfig->width, pConfig->height, pConfig->fps) );
 
 		AllocateBuffer( m_VipInfo.width, m_VipInfo.height, 256, 256, NUM_ALLOC_BUFFER, m_FourCC );
 		m_bInit = true;
@@ -201,6 +206,7 @@ int32_t	CNX_VIPFilter::Stop( void )
 	if( true == m_bRun ) {
 		m_bThreadExit = true;
 		m_pSemOut->Post();
+		m_pSemPause->Post();
 		pthread_join( m_hThread, NULL );
 		m_hThread = 0x00;
 		m_bRun = false;
@@ -246,6 +252,7 @@ void CNX_VIPFilter::FreeBuffer( void )
 		NX_ASSERT(NULL != m_VideoMemory[i]);
 		if( m_VideoMemory[i] ) {
 			NX_FreeVideoMemory( m_VideoMemory[i] );
+			m_VideoMemory[i] = NULL;
 		}
 	}
 	m_pSemOut->Post();		//	Send Dummy
@@ -317,22 +324,26 @@ void CNX_VIPFilter::ThreadLoop( void )
 	m_pSemOut->Init();
 	m_pSemCapture->Init();
 	m_pSemCaptureRun->Init();
+	m_pSemPause->Init();
 
 	for( int32_t i = 0; i < m_iNumOfBuffer - 1; i++ )
 		m_pSemOut->Post();
 
 	while( !m_bThreadExit )
 	{
-		pthread_mutex_lock( &m_hCaptureLock );
+		pthread_mutex_lock( &m_hLock );
+		int32_t bPause = m_bPause;
 		int32_t bCaptureResize = m_bCaptureResize;
-		pthread_mutex_unlock( &m_hCaptureLock );
+		pthread_mutex_unlock( &m_hLock );
+
+		if( bPause ) 
+			m_pSemPause->Pend();
 
 		if( bCaptureResize ) {
 			m_pSemCaptureRun->Post();
 			m_pSemCapture->Pend();
 		}
 
-		// uint64_t threadInterval = NX_GetTickCount();
 		if( false == GetDeliverySample( (CNX_Sample **)&pSample) )
 		{
 			NxDbgMsg( NX_DBG_WARN, (TEXT("GetDeliverySample() Failed\n")) );
@@ -352,16 +363,15 @@ void CNX_VIPFilter::ThreadLoop( void )
 				NxDbgMsg( NX_DBG_ERR, (TEXT("VipQueueBuffer() Failed.\n")) );
 			}
 		}
-		
-		//printf("[%s] Sample ( %d / %d )\n", (m_VipInfo.port == VIP_PORT_MIPI) ? "MIPI" : "VIP0", m_SampleOutQueue.GetSampleCount(), NUM_ALLOC_BUFFER );
-		if( 3 > m_SampleOutQueue.GetSampleCount() ) {
-			NxDbgMsg( NX_DBG_WARN, (TEXT("Buffer is not enough. ( port = %s, cur = %2d, alloc = %2d )\n"), 
-				(m_VipInfo.port == VIP_PORT_0) ? "VIP0" :
-				(m_VipInfo.port == VIP_PORT_1) ? "VIP1" :
-				(m_VipInfo.port == VIP_PORT_2) ? "VIP2" : "MIPI",
-				m_SampleOutQueue.GetSampleCount(),
-				NUM_ALLOC_BUFFER) );
-		}
+
+		// if( 3 > m_SampleOutQueue.GetSampleCount() ) {
+		// 	NxDbgMsg( NX_DBG_WARN, (TEXT("Buffer is not enough. ( port = %s, cur = %2d, alloc = %2d )\n"), 
+		// 		(m_VipInfo.port == VIP_PORT_0) ? "VIP0" :
+		// 		(m_VipInfo.port == VIP_PORT_1) ? "VIP1" :
+		// 		(m_VipInfo.port == VIP_PORT_2) ? "VIP2" : "MIPI",
+		// 		m_SampleOutQueue.GetSampleCount(),
+		// 		NUM_ALLOC_BUFFER) );
+		// }
 
 		if( 0 > NX_VipDequeueBuffer( m_hVip, &pVideoMemory, &systemTime ) ) {
 			NxDbgMsg( NX_DBG_WARN, (TEXT("VipDequeueBuffer() Failed.\n")) );
@@ -384,13 +394,6 @@ void CNX_VIPFilter::ThreadLoop( void )
 		expectTime	= (uint64_t)(1. / (double)(m_VipInfo.fpsNum / m_VipInfo.fpsDen) * 1000.);
 		delayMargin = (uint64_t)(1. / (double)(m_VipInfo.fpsNum / m_VipInfo.fpsDen) * 1000. / 2.);
 
-		// Internal Debug Message ( Thread Hit Interval )
-		// threadInterval = NX_GetTickCount() - threadInterval;
-		// if( threadInterval >= (expectTime + delayMargin) ) {
-		// 	NxDbgColorMsg( NX_DBG_VBS, (TEXT("[%d] DeliverSample <-> DequeueBuffer ( Over %lldmSec : %lld mSec )"), 
-		// 		nSampleCount, expectTime + delayMargin, threadInterval) );
-		// }
-
 		// Internal Debug Message ( Delayed Capture )
 		if( !prvTime )	prvTime = curTime = sampleTime;
 		else 			curTime = sampleTime;
@@ -412,12 +415,12 @@ void CNX_VIPFilter::ThreadLoop( void )
 		}
 #endif		
 		// Capture
-		pthread_mutex_lock( &m_hCaptureLock );
+		pthread_mutex_lock( &m_hLock );
 		if( m_bCapture ) {
 			JpegEncode( pSample );
 			m_bCapture = false;
 		}
-		pthread_mutex_unlock( &m_hCaptureLock );
+		pthread_mutex_unlock( &m_hLock );
 
 		Deliver( pSample );
 
@@ -495,9 +498,9 @@ int32_t CNX_VIPFilter::RegJpegFileNameCallback( int32_t(*cbFunc)( uint8_t *, uin
 //------------------------------------------------------------------------------
 int32_t CNX_VIPFilter::Capture( void )
 {
-	pthread_mutex_lock( &m_hCaptureLock );
+	pthread_mutex_lock( &m_hLock );
 	m_bCapture = true;
-	pthread_mutex_unlock( &m_hCaptureLock );
+	pthread_mutex_unlock( &m_hLock );
 	return true;	
 }
 
@@ -507,9 +510,9 @@ int32_t CNX_VIPFilter::Capture( void )
 int32_t CNX_VIPFilter::CaptureResize( NX_VIP_CONFIG *pConfig  )
 {
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
-	pthread_mutex_lock( &m_hCaptureLock );
+	pthread_mutex_lock( &m_hLock );
 	m_bCaptureResize = true;
-	pthread_mutex_unlock( &m_hCaptureLock );
+	pthread_mutex_unlock( &m_hLock );
 	m_pSemCaptureRun->Pend();
 
 	if( !m_hVip ) {
@@ -615,9 +618,9 @@ int32_t CNX_VIPFilter::CaptureResize( NX_VIP_CONFIG *pConfig  )
 	for( int32_t i = 0; i < m_iNumOfBuffer - 1; i++ )
 		m_pSemOut->Post();
 
-	pthread_mutex_lock( &m_hCaptureLock );
+	pthread_mutex_lock( &m_hLock );
 	m_bCaptureResize = false;
-	pthread_mutex_unlock( &m_hCaptureLock );
+	pthread_mutex_unlock( &m_hLock );
 
 	m_pSemCapture->Post();
 
@@ -626,8 +629,71 @@ int32_t CNX_VIPFilter::CaptureResize( NX_VIP_CONFIG *pConfig  )
 }
 
 //------------------------------------------------------------------------------
-int32_t  CNX_VIPFilter::GetStatistics( NX_FILTER_STATISTICS *pStatistics )
+int32_t CNX_VIPFilter::Pause( int32_t enable )
 {
-	return true;
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+
+	if( m_bPause == enable ) {
+		NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+		return -1;
+	}
+
+	pthread_mutex_lock( &m_hLock);
+	m_bPause = enable;
+	pthread_mutex_unlock( &m_hLock );
+
+	if( enable == false ) {
+		m_pSemPause->Post();
+	}
+	else {
+		while( m_SampleOutQueue.GetSampleCount() != m_iNumOfBuffer );
+	}
+
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	return 0;
 }
 
+//------------------------------------------------------------------------------
+int32_t CNX_VIPFilter::ChangeConfig( NX_VIP_CONFIG *pConfig  )
+{
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+
+	m_VipInfo.width			= pConfig->width;
+	m_VipInfo.height		= pConfig->height;
+	m_VipInfo.fpsNum		= pConfig->fps;
+	m_VipInfo.fpsDen		= 1;
+	m_VipInfo.cropX			= 0;
+	m_VipInfo.cropY			= 0;
+	m_VipInfo.cropWidth		= pConfig->width;
+	m_VipInfo.cropHeight	= pConfig->height;
+	m_VipInfo.outWidth		= pConfig->width;
+	m_VipInfo.outHeight		= pConfig->height;
+	
+	NX_VipChangeConfig( m_hVip, &m_VipInfo );
+
+	FreeBuffer();
+	AllocateBuffer( m_VipInfo.width, m_VipInfo.height, 256, 256, NUM_ALLOC_BUFFER, m_FourCC );
+
+	for( int32_t i = 0; i < m_iNumOfBuffer; i++ )
+	{
+		if( 0 > NX_VipQueueBuffer( m_hVip, m_VideoMemory[i] ) ) {
+			NxDbgMsg( NX_DBG_ERR, (TEXT("VipQueueBuffer() Failed.\n")) );
+		}
+	}
+
+	m_ReleaseQueue.Reset();
+	m_pSemOut->Init();
+	for( int32_t i = 0; i < m_iNumOfBuffer - 1; i++ )
+		m_pSemOut->Post();
+
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	return 0;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_VIPFilter::GetStatistics( NX_FILTER_STATISTICS *pStatistics )
+{
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	return true;
+}

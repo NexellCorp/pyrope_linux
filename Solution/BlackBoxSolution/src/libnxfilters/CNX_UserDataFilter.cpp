@@ -213,6 +213,10 @@ void	CNX_UserDataFilter::RegUserDataCallback( int32_t(*cbFunc)( uint8_t *, uint3
 //------------------------------------------------------------------------------
 void	CNX_UserDataFilter::GetUserDataFromCallback( CNX_MuxerSample *pSample )
 {
+	pSample->SetTimeStamp( m_pRefClock ? m_pRefClock->GetCorrectTickCount() : NX_GetTickCount() );
+	pSample->SetDataType( m_PacketID );
+	pSample->SetFlags( false );
+
 	if( UserDataCallbackFunc )
 	{
 		uint8_t *pBuf;
@@ -221,9 +225,7 @@ void	CNX_UserDataFilter::GetUserDataFromCallback( CNX_MuxerSample *pSample )
 		if( true == pSample->GetBuffer( &pBuf, (int32_t*)&bufSize ) )
 		{
 			uint32_t outSize = UserDataCallbackFunc( pBuf, m_UserBufferSize );
-			pSample->SetTimeStamp( m_pRefClock ? m_pRefClock->GetCorrectTickCount() : NX_GetTickCount() );
 			pSample->SetActualDataLength( outSize );
-			pSample->SetDataType( m_PacketID );
 		}
 	}
 }
@@ -307,8 +309,12 @@ void*	CNX_UserDataFilter::ThreadMain( void *arg )
 //----------------------------------------------------------------------------
 int32_t	CNX_UserDataFilter::SetPacketID( uint32_t PacketID )
 {
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	
+	NxDbgMsg( NX_DBG_DEBUG, (TEXT("Packet ID = %d\n"), m_PacketID) );
 	m_PacketID = PacketID;
-	NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s(): Packet ID = %d\n"), __func__, m_PacketID) );
+
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return true;
 }
 

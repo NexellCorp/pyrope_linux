@@ -252,6 +252,18 @@ void CNX_BufferingFilter::ThreadLoop(void)
 		PushStream( pSample );
 	}
 
+	while( m_SampleInQueue.IsReady() )
+	{
+		m_SampleInQueue.PopSample((CNX_Sample**)&pSample);
+		if( pSample )
+			pSample->Unlock();
+	}
+
+	while( m_EventCount > 0 )
+	{
+		PopStream();
+	}
+
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 }
 

@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //
-//	Copyright (C) 2013 Nexell Co. All Rights Reserved
+//	Copyright (C) 2015 Nexell Co. All Rights Reserved
 //	Nexell Co. Proprietary & Confidential
 //
 //	NEXELL INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
@@ -17,105 +17,91 @@
 //
 //------------------------------------------------------------------------------
 
-#ifndef __CNX_MP3ENCODER_H__
-#define __CNX_MP3ENCODER_H__
+#ifndef __CNX_SCALERFILTER_H__
+#define __CNX_SCALERFILTER_H__
+
+#include <stdint.h>
+extern "C" {
+#include <libnxscaler.h>
+};
 
 #include "CNX_BaseFilter.h"
 #include "NX_FilterConfigTypes.h"
 
-#include <nx_mp3enc.h>
-
 #ifdef __cplusplus
 
-class	CNX_Mp3Encoder
-		: public CNX_BaseFilter
+class CNX_ScalerFilter
+	: public CNX_BaseFilter
 {
 public:
-	CNX_Mp3Encoder();
-	virtual ~CNX_Mp3Encoder();
+	CNX_ScalerFilter();
+	~CNX_ScalerFilter();
 
 public:
 	//------------------------------------------------------------------------
-	virtual void		Init( NX_AUDENC_CONFIG *pConfig );
+	virtual void		Init( NX_SCALER_CONFIG *pConfig );
 	virtual void		Deinit( void );
 	//------------------------------------------------------------------------
 	//	Override from CNX_BaseFilter
 	//------------------------------------------------------------------------
-	virtual	int32_t		Receive( CNX_Sample *pSample );
+	virtual int32_t		Receive( CNX_Sample *pSample );
 	virtual int32_t		ReleaseSample( CNX_Sample *pSample );
 
-	virtual	int32_t		Run( void );
-	virtual	int32_t		Stop( void );
+	virtual int32_t		Run( void );
+	virtual int32_t		Stop( void );
 	//------------------------------------------------------------------------
 
 protected:
-	virtual void		AllocateBuffer( int32_t numOfBuffer );
+	virtual void		AllocateBuffer(int32_t width, int32_t height, int32_t alignx, int32_t aligny, int32_t numOfBuffer, uint32_t dwFourCC);
 	virtual void		FreeBuffer( void );
-
+	
 	virtual	int32_t		GetSample( CNX_Sample **ppSample );
-	virtual	int32_t		GetDeliverySample( CNX_Sample **ppSample );
-
+	virtual int32_t		GetDeliverySample( CNX_Sample **pSample );
+	
 protected:
 			void		ThreadLoop( void );
-	static 	void*		ThreadMain( void *arg );
+	static 	void*		ThreadMain( void* arg );
 
 private:
-			int32_t		EncodeAudio( CNX_MediaSample *pInSample, CNX_MuxerSample *pOutSample );
+			int32_t		DigitalZoom( NX_VID_MEMORY_HANDLE hSrcMemory, NX_VID_MEMORY_HANDLE hOutMemory );
 
 public:
 	//------------------------------------------------------------------------
 	//	External Interfaces
 	//------------------------------------------------------------------------
-			int32_t 	EnableFilter( uint32_t enable );
-			int32_t		SetPacketID( uint32_t PacketID );
-			int32_t  	GetStatistics( NX_FILTER_STATISTICS *pStatistics );
+			int32_t		SetDigitalZoomLevel( float iLevel );
 
 protected:
 	//------------------------------------------------------------------------
 	//	Filter status
 	//------------------------------------------------------------------------
-	int32_t				m_bInit;
-	int32_t				m_bRun;
-	int32_t				m_bEnable;
-	CNX_Semaphore		*m_pSemIn;
-	CNX_Semaphore		*m_pSemOut;
-	pthread_mutex_t		m_hLock;
+	int32_t					m_bInit;
+	int32_t					m_bRun;
+	CNX_Semaphore			*m_pSemIn;
+	CNX_Semaphore			*m_pSemOut;
+	pthread_mutex_t			m_hLock;
 	//------------------------------------------------------------------------
 	//	Thread
 	//------------------------------------------------------------------------
-	int32_t				m_bThreadExit;
-	pthread_t			m_hThread;
+	int32_t					m_bThreadExit;
+	pthread_t				m_hThread;	
 	//------------------------------------------------------------------------
-	//	Output sample
+	//	Input / Output buffer
 	//------------------------------------------------------------------------
-	uint32_t			m_PacketID;
-	//------------------------------------------------------------------------
-	//	MP3(Mpeg1 Layer III) Audio Encoder
-	//------------------------------------------------------------------------
-	MP3_ENC_HANDLE		m_hMp3Enc;
-	
-	uint32_t			m_Channels;
-	uint32_t			m_Frequency;
-	uint32_t			m_Bitrate;
+	enum {	MAX_BUFFER = 12, NUM_ALLOC_BUFFER = 4 };
 
+	int32_t					m_iNumOfBuffer;
+	CNX_SampleQueue			m_SampleInQueue;
+	CNX_SampleQueue			m_SampleOutQueue;
+	NX_VID_MEMORY_HANDLE	m_VideoMemory[MAX_BUFFER];
+	CNX_VideoSample			m_VideoSample[MAX_BUFFER];
 	//------------------------------------------------------------------------
-	//	Input / Output Buffer
+	//	Scaling
 	//------------------------------------------------------------------------
-	enum { MAX_BUFFER = 32, NUM_ALLOC_BUFFER = 16 };
+	NX_SCALER_HANDLE		m_hScaler;
+	float					m_iZoomLevel;
+};	
 
-	int32_t				m_iNumOfBuffer;
-	unsigned char		m_OutBuf[MAX_BUFFER][9212];
-	CNX_MuxerSample		m_OutSample[MAX_BUFFER];
-	CNX_SampleQueue		m_SampleInQueue;
-	CNX_SampleQueue		m_SampleOutQueue;
-	//------------------------------------------------------------------------
-	//	Statistics Infomation
-	//------------------------------------------------------------------------
-	CNX_Statistics		*m_pInStatistics;
-	CNX_Statistics		*m_pOutStatistics;
-};
+#endif	//	__cplusplus
 
-#endif //	__cplusplus
-
-#endif // __CNX_MP3ENCODER_H__
-
+#endif	//	__CNX_SCALERFILTER_H__ 

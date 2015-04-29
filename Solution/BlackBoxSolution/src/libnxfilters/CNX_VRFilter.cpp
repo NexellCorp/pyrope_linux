@@ -165,6 +165,7 @@ int32_t	CNX_VRFilter::Run( void )
 	if( false == m_bRun ) {
 		m_bRun = true;
 	}
+
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return true;
 }
@@ -188,6 +189,7 @@ int32_t	CNX_VRFilter::Stop( void )
 			m_pPrevVideoSample = NULL;
 		}
 	}
+
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return true;
 }
@@ -235,7 +237,7 @@ int32_t CNX_VRFilter::EnableRender( uint32_t enable )
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	CNX_AutoLock lock( &m_hLock );
 
-	NxDbgMsg( NX_DBG_INFO, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnable)?"Enable":"Disable", (enable)?"Enable":"Disable") );
+	NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnable)?"Enable":"Disable", (enable)?"Enable":"Disable") );
 
 	if( enable ) {
 		if( !m_hDsp ) {
@@ -265,7 +267,7 @@ int32_t CNX_VRFilter::EnableHdmiRender( uint32_t enable )
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	CNX_AutoLock lock( &m_hLock );
 
-	NxDbgMsg( NX_DBG_INFO, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnableHdmi)?"Enable":"Disable", (enable)?"Enable":"Disable") );
+	NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnableHdmi)?"Enable":"Disable", (enable)?"Enable":"Disable") );
 
 	DISPLAY_INFO dspInfo;
 	memset( &dspInfo, 0x00, sizeof(dspInfo) );
@@ -331,7 +333,7 @@ int32_t CNX_VRFilter::SetRenderCrop( DSP_IMG_RECT *pCropRect )
 		m_DisplayInfo.dspSrcRect = *pCropRect;
 		NX_DspVideoSetSourceCrop( m_hDsp, pCropRect );
 
-		NxDbgMsg( NX_DBG_INFO, (TEXT("%s(): crop(%d, %d, %d, %d)\n"), __func__, 
+		NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s(): crop(%d, %d, %d, %d)\n"), __func__, 
 			pCropRect->left, pCropRect->top, pCropRect->right, pCropRect->bottom) );
 	}
 
@@ -362,11 +364,10 @@ int32_t CNX_VRFilter::SetRenderPosition( DSP_IMG_RECT *pDspRect )
 
 		NX_DspVideoSetPosition( m_hDsp, pDspRect );
 
-		NxDbgMsg( NX_DBG_INFO, (TEXT("%s(): position(%d, %d, %d, %d)\n"), __func__, 
+		NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s(): position(%d, %d, %d, %d)\n"), __func__, 
 			pDspRect->left, pDspRect->top, pDspRect->right, pDspRect->bottom) );
 	}
 
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return 0;
 }
-

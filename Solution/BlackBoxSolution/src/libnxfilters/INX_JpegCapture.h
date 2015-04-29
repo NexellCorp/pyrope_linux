@@ -44,6 +44,7 @@ public:
 		: m_bThreadExit( false )
 		, m_hThread( 0x00 )
 		, m_JpegQuality( 100 )
+		, m_JpegCaptureCount( 0 )
 		, m_pNotify( NULL )
 	{
 		m_pSemIn	= new CNX_Semaphore(MAX_JPG_BUFFER, 0);
@@ -59,6 +60,11 @@ public:
 	}
 
 public:
+	void RegFileNameCallback( int32_t (*cbFunc)(uint8_t *, uint32_t) )
+	{
+		if( cbFunc )
+			FileNameCallbackFunc = cbFunc;
+	}
 	int32_t SetFileName( char *fileName )
 	{
 		sprintf( m_JpegFileName, "%s", fileName );
@@ -145,6 +151,16 @@ protected:
 		NX_VidEncJpegGetHeader( hJpegEnc, jpegHeader, &jpegHeaderSize );
 		NX_VidEncJpegRunFrame( hJpegEnc, pVideoMemory, &jpegEncOut );
 
+		if( !m_JpegFileName[0] ) {
+			if( FileNameCallbackFunc ) {
+				uint32_t bufSize = 0;
+				FileNameCallbackFunc( (uint8_t*)m_JpegFileName, bufSize );
+			}
+			else {
+				sprintf( (char*)m_JpegFileName, "./capture_%04d.jpg", ++m_JpegCaptureCount);
+			}
+		}
+
 		fd = open( (char*)m_JpegFileName, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0777 );
 
 		if( fd >= 0 && jpegHeaderSize > 0 && jpegEncOut.bufSize > 0 ) {
@@ -155,10 +171,13 @@ protected:
 
 			if( writeSize == jpegHeaderSize + jpegEncOut.bufSize ) {
 				// Jpeg encoding & file writing sucess.
-				if( m_pNotify )
+				if( m_pNotify ) {
 					m_pNotify->EventNotify( 0x1003, m_JpegFileName, strlen((char*)m_JpegFileName) + 1 );
+				}
 
 				if( hJpegEnc )	NX_VidEncClose( hJpegEnc );
+
+				memset( m_JpegFileName, 0x00, sizeof(m_JpegFileName) );
 				return writeSize;		
 			}
 		}
@@ -169,7 +188,8 @@ protected:
 
 		if( fd >= 0) close(fd);
 		if( hJpegEnc )	NX_VidEncClose( hJpegEnc );
-		
+
+		memset( m_JpegFileName, 0x00, sizeof(m_JpegFileName) );
 		return -1;
 	}
 
@@ -182,8 +202,11 @@ protected:
 	
 	char				m_JpegFileName[1024];
 	uint32_t			m_JpegQuality;
+	uint32_t			m_JpegCaptureCount;
 
 	INX_EventNotify 	*m_pNotify;
+
+	int32_t		(*FileNameCallbackFunc)( uint8_t *buf, uint32_t bufSize );
 };
 
 #endif	// __cplusplus

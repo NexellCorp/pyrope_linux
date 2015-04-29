@@ -259,6 +259,13 @@ void CNX_HLSFilter::ThreadLoop(void)
 			pSample->Unlock();
 	}
 
+	while( m_SampleInQueue.IsReady() )
+	{
+		m_SampleInQueue.PopSample((CNX_Sample**)&pSample);
+		if( pSample )
+			pSample->Unlock();
+	}
+	
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 }
 

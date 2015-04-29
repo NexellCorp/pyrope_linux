@@ -31,7 +31,7 @@
 CNX_InterleaverFilter::CNX_InterleaverFilter()
 	: m_bInit( false )
 	, m_bRun( false )
-	, m_bEnableDeliver( true )
+	, m_bEnable( true )
 	, m_bStartInterleaver( false )
 {
 	memset( &m_FilterStatistics, 0x00, sizeof(NX_FILTER_STATISTICS) );
@@ -70,7 +70,7 @@ void CNX_InterleaverFilter::Deinit()
 int32_t	CNX_InterleaverFilter::Receive( CNX_Sample *pSample)
 {
 	CNX_AutoLock lock ( &m_hLock );
-	if( !m_bEnableDeliver )
+	if( !m_bEnable )
 		return true;
 
 	int32_t bLoop = true;
@@ -230,14 +230,14 @@ int32_t	CNX_InterleaverFilter::Stop( void )
 }
 
 //------------------------------------------------------------------------------
-int32_t	CNX_InterleaverFilter::EnableDeliver( uint32_t enable )
+int32_t	CNX_InterleaverFilter::EnableFilter( uint32_t enable )
 {
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
 	CNX_AutoLock lock( &m_hLock );
-	NxDbgMsg( NX_DBG_INFO, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnableDeliver)?"Enable":"Disable", (enable)?"Enable":"Disable") );
+	NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnable)?"Enable":"Disable", (enable)?"Enable":"Disable") );
 
 	Flush();
-	m_bEnableDeliver = enable;
+	m_bEnable = enable;
 
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return true;

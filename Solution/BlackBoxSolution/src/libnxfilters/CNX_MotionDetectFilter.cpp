@@ -347,7 +347,7 @@ int32_t CNX_MotionDetectFilter::EnableMotionDetect( int32_t enable )
 {
 	CNX_AutoLock lock( &m_hLock );	
 	
-	NxDbgMsg( NX_DBG_INFO, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnabled)?"Enable":"Disable", (enable)?"Enable":"Disable") );
+	NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnabled)?"Enable":"Disable", (enable)?"Enable":"Disable") );
 	m_bEnabled = enable;
 	return true;
 }

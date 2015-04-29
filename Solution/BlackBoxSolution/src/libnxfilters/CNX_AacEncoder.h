@@ -66,9 +66,9 @@ public:
 	//------------------------------------------------------------------------
 	//	External Interfaces
 	//------------------------------------------------------------------------
+			int32_t 	EnableFilter( uint32_t enable );
 			int32_t		SetPacketID( uint32_t PacketID );
 			int32_t		GetDsiInfo( uint8_t *dsiInfo, int32_t *dsiSize );
-			int32_t 	EnableDeliver( uint32_t enable );
 			int32_t  	GetStatistics( NX_FILTER_STATISTICS *pStatistics );
 			
 protected:
@@ -77,7 +77,7 @@ protected:
 	//------------------------------------------------------------------------
 	int32_t				m_bInit;
 	int32_t				m_bRun;
-	int32_t				m_bEnableDeliver;
+	int32_t				m_bEnable;
 	CNX_Semaphore		*m_pSemIn;
 	CNX_Semaphore		*m_pSemOut;
 	pthread_mutex_t		m_hLock;
@@ -109,8 +109,8 @@ protected:
 	int32_t				m_iNumOfBuffer;
 	unsigned char		m_OutBuf[MAX_BUFFER][9212];
 	CNX_MuxerSample		m_OutSample[MAX_BUFFER];
-	CNX_SampleQueue		m_SampleInQueue;	//	Input queue
-	CNX_SampleQueue		m_SampleOutQueue;	//  Output queue
+	CNX_SampleQueue		m_SampleInQueue;
+	CNX_SampleQueue		m_SampleOutQueue;
 	//------------------------------------------------------------------------
 	//	Statistics Infomation
 	//------------------------------------------------------------------------

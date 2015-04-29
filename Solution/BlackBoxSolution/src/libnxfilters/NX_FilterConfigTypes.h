@@ -24,14 +24,16 @@
 //----------------------------------------------------------------------------
 //	Video Config
 //----------------------------------------------------------------------------
-typedef struct tag_NX_VIP_CONFIG {
+typedef struct tag_NX_VIP_CONFIG
+{
 	int32_t		port;
 	int32_t		width;
 	int32_t		height;
 	int32_t		fps;
 } NX_VIP_CONFIG;
 
-typedef struct tag_NX_VIPCAPTURE_CONFIG {
+typedef struct tag_NX_VIPCAPTURE_CONFIG
+{
 	int32_t		port;
 	int32_t		width;
 	int32_t		height;
@@ -109,7 +111,8 @@ typedef struct tag_NX_USERDATA_CONFIG
 #define MAX_AUD_NUM			1
 #define MAX_TXT_NUM			1
 
-typedef struct tag_NX_MP4MUXER_TRACK_CONFIG {
+typedef struct tag_NX_MP4MUXER_TRACK_CONFIG
+{
 	uint32_t	width;		// video
 	uint32_t	height;		// video
 	uint32_t	frameRate;	// video
@@ -171,12 +174,26 @@ typedef struct tag_NX_BUFFERING_CONFIG
 	int32_t		bufferedTime;	
 } NX_BUFFERING_CONFIG;
 
-typedef struct tag_NX_IMAGE_EFFECT_CONFIG {
+typedef struct tag_NX_IMAGE_EFFECT_CONFIG
+{
 	int32_t		width;
 	int32_t		height;
 } NX_IMAGE_EFFECT_CONFIG;
 
-typedef struct tag_NX_MOTION_DETECT_CONFIG {
+typedef struct tag_NX_USEROVERLAY_CONFIG
+{
+	int32_t		width;
+	int32_t		height;
+} NX_USEROVERLAY_CONFIG;
+
+typedef struct tag_NX_SCALER_CONFIG
+{
+	int32_t		width;
+	int32_t		height;
+} NX_SCALER_CONFIG;
+
+typedef struct tag_NX_MOTION_DETECT_CONFIG
+{
 	int32_t		samplingWidth;
 	int32_t		samplingHeight;
 	int32_t		threshold;
@@ -189,7 +206,8 @@ typedef struct tag_NX_MOTION_DETECT_CONFIG {
 //----------------------------------------------------------------------------
 #define MAX_BUFFER_SIZE		10
 
-typedef struct tag_NX_FILTER_BUFFER {
+typedef struct tag_NX_FILTER_BUFFER
+{
 	int32_t		cur;
 	int32_t		max;
 	int32_t		min;
@@ -197,7 +215,8 @@ typedef struct tag_NX_FILTER_BUFFER {
 	int32_t		limit;	
 } NX_FILTER_BUFFER;
 
-typedef struct tag_NX_FILTER_STATISTICS {
+typedef struct tag_NX_FILTER_STATISTICS
+{
 	uint64_t			inFrameCount;
 	uint64_t			outFrameCount;
 

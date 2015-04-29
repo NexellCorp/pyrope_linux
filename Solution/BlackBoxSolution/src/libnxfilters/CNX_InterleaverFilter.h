@@ -193,7 +193,7 @@ public:
 	//------------------------------------------------------------------------
 	//	External Interfaces
 	//------------------------------------------------------------------------
-			int32_t		EnableDeliver( uint32_t enable );
+			int32_t		EnableFilter( uint32_t enable );
 			int32_t 	GetStatistics( NX_FILTER_STATISTICS *pStatistics );
 
 private:
@@ -205,7 +205,7 @@ protected:
 	//------------------------------------------------------------------------
 	int32_t				m_bInit;
 	int32_t				m_bRun;
-	int32_t				m_bEnableDeliver;
+	int32_t				m_bEnable;
 	pthread_mutex_t		m_hLock;
 	//------------------------------------------------------------------------
 	//	Input / Output Buffer

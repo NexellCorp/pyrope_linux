@@ -96,7 +96,7 @@ void	CNX_AudCaptureFilter::Init( NX_AUDCAPTURE_CONFIG *pConfig )
 		m_Channels	= pConfig->channels;
 		m_Frequency	= pConfig->frequency;
 		m_Samples	= pConfig->samples;
-		NxDbgMsg( NX_DBG_INFO, (TEXT("Channel = %d, Frequency = %d\n"), m_Channels, m_Frequency) );
+		NxDbgMsg( NX_DBG_INFO, (TEXT("[Audio|Capture] Channel = %d, Frequency = %d\n"), m_Channels, m_Frequency) );
 
 		AllocateBuffer( (m_Frequency + m_Samples) / m_Samples );
 		
@@ -107,12 +107,6 @@ void	CNX_AudCaptureFilter::Init( NX_AUDCAPTURE_CONFIG *pConfig )
 		m_ClockCorrectTime = 3;
 
 		m_TotalReadSampleSize = 0;
-
-		if( false == InitAudCapture( m_Channels, m_Frequency ) ) {
-			FreeBuffer();
-			NX_ASSERT( false );
-			return ;
-		}
 		m_bInit = true;
 
 #if( DUMP_PCM )
@@ -131,7 +125,6 @@ void	CNX_AudCaptureFilter::Deinit( void )
 	if( true == m_bInit ) {
 		if( m_bRun )	Stop();
 
-		CloseAudCapture();
 		FreeBuffer();
 		m_bInit = false;
 	}
@@ -169,6 +162,11 @@ int32_t	CNX_AudCaptureFilter::Run( void )
 		m_bThreadExit 	= false;
 		NX_ASSERT( !m_hThread );
 
+		if( false == InitAudCapture( m_Channels, m_Frequency ) ) {
+			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Audio Capture Device\n"), __func__) );
+			return false;
+		}
+
 		if( 0 > pthread_create( &this->m_hThread, NULL, this->ThreadMain, this ) ) {
 			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __func__) );
 			return false;
@@ -190,6 +188,8 @@ int32_t	CNX_AudCaptureFilter::Stop( void )
 		pthread_join( m_hThread, NULL );
 		m_hThread = 0x00;
 		m_bRun = false;
+
+		CloseAudCapture();
 	}
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
 	return true;

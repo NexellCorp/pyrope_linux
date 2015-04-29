@@ -74,13 +74,9 @@ install:
 	cp -a $(SO_NAME) $(TOPDIR)/lib
 	cp -a NX_DvrControl.h $(TOPDIR)/include
 
-distclean:
+distclean: clean
 	rm -f $(TOPDIR)/lib/$(SO_NAME)
 	rm -f $(TOPDIR)/include/NX_DvrControl.h
-	@find $(OBJTREE) -type f \
-		\( -name '*.o'	-o -name $(TARGET) -o -name '*.a' -o -name '*.so.*' -o \
-		-name '*.bin' -o -name '*.map' -o -name 'core' -o -name '*~' -o -name '.depend' \) \
-		-print | xargs rm -f
 
 update:
 	@echo $$(($$(cat $(BUILD_REVISION_FILE).txt) + 1)) > $(BUILD_REVISION_FILE).txt

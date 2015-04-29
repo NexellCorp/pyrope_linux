@@ -679,7 +679,7 @@ int32_t CNX_Mp4MuxerFilter::SetFileName( const char *fileName )
 int32_t CNX_Mp4MuxerFilter::EnableMp4Muxing( bool enable )
 {
 	CNX_AutoLock lock ( &m_hWriteLock );
-	NxDbgMsg( NX_DBG_INFO, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnableMux)?"Enable":"Disable", (enable)?"Enable":"Disable") );
+	NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnableMux)?"Enable":"Disable", (enable)?"Enable":"Disable") );
 	if( !m_bRun ) {
 		m_bEnableMux = enable;
 		return true;
@@ -719,7 +719,7 @@ int32_t CNX_Mp4MuxerFilter::SetDsiInfo( uint32_t trackID, uint8_t *dsiInfo, int3
 //------------------------------------------------------------------------------
 int32_t CNX_Mp4MuxerFilter::RegFileNameCallback( int32_t (*cbFunc)(uint8_t *, uint32_t) )
 {
-	NX_ASSERT( cbFunc );
+	//NX_ASSERT( cbFunc );
 	if( cbFunc ) {
 		FileNameCallbackFunc = cbFunc;
 	}

@@ -55,7 +55,10 @@ CPPOBJS		+= CNX_SimpleFileWriter.o
 # User data & Textoverlay module
 CPPOBJS		+= CNX_UserDataFilter.o
 CPPOBJS 	+= CNX_TextOverlayFilter.o
+CPPOBJS		+= CNX_UserOverlayFilter.o
 CPPOBJS		+= CNX_ImageEffectFilter.o
+CPPOBJS		+= CNX_ScalerFilter.o
+CPPOBJS		+= CNX_JpegCaptureFilter.o
 # Etc Module (Network, MotionDetect, ...)
 CPPOBJS		+= CNX_DynamicRTSPServer.o
 CPPOBJS		+= CNX_RTPFilter.o

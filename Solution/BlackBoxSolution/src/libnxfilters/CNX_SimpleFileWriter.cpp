@@ -185,7 +185,7 @@ int32_t CNX_SimpleFileWriter::StartWriting( void )
 	unlink( (char*)m_FileName );
 
 	m_OutFd = open( (char*)m_FileName, O_WRONLY | O_CREAT, 0777 | O_TRUNC | O_SYNC );
-	printf("Create File( %d ) : %s\n", m_OutFd, m_FileName);
+	NxDbgMsg( NX_DBG_INFO, (TEXT("Create File( %d ): %s\n"), m_OutFd, m_FileName) );
 	if( m_OutFd < 0)
 	{
 		if( m_pNotify )

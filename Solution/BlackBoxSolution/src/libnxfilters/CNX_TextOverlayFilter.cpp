@@ -44,7 +44,8 @@
 
 //------------------------------------------------------------------------------
 CNX_TextOverlayFilter::CNX_TextOverlayFilter()
-	: m_bInit( false )
+	: TextOverlayCallbackFunc( NULL )
+	, m_bInit( false )
 	, m_bRun( false )
 	, m_bEnable( false )
 	, m_TextOverlayBufSize( MAX_TEXTOVERLAY_SIZE )
@@ -231,7 +232,7 @@ int32_t	CNX_TextOverlayFilter::EnableTextOverlay( uint32_t enable )
 {
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s++\n"), __func__) );
 	pthread_mutex_lock( &m_hEnableLock );
-	NxDbgMsg( NX_DBG_INFO, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnable)?"Enable":"Disable", (enable)?"Enable":"Disable") );
+	NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnable)?"Enable":"Disable", (enable)?"Enable":"Disable") );
 	m_bEnable = enable;
 	pthread_mutex_unlock( &m_hEnableLock );
 	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );

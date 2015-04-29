@@ -29,7 +29,7 @@
 
 #include "NX_DvrFileManager.h"
 
-// #define FIXED_MAX_SIZE			(8 * 1024)
+#define FIXED_MAX_SIZE			(2 * 1024 * 1024)
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -166,10 +166,10 @@ void *DvrFileManagerThread( void *arg )
 
 			RemoveFile( fileName );
 		}
-
+		else {
+			usleep(10000);	
+		}
 		pthread_mutex_unlock( &hManager->hLock );
-
-		usleep(10000);
 	}
 
 	return (void*)0xDEADDEAD;
@@ -283,6 +283,12 @@ int32_t DvrFileManagerPush( FILE_MANAGER_HANDLE hManager, char *pData )
 	assert( hManager );
 	pthread_mutex_lock( &hManager->hLock );
 	
+	if( !hManager->bThreadRun ) {
+		printf("%s(): Fail, Not running.\n", __func__ );
+		pthread_mutex_unlock( &hManager->hLock );
+		return -1;
+	}
+
 	size = CheckFileSize(pData);
 
 	DvrFileQueuePush(hManager->hQueue, pData, size);

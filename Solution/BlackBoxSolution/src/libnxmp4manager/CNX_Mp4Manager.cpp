@@ -300,9 +300,9 @@ int32_t CNX_Mp4Manager::Start( int32_t bEncode )
 		SAFE_START_FILTER( m_pInterleaverFilter );
 		SAFE_START_FILTER( m_pMp4MuxerFilter );
 
-		if( m_pAvcEncFilter )		m_pAvcEncFilter->EnableDeliver( bEncode );
-		if( m_pAacEncFilter )		m_pAacEncFilter->EnableDeliver( bEncode );
-		if( m_pInterleaverFilter )	m_pInterleaverFilter->EnableDeliver( bEncode );
+		if( m_pAvcEncFilter )		m_pAvcEncFilter->EnableFilter( bEncode );
+		if( m_pAacEncFilter )		m_pAacEncFilter->EnableFilter( bEncode );
+		if( m_pInterleaverFilter )	m_pInterleaverFilter->EnableFilter( bEncode );
 		if( m_pMp4MuxerFilter )		m_pMp4MuxerFilter->EnableMp4Muxing( bEncode );
 		if( m_pVrFilter ) 			m_pVrFilter->EnableRender( true );
 
@@ -331,7 +331,7 @@ int32_t CNX_Mp4Manager::Stop( void )
 		SAFE_STOP_FILTER( m_pAacEncFilter );
 		SAFE_STOP_FILTER( m_pNotifier );
 
-		if( m_pInterleaverFilter )	m_pInterleaverFilter->EnableDeliver( false );
+		if( m_pInterleaverFilter )	m_pInterleaverFilter->EnableFilter( false );
 		if( m_pMp4MuxerFilter )		m_pMp4MuxerFilter->EnableMp4Muxing( false );
 		if( m_pVrFilter ) 			m_pVrFilter->EnableRender( false );
 		
@@ -381,15 +381,15 @@ int32_t CNX_Mp4Manager::EnableEncode( int32_t bEnable )
 		goto END;
 
 	if( bEnable ) {
-		if( m_pAvcEncFilter )		m_pAvcEncFilter->EnableDeliver( true );
-		if( m_pAacEncFilter )		m_pAacEncFilter->EnableDeliver( true );
-		if( m_pInterleaverFilter ) 	m_pInterleaverFilter->EnableDeliver( true );
+		if( m_pAvcEncFilter )		m_pAvcEncFilter->EnableFilter( true );
+		if( m_pAacEncFilter )		m_pAacEncFilter->EnableFilter( true );
+		if( m_pInterleaverFilter ) 	m_pInterleaverFilter->EnableFilter( true );
 		if( m_pMp4MuxerFilter )		m_pMp4MuxerFilter->EnableMp4Muxing( true );
 	}
 	else {
-		if( m_pAvcEncFilter )		m_pAvcEncFilter->EnableDeliver( false );
-		if( m_pAacEncFilter )		m_pAacEncFilter->EnableDeliver( false );
-		if( m_pInterleaverFilter ) 	m_pInterleaverFilter->EnableDeliver( false );
+		if( m_pAvcEncFilter )		m_pAvcEncFilter->EnableFilter( false );
+		if( m_pAacEncFilter )		m_pAacEncFilter->EnableFilter( false );
+		if( m_pInterleaverFilter ) 	m_pInterleaverFilter->EnableFilter( false );
 		if( m_pMp4MuxerFilter )		m_pMp4MuxerFilter->EnableMp4Muxing( false );
 	}
 

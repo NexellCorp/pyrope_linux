@@ -7,6 +7,10 @@
 
 typedef int32_t		NX_SCALER_HANDLE;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 //	Description:
 //		Open Fine Scaler.
@@ -47,5 +51,9 @@ int32_t NX_SCLScaleImage( NX_SCALER_HANDLE handle, NX_VID_MEMORY_INFO *pInMem, N
 //		None.
 //
 void NX_SCLClose( NX_SCALER_HANDLE handle );
+
+#ifdef __cplusplus
+}
+#endif	
 
 #endif	//	__LIBNXSCALER__

@@ -13,6 +13,7 @@ LIBRARY     += -L./
 LIBRARY     += -L../../lib
 LIBRARY     += -lnxvmem
 LIBRARY 	+= -lnxgraphictools
+LIBRARY 	+= -L../../lib/ratecontrol/ -lnxvidrc
 # Add Library
 LIBRARY     += -L./libs/
 LIBRARY     += -lEGL -lGLESv1_CM -lGLESv2 -lVR -lnxvpu

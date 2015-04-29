@@ -64,6 +64,9 @@ const char *gstModeStr[] =
 	"RGB to YUV Mode"
 };
 
+//#define	USE_SW_DEINTERLACE
+void _SWDeinterlace(NX_VID_MEMORY_INFO *pInBuf, NX_VID_MEMORY_INFO *pOutBuf);
+
 
 #define	NUM_FB_BUFFER	3
 #define	FB_DEV_NAME	"/dev/graphics/fb0"
@@ -436,8 +439,11 @@ int FrameBufferCapture( const char *outFileName, int outWidth, int outHeight )
 	memset(uevent_desc, 0, sizeof(uevent_desc));
 	unsigned char seqBuf[1024];
 	int seqBufSize=1024;
+	NX_VID_ENC_IN encIn;
 	NX_VID_ENC_OUT encOut;
 	NX_VID_ENC_HANDLE hEncoder = NULL;
+
+	int instIdx;
 
 	//	Frame Buffer Related Variables
 	int vsync_fd = -1;						//	Vertical Sync
@@ -506,28 +512,29 @@ int FrameBufferCapture( const char *outFileName, int outWidth, int outHeight )
 	}
 
 	printf("Encoding Size = %dx%d\n", outWidth, outHeight);
-	hEncoder = NX_VidEncOpen( NX_AVC_ENC );
+	hEncoder = NX_VidEncOpen( NX_AVC_ENC, &instIdx );
 	if( hEncoder )
 	{
 		NX_VID_ENC_INIT_PARAM initParam;
 		memset( &initParam, 0, sizeof(initParam) );
 
-		initParam.width   = outWidth;
-		initParam.height  = outHeight;
-		initParam.gopSize = 60;
-		if( outWidth == 720 )
-			initParam.bitrate = 3000000;
-		else
-			initParam.bitrate = 5000000;
-		initParam.fpsNum  = 60;
-		initParam.fpsDen  = 1;
-
-		initParam.enableRC  = 1;
-		initParam.enableSkip= 0;
-		initParam.maxQScale = 51;
-		initParam.userQScale= 23;
-
+		initParam.width = outWidth;
+		initParam.height = outHeight;
+		initParam.fpsNum = 30;
+		initParam.fpsDen = 1;
+		initParam.gopSize = 30;
+		initParam.bitrate = 5000000;
 		initParam.chromaInterleave = 1;
+		initParam.enableAUDelimiter = 0;			//	Enable / Disable AU Delimiter
+		initParam.searchRange = 0;
+
+		//	Rate Control
+		initParam.maximumQp= 51;
+		initParam.disableSkip = 0;
+		initParam.initialQp = 23;
+		initParam.enableRC = 1;
+		initParam.RCAlgorithm = 1;
+		initParam.rcVbvSize = -1;
 
 		NX_VidEncInit( hEncoder, &initParam );
 		NX_VidEncGetSeqInfo(hEncoder, seqBuf, &seqBufSize);
@@ -628,7 +635,11 @@ int FrameBufferCapture( const char *outFileName, int outWidth, int outHeight )
 				//
 				//	Step 6. Encoding Image
 				//
-				encRet = NX_VidEncEncodeFrame( hEncoder, encBuffer, &encOut );
+				encIn.forcedIFrame = 0;
+				encIn.forcedSkipFrame = 0;
+				encIn.quantParam = 23;
+				encIn.timeStamp = 0;
+				encRet = NX_VidEncEncodeFrame( hEncoder, &encIn, &encOut );
 
 				//
 				//	Step 7. Write Encoding
@@ -885,13 +896,18 @@ int main( int argc, char *argv[] )
 	{
 		case 1:	//	Deinterlace Only
 		{
+#ifndef		USE_SW_DEINTERLACE
 			hDeint = NX_GTDeintOpen( srcWidth, srcHeight, 1 );
 			if( NULL == hDeint )
 			{
 				printf("NX_DeintOpen() failed!!!\n");
 				exit(1);
 			}
+			printf("Hardware!!!\n");
 			NX_GTDeintDoDeinterlace( hDeint, inBuffer, outBuffer );
+#else
+			_SWDeinterlace( inBuffer, outBuffer );
+#endif
 			break;
 		}
 		case 2:	//	Scaling Only
@@ -1622,3 +1638,179 @@ int main(void)
 //
 //
 //////////////////////////////////////////////////////////////////////////////
+
+
+//
+//	Linear
+//
+#if 0	//	linear
+void _SWDeinterlace(NX_VID_MEMORY_INFO *pInBuf, NX_VID_MEMORY_INFO *pOutBuf)
+{
+	int32_t i, j;
+	uint8_t *pSrc;
+	uint8_t *pDst;
+
+	//	Process Y
+	pSrc = (uint8_t*) pInBuf->luVirAddr;
+	pDst = (uint8_t*) pOutBuf->luVirAddr;
+
+	int32_t width = pInBuf->imgWidth;
+	int32_t height = pInBuf->imgHeight;
+	int32_t stride = pInBuf->luStride;
+
+	for( i=1 ; i < height-1 ; i++ )
+	{
+		if( i&1 )
+		{
+			for( j=0 ; j<width ; j++ )
+			{
+				pDst[i*stride + j] = (pSrc[(i-1)*stride + j] + pSrc[(i+1)*stride + j])/2;
+			}
+		}
+		else
+		{
+			for( j=0 ; j<width ; j++ )
+			{
+				pDst[i*stride + j] = pSrc[i*stride + j];
+			}
+		}
+	}
+
+	width /= 2;
+	height /= 2;
+	stride = pInBuf->cbStride;
+
+	//	Process U
+	pSrc = (uint8_t*) pInBuf->cbVirAddr;
+	pDst = (uint8_t*) pOutBuf->cbVirAddr;
+	for( i=0 ; i < height ; i++ )
+	{
+		if( i&1 )
+		{
+			for( j=0 ; j<width ; j++ )
+			{
+				pDst[i*stride + j] = (pSrc[(i-1)*stride + j] + pSrc[(i+1)*stride + j])/2;
+			}
+		}
+		else
+		{
+			for( j=0 ; j<width ; j++ )
+			{
+				pDst[i*stride + j] = pSrc[i*stride + j];
+			}
+		}
+	}
+
+	//	Process V
+	pSrc = (uint8_t*) pInBuf->crVirAddr;
+	pDst = (uint8_t*) pOutBuf->crVirAddr;
+	for( i=0 ; i < height ; i++ )
+	{
+		if( i&1 )
+		{
+			for( j=0 ; j<width ; j++ )
+			{
+				pDst[i*stride + j] = (pSrc[(i-1)*stride + j] + pSrc[(i+1)*stride + j])/2;
+			}
+		}
+		else
+		{
+			for( j=0 ; j<width ; j++ )
+			{
+				pDst[i*stride + j] = pSrc[i*stride + j];
+			}
+		}
+	}
+
+}
+#else	//	FFMPEG Algorithm
+void _SWDeinterlace(NX_VID_MEMORY_INFO *pInBuf, NX_VID_MEMORY_INFO *pOutBuf)
+{
+	int32_t i, j;
+	uint8_t *pSrc;
+	uint8_t *pDst;
+
+	//	Process Y
+	pSrc = (uint8_t*) pInBuf->luVirAddr;
+	pDst = (uint8_t*) pOutBuf->luVirAddr;
+
+	int32_t width = pInBuf->imgWidth;
+	int32_t height = pInBuf->imgHeight;
+	int32_t stride = pInBuf->luStride;
+	int32_t target = 0;
+
+	for( i=1 ; i < height-1 ; i++ )
+	{
+		if( i&1 )
+		{
+			for( j=0 ; j<width ; j++ )
+			{
+				target = pSrc[i*stride + j]/4 + pSrc[(i-1)*stride + j]/2 + pSrc[(i+1)*stride + j]/2 - pSrc[(i-2)*stride + j]/8 - pSrc[(i+2)*stride + j]/8;
+				if( target < 0   ) target = 0;
+				if( target > 255 ) target = 255;
+				pDst[i*stride + j] = (uint8_t)target;
+			}
+		}
+		else
+		{
+			for( j=0 ; j<width ; j++ )
+			{
+				pDst[i*stride + j] = pSrc[i*stride + j];
+			}
+		}
+	}
+
+	width /= 2;
+	height /= 2;
+	stride = pInBuf->cbStride;
+
+	//	Process U
+	pSrc = (uint8_t*) pInBuf->cbVirAddr;
+	pDst = (uint8_t*) pOutBuf->cbVirAddr;
+	for( i=0 ; i < height-1 ; i++ )
+	{
+		if( i&1 )
+		{
+			for( j=0 ; j<width ; j++ )
+			{
+				target = pSrc[i*stride + j]/4 + pSrc[(i-1)*stride + j]/2 + pSrc[(i+1)*stride + j]/2 - pSrc[(i-2)*stride + j]/8 - pSrc[(i+2)*stride + j]/8;
+				if( target < 0   ) target = 0;
+				if( target > 255 ) target = 255;
+				pDst[i*stride + j] = (uint8_t)target;
+			}
+		}
+		else
+		{
+			for( j=0 ; j<width ; j++ )
+			{
+				pDst[i*stride + j] = pSrc[i*stride + j];
+			}
+		}
+	}
+
+	//	Process V
+	pSrc = (uint8_t*) pInBuf->crVirAddr;
+	pDst = (uint8_t*) pOutBuf->crVirAddr;
+	for( i=0 ; i < height-1 ; i++ )
+	{
+		if( i&1 )
+		{
+			for( j=0 ; j<width ; j++ )
+			{
+				target = pSrc[i*stride + j]/4 + pSrc[(i-1)*stride + j]/2 + pSrc[(i+1)*stride + j]/2 - pSrc[(i-2)*stride + j]/8 - pSrc[(i+2)*stride + j]/8;
+				if( target < 0   ) target = 0;
+				if( target > 255 ) target = 255;
+				pDst[i*stride + j] = (uint8_t)target;
+			}
+		}
+		else
+		{
+			for( j=0 ; j<width ; j++ )
+			{
+				pDst[i*stride + j] = pSrc[i*stride + j];
+			}
+		}
+	}
+
+}
+#endif

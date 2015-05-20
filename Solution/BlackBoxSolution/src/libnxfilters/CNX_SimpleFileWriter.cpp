@@ -65,20 +65,20 @@ CNX_SimpleFileWriter::~CNX_SimpleFileWriter()
 //------------------------------------------------------------------------------
 void	CNX_SimpleFileWriter::Init( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( false == m_bInit );
 
 	if( false == m_bInit ) {
 		AllocateBuffer();
 		m_bInit = true;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void	CNX_SimpleFileWriter::Deinit( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( true == m_bInit )
 	{
 		if( m_bRun ) {
@@ -88,7 +88,7 @@ void	CNX_SimpleFileWriter::Deinit( void )
 		FreeBuffer();
 		m_bInit = false;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -133,54 +133,54 @@ int32_t	CNX_SimpleFileWriter::Receive( CNX_Sample *pSample )
 //------------------------------------------------------------------------------
 int32_t CNX_SimpleFileWriter::ReleaseSample( CNX_Sample *pSample )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s++\n"), __func__) );
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s++\n"), __FUNCTION__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t	CNX_SimpleFileWriter::Run( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( m_bRun == false ) {
 		m_bRun = true;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t	CNX_SimpleFileWriter::Stop( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( true == m_bRun ) {
 		m_bRun = false;
 		if( m_bEnableWriting ) {
 			StopWriting();
 		}
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 void CNX_SimpleFileWriter::AllocateBuffer( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s++\n"), __func__) );
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s++\n"), __FUNCTION__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_SimpleFileWriter::FreeBuffer( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_SimpleFileWriter::StartWriting( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	GetFileNameFromCallback();
 	unlink( (char*)m_FileName );
 
@@ -191,14 +191,14 @@ int32_t CNX_SimpleFileWriter::StartWriting( void )
 		if( m_pNotify )
 			m_pNotify->EventNotify( 0xF003, m_FileName, strlen((char*)m_FileName) + 1 );
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_SimpleFileWriter::StopWriting( void )
 {
-	NxDbgMsg( NX_DBG_VBS, ("%s IN\n", __func__) );
+	NxDbgMsg( NX_DBG_VBS, ("%s IN\n", __FUNCTION__) );
 	if( m_OutFd > 0){
 		close( m_OutFd );
 		m_OutFd = 0;
@@ -212,7 +212,7 @@ int32_t CNX_SimpleFileWriter::StopWriting( void )
 				m_pNotify->EventNotify( 0x1002, m_FileName, strlen((char*)m_FileName) + 1 );
 		}
 	}
-	NxDbgMsg( NX_DBG_VBS, ("%s OUT\n", __func__) );
+	NxDbgMsg( NX_DBG_VBS, ("%s OUT\n", __FUNCTION__) );
 
 	return true;
 }
@@ -220,7 +220,7 @@ int32_t CNX_SimpleFileWriter::StopWriting( void )
 //------------------------------------------------------------------------------
 void CNX_SimpleFileWriter::GetFileNameFromCallback( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( FileNameCallbackFunc ) {		// user define filename
 		uint32_t bufSize = 0;
 		if( !FileNameCallbackFunc(m_FileName, bufSize) ) {
@@ -237,20 +237,20 @@ void CNX_SimpleFileWriter::GetFileNameFromCallback( void )
 		sprintf((char*)m_FileName, "aud_%04d%02d%02d_%02d%02d%02d.pcm",
 			eTm->tm_year + 1900, eTm->tm_mon + 1, eTm->tm_mday, eTm->tm_hour, eTm->tm_min, eTm->tm_sec );
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_SimpleFileWriter::RegFileNameCallback( int32_t (*cbFunc)(uint8_t *, uint32_t) )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( cbFunc );
 	if( cbFunc )
 	{
 		FileNameCallbackFunc = cbFunc;
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()-\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()-\n"), __FUNCTION__) );
 	return 0;
 }
 
@@ -258,7 +258,7 @@ int32_t CNX_SimpleFileWriter::RegFileNameCallback( int32_t (*cbFunc)(uint8_t *, 
 int32_t CNX_SimpleFileWriter::EnableWriting( bool enable )
 {
 	CNX_AutoLock lock ( &m_hWriteLock );
-	NxDbgMsg( NX_DBG_INFO, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnableWriting)?"Enable":"Disable", (enable)?"Enable":"Disable") );
+	NxDbgMsg( NX_DBG_INFO, (TEXT("%s : %s -- > %s\n"), __FUNCTION__, (m_bEnableWriting)?"Enable":"Disable", (enable)?"Enable":"Disable") );
 	if( !m_bRun ) {
 		m_bEnableWriting = enable;
 		return true;

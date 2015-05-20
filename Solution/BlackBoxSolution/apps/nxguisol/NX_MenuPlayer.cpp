@@ -132,7 +132,7 @@ static int32_t EventTaskStart( void )
 
 	bEventTaskRun = true;
 	if(0 > pthread_create( &hEventTask, NULL, &EventTask, NULL )) {
-		printf( "%s(): Fail, Create Thread.\n", __func__ );
+		printf( "%s(): Fail, Create Thread.\n", __FUNCTION__ );
 		return -1;
 	}
 

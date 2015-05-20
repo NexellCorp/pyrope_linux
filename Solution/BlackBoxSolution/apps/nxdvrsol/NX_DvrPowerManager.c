@@ -112,7 +112,7 @@ void *DvrPowerManagerThread( void *arg )
 				}
 			}
 			else {
-				printf("%s(): Detect Temperature Warning. (adc0 = %d, temperature = %d mV)\n", __func__, adc0Value, temperature);
+				printf("%s(): Detect Temperature Warning. (adc0 = %d, temperature = %d mV)\n", __FUNCTION__, adc0Value, temperature);
 			}
 		}
 		else if( temperature > TEMP_CRITICAL ) {
@@ -125,7 +125,7 @@ void *DvrPowerManagerThread( void *arg )
 				}
 			}
 			else {
-				printf("%s(): Detect Temperature Critical. (adc0 = %d, temperature = %d mV)\n", __func__, adc0Value, temperature);
+				printf("%s(): Detect Temperature Critical. (adc0 = %d, temperature = %d mV)\n", __FUNCTION__, adc0Value, temperature);
 			}
 		}
 		else {
@@ -145,7 +145,7 @@ void *DvrPowerManagerThread( void *arg )
 				}
 			}
 			else {
-				printf("%s(): Detect Voltage Warning. (adc1 = %d, voltage = %d mV)\n", __func__, adc1Value, voltage);
+				printf("%s(): Detect Voltage Warning. (adc1 = %d, voltage = %d mV)\n", __FUNCTION__, adc1Value, voltage);
 			}
 		}
 		else if( voltage < POWER_CRITICAL ) {
@@ -158,7 +158,7 @@ void *DvrPowerManagerThread( void *arg )
 				}
 			}
 			else {
-				printf("%s(): Detect Voltage Critical. (adc1 = %d, voltage = %d mV)\n", __func__, adc1Value, voltage);
+				printf("%s(): Detect Voltage Critical. (adc1 = %d, voltage = %d mV)\n", __FUNCTION__, adc1Value, voltage);
 			}
 		}
 		else {
@@ -235,18 +235,18 @@ int32_t DvrPowerManagerStart( POWER_MANAGER_HANDLE hManager )
 {
 	assert( hManager );
 	if( hManager->bThreadRun ) {
-		printf("%s(): Fail, Already running.\n", __func__);
+		printf("%s(): Fail, Already running.\n", __FUNCTION__);
 		return -1;
 	}
 
 	hManager->bThreadRun = true;
 	if( 0 > pthread_create( &hManager->hThread, NULL, &DvrPowerManagerThread, (void*)hManager) ) {
-		printf("%s(): Fail, Create Thread.\n", __func__);
+		printf("%s(): Fail, Create Thread.\n", __FUNCTION__);
 		return -1;
 	}
 
 	if( 0 > pthread_create( &hManager->hThreadInterrupt, NULL, &DvrPowerIntManagerThread, (void*)hManager) ) {
-		printf("%s(): Fail, Create Thread.\n", __func__);
+		printf("%s(): Fail, Create Thread.\n", __FUNCTION__);
 		return -1;
 	}
 
@@ -257,7 +257,7 @@ int32_t DvrPowerManagerStop( POWER_MANAGER_HANDLE hManager )
 {
 	assert( hManager );
 	if( !hManager->bThreadRun) {
-		printf("%s(): Fail, Already stopping.\n", __func__);
+		printf("%s(): Fail, Already stopping.\n", __FUNCTION__);
 		return -1;
 	}
 

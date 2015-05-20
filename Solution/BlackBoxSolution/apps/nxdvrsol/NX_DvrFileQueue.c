@@ -107,7 +107,7 @@ int32_t	DvrFileQueuePop( QHANDLE hQueue, char *pFileName, uint64_t *pFileSize )
 	pthread_mutex_lock( &hQueue->hMutex );
 
 	if( !hQueue->nodeNum ) {
-		printf("%s(): Queue is empty.\n", __func__);
+		printf("%s(): Queue is empty.\n", __FUNCTION__);
 		pthread_mutex_unlock( &hQueue->hMutex );
 		return -1;
 	}
@@ -160,7 +160,7 @@ int32_t DvrFileQueueInsert( QHANDLE hQueue, char *pFileName, uint64_t fileSize, 
 			ret = bSort * strcmp( pNode->fileName, pCurNode->fileName );
 
 			if( ret == 0 ) {
-				printf("%s(): Fail, same file name.\n", __func__);
+				printf("%s(): Fail, same file name.\n", __FUNCTION__);
 				break;
 			} else if( ret > 0 ) {
 				if( pCurNode->next == NULL ) {

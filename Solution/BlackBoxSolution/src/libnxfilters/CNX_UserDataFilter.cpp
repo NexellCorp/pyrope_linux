@@ -61,7 +61,7 @@ CNX_UserDataFilter::~CNX_UserDataFilter()
 //------------------------------------------------------------------------------
 void	CNX_UserDataFilter::Init(NX_USERDATA_CONFIG *pConfig)
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s++\n"), __FUNCTION__) );
 	NX_ASSERT(false == m_bInit);
 
 	if( pConfig->bufSize > MAX_USERDATA_SIZE )
@@ -81,13 +81,13 @@ void	CNX_UserDataFilter::Init(NX_USERDATA_CONFIG *pConfig)
 
 		m_bInit = true;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_UserDataFilter::Deinit(void)
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s++\n"), __FUNCTION__) );
 	NX_ASSERT(true == m_bInit);
 
 	if (true == m_bInit) {
@@ -96,13 +96,13 @@ void CNX_UserDataFilter::Deinit(void)
 		FreeBuffer();
 		m_bInit = false;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_UserDataFilter::AllocateBuffer( int32_t numOfBuffer )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( numOfBuffer <= MAX_BUFFER );
 
 	int32_t i;
@@ -122,16 +122,16 @@ void CNX_UserDataFilter::AllocateBuffer( int32_t numOfBuffer )
 
 	m_iNumOfBuffer = i;
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()-- (m_iNumOfBuffer=%d)\n"), __func__, m_iNumOfBuffer) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()-- (m_iNumOfBuffer=%d)\n"), __FUNCTION__, m_iNumOfBuffer) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_UserDataFilter::FreeBuffer(void)
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	m_SampleOutQueue.Reset();
 	m_iNumOfBuffer = 0;
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -143,7 +143,7 @@ int32_t CNX_UserDataFilter::Run(void)
 
 		if( 0 > pthread_create( &this->m_hThread, NULL, this->ThreadMain, this ) )
 		{
-			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __func__) );
+			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __FUNCTION__) );
 			return false;
 		}
 
@@ -233,7 +233,7 @@ void	CNX_UserDataFilter::GetUserDataFromCallback( CNX_MuxerSample *pSample )
 //------------------------------------------------------------------------------
 void	CNX_UserDataFilter::ThreadLoop( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_MuxerSample	*pSample = NULL;
 	uint64_t prevTime = 0, curTime = 0;
 
@@ -290,7 +290,7 @@ void	CNX_UserDataFilter::ThreadLoop( void )
 		pSample->Unlock();
 		usleep(10000);
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -309,12 +309,12 @@ void*	CNX_UserDataFilter::ThreadMain( void *arg )
 //----------------------------------------------------------------------------
 int32_t	CNX_UserDataFilter::SetPacketID( uint32_t PacketID )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	
 	NxDbgMsg( NX_DBG_DEBUG, (TEXT("Packet ID = %d\n"), m_PacketID) );
 	m_PacketID = PacketID;
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 

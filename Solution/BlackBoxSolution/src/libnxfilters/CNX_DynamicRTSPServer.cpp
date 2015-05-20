@@ -40,14 +40,14 @@
 //------------------------------------------------------------------------------
 CNX_DynamicRTSPServer* CNX_DynamicRTSPServer::createNew( UsageEnvironment& env, Port ourPort, UserAuthenticationDatabase* authDatabase, unsigned reclamationTestSeconds )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	int ourSocket = setUpOurSocket( env, ourPort );
 	if( -1 == ourSocket ) {
-		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Setup socket.\n"), __func__) );
+		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Setup socket.\n"), __FUNCTION__) );
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return (-1 == ourSocket) ? NULL : new CNX_DynamicRTSPServer( env, ourSocket, ourPort, authDatabase, reclamationTestSeconds );
 }
 
@@ -55,7 +55,7 @@ CNX_DynamicRTSPServer* CNX_DynamicRTSPServer::createNew( UsageEnvironment& env, 
 CNX_DynamicRTSPServer::CNX_DynamicRTSPServer( UsageEnvironment& env, int ourSocket, Port ourPort, UserAuthenticationDatabase* authDatabase, unsigned reclamationTestSeconds )
 	: RTSPServerSupportingHTTPStreaming( env, ourSocket, ourPort, authDatabase, reclamationTestSeconds )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	m_pFilter		= NULL;
 	m_StreamType	= 0;
 	m_MaxSessionNum = 0;
@@ -65,20 +65,20 @@ CNX_DynamicRTSPServer::CNX_DynamicRTSPServer( UsageEnvironment& env, int ourSock
 		memset( m_SessionName[i], 0x00, sizeof(m_SessionName[i]) );
 		snprintf( (char*)m_SessionName[i], sizeof(m_SessionName[i]), "video%d", i );
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 CNX_DynamicRTSPServer::~CNX_DynamicRTSPServer()
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 static ServerMediaSession* createNewSMS( UsageEnvironment& env, char const* fileName, FILE* fid, void *arg )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	ServerMediaSession* sms = NULL;
 	Boolean const reuseSource = False;
 
@@ -95,19 +95,19 @@ static ServerMediaSession* createNewSMS( UsageEnvironment& env, char const* file
 	
 	sms->addSubsession( pMediaSession );
 	
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return sms;
 }
 
 //------------------------------------------------------------------------------
 ServerMediaSession* CNX_DynamicRTSPServer::lookupServerMediaSession( char const* streamName )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	// a. Check connection address
 	// a-1. No stream name.
 	if( !streamName ) {
-		NxDbgMsg( NX_DBG_VBS, (TEXT("%s(): Connection Address is not avaliable.\n"), __func__) );
+		NxDbgMsg( NX_DBG_VBS, (TEXT("%s(): Connection Address is not avaliable.\n"), __FUNCTION__) );
 		return NULL;		
 	}
 
@@ -121,7 +121,7 @@ ServerMediaSession* CNX_DynamicRTSPServer::lookupServerMediaSession( char const*
 		}
 	}
 	if( !bExist ) {
-		NxDbgMsg( NX_DBG_VBS, (TEXT("%s(): Connection Address is not avaliable.\n"), __func__) );
+		NxDbgMsg( NX_DBG_VBS, (TEXT("%s(): Connection Address is not avaliable.\n"), __FUNCTION__) );
 		return NULL;		
 	}
 
@@ -142,7 +142,7 @@ ServerMediaSession* CNX_DynamicRTSPServer::lookupServerMediaSession( char const*
 
 	// c. Check connection client number
 	if( !((CNX_RTPFilter*)m_pFilter)->ConnectIsReady() ) {
-		NxDbgMsg( NX_DBG_VBS, (TEXT("%s(): Connection client is over.\n"), __func__) );
+		NxDbgMsg( NX_DBG_VBS, (TEXT("%s(): Connection client is over.\n"), __FUNCTION__) );
 		return NULL;
 	}
 
@@ -153,64 +153,64 @@ ServerMediaSession* CNX_DynamicRTSPServer::lookupServerMediaSession( char const*
 		addServerMediaSession( newSms );
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return newSms;
 }
 
 //------------------------------------------------------------------------------
 void CNX_DynamicRTSPServer::SetOwnerFilter( void *pOwnerFilter )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( NULL != pOwnerFilter );
 
 	m_pFilter = pOwnerFilter;
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void *CNX_DynamicRTSPServer::GetOwnerFilter( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( NULL != m_pFilter );
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return m_pFilter;
 }
 
 //------------------------------------------------------------------------------
 void CNX_DynamicRTSPServer::SetStreamType( int32_t streamType )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	m_StreamType = streamType;
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_DynamicRTSPServer::GetStreamType( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return m_StreamType;
 }
 
 //------------------------------------------------------------------------------
 void CNX_DynamicRTSPServer::SetMaxSessionNum( int32_t sessionNum )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( MAX_SESSION_NUM > sessionNum );
 
 	m_MaxSessionNum = sessionNum;
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_DynamicRTSPServer::SetSessionName( int32_t sessionID, uint8_t *pSessionName )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	if( sessionID >= m_MaxSessionNum ) {
-		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): session number is over.\n"), __func__) );
+		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): session number is over.\n"), __FUNCTION__) );
 		goto ERROR;
 	}
 
@@ -218,7 +218,7 @@ void CNX_DynamicRTSPServer::SetSessionName( int32_t sessionID, uint8_t *pSession
 	strncpy( (char*)m_SessionName[sessionID], (char*)pSessionName, sizeof(m_SessionName[sessionID]) - 1 );
 
 ERROR:
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 
@@ -233,8 +233,8 @@ ERROR:
 //------------------------------------------------------------------------------
 CNX_H264LiveServerMediaSession* CNX_H264LiveServerMediaSession::createNew(UsageEnvironment& env, bool reuseFirstSource)
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 
 	return new CNX_H264LiveServerMediaSession(env, reuseFirstSource);
 }
@@ -243,48 +243,48 @@ CNX_H264LiveServerMediaSession* CNX_H264LiveServerMediaSession::createNew(UsageE
 CNX_H264LiveServerMediaSession::CNX_H264LiveServerMediaSession(UsageEnvironment& env, bool reuseFirstSource)
 	: OnDemandServerMediaSubsession(env, reuseFirstSource), fAuxSDPLine(NULL), fDoneFlag(0), fDummyRTPSink(NULL)
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	m_pFilter = NULL;
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 CNX_H264LiveServerMediaSession::~CNX_H264LiveServerMediaSession()
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	
 	delete[] fAuxSDPLine;
 	
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_H264LiveServerMediaSession::afterPlayingDummy1()
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	envir().taskScheduler().unscheduleDelayedTask(nextTask());
 	setDoneFlag();
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 static void checkForAuxSDPLine(void* clientData)
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	
 	CNX_H264LiveServerMediaSession* subsess = (CNX_H264LiveServerMediaSession*)clientData;
 	subsess->checkForAuxSDPLine1();
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 void CNX_H264LiveServerMediaSession::checkForAuxSDPLine1()
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	char const* dasl;
 
 	if (fAuxSDPLine != NULL) {
@@ -302,21 +302,21 @@ void CNX_H264LiveServerMediaSession::checkForAuxSDPLine1()
 			nextTask() = envir().taskScheduler().scheduleDelayedTask( uSecsToDelay, (TaskFunc*)checkForAuxSDPLine, this );
 		}
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 static void afterPlayingDummy(void* clientData)
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_H264LiveServerMediaSession* subsess = (CNX_H264LiveServerMediaSession*)clientData;
 	subsess->afterPlayingDummy1();
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 char const* CNX_H264LiveServerMediaSession::getAuxSDPLine( RTPSink* rtpSink, FramedSource* inputSource )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if (fAuxSDPLine != NULL) return fAuxSDPLine;
 
 	if (fDummyRTPSink == NULL) {
@@ -327,14 +327,14 @@ char const* CNX_H264LiveServerMediaSession::getAuxSDPLine( RTPSink* rtpSink, Fra
 	}
 
 	envir().taskScheduler().doEventLoop(&fDoneFlag);
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return fAuxSDPLine;
 }
 
 //------------------------------------------------------------------------------
 FramedSource* CNX_H264LiveServerMediaSession::createNewStreamSource( unsigned clientSessionId, unsigned& estBitrate )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	estBitrate = 90000; // kbps, estimate
 
 	CNX_LiveSource *pLiveSource = CNX_LiveSource::createNew( envir(), -1 );
@@ -343,37 +343,37 @@ FramedSource* CNX_H264LiveServerMediaSession::createNewStreamSource( unsigned cl
 		pLiveSource->SetStreamType( m_StreamType );
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return H264VideoStreamDiscreteFramer::createNew( envir(), pLiveSource );
 }
 
 //------------------------------------------------------------------------------
 RTPSink* CNX_H264LiveServerMediaSession::createNewRTPSink( Groupsock* rtpGroupsock, unsigned char rtpPayloadTypeIfDynamic, FramedSource* )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return H264VideoRTPSink::createNew(envir(), rtpGroupsock, rtpPayloadTypeIfDynamic);
 }
 
 //------------------------------------------------------------------------------
 void CNX_H264LiveServerMediaSession::SetOwnerFilter( void *pOwerFilter )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( NULL != pOwerFilter );
 	
 	m_pFilter = pOwerFilter;
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_H264LiveServerMediaSession::SetStreamType( uint32_t streamType )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	m_StreamType = streamType;
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 
@@ -445,8 +445,8 @@ static void splitFrameData( uint8_t *keyFrameBuf, int32_t keyFrameSize, uint8_t 
 //------------------------------------------------------------------------------
 CNX_LiveSource* CNX_LiveSource::createNew( UsageEnvironment& env, int device )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	
 	return new CNX_LiveSource( env, device );
 }
@@ -455,7 +455,7 @@ CNX_LiveSource* CNX_LiveSource::createNew( UsageEnvironment& env, int device )
 CNX_LiveSource::CNX_LiveSource( UsageEnvironment& env, int device )
 	: FramedSource(env)
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	if(referenceCount == 0)
 	{
@@ -480,13 +480,13 @@ CNX_LiveSource::CNX_LiveSource( UsageEnvironment& env, int device )
 	// c. create semaphore
 	m_pSemIn = new CNX_Semaphore( 16, 0 );
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 CNX_LiveSource::~CNX_LiveSource(void)
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	--referenceCount;
 	NxDbgMsg( NX_DBG_VBS, (TEXT("refCount = %d\n"), referenceCount) );
 
@@ -517,7 +517,7 @@ CNX_LiveSource::~CNX_LiveSource(void)
 	delete m_pSampleInQueue;
 	delete m_pSemIn;
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------

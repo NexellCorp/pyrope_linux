@@ -86,7 +86,7 @@ CNX_Mp3Encoder::~CNX_Mp3Encoder()
 //------------------------------------------------------------------------------
 void CNX_Mp3Encoder::Init( NX_AUDENC_CONFIG *pConfig )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( false == m_bInit );
 	NX_ASSERT( NULL != pConfig );
 
@@ -101,13 +101,13 @@ void CNX_Mp3Encoder::Init( NX_AUDENC_CONFIG *pConfig )
 		m_hMp3Enc = open_mp3enc();
 
 		if( NULL == m_hMp3Enc ) {
-			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): MP3 encoder failed.\n"), __func__) );
+			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): MP3 encoder failed.\n"), __FUNCTION__) );
 			return;
 		}
 
 		//	Apply Configs
 		if( 0 > init_mp3enc( m_hMp3Enc, m_Channels, m_Frequency, m_Bitrate, (m_Channels==2) ? MODE_JOINT_STEREO : MODE_MONO ) ) {
-			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): MP3 encoder init failed.\n"), __func__) );
+			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): MP3 encoder init failed.\n"), __FUNCTION__) );
 			return ;
 		}
 
@@ -123,13 +123,13 @@ void CNX_Mp3Encoder::Init( NX_AUDENC_CONFIG *pConfig )
 #endif
 
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_Mp3Encoder::Deinit( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( true == m_bInit );
 
 	if( true == m_bInit )
@@ -157,7 +157,7 @@ void CNX_Mp3Encoder::Deinit( void )
 		outPcmFp = NULL;
 	}
 #endif
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -197,26 +197,26 @@ int32_t CNX_Mp3Encoder::ReleaseSample( CNX_Sample *pSample )
 //------------------------------------------------------------------------------
 int32_t CNX_Mp3Encoder::Run( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );	
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );	
 	if( m_bRun == false ) {
 		m_bThreadExit 	= false;
 		NX_ASSERT( !m_hThread );
 
 		if( 0 > pthread_create( &this->m_hThread, NULL, this->ThreadMain, this ) ) {
-			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __func__) );
+			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __FUNCTION__) );
 			return false;
 		}
 
 		m_bRun = true;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_Mp3Encoder::Stop( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( true == m_bRun ) {
 		m_bThreadExit = true;
 		m_pSemIn->Post();
@@ -225,14 +225,14 @@ int32_t CNX_Mp3Encoder::Stop( void )
 		m_hThread = 0x00;
 		m_bRun = false;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 void CNX_Mp3Encoder::AllocateBuffer( int32_t numOfBuffer )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s++\n"), __FUNCTION__) );
 	NX_ASSERT(numOfBuffer <= MAX_BUFFER);
 
 	m_SampleOutQueue.Reset();
@@ -247,13 +247,13 @@ void CNX_Mp3Encoder::AllocateBuffer( int32_t numOfBuffer )
 		m_pSemOut->Post();
 	}
 	m_iNumOfBuffer = numOfBuffer;
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()-- (m_iNumOfBuffer=%d)\n"), __func__, m_iNumOfBuffer) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()-- (m_iNumOfBuffer=%d)\n"), __FUNCTION__, m_iNumOfBuffer) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_Mp3Encoder::FreeBuffer( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	for( int32_t i = 0; i < m_iNumOfBuffer; i++ )
 	{
@@ -262,7 +262,7 @@ void CNX_Mp3Encoder::FreeBuffer( void )
 	m_pSemIn->Post();		//	Send Dummy
 	m_pSemOut->Post();		//	Send Dummy
 	m_iNumOfBuffer = 0;
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -295,7 +295,7 @@ int32_t CNX_Mp3Encoder::GetDeliverySample( CNX_Sample **ppSample )
 //------------------------------------------------------------------------------
 void CNX_Mp3Encoder::ThreadLoop(void)
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	int32_t	ret;
 	CNX_MediaSample		*pSample = NULL;
@@ -374,7 +374,7 @@ void CNX_Mp3Encoder::ThreadLoop(void)
 			pSample->Unlock();
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -407,7 +407,7 @@ int32_t	CNX_Mp3Encoder::EncodeAudio( CNX_MediaSample *pInSample, CNX_MuxerSample
 	frameLength = srcSize / m_Channels / SAMPLE_PER_BYTE;
 	if( frameLength < MP3_FRAME_SIZE )
 	{
-		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Frame Size Mismatch. ( %d )\n"), __func__, frameLength));
+		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Frame Size Mismatch. ( %d )\n"), __FUNCTION__, frameLength));
 		return -1;
 	}
 
@@ -438,32 +438,32 @@ int32_t	CNX_Mp3Encoder::EncodeAudio( CNX_MediaSample *pInSample, CNX_MuxerSample
 //------------------------------------------------------------------------------
 int32_t	CNX_Mp3Encoder::EnableFilter( uint32_t enable )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
-	NxDbgMsg( NX_DBG_INFO, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnable)?"Enable":"Disable", (enable)?"Enable":"Disable") );
+	NxDbgMsg( NX_DBG_INFO, (TEXT("%s : %s -- > %s\n"), __FUNCTION__, (m_bEnable)?"Enable":"Disable", (enable)?"Enable":"Disable") );
 	m_bEnable = enable;
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 //----------------------------------------------------------------------------
 int32_t	CNX_Mp3Encoder::SetPacketID( uint32_t PacketID )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	
 	NxDbgMsg( NX_DBG_DEBUG, (TEXT("Packet ID = %d\n"), m_PacketID) );
 	m_PacketID = PacketID;
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_Mp3Encoder::GetStatistics( NX_FILTER_STATISTICS *pStatistics )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );	
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );	
 	return true;
 }
 

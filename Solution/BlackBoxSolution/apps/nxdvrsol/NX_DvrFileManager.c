@@ -42,12 +42,12 @@ int32_t CheckDirectory( char *directory )
 
 	if( !stat( directory, &stStat ) ) {
 		if( !S_ISDIR( stStat.st_mode ) ) {
-			printf("%s(): Fail, is not directory.\n", __func__);
+			printf("%s(): Fail, is not directory.\n", __FUNCTION__);
 			ret = -1;
 		}
 	} else {
 		if( 0 > mkdir( directory, 0777 ) ) {
-			printf("%s(): Fail, create directory.\n", __func__);
+			printf("%s(): Fail, create directory.\n", __FUNCTION__);
 			ret = -1;
 		}
 	}
@@ -72,11 +72,11 @@ int64_t GetFileSystemSize( const char *pos )
 	int64_t size = 0;
 
 	if( statfs( pos, &stStatfs ) ) {
-		printf("%s(): Invalid system.\n", __func__);
+		printf("%s(): Invalid system.\n", __FUNCTION__);
 		return -1;
 	}
 	size = stStatfs.f_blocks * (stStatfs.f_bsize / 1024);
-	//printf("%s(): total block size of \"%s\" = %lld Kbytes\n", __func__, pos, size);
+	//printf("%s(): total block size of \"%s\" = %lld Kbytes\n", __FUNCTION__, pos, size);
 	
 	return size;
 }
@@ -125,7 +125,7 @@ int32_t CreateFileList( FILE_MANAGER_HANDLE hManager, const char *pFileExtension
 	int64_t fileSize;
 
 	if( (dp = opendir( hManager->topDir ) ) == NULL ){
-		printf("%s(): Directory open failed (%s).\n", __func__, hManager->topDir);
+		printf("%s(): Directory open failed (%s).\n", __FUNCTION__, hManager->topDir);
 		return -1;
 	}
 
@@ -160,7 +160,7 @@ void *DvrFileManagerThread( void *arg )
 		if( hManager->maxSize < hManager->curSize ) {
 			DvrFileQueuePop( hManager->hQueue, fileName, &fileSize );
 			
-			printf("%s(): remove old files. ( allow size : %lld Kbytes, current size : %lld Kbytes -> %lld Kbytes )\n", __func__, hManager->maxSize, hManager->curSize, hManager->curSize - fileSize); 
+			printf("%s(): remove old files. ( allow size : %lld Kbytes, current size : %lld Kbytes -> %lld Kbytes )\n", __FUNCTION__, hManager->maxSize, hManager->curSize, hManager->curSize - fileSize); 
 			hManager->curSize = hManager->curSize - fileSize;
 			if( hManager->curSize < 0 ) hManager->curSize = 0;
 
@@ -197,7 +197,7 @@ FILE_MANAGER_HANDLE	DvrFileManagerInit( const char *topDir, int32_t ratio, const
 #endif
 
 	if( hManager->maxSize <= 0 ) {
-		printf("%s(): Fail, allow size error.( %lld )\n", __func__, hManager->maxSize);
+		printf("%s(): Fail, allow size error.( %lld )\n", __FUNCTION__, hManager->maxSize);
 		goto ERROR;
 	}
 
@@ -213,12 +213,12 @@ FILE_MANAGER_HANDLE	DvrFileManagerInit( const char *topDir, int32_t ratio, const
 
 	CreateFileList( hManager, pFileExtension );
 
-	printf("%s(): MaxSize = %lld, CurrnetSize = %lld\n", __func__, hManager->maxSize, hManager->curSize);
+	printf("%s(): MaxSize = %lld, CurrnetSize = %lld\n", __FUNCTION__, hManager->maxSize, hManager->curSize);
 
 	return hManager;
 
 ERROR :
-	printf("%s(): Fail, Initialize.\n", __func__);
+	printf("%s(): Fail, Initialize.\n", __FUNCTION__);
 	pthread_mutex_destroy( &hManager->hLock );
 	if( hManager->hQueue ) DvrFileQueueDeinit( hManager->hQueue );
 	if( hManager ) free( hManager );
@@ -239,13 +239,13 @@ int32_t DvrFileManagerStart( FILE_MANAGER_HANDLE hManager )
 {
 	assert( hManager );
 	if( hManager->bThreadRun ) {
-		printf("%s(): Fail, Already running.\n", __func__);
+		printf("%s(): Fail, Already running.\n", __FUNCTION__);
 		return -1;
 	}
 
 	hManager->bThreadRun = true;
 	if( 0 > pthread_create( &hManager->hThread, NULL, &DvrFileManagerThread, (void*)hManager) ) {
-		printf("%s(): Fail, Create Thread.\n", __func__);
+		printf("%s(): Fail, Create Thread.\n", __FUNCTION__);
 		return -1;
 	}
 
@@ -256,7 +256,7 @@ int32_t DvrFileManagerStop( FILE_MANAGER_HANDLE hManager )
 {
 	assert( hManager );
 	if( !hManager->bThreadRun) {
-		printf("%s(): Fail, Already stopping.\n", __func__);
+		printf("%s(): Fail, Already stopping.\n", __FUNCTION__);
 		return -1;
 	}
 
@@ -284,7 +284,7 @@ int32_t DvrFileManagerPush( FILE_MANAGER_HANDLE hManager, char *pData )
 	pthread_mutex_lock( &hManager->hLock );
 	
 	if( !hManager->bThreadRun ) {
-		printf("%s(): Fail, Not running.\n", __func__ );
+		printf("%s(): Fail, Not running.\n", __FUNCTION__ );
 		pthread_mutex_unlock( &hManager->hLock );
 		return -1;
 	}

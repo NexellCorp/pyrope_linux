@@ -80,7 +80,7 @@ int32_t cbFileNameCallback( uint8_t *buf, uint32_t bufSize )
 //------------------------------------------------------------------------------
 int32_t CNX_Mp3Manager::BuildFilter( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	m_pRefClock				= new CNX_RefClock();
 	m_pNotifier 			= new CNX_Mp3Notify();
@@ -97,7 +97,7 @@ int32_t CNX_Mp3Manager::BuildFilter( void )
 	if( m_pFileWriter )		m_pFileWriter->Init();
 	if( m_pFileWriter )		m_pFileWriter->RegFileNameCallback( &cbFileNameCallback );
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
@@ -108,7 +108,7 @@ int32_t CNX_Mp3Manager::BuildFilter( void )
 
 void CNX_Mp3Manager::SetNotifier( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	
 	if( m_pNotifier )
 	{
@@ -117,13 +117,13 @@ void CNX_Mp3Manager::SetNotifier( void )
 		SET_EVENT_NOTIFIER( m_pFileWriter,		m_pNotifier );
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_Mp3Manager::SetConfig( Mp3ManagerConfig *pConfig )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	m_AudCapConfig.channels			= pConfig->channel;
@@ -134,14 +134,14 @@ int32_t CNX_Mp3Manager::SetConfig( Mp3ManagerConfig *pConfig )
 	m_AudEncConfig.frequency		= pConfig->frequency;
 	m_AudEncConfig.bitrate			= pConfig->bitrate;
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_Mp3Manager::Init( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 	int32_t ret = 0;
 
@@ -155,14 +155,14 @@ int32_t CNX_Mp3Manager::Init( void )
 		}
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return ret;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_Mp3Manager::Deinit( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	if( m_bInit )
@@ -179,14 +179,14 @@ int32_t CNX_Mp3Manager::Deinit( void )
 		m_bInit = false;
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;	
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_Mp3Manager::Start( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	if( m_bInit && !m_bRun )
@@ -201,14 +201,14 @@ int32_t CNX_Mp3Manager::Start( void )
 		m_bRun = true;
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_Mp3Manager::Stop( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	if( m_bRun )
@@ -223,14 +223,14 @@ int32_t CNX_Mp3Manager::Stop( void )
 		m_bRun = false;
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_Mp3Manager::RegisterNotifyCallback( uint32_t (*cbNotify)(uint32_t, uint8_t*, uint32_t) )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 	
 	if( cbNotify )
@@ -238,6 +238,6 @@ int32_t CNX_Mp3Manager::RegisterNotifyCallback( uint32_t (*cbNotify)(uint32_t, u
 		m_pNotifier->RegisterNotifyCallback( cbNotify );
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }

@@ -137,7 +137,7 @@ public:
 		pthread_mutex_unlock( &m_hSampleQLock );
 		
 		if( !pSample ) {
-			printf("%s(): pSample is NULL\n", __func__);
+			printf("%s(): pSample is NULL\n", __FUNCTION__);
 			return 0;
 		}
 

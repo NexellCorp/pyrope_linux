@@ -366,7 +366,7 @@ public:
 		pthread_mutex_lock( &m_hSampleQLock );
 
 		if( m_iQueueDepth <= m_iSampleCount ) {
-			// printf("%s(): SampleQueue is full.\n", __func__);
+			// printf("%s(): SampleQueue is full.\n", __FUNCTION__);
 			pthread_mutex_unlock( &m_hSampleQLock );
 			return false;
 		}
@@ -384,7 +384,7 @@ public:
 		pthread_mutex_lock( &m_hSampleQLock );
 
 		if( m_iSampleCount <= 0 ) {
-			// printf("%s(): SampleQueue is empty.\n", __func__);
+			// printf("%s(): SampleQueue is empty.\n", __FUNCTION__);
 			pthread_mutex_unlock( &m_hSampleQLock );
 			return false;
 		}

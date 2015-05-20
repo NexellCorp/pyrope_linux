@@ -192,19 +192,19 @@ int32_t cbNotifier( uint32_t eventCode, uint8_t *pEventData, uint32_t dataSize )
 	{
 	case DVR_NOTIFY_NORALWIRTHING_DONE :
 		if( pEventData && dataSize > 0 ) {
-			printf("[%s] : Normal file writing done. ( %s )\n", __func__, pEventData);
+			printf("[%s] : Normal file writing done. ( %s )\n", __FUNCTION__, pEventData);
 			DvrFileManagerPush( g_hNormalFileManager, (char*)pEventData );
 		}
 		break;
 	case DVR_NOTIFY_EVENTWRITING_DONE :
 		if( pEventData && dataSize > 0 ) {
-			printf("[%s] : Event file writing done. ( %s )\n", __func__, pEventData);
+			printf("[%s] : Event file writing done. ( %s )\n", __FUNCTION__, pEventData);
 			DvrFileManagerPush( g_hEventFileManager, (char*)pEventData );
 		}
 		break;
 	case DVR_NOTIFY_JPEGWRITING_DONE :
 		if( pEventData && dataSize > 0 ) {
-			printf("[%s] : Jpeg file writing done. ( %s )\n", __func__, pEventData);
+			printf("[%s] : Jpeg file writing done. ( %s )\n", __FUNCTION__, pEventData);
 			DvrFileManagerPush( g_hCaptureFileManager, (char*)pEventData );
 		}
 		pthread_mutex_lock( &g_hJpegLock );
@@ -220,12 +220,12 @@ int32_t cbNotifier( uint32_t eventCode, uint8_t *pEventData, uint32_t dataSize )
 		break;
 	case DVR_NOTIFY_ERR_OPEN_FAIL :
 		if( pEventData && dataSize > 0 ) {
-			printf("[%s] : File open failed. ( %s )\n", __func__, pEventData);
+			printf("[%s] : File open failed. ( %s )\n", __FUNCTION__, pEventData);
 		}
 		break;
 	case DVR_NOTIFY_ERR_WRITE :
 		if( pEventData && dataSize > 0 ) {	
-			printf("[%s] : File writing failed. ( %s )\n", __func__, pEventData);
+			printf("[%s] : File writing failed. ( %s )\n", __FUNCTION__, pEventData);
 		}
 		break;
 	}

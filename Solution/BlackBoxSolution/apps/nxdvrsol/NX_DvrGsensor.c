@@ -27,9 +27,7 @@
 
 #include "NX_DvrGsensor.h"
 
-#define GSENSOR_DEVICE_NODE			"/dev/accel"
-
-static int32_t BMA222_Read( int32_t fd, GSENSOR_VALUE *pValue )
+int32_t BMA222_Read( int32_t fd, GSENSOR_VALUE *pValue )
 {
 	BMA222_GSENSOR_VALUE accValue;
 
@@ -40,7 +38,22 @@ static int32_t BMA222_Read( int32_t fd, GSENSOR_VALUE *pValue )
 	pValue->y = (int32_t)((double)accValue.y * 15.6);
 	pValue->z = (int32_t)((double)accValue.z * 15.6);
 
-	//printf("%s(): x( %d mg ), y( %d mg ), z( %d mg )\n", __func__, pValue->x, pValue->y, pValue->z );
+	//printf("%s(): x( %d mg ), y( %d mg ), z( %d mg )\n", __FUNCTION__, pValue->x, pValue->y, pValue->z );
+
+	return 0;
+}
+
+int32_t MMA8653_Read( int32_t fd, GSENSOR_VALUE *pValue )
+{
+	FILE *fp = fdopen( fd, "rw" );
+
+	rewind( fp );
+	// return value "mg" - 15.6mg per 1 digit ( -2G ~ +2G :: 256 digit)
+	fscanf( fp, "%d %d %d", &pValue->x, &pValue->y, &pValue->z );
+
+	pValue->x = (int32_t)((double)pValue->x * 15.6);
+	pValue->y = (int32_t)((double)pValue->y * 15.6);
+	pValue->z = (int32_t)((double)pValue->z * 15.6);
 
 	return 0;
 }
@@ -50,9 +63,9 @@ GSENSOR_HANDLE DvrGsensorOpen( const char *pDeviceNode )
 	GSENSOR_HANDLE hGsensor = NULL; 
 	int32_t fd = 0;
 
-	if( 0 > (fd = open( pDeviceNode, O_RDWR ) ) )
+	if( 0 > (fd = open( pDeviceNode, O_RDONLY ) ) )
 	{
-		printf("%s(): Device open failed. ( %s )", __func__, pDeviceNode );
+		printf("%s(): Device open failed. ( %s )\n", __FUNCTION__, pDeviceNode );
 		return NULL;
 	}
 
@@ -64,7 +77,20 @@ GSENSOR_HANDLE DvrGsensorOpen( const char *pDeviceNode )
 	// ID Check and Registeration Read function
 	//
 	//
-	hGsensor->pReadFunc = &BMA222_Read;
+	if( !strcmp( pDeviceNode, "/dev/accel" ) )
+	{
+		hGsensor->pReadFunc = &BMA222_Read;
+	}
+	else if ( !strcmp( pDeviceNode, "/sys/devices/virtual/input/input2/value") )
+	{
+		hGsensor->pReadFunc = &MMA8653_Read;	
+	}
+
+	if( hGsensor->pReadFunc == NULL )
+	{
+		free( hGsensor );
+		return NULL;
+	}
 
 	return hGsensor;
 }
@@ -89,7 +115,7 @@ int32_t DvrGsensorValue( GSENSOR_HANDLE hGsensor, GSENSOR_VALUE *pValue )
 int32_t DvrGsensorAverageValue( GSENSOR_HANDLE hGsensor, GSENSOR_VALUE *pValue )
 {
 	assert( hGsensor );
-	printf("%s(): Not yet.\n", __func__);
+	printf("%s(): Not yet.\n", __FUNCTION__);
 
 	return 0;
 }

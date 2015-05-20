@@ -58,13 +58,13 @@ void *DvrLedEventThread( void *arg )
 int32_t DvrLedEventStart( void )
 {
 	if( bLedEventThreadRun ) {
-		printf("%s(): Fail, Already running.\n", __func__);
+		printf("%s(): Fail, Already running.\n", __FUNCTION__);
 		return -1;
 	}
 
 	bLedEventThreadRun = true;
 	if( 0 > pthread_create( &hLedEventThread, NULL, &DvrLedEventThread, NULL) ) {
-		printf("%s(): Fail, Create Thread.\n", __func__);
+		printf("%s(): Fail, Create Thread.\n", __FUNCTION__);
 		return -1;
 	}
 
@@ -74,7 +74,7 @@ int32_t DvrLedEventStart( void )
 int32_t DvrLedEventStop( void )
 {
 	if( !bLedEventThreadRun) {
-		printf("%s(): Fail, Already stopping.\n", __func__);
+		printf("%s(): Fail, Already stopping.\n", __FUNCTION__);
 		return -1;
 	}
 

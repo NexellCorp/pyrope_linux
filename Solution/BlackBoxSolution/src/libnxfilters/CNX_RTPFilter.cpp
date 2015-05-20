@@ -55,7 +55,7 @@ CNX_RTPFilter::~CNX_RTPFilter()
 //------------------------------------------------------------------------------
 void CNX_RTPFilter::Init( NX_RTP_CONFIG *pConfig )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( false == m_bInit ) {
 		memset( &m_RtpConfig, 0x00, sizeof(m_RtpConfig) );
 		m_RtpConfig.port		= pConfig->port;
@@ -73,20 +73,20 @@ void CNX_RTPFilter::Init( NX_RTP_CONFIG *pConfig )
 
 		m_bInit = true;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_RTPFilter::Deinit( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( true == m_bInit ) {
 		if( m_bRun ) {
 			Stop();
 		}
 		m_bInit = false;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -129,26 +129,26 @@ int32_t CNX_RTPFilter::ReleaseSample( CNX_Sample *pSample )
 //------------------------------------------------------------------------------
 int32_t	CNX_RTPFilter::Run( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( m_bRun == false ) {
 		m_bThreadExit 	= false;
 		NX_ASSERT( !m_hThread );
 
 		if( 0 > pthread_create( &this->m_hThread, NULL, this->ThreadMain, this ) ) {
-			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __func__) );
+			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __FUNCTION__) );
 			return false;
 		}
 
 		m_bRun = true;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t	CNX_RTPFilter::Stop( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( true == m_bRun ) {
 		m_bThreadExit = true;
 
@@ -161,22 +161,22 @@ int32_t	CNX_RTPFilter::Stop( void )
 		m_hThread = 0x00;
 		m_bRun = false;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 void CNX_RTPFilter::AllocateMemory( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_RTPFilter::FreeMemory( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -194,13 +194,13 @@ int32_t CNX_RTPFilter::GetDeliverySample( CNX_Sample **ppSample )
 //------------------------------------------------------------------------------
 void CNX_RTPFilter::ThreadLoop(void)
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	
 	m_pScheduler 	= BasicTaskScheduler::createNew();
 	m_pEnv 			= BasicUsageEnvironment::createNew( *m_pScheduler );
 	
 	if( NULL == (m_pRtspServer = CNX_DynamicRTSPServer::createNew( *m_pEnv, m_iRtspPortNum, NULL )) ) {
-		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create RTSP Server.\n"), __func__) );
+		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create RTSP Server.\n"), __FUNCTION__) );
 		NX_ASSERT( m_pRtspServer != NULL );	
 		return ;
 	}
@@ -227,7 +227,7 @@ void CNX_RTPFilter::ThreadLoop(void)
 
 	m_pEnv->taskScheduler().doEventLoop( &m_iWatchFlag );
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );	
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );	
 }
 
 //------------------------------------------------------------------------------
@@ -271,7 +271,7 @@ int32_t CNX_RTPFilter::DestorySample( CNX_Sample *pSample )
 	((CNX_MuxerSample*)pSample)->GetBuffer( &pBuf, &size );
 
 	if( pBuf ) 		free( pBuf );
-	else 			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Invalid buffer.\n"), __func__) );
+	else 			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Invalid buffer.\n"), __FUNCTION__) );
 	
 	if( pSample )	delete pSample;
 
@@ -288,12 +288,12 @@ int32_t CNX_RTPFilter::SetSourceInstance( CNX_LiveSource *pLiveSource, int32_t t
 			m_pLiveSource[i] 	= pLiveSource;
 			m_CurStreamType		= type;
 			m_nCurConnectNum++;
-			NxDbgMsg( NX_DBG_VBS, (TEXT("%s(): [%d] Set Instance. (LiveSource = 0x%08x, StreamType = %d)\n"), __func__, m_nCurConnectNum, (int32_t)pLiveSource, type) );
+			NxDbgMsg( NX_DBG_VBS, (TEXT("%s(): [%d] Set Instance. (LiveSource = 0x%08x, StreamType = %d)\n"), __FUNCTION__, m_nCurConnectNum, (int32_t)pLiveSource, type) );
 			return true;
 		}
 	}
 
-	NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, is not empty slot.\n"), __func__) );
+	NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, is not empty slot.\n"), __FUNCTION__) );
 	return false;
 }
 
@@ -305,13 +305,13 @@ int32_t CNX_RTPFilter::ClearSourceInstance( CNX_LiveSource *pLiveSource )
 	for( int32_t i = 0; i < m_nMaxConnectNum; i++ ) {
 		if( m_pLiveSource[i] == pLiveSource ) {
 			m_nCurConnectNum--;
-			NxDbgMsg( NX_DBG_VBS, (TEXT("%s(): [%d] Clear Instance. (LiveSource = 0x%08x)\n"), __func__, m_nCurConnectNum, (int32_t)pLiveSource) );
+			NxDbgMsg( NX_DBG_VBS, (TEXT("%s(): [%d] Clear Instance. (LiveSource = 0x%08x)\n"), __FUNCTION__, m_nCurConnectNum, (int32_t)pLiveSource) );
 			m_pLiveSource[i] = NULL;
 			return true;
 		}
 	}
 
-	NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, not match slot.\n"), __func__) );
+	NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, not match slot.\n"), __FUNCTION__) );
 	return false;
 }
 

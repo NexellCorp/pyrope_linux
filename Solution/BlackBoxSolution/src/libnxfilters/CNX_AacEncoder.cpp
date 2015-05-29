@@ -120,7 +120,7 @@ CNX_AacEncoder::~CNX_AacEncoder()
 //------------------------------------------------------------------------------
 void CNX_AacEncoder::Init( NX_AUDENC_CONFIG *pConfig )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( false == m_bInit );
 	NX_ASSERT( NULL != pConfig );
 
@@ -147,7 +147,7 @@ void CNX_AacEncoder::Init( NX_AUDENC_CONFIG *pConfig )
 		
 		// Apply Configs
 		if( 0 > NX_AACENC_OPEN ( &m_hAACenc, &encParam, &nReadSize) ) {
-			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): AAC encoder init failed.\n"), __func__) );
+			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): AAC encoder init failed.\n"), __FUNCTION__) );
 			return ;
 		}
 
@@ -163,13 +163,13 @@ void CNX_AacEncoder::Init( NX_AUDENC_CONFIG *pConfig )
 #endif
 
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_AacEncoder::Deinit( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( true == m_bInit );
 
 	if( true == m_bInit )
@@ -196,7 +196,7 @@ void CNX_AacEncoder::Deinit( void )
 		outPcmFp = NULL;
 	}
 #endif
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -236,26 +236,26 @@ int32_t CNX_AacEncoder::ReleaseSample( CNX_Sample *pSample )
 //------------------------------------------------------------------------------
 int32_t CNX_AacEncoder::Run( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( m_bRun == false ) {
 		m_bThreadExit 	= false;
 		NX_ASSERT( !m_hThread );
 
 		if( 0 > pthread_create( &this->m_hThread, NULL, this->ThreadMain, this ) ) {
-			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __func__) );
+			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __FUNCTION__) );
 			return false;
 		}
 
 		m_bRun = true;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_AacEncoder::Stop( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( true == m_bRun ) {
 		m_bThreadExit = true;
 		m_pSemIn->Post();
@@ -264,14 +264,14 @@ int32_t CNX_AacEncoder::Stop( void )
 		m_hThread = 0x00;
 		m_bRun = false;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 void CNX_AacEncoder::AllocateBuffer( int numOfBuffer )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT(numOfBuffer <= MAX_BUFFER);
 
 	m_SampleOutQueue.Reset();
@@ -286,13 +286,13 @@ void CNX_AacEncoder::AllocateBuffer( int numOfBuffer )
 		m_pSemOut->Post();
 	}
 	m_iNumOfBuffer = numOfBuffer;
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()-- (m_iNumOfBuffer=%d)\n"), __func__, m_iNumOfBuffer) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()-- (m_iNumOfBuffer=%d)\n"), __FUNCTION__, m_iNumOfBuffer) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_AacEncoder::FreeBuffer( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	for( int32_t i = 0; i < m_iNumOfBuffer; i++ )
 	{
@@ -301,7 +301,7 @@ void CNX_AacEncoder::FreeBuffer( void )
 	m_pSemIn->Post();
 	m_pSemOut->Post();
 	m_iNumOfBuffer = 0;
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -334,7 +334,7 @@ int32_t CNX_AacEncoder::GetDeliverySample( CNX_Sample **ppSample )
 //------------------------------------------------------------------------------
 void CNX_AacEncoder::ThreadLoop(void)
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	int32_t	ret;
 	CNX_MediaSample *pSample = NULL;
@@ -418,7 +418,7 @@ void CNX_AacEncoder::ThreadLoop(void)
 			pSample->Unlock();
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -449,7 +449,7 @@ int32_t CNX_AacEncoder::EncodeAudio( CNX_MediaSample *pInSample, CNX_MuxerSample
 	frameLength = srcSize / m_Channels / SAMPLE_PER_BYTE;
 	if( frameLength < AAC_FRAME_SIZE )
 	{
-		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Frame Size Mismatch. ( %d )\n"), __func__, frameLength));
+		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Frame Size Mismatch. ( %d )\n"), __FUNCTION__, frameLength));
 		return -1;
 	}
 
@@ -481,32 +481,32 @@ int32_t CNX_AacEncoder::EncodeAudio( CNX_MediaSample *pInSample, CNX_MuxerSample
 //------------------------------------------------------------------------------
 int32_t CNX_AacEncoder::EnableFilter( uint32_t enable )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
-	NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnable)?"Enable":"Disable", (enable)?"Enable":"Disable") );
+	NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s : %s -- > %s\n"), __FUNCTION__, (m_bEnable)?"Enable":"Disable", (enable)?"Enable":"Disable") );
 	m_bEnable = enable;
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_AacEncoder::SetPacketID( uint32_t PacketID )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	
 	NxDbgMsg( NX_DBG_DEBUG, (TEXT("Packet ID = %d\n"), m_PacketID) );
 	m_PacketID = PacketID;
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_AacEncoder::GetDsiInfo( uint8_t *dsiInfo, int32_t *dsiSize )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( m_bInit ) {
 		*dsiSize = NX_AACENC_GET_HEADER( m_hAACenc, dsiInfo);
 		dumpdata( dsiInfo, *dsiSize, "AAC Encoder DSI\n\t" );
@@ -514,14 +514,14 @@ int32_t CNX_AacEncoder::GetDsiInfo( uint8_t *dsiInfo, int32_t *dsiSize )
 		NxDbgMsg( NX_DBG_ERR, (TEXT("Fail, Get DSI infomation.\n")) );
 	}
 	
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_AacEncoder::GetStatistics( NX_FILTER_STATISTICS *pStatistics )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }

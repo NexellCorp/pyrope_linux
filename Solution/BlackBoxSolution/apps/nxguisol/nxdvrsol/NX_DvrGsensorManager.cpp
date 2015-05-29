@@ -112,7 +112,7 @@ void *DvrGsensorManagerThread( void *arg )
 					{
 						if( curTime > targetTime )
 						{
-							printf("%s(): Enter the motion detection mode.\n", __func__);
+							printf("%s(): Enter the motion detection mode.\n", __FUNCTION__);
 							hManager->nDvrMode = DVR_MODE_MOTION;
 
 							cmd.cmdType = CMD_TYPE_CHG_MODE;
@@ -127,7 +127,7 @@ void *DvrGsensorManagerThread( void *arg )
 				{
 					hManager->nDvrMode = DVR_MODE_EVENT;
 					printf("%s(): diff( %d, %d, %d ), threshold( %d, %d, %d )\n", 
-						__func__,
+						__FUNCTION__,
 						diff_x, diff_y, diff_z,
 						hManager->threshold.x, hManager->threshold.y, hManager->threshold.z
 					);
@@ -142,7 +142,7 @@ void *DvrGsensorManagerThread( void *arg )
 				{
 					if( diff_x > MOTION_THRESHOLD_X || diff_y > MOTION_THRESHOLD_Y || diff_z > MOTION_THRESHOLD_Z )
 					{
-						printf("%s(): Enter the normal mode.\n", __func__);
+						printf("%s(): Enter the normal mode.\n", __FUNCTION__);
 						targetTime	= curTime + CHECK_NO_SENSOR_TIME;
 						hManager->nDvrMode = DVR_MODE_NORMAL;
 						
@@ -211,13 +211,13 @@ int32_t DvrGsensorManagerStart( GSENSOR_MANAGER_HANDLE hManager )
 {
 	assert( hManager );
 	if( hManager->bThreadRun ) {
-		printf("%s(): Fail, Already running.\n", __func__);
+		printf("%s(): Fail, Already running.\n", __FUNCTION__);
 		return -1;
 	}
 
 	hManager->bThreadRun = true;
 	if( 0 > pthread_create( &hManager->hThread, NULL, &DvrGsensorManagerThread, (void*)hManager) ) {
-		printf("%s(): Fail, Create Thread.\n", __func__);
+		printf("%s(): Fail, Create Thread.\n", __FUNCTION__);
 		return -1;
 	}
 
@@ -228,7 +228,7 @@ int32_t DvrGsensorManagerStop( GSENSOR_MANAGER_HANDLE hManager )
 {
 	assert( hManager );
 	if( !hManager->bThreadRun) {
-		printf("%s(): Fail, Already stopping.\n", __func__);
+		printf("%s(): Fail, Already stopping.\n", __FUNCTION__);
 		return -1;
 	}
 

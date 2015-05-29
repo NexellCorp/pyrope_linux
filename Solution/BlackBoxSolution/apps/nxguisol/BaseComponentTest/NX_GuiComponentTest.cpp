@@ -144,12 +144,12 @@ void testAction( void )
 
 void testProgress1( void )
 {
-	printf("%s():: Touch Action!\n", __func__);
+	printf("%s():: Touch Action!\n", __FUNCTION__);
 }
 
 void testProgress2( void )
 {
-	printf("%s():: Touch Action!\n", __func__);
+	printf("%s():: Touch Action!\n", __FUNCTION__);
 }
 
 void Top2Sub( void )

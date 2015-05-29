@@ -84,7 +84,7 @@ static int32_t GetDisplayPosition( int32_t srcWidth, int32_t srcHeight, int32_t 
 	int32_t scrWidth, scrHeight;
 
 	if( 0 > (fb = open( "/dev/fb0", O_RDWR)) ) {
-		printf("%s(): fb open fail.\n", __func__);
+		printf("%s(): fb open fail.\n", __FUNCTION__);
 		return -1;
 	}
 
@@ -268,12 +268,12 @@ uint32_t cbNotifier( uint32_t eventCode, uint8_t *pEventData, uint32_t dataSize 
 	{
 	case NX_NOTIFY_FILEWRITING_DONE :
 		if( pEventData && dataSize > 0 ) {
-			printf("[%s] : File writing done. ( %s )\n", __func__, pEventData);
+			printf("[%s] : File writing done. ( %s )\n", __FUNCTION__, pEventData);
 		}
 		break;
 	case NX_NOTIFY_JPEGWRITING_DONE :
 		if( pEventData && dataSize > 0 ) {
-			printf("[%s] : Capture writing done. ( %s )\n", __func__, pEventData);
+			printf("[%s] : Capture writing done. ( %s )\n", __FUNCTION__, pEventData);
 		}
 		break;
 	case NX_NOTIFY_ERR_VIDEO_INPUT :
@@ -282,12 +282,12 @@ uint32_t cbNotifier( uint32_t eventCode, uint8_t *pEventData, uint32_t dataSize 
 		break;
 	case NX_NOTIFY_ERR_OPEN_FAIL :
 		if( pEventData && dataSize > 0 ) {
-			printf("[%s] : File open failed. ( %s )\n", __func__, pEventData);
+			printf("[%s] : File open failed. ( %s )\n", __FUNCTION__, pEventData);
 		}
 		break;
 	case NX_NOTIFY_ERR_WRITE :
 		if( pEventData && dataSize > 0 ) {	
-			printf("[%s] : File writing failed. ( %s )", __func__, pEventData);
+			printf("[%s] : File writing failed. ( %s )", __FUNCTION__, pEventData);
 		}
 		break;
 	}

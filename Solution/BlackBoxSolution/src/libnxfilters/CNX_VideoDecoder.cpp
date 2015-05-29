@@ -54,7 +54,7 @@ CNX_VideoDecoder::~CNX_VideoDecoder()
 //------------------------------------------------------------------------------
 void CNX_VideoDecoder::Init()
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( false == m_bInit );
 
 	if( false == m_bInit )
@@ -63,13 +63,13 @@ void CNX_VideoDecoder::Init()
 		m_bInit = true;
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_VideoDecoder::Deinit()
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( true == m_bInit );
 	if( true == m_bInit )
 	{
@@ -89,7 +89,7 @@ void CNX_VideoDecoder::Deinit()
 		m_bInit = false;
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -117,27 +117,27 @@ int32_t CNX_VideoDecoder::ReleaseSample( CNX_Sample *pSample )
 //------------------------------------------------------------------------------
 int32_t CNX_VideoDecoder::Run( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( m_bRun == false ) {
 		m_bThreadExit 	= false;
 		NX_ASSERT( !m_hThread );
 
 		m_pSemOut->Init();
 		if( 0 > pthread_create( &this->m_hThread, NULL, this->ThreadMain, this ) ) {
-			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __func__) );
+			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __FUNCTION__) );
 			return false;
 		}
 
 		m_bRun = true;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_VideoDecoder::Stop( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( true == m_bRun ) {
 		m_bThreadExit = true;
 		m_pSemOut->Post();
@@ -145,14 +145,14 @@ int32_t CNX_VideoDecoder::Stop( void )
 		m_hThread = 0x00;
 		m_bRun = false;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 void CNX_VideoDecoder::ThreadLoop( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	uint8_t streamBuffer[MAX_STREAM_BUF_SIZE];
 	int32_t seqSize = 0;
@@ -276,7 +276,7 @@ void CNX_VideoDecoder::ThreadLoop( void )
 		}
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -292,10 +292,10 @@ void* CNX_VideoDecoder::ThreadMain( void *pArg)
 //------------------------------------------------------------------------------
 int32_t CNX_VideoDecoder::SetFileName( uint8_t *pFileName )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( m_pMediaReader ) {
 		if( !m_pMediaReader->OpenFile( (char*)pFileName ) ) {
-			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Open failed.\n"), __func__) );
+			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Open failed.\n"), __FUNCTION__) );
 			goto ErrorExit;
 		}
 
@@ -311,30 +311,30 @@ int32_t CNX_VideoDecoder::SetFileName( uint8_t *pFileName )
 			mp4Class = codecIdToMp4Class( codecId );
 		
 		mp4Class = 0;
-		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): vpuCodecType = %d, mp4Class = %d\n"), __func__, vpuCodecType, mp4Class) );
+		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): vpuCodecType = %d, mp4Class = %d\n"), __FUNCTION__, vpuCodecType, mp4Class) );
 
 		if( NULL == (m_hDec = NX_VidDecOpen((VID_TYPE_E)vpuCodecType, mp4Class, 0, NULL)) ) {
-			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): NX_VidDecOpen(%d) failed!!!\n"), __func__, vpuCodecType) );
+			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): NX_VidDecOpen(%d) failed!!!\n"), __FUNCTION__, vpuCodecType) );
 			goto ErrorExit;
 		}		
 	}
 	else {
-		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Media Reader is not initialized.\n"), __func__) );
+		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Media Reader is not initialized.\n"), __FUNCTION__) );
 		goto ErrorExit;
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 
 ErrorExit:
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return false;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_VideoDecoder::GetVideoResolution( int32_t *width, int32_t *height )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	*width = *height = 0;
 
 	if( m_pMediaReader ) {
@@ -344,18 +344,18 @@ int32_t CNX_VideoDecoder::GetVideoResolution( int32_t *width, int32_t *height )
 		goto ErrorExit;
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 
 ErrorExit:
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return false;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_VideoDecoder::GetVideoFramerate( int32_t *fpsNum, int32_t *fpsDen )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	double fps = 0.;
 	*fpsNum = *fpsDen = 0;
 
@@ -368,33 +368,33 @@ int32_t CNX_VideoDecoder::GetVideoFramerate( int32_t *fpsNum, int32_t *fpsDen )
 
 	fps = floor( ((double)*fpsNum / (double)*fpsDen) + .5 );
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return (int32_t)fps;
 
 ErrorExit:
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return -1;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_VideoDecoder::SetFrameDown( int32_t targetFps )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	int32_t fpsNum = 0, fpsDen = 0, fps = 0;
 	fps = GetVideoFramerate( &fpsNum, &fpsDen );
 
 	if( targetFps >= fps ) {
-		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Error ( Source Frame(%d fps), Target Frame(%dfps) )\n"), __func__, (int32_t)fps, targetFps) );
+		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Error ( Source Frame(%d fps), Target Frame(%dfps) )\n"), __FUNCTION__, (int32_t)fps, targetFps) );
 		goto ErrorExit;
 	}
 
 	m_SkipFrame = fps / targetFps;
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 
 ErrorExit:
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return false;
 }

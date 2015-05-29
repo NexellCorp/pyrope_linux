@@ -62,7 +62,7 @@ CNX_MotionDetectFilter::~CNX_MotionDetectFilter()
 //------------------------------------------------------------------------------
 void CNX_MotionDetectFilter::Init( NX_MOTION_DETECT_CONFIG *pConfig )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( false == m_bInit );
 
 	if( false == m_bInit )
@@ -77,13 +77,13 @@ void CNX_MotionDetectFilter::Init( NX_MOTION_DETECT_CONFIG *pConfig )
 		m_bInit = true;
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_MotionDetectFilter::Deinit( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( true == m_bInit );
 
 	if( true == m_bInit )
@@ -93,7 +93,7 @@ void CNX_MotionDetectFilter::Deinit( void )
 		m_bInit = false;
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -119,27 +119,27 @@ int32_t	CNX_MotionDetectFilter::ReleaseSample( CNX_Sample *pSample )
 //------------------------------------------------------------------------------
 int32_t CNX_MotionDetectFilter::Run( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( m_bRun == false ) {
 		m_bThreadExit 	= false;
 		NX_ASSERT( !m_hThread );
 
 		if( 0 > pthread_create( &this->m_hThread, NULL, this->ThreadMain, this ) )
 		{
-			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __func__) );
+			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __FUNCTION__) );
 			return false;
 		}
 
 		m_bRun = true;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t	CNX_MotionDetectFilter::Stop( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( true == m_bRun ) {
 		m_bThreadExit = true;
 		m_pSemIn->Post();
@@ -147,23 +147,23 @@ int32_t	CNX_MotionDetectFilter::Stop( void )
 		m_hThread = 0x00;
 		m_bRun = false;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 void CNX_MotionDetectFilter::AllocateBuffer( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s++\n"), __func__) );
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s++\n"), __FUNCTION__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_MotionDetectFilter::FreeBuffer( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	m_pSemIn->Post();
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -186,7 +186,7 @@ int32_t	CNX_MotionDetectFilter::GetDeliverySample( CNX_Sample **ppSample )
 //------------------------------------------------------------------------------
 void CNX_MotionDetectFilter::ThreadLoop(void)
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	CNX_VideoSample		*pSample = NULL;
 
@@ -264,7 +264,7 @@ void CNX_MotionDetectFilter::ThreadLoop(void)
 			pSample->Unlock();
 	}	
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -311,7 +311,7 @@ int32_t CNX_MotionDetectFilter::MotionDetect( NX_VID_MEMORY_INFO *pPrevMemory, N
 	}
 
 	diffAverage /= (double)(m_SamplingWidth * m_SamplingHeight);
-	//NxDbgMsg( NX_DBG_VBS, (TEXT("%s(): diffCnt = %03d, diffAverage %03.03f\n"), __func__, diffCnt, diffAverage) );
+	//NxDbgMsg( NX_DBG_VBS, (TEXT("%s(): diffCnt = %03d, diffAverage %03.03f\n"), __FUNCTION__, diffCnt, diffAverage) );
 
 	if( diffCnt > m_Sensitivity )
 		return true;
@@ -347,7 +347,7 @@ int32_t CNX_MotionDetectFilter::EnableMotionDetect( int32_t enable )
 {
 	CNX_AutoLock lock( &m_hLock );	
 	
-	NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnabled)?"Enable":"Disable", (enable)?"Enable":"Disable") );
+	NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s : %s -- > %s\n"), __FUNCTION__, (m_bEnabled)?"Enable":"Disable", (enable)?"Enable":"Disable") );
 	m_bEnabled = enable;
 	return true;
 }

@@ -55,7 +55,7 @@ CNX_VRFilter::~CNX_VRFilter( void )
 //------------------------------------------------------------------------------
 void	CNX_VRFilter::Init( NX_VIDRENDER_CONFIG *pConfig )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	
 	NX_ASSERT( false == m_bInit );
 	NX_ASSERT( NULL != pConfig );
@@ -91,13 +91,13 @@ void	CNX_VRFilter::Init( NX_VIDRENDER_CONFIG *pConfig )
 		m_bInit = true;
 	}
 	
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void	CNX_VRFilter::Deinit( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( true == m_bInit );
 
 	if( true == m_bInit )
@@ -109,7 +109,7 @@ void	CNX_VRFilter::Deinit( void )
 
 		m_bInit = false;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -159,21 +159,21 @@ int32_t	CNX_VRFilter::ReleaseSample( CNX_Sample *pSample )
 //------------------------------------------------------------------------------
 int32_t	CNX_VRFilter::Run( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 	
 	if( false == m_bRun ) {
 		m_bRun = true;
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t	CNX_VRFilter::Stop( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	if( true == m_bRun ) {
@@ -190,24 +190,24 @@ int32_t	CNX_VRFilter::Stop( void )
 		}
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_VRFilter::Pause( int32_t enable )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	if( m_bPause == enable ) {
-		NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );		
+		NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );		
 		return -1;
 	}
 
 	if( enable == true ) {
 		if( m_pPrevVideoSample == NULL ) {
-			NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );		
+			NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );		
 			return -1;
 		}
 
@@ -227,17 +227,17 @@ int32_t CNX_VRFilter::Pause( int32_t enable )
 	}
 	m_bPause = enable;
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_VRFilter::EnableRender( uint32_t enable )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
-	NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnable)?"Enable":"Disable", (enable)?"Enable":"Disable") );
+	NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s : %s -- > %s\n"), __FUNCTION__, (m_bEnable)?"Enable":"Disable", (enable)?"Enable":"Disable") );
 
 	if( enable ) {
 		if( !m_hDsp ) {
@@ -257,17 +257,17 @@ int32_t CNX_VRFilter::EnableRender( uint32_t enable )
 	}
 	m_bEnable = enable;
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;	
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_VRFilter::EnableHdmiRender( uint32_t enable )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
-	NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnableHdmi)?"Enable":"Disable", (enable)?"Enable":"Disable") );
+	NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s : %s -- > %s\n"), __FUNCTION__, (m_bEnableHdmi)?"Enable":"Disable", (enable)?"Enable":"Disable") );
 
 	DISPLAY_INFO dspInfo;
 	memset( &dspInfo, 0x00, sizeof(dspInfo) );
@@ -307,21 +307,21 @@ int32_t CNX_VRFilter::EnableHdmiRender( uint32_t enable )
 	}
 	m_bEnableHdmi = enable;
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;	
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_VRFilter::SetRenderCrop( DSP_IMG_RECT *pCropRect )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	if( pCropRect->left 	== 0 &&
 		pCropRect->top		== 0 &&
 		pCropRect->right	== 0 &&
 		pCropRect->bottom	== 0 ) {
-		NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+		NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 		return -1;
 	}
 
@@ -333,25 +333,25 @@ int32_t CNX_VRFilter::SetRenderCrop( DSP_IMG_RECT *pCropRect )
 		m_DisplayInfo.dspSrcRect = *pCropRect;
 		NX_DspVideoSetSourceCrop( m_hDsp, pCropRect );
 
-		NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s(): crop(%d, %d, %d, %d)\n"), __func__, 
+		NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s(): crop(%d, %d, %d, %d)\n"), __FUNCTION__, 
 			pCropRect->left, pCropRect->top, pCropRect->right, pCropRect->bottom) );
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_VRFilter::SetRenderPosition( DSP_IMG_RECT *pDspRect )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	if( pDspRect->left 		== 0 &&
 		pDspRect->top		== 0 &&
 		pDspRect->right		== 0 &&
 		pDspRect->bottom	== 0 ) {
-		NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+		NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 		return -1;
 	}
 
@@ -364,10 +364,10 @@ int32_t CNX_VRFilter::SetRenderPosition( DSP_IMG_RECT *pDspRect )
 
 		NX_DspVideoSetPosition( m_hDsp, pDspRect );
 
-		NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s(): position(%d, %d, %d, %d)\n"), __func__, 
+		NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s(): position(%d, %d, %d, %d)\n"), __FUNCTION__, 
 			pDspRect->left, pDspRect->top, pDspRect->right, pDspRect->bottom) );
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }

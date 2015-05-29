@@ -55,7 +55,7 @@ void CNX_ProgressBar::Destroy( void )
 		OBJ_ATTRIBUTE *pNextAttr = pAttr->pAttrList;
 		while( pAttr )
 		{
-			NxDbgMsg( NX_DBG_VBS, (TEXT("[%s()] Delete Component. ( %p )\n"), __func__, pAttr) );
+			NxDbgMsg( NX_DBG_VBS, (TEXT("[%s()] Delete Component. ( %p )\n"), __FUNCTION__, pAttr) );
 			free( pAttr );
 			pAttr = pNextAttr;
 			if( pAttr ) pNextAttr = pAttr->pAttrList;
@@ -124,7 +124,7 @@ int32_t CNX_ProgressBar::EventLoop( CNX_BaseObject *pParent, SDL_Event *pSdlEven
 
 	if( !pAttr )
 	{
-		//NxDbgMsg( NX_DBG_ERR, (TEXT("[%s()] Not matched attribute.\n"), __func__) );
+		//NxDbgMsg( NX_DBG_ERR, (TEXT("[%s()] Not matched attribute.\n"), __FUNCTION__) );
 		ret = -1;
 		return ret;
 	}

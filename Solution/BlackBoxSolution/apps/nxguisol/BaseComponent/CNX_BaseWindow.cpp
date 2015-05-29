@@ -52,7 +52,7 @@ void CNX_BaseWindow::Destroy( void )
 		OBJ_ATTRIBUTE *pNextAttr = pAttr->pAttrList;
 		while( pAttr )
 		{
-			NxDbgMsg( NX_DBG_VBS, (TEXT("[%s()] Delete Component. ( %p )\n"), __func__, pAttr) );
+			NxDbgMsg( NX_DBG_VBS, (TEXT("[%s()] Delete Component. ( %p )\n"), __FUNCTION__, pAttr) );
 			free( pAttr );
 			pAttr = pNextAttr;
 			if( pAttr ) pNextAttr = pAttr->pAttrList;
@@ -67,7 +67,7 @@ void CNX_BaseWindow::Draw( OBJ_STATUS status )
 
 	if( !pAttr )
 	{
-		NxDbgMsg( NX_DBG_ERR, (TEXT("[%s()] Not matched attribute.\n"), __func__) );
+		NxDbgMsg( NX_DBG_ERR, (TEXT("[%s()] Not matched attribute.\n"), __FUNCTION__) );
 		return;
 	}
 
@@ -95,7 +95,7 @@ void CNX_BaseWindow::Draw( OBJ_STATUS status )
 int32_t CNX_BaseWindow::EventLoop( void )
 {
 	static int32_t nLoopDepth = 0;
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()[%02d]++\n"), __func__, ++nLoopDepth) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()[%02d]++\n"), __FUNCTION__, ++nLoopDepth) );
 
 	SDL_Event sdlEvent;
 	CNX_BaseObject *pChild = GetChild();
@@ -121,7 +121,7 @@ int32_t CNX_BaseWindow::EventLoop( void )
 
 		if( ret != OBJ_ACTION_NONE )
 		{
-			NxDbgMsg( NX_DBG_VBS, (TEXT("[%s()] event type is \"%s\"\n"), __func__,
+			NxDbgMsg( NX_DBG_VBS, (TEXT("[%s()] event type is \"%s\"\n"), __FUNCTION__,
 				(ret == OBJ_ACTION_NONE) ? "none" : 
 				(ret == OBJ_ACTION_WINDOW) ? "window" :
 				(ret == OBJ_ACTION_EXEC) ? "execute" :
@@ -152,7 +152,7 @@ int32_t CNX_BaseWindow::EventLoop( void )
 		cbActionFunc();
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT( "%s()[%02d]--\n" ), __func__, --nLoopDepth) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT( "%s()[%02d]--\n" ), __FUNCTION__, --nLoopDepth) );
 	
 	return ret;
 }

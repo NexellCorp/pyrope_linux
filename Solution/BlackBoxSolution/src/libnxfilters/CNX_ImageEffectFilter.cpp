@@ -64,7 +64,7 @@ CNX_ImageEffectFilter::~CNX_ImageEffectFilter()
 //------------------------------------------------------------------------------
 void	CNX_ImageEffectFilter::Init( NX_IMAGE_EFFECT_CONFIG *pConfig )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( false == m_bInit );
 	if( false == m_bInit )
 	{
@@ -76,13 +76,13 @@ void	CNX_ImageEffectFilter::Init( NX_IMAGE_EFFECT_CONFIG *pConfig )
 	}
 
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //----------------------------------------------------------------------------
 void	CNX_ImageEffectFilter::Deinit( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( true == m_bInit );
 
 	if( true == m_bInit )
@@ -92,7 +92,7 @@ void	CNX_ImageEffectFilter::Deinit( void )
 		m_bInit = false;
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -121,27 +121,27 @@ int32_t	CNX_ImageEffectFilter::ReleaseSample(CNX_Sample *pSample)
 //------------------------------------------------------------------------------
 int32_t CNX_ImageEffectFilter::Run( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( m_bRun == false ) {
 		m_bThreadExit 	= false;
 		NX_ASSERT( !m_hThread );
 
 		if( 0 > pthread_create( &this->m_hThread, NULL, this->ThreadMain, this ) )
 		{
-			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __func__) );
+			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __FUNCTION__) );
 			return false;
 		}
 
 		m_bRun = true;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t	CNX_ImageEffectFilter::Stop( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( true == m_bRun ) {
 		m_bThreadExit = true;
 		m_pSemIn->Post();
@@ -150,14 +150,14 @@ int32_t	CNX_ImageEffectFilter::Stop( void )
 		m_hThread = 0x00;
 		m_bRun = false;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 void	CNX_ImageEffectFilter::AllocateBuffer( int32_t width, int32_t height, int32_t alignx, int32_t aligny, int32_t numOfBuffer, uint32_t dwFourCC )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( numOfBuffer <= MAX_BUFFER );
 
 	m_SampleOutQueue.Reset();
@@ -176,13 +176,13 @@ void	CNX_ImageEffectFilter::AllocateBuffer( int32_t width, int32_t height, int32
 		m_pSemOut->Post();
 	}
 	m_iNumOfBuffer = numOfBuffer;
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()-- (m_iNumOfBuffer=%d)\n"), __func__, m_iNumOfBuffer) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()-- (m_iNumOfBuffer=%d)\n"), __FUNCTION__, m_iNumOfBuffer) );
 }
 
 //------------------------------------------------------------------------------
 void	CNX_ImageEffectFilter::FreeBuffer( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	m_SampleOutQueue.Reset();
 	for( int32_t i = 0; i < m_iNumOfBuffer; i++ )
 	{
@@ -195,7 +195,7 @@ void	CNX_ImageEffectFilter::FreeBuffer( void )
 	m_pSemIn->Post();		//	Send Dummy
 	m_pSemOut->Post();		//	Send Dummy
 	m_iNumOfBuffer = 0;
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -225,7 +225,7 @@ int32_t	CNX_ImageEffectFilter::GetDeliverySample( CNX_Sample **ppSample )
 //------------------------------------------------------------------------------
 void	CNX_ImageEffectFilter::ThreadLoop( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	CNX_VideoSample		*pSample = NULL;
 	CNX_VideoSample		*pOutSample = NULL;
@@ -277,7 +277,7 @@ void	CNX_ImageEffectFilter::ThreadLoop( void )
 			pSample->Unlock();
 	}	
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------

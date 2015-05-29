@@ -115,7 +115,7 @@ CNX_Mp4MuxerFilter::~CNX_Mp4MuxerFilter( void )
 //------------------------------------------------------------------------------
 void	CNX_Mp4MuxerFilter::Init( NX_MP4MUXER_CONFIG *pConfig )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	uint32_t i;
 
 	if( false == m_bInit )
@@ -139,20 +139,20 @@ void	CNX_Mp4MuxerFilter::Init( NX_MP4MUXER_CONFIG *pConfig )
 
 		m_bInit = true;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void	CNX_Mp4MuxerFilter::Deinit( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( true == m_bInit ) {
 		if( m_bRun ) {
 			Stop();
 		}
 		m_bInit = false;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -164,7 +164,7 @@ int32_t	CNX_Mp4MuxerFilter::Receive( CNX_Sample *pSample )
 #if(0)
 	static long long _prevtime = 0;
 	if( ((long long)((CNX_MuxerSample*)pSample)->GetTimeStamp() - _prevtime) < 0 && _prevtime != 0) {
-		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): TimeStamp is not correct.\n"), __func__) );
+		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): TimeStamp is not correct.\n"), __FUNCTION__) );
 		pSample->Unlock();
 		return false;
 	}
@@ -188,11 +188,11 @@ int32_t	CNX_Mp4MuxerFilter::Receive( CNX_Sample *pSample )
 		StartMuxing();
 		
 		if( m_Flags == FLAGS_WRITING_NORMAL_START ) {
-			NxDbgMsg( NX_DBG_INFO, (TEXT("Create Normal File( %d ) : %s\n"), m_OutFd, m_FileName) );
+			// NxDbgMsg( NX_DBG_INFO, (TEXT("Create Normal File( %d ) : %s\n"), m_OutFd, m_FileName) );
 			m_WritingMode = WRITING_MODE_NORMAL;
 		}
 		else if( m_Flags == FLAGS_WRITING_EVENT_START ) {
-			NxDbgMsg( NX_DBG_INFO, (TEXT("Create Event File( %d ) : %s\n"), m_OutFd, m_FileName) );
+			// NxDbgMsg( NX_DBG_INFO, (TEXT("Create Event File( %d ) : %s\n"), m_OutFd, m_FileName) );
 			m_WritingMode = WRITING_MODE_EVENT;
 		}
 
@@ -221,57 +221,57 @@ int32_t	CNX_Mp4MuxerFilter::Receive( CNX_Sample *pSample )
 //------------------------------------------------------------------------------
 int32_t CNX_Mp4MuxerFilter::ReleaseSample( CNX_Sample *pSample )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t	CNX_Mp4MuxerFilter::Run( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( m_bRun == false ) {
 		m_bRun = true;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t	CNX_Mp4MuxerFilter::Stop( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( true == m_bRun ) {
 		m_bRun = false;
 		if( m_bEnableMux ){
 			StopMuxing();
 		}
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 void CNX_Mp4MuxerFilter::AllocateMemory( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	for( int32_t i = 0; i < NUM_STRM_BUFFER; i++ )
 	{
 		m_pStreamBuffer[i] = new uint8_t[SIZE_WRITE_UNIT];
 		NX_ASSERT( m_pStreamBuffer[i] );
 		//NxDbgMsg( NX_DBG_DEBUG, (TEXT("Alloc Memory = %d, %p\n"), i, m_pStreamBuffer[i]) );
 		if( m_pStreamBuffer[i] == NULL ) {
-			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Allocate Stream Memory\n"), __func__) );
+			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Allocate Stream Memory\n"), __FUNCTION__) );
 			return;
 		}
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_Mp4MuxerFilter::FreeMemory( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	int i;
 
 	for( i=0; i<NUM_STRM_BUFFER ; i++ )
@@ -283,13 +283,13 @@ void CNX_Mp4MuxerFilter::FreeMemory( void )
 			m_pStreamBuffer[i] = NULL;
 		}
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void	CNX_Mp4MuxerFilter::ThreadLoop(void)
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	uint8_t* buf;
 	int32_t size;
@@ -320,7 +320,7 @@ void	CNX_Mp4MuxerFilter::ThreadLoop(void)
 		}
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -404,7 +404,7 @@ int32_t CNX_Mp4MuxerFilter::MuxEncodedSample( CNX_MuxerSample *pSample )
 
 	//	Delete Previeous Samples
 	if( m_MuxStartTime > PTS ){
-		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Drop Sample (%12lld, %12lld)\n"), __func__, m_MuxStartTime, PTS) );
+		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Drop Sample (%12lld, %12lld)\n"), __FUNCTION__, m_MuxStartTime, PTS) );
 		pSample->Unlock();
 		return false;
 		PTS = m_TrackInfo[trackID].totalDuration;
@@ -446,7 +446,7 @@ int32_t CNX_Mp4MuxerFilter::MuxEncodedSample( CNX_MuxerSample *pSample )
 					m_bTrackStart[trackID] = true;
 				} 
 				else {
-					//NxDbgMsg( NX_DBG_WARN, (TEXT("%s(): is not keyframe\n"), __func__));
+					//NxDbgMsg( NX_DBG_WARN, (TEXT("%s(): is not keyframe\n"), __FUNCTION__));
 					return true;
 				}
 
@@ -582,10 +582,10 @@ int32_t CNX_Mp4MuxerFilter::SetMuxConfig( void )
 //------------------------------------------------------------------------------
 int32_t CNX_Mp4MuxerFilter::StartMuxing( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	if( m_bThreadExit == false ) {
-		NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+		NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 		return false;
 	}
 
@@ -593,20 +593,20 @@ int32_t CNX_Mp4MuxerFilter::StartMuxing( void )
 	m_bThreadExit  = false;
 	if( 0 > pthread_create( &this->m_hThread, NULL, this->ThreadMain, this ) )
 	{
-		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __func__) );
+		NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __FUNCTION__) );
 		return false;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t	CNX_Mp4MuxerFilter::StopMuxing( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	if( m_bThreadExit == true ) {
-		NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+		NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 		return false;
 	}
 
@@ -659,7 +659,7 @@ int32_t	CNX_Mp4MuxerFilter::StopMuxing( void )
 		memset( m_FileName, 0x00, sizeof(m_FileName) );
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
@@ -679,7 +679,7 @@ int32_t CNX_Mp4MuxerFilter::SetFileName( const char *fileName )
 int32_t CNX_Mp4MuxerFilter::EnableMp4Muxing( bool enable )
 {
 	CNX_AutoLock lock ( &m_hWriteLock );
-	NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnableMux)?"Enable":"Disable", (enable)?"Enable":"Disable") );
+	NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s : %s -- > %s\n"), __FUNCTION__, (m_bEnableMux)?"Enable":"Disable", (enable)?"Enable":"Disable") );
 	if( !m_bRun ) {
 		m_bEnableMux = enable;
 		return true;
@@ -710,7 +710,7 @@ int32_t CNX_Mp4MuxerFilter::SetDsiInfo( uint32_t trackID, uint8_t *dsiInfo, int3
 
 	m_TrackDsiSize[trackID] = dsiSize;
 
-	// NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s(): DSI Infomation( TrackID = %d, size = %d ) :: "), __func__, trackID, dsiSize) );
+	// NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s(): DSI Infomation( TrackID = %d, size = %d ) :: "), __FUNCTION__, trackID, dsiSize) );
 	// dumpdata( m_TrackDsiInfo[trackID], MAX_VID_DSI_SIZE, "" );
 
 	return true;

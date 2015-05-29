@@ -77,7 +77,7 @@ CNX_VIPCaptureFilter::~CNX_VIPCaptureFilter()
 //------------------------------------------------------------------------------
 void CNX_VIPCaptureFilter::Init( NX_VIPCAPTURE_CONFIG *pConfig )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( false == m_bInit );
 	NX_ASSERT( NULL != pConfig );
 	
@@ -100,13 +100,13 @@ void CNX_VIPCaptureFilter::Init( NX_VIPCAPTURE_CONFIG *pConfig )
 		m_bInit = true;
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_VIPCaptureFilter::Deinit( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( true == m_bInit );
 
 	if( true == m_bInit ) {
@@ -116,7 +116,7 @@ void CNX_VIPCaptureFilter::Deinit( void )
 		m_bInit = false;
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -154,7 +154,7 @@ int32_t	CNX_VIPCaptureFilter::ReleaseSample( CNX_Sample *pSample )
 //------------------------------------------------------------------------------
 int32_t CNX_VIPCaptureFilter::Run( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( m_bRun == false ) {
 		m_bThreadExit 	= false;
 		NX_ASSERT( !m_hThread );
@@ -162,20 +162,20 @@ int32_t CNX_VIPCaptureFilter::Run( void )
 		m_hVip = NX_VipInit( &m_VipInfo );
 
 		if( 0 > pthread_create( &this->m_hThread, NULL, this->ThreadMain, this ) ) {
-			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __func__) );
+			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __FUNCTION__) );
 			return false;
 		}
 
 		m_bRun = true;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t	CNX_VIPCaptureFilter::Stop( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( true == m_bRun ) {
 		m_bThreadExit = true;
 		m_pSemOut->Post();
@@ -188,14 +188,14 @@ int32_t	CNX_VIPCaptureFilter::Stop( void )
 	NX_VipStreamControl( m_hVip, false );
 	NX_VipClose( m_hVip );
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 void CNX_VIPCaptureFilter::AllocateBuffer( int32_t width, int32_t height, int32_t alignx, int32_t aligny, int32_t numOfBuffer, uint32_t dwFourCC )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( numOfBuffer <= MAX_BUFFER );
 
 	m_SampleCapQueue.Reset();
@@ -223,13 +223,13 @@ void CNX_VIPCaptureFilter::AllocateBuffer( int32_t width, int32_t height, int32_
 	}
 	m_iNumOfBuffer = numOfBuffer;
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()-- (m_iNumOfBuffer=%d)\n"), __func__, m_iNumOfBuffer) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()-- (m_iNumOfBuffer=%d)\n"), __FUNCTION__, m_iNumOfBuffer) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_VIPCaptureFilter::FreeBuffer( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	
 	m_SampleCapQueue.Reset();
 	m_SampleOutQueue.Reset();
@@ -246,7 +246,7 @@ void CNX_VIPCaptureFilter::FreeBuffer( void )
 	m_pSemOut->Post();
 	m_iNumOfBuffer = 0;
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -283,7 +283,7 @@ int32_t	CNX_VIPCaptureFilter::GetCaptureSample( CNX_Sample **ppSample )
 //------------------------------------------------------------------------------
 void CNX_VIPCaptureFilter::ThreadLoop( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	CNX_VideoSample		*pDeciSample = NULL;
 	CNX_VideoSample		*pClipSample = NULL;
@@ -386,7 +386,7 @@ void CNX_VIPCaptureFilter::ThreadLoop( void )
 		if( pClipSample ) pClipSample->Unlock();
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -403,18 +403,18 @@ void* CNX_VIPCaptureFilter::ThreadMain( void *arg )
 //------------------------------------------------------------------------------
 void CNX_VIPCaptureFilter::SetJpegFileName( uint8_t *pFileName )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	if( pFileName )
 		sprintf( (char*)m_JpegFileName, "%s", pFileName );
 	
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_VIPCaptureFilter::JpegEncode( CNX_Sample *pSample )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	if( !m_JpegFileName[0] ) {
 		if( JpegFileNameFunc ) {
@@ -437,7 +437,7 @@ void CNX_VIPCaptureFilter::JpegEncode( CNX_Sample *pSample )
 	m_pJpegCapture->SetFileName( (char*)m_JpegFileName );
 	m_pJpegCapture->Encode( pSample );
 	
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------

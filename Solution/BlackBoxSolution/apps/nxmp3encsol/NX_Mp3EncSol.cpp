@@ -158,7 +158,7 @@ uint32_t cbNotifier( uint32_t eventCode, uint8_t *pEventData, uint32_t dataSize 
 	{
 	case NX_NOTIFY_FILEWRITING_DONE :
 		if( pEventData && dataSize > 0 ) {
-			printf("[%s] : File writing done. ( %s )\n", __func__, pEventData);
+			printf("[%s] : File writing done. ( %s )\n", __FUNCTION__, pEventData);
 		}
 		break;
 	}

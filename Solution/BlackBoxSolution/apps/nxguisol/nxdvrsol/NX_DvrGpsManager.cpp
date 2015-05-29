@@ -79,13 +79,13 @@ void *DvrGpsManagerThread( void *arg )
         hPoll = poll( (struct pollfd*)&pollEvent, 1, 3000);
 
         if( hPoll < 0 ) {
-            printf("%s(): poller error.\n", __func__);
+            printf("%s(): poller error.\n", __FUNCTION__);
             goto ERROR;
         }
         else if( hPoll > 0 ) {
             memset(buf, 0x00, sizeof(buf));
             if( 0 > read( hManager->hDevice, buf, sizeof(buf) ) ) {
-                printf("%s(): gps data read failed.\n", __func__);
+                printf("%s(): gps data read failed.\n", __FUNCTION__);
                 goto ERROR;
             }
             else {
@@ -137,12 +137,12 @@ GPS_MANAGER_HANDLE DvrGpsManagerInit( void )
 	hManager->bThreadRun	= false;
 
 	if( 0 > (hManager->hDevice = open(GPS_DEV_NAME, O_RDWR | O_NOCTTY)) ) { 
-		printf("%s(): device open failed. ( %s )\n", __func__, GPS_DEV_NAME);
+		printf("%s(): device open failed. ( %s )\n", __FUNCTION__, GPS_DEV_NAME);
 		goto ERROR; 
 	}   
 
 	if( 0 > (hManager->hParser = NX_NmeaInit()) ) { 
-		printf("%s(): nmea initialize failed.\n", __func__);
+		printf("%s(): nmea initialize failed.\n", __FUNCTION__);
 		goto ERROR;
 	}   
 
@@ -172,13 +172,13 @@ int32_t DvrGpsManagerStart( GPS_MANAGER_HANDLE hManager )
 {
 	assert( hManager );
 	if( hManager->bThreadRun ) {
-		printf("%s(): Fail, Already running.\n", __func__);
+		printf("%s(): Fail, Already running.\n", __FUNCTION__);
 		return -1;
 	}
 	
 	hManager->bThreadRun = true;
 	if( 0 > pthread_create( &hManager->hThread, NULL, &DvrGpsManagerThread, (void*)hManager) ) {
-		printf("%s(): Fail, Create Thread.\n", __func__);
+		printf("%s(): Fail, Create Thread.\n", __FUNCTION__);
 		return -1;
 	}
 	
@@ -189,7 +189,7 @@ int32_t DvrGpsManagerStop( GPS_MANAGER_HANDLE hManager )
 {
 	assert( hManager );
 	if( !hManager->bThreadRun ) {
-		printf("%s(): Fail, Already stopping.\n", __func__);
+		printf("%s(): Fail, Already stopping.\n", __FUNCTION__);
 		return -1;
 	}
 

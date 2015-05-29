@@ -33,9 +33,9 @@
 //
 // Private Function
 //
-#define MOTION_THRESHOLD_X			100
-#define MOTION_THRESHOLD_Y			100
-#define MOTION_THRESHOLD_Z			100
+#define MOTION_THRESHOLD_X			300
+#define MOTION_THRESHOLD_Y			300
+#define MOTION_THRESHOLD_Z			300
 
 #define CHECK_NO_SENSOR_TIME		30 * (1000)		// 60sec
 
@@ -112,7 +112,7 @@ void *DvrGsensorManagerThread( void *arg )
 					{
 						if( curTime > targetTime )
 						{
-							printf("%s(): Enter the motion detection mode.\n", __func__);
+							printf("%s(): Enter the motion detection mode.\n", __FUNCTION__);
 							hManager->nDvrMode = DVR_MODE_MOTION;
 
 							cmd.cmdType = CMD_TYPE_CHG_MODE;
@@ -127,7 +127,7 @@ void *DvrGsensorManagerThread( void *arg )
 				{
 					hManager->nDvrMode = DVR_MODE_EVENT;
 					printf("%s(): diff( %d, %d, %d ), threshold( %d, %d, %d )\n", 
-						__func__,
+						__FUNCTION__,
 						diff_x, diff_y, diff_z,
 						hManager->threshold.x, hManager->threshold.y, hManager->threshold.z
 					);
@@ -135,14 +135,16 @@ void *DvrGsensorManagerThread( void *arg )
 					DvrCmdQueuePush( hManager->hCmd, &cmd );
 				}
 				break;
+			
 			case DVR_MODE_EVENT :
 				break;
+
 			case DVR_MODE_MOTION :
 				if( hManager->bEnableMotion )
 				{
 					if( diff_x > MOTION_THRESHOLD_X || diff_y > MOTION_THRESHOLD_Y || diff_z > MOTION_THRESHOLD_Z )
 					{
-						printf("%s(): Enter the normal mode.\n", __func__);
+						printf("%s(): Enter the normal mode.\n", __FUNCTION__);
 						targetTime	= curTime + CHECK_NO_SENSOR_TIME;
 						hManager->nDvrMode = DVR_MODE_NORMAL;
 						
@@ -169,11 +171,23 @@ void *DvrGsensorManagerThread( void *arg )
 #define GSENSOR_DEF_THRESHOLD_Y			500
 #define GSENSOR_DEF_THRESHOLD_Z			500
 
+const char gSensorNode[][256] = {
+	"/dev/accel",
+	"/sys/devices/virtual/input/input2/value",
+};
+
 GSENSOR_MANAGER_HANDLE DvrGsensorManagerInit( void )
 {
-	GSENSOR_HANDLE hGsensor = DvrGsensorOpen( "/dev/accel" );
+	GSENSOR_HANDLE hGsensor = NULL;
 	GSENSOR_MANAGER_HANDLE hManager = NULL;
-	
+	int32_t i = 0;
+
+	for( i = 0; i < (int32_t)(sizeof(gSensorNode) / sizeof(gSensorNode[0])); i++ )
+	{
+		hGsensor = DvrGsensorOpen( gSensorNode[i] );
+		if( hGsensor ) break;
+	}
+
 	if( !hGsensor ) return NULL;
 	
 	hManager = (GSENSOR_MANAGER_HANDLE)malloc( sizeof(GSENSOR_MANAGER_INFO) );
@@ -211,13 +225,13 @@ int32_t DvrGsensorManagerStart( GSENSOR_MANAGER_HANDLE hManager )
 {
 	assert( hManager );
 	if( hManager->bThreadRun ) {
-		printf("%s(): Fail, Already running.\n", __func__);
+		printf("%s(): Fail, Already running.\n", __FUNCTION__);
 		return -1;
 	}
 
 	hManager->bThreadRun = true;
 	if( 0 > pthread_create( &hManager->hThread, NULL, &DvrGsensorManagerThread, (void*)hManager) ) {
-		printf("%s(): Fail, Create Thread.\n", __func__);
+		printf("%s(): Fail, Create Thread.\n", __FUNCTION__);
 		return -1;
 	}
 
@@ -228,7 +242,7 @@ int32_t DvrGsensorManagerStop( GSENSOR_MANAGER_HANDLE hManager )
 {
 	assert( hManager );
 	if( !hManager->bThreadRun) {
-		printf("%s(): Fail, Already stopping.\n", __func__);
+		printf("%s(): Fail, Already stopping.\n", __FUNCTION__);
 		return -1;
 	}
 
@@ -295,7 +309,7 @@ int32_t DvrGsensorGetData( GSENSOR_MANAGER_HANDLE hManager, GSENSOR_VALUE *pValu
 	pValue->x = hManager->value.x;
 	pValue->y = hManager->value.y;
 	pValue->z = hManager->value.z;
-
+	pthread_mutex_unlock( &hManager->hLock );
 #else
 	#include <time.h>
 	pthread_mutex_lock( &hManager->hLock );
@@ -303,8 +317,9 @@ int32_t DvrGsensorGetData( GSENSOR_MANAGER_HANDLE hManager, GSENSOR_VALUE *pValu
 	pValue->x = rand() % 30 + 1;
 	pValue->y = rand() % 30 + 1;
 	pValue->z = rand() % 30 + 1;
-#endif
 	pthread_mutex_unlock( &hManager->hLock );
+#endif
+	
 	return 0;
 }
 

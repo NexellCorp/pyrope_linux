@@ -65,10 +65,10 @@ DISPLAY_HANDLE NX_DspInit( DISPLAY_INFO *pDspInfo )
 	memset(&s, 0, sizeof(s));
 
 #ifndef DISABLE_PORT_CONFIG
-	if( pDspInfo->port == DISPLAY_PORT_LCD ) {
-		s.useHdmi		= false;
-	} else {
+	if( pDspInfo->port == DISPLAY_PORT_HDMI ) {
 		s.useHdmi		= true;
+	} else if( pDspInfo->port == DISPLAY_PORT_TVOUT ) {
+		s.useTvout		= true;
 	}
 #else
 	s.useHdmi		= false;
@@ -100,7 +100,7 @@ DISPLAY_HANDLE NX_DspInit( DISPLAY_INFO *pDspInfo )
 	}
 
 #ifndef DISABLE_PORT_CONFIG
-	if( pDspInfo->port != DISPLAY_PORT_LCD ) {
+	if( pDspInfo->port == DISPLAY_PORT_HDMI ) {
 		result = v4l2_link(hPrivate, mlcPin, nxp_v4l2_hdmi);
 		if( result < 0 ) {
 			printf("%s(): v4l2_link() failed.\n", __func__);
@@ -113,7 +113,15 @@ DISPLAY_HANDLE NX_DspInit( DISPLAY_INFO *pDspInfo )
 		}
 #endif
 	}
+	else if( pDspInfo->port == DISPLAY_PORT_TVOUT )
 #endif	//	DISABLE_PORT_CONFIG
+	{
+		result = v4l2_link(hPrivate, mlcPin, nxp_v4l2_tvout);
+		if( result < 0 ) {
+			printf("%s(): v4l2_link() failed.\n", __func__);
+			return NULL;
+		}
+	}
 
 	// check display plane and set format.
 	if( pDspInfo->numPlane == 1 ) {

@@ -12,6 +12,7 @@
 
 
 #include <nx_video_api.h>
+#include <nx_video_rate_ctrl.h>
 
 #include <nx_fourcc.h>
 #include <vpu_drv_ioctl.h>		//	Device Driver IOCTL
@@ -92,7 +93,7 @@ struct NX_VIDEO_ENC_INFO
 
 	int32_t userQScale;							// Default User Qunatization Scale
 
-	uint32_t GopFrmCnt;							// GOP frame counter
+	int32_t GopFrmCnt;							// GOP frame counter
 
 	// JPEG Specific
 	uint32_t frameIndex;
@@ -221,7 +222,7 @@ VID_ERROR_E NX_VidEncClose( NX_VID_ENC_HANDLE hEnc )
 
 VID_ERROR_E NX_VidEncInit( NX_VID_ENC_HANDLE hEnc, NX_VID_ENC_INIT_PARAM *pstParam )
 {
-	int32_t ret;
+	int32_t ret = VID_ERR_NONE;
 	VPU_ENC_SEQ_ARG seqArg;
 	VPU_ENC_SET_FRAME_ARG frameArg;
 	VPU_ENC_GET_HEADER_ARG *pHdrArg = &hEnc->seqInfo;
@@ -530,7 +531,7 @@ VID_ERROR_E NX_VidEncChangeParameter( NX_VID_ENC_HANDLE hEnc, NX_VID_ENC_CHG_PAR
 
 	memset( &chgArg, 0, sizeof(chgArg) );
 
-	//printf("chgFlg = %x, gopSize = %d, bitrate = %d, fps = %d/%d, maxQp = %d, skip = %d, vbv = %d, mb = %d \n", \
+	//printf("chgFlg = %x, gopSize = %d, bitrate = %d, fps = %d/%d, maxQp = %d, skip = %d, vbv = %d, mb = %d \n",
 	//	pstChgParam->chgFlg, pstChgParam->gopSize, pstChgParam->bitrate, pstChgParam->fpsNum, pstChgParam->fpsDen, pstChgParam->maximumQp, pstChgParam->disableSkip, pstChgParam->rcVbvSize, pstChgParam->numIntraRefreshMbs);
 
 	chgArg.chgFlg = pstChgParam->chgFlg;
@@ -691,6 +692,9 @@ struct NX_VIDEO_DEC_INFO
 	int32_t FrmReliable_0_100[MAX_DEC_FRAME_BUFFERS];
 	int32_t upSampledWidth[MAX_DEC_FRAME_BUFFERS];
 	int32_t upSampledHeight[MAX_DEC_FRAME_BUFFERS];
+
+	// For MPEG4
+	int32_t vopTimeBits;
 };
 
 NX_VID_DEC_HANDLE NX_VidDecOpen( VID_TYPE_E eCodecType, uint32_t uMp4Class, int32_t iOptions, int32_t *piInstanceIdx  )
@@ -846,6 +850,7 @@ VID_ERROR_E NX_VidDecParseVideoCfg(NX_VID_DEC_HANDLE hDec, NX_VID_SEQ_IN *pstSeq
 
 	FUNC_IN();
 	memset( &seqArg, 0, sizeof(seqArg) );
+	memset( pstSeqOut, 0, sizeof(NX_VID_SEQ_OUT) );
 
 	if( !hDec )
 	{
@@ -925,6 +930,57 @@ VID_ERROR_E NX_VidDecParseVideoCfg(NX_VID_DEC_HANDLE hDec, NX_VID_SEQ_IN *pstSeq
 	hDec->seqDataSize = ( pstSeqIn->seqSize < 2048 ) ? ( pstSeqIn->seqSize ) : ( 2048 );
 	memcpy (hDec->pSeqData, pstSeqIn->seqInfo, hDec->seqDataSize);
 
+	if ( (hDec->codecStd == CODEC_STD_MPEG4) && ( hDec->pSeqData != NULL) && (hDec->seqDataSize > 0) )
+	{
+		uint8_t *pbyStrm = hDec->pSeqData;
+		uint32_t uPreFourByte = (uint32_t)-1;
+
+		hDec->vopTimeBits = 0;
+
+		do
+		{
+			if ( pbyStrm >= (hDec->pSeqData + hDec->seqDataSize) )
+			{
+				//goto ERROR_EXIT;
+				break;
+			}
+			uPreFourByte = (uPreFourByte << 8) + *pbyStrm++;
+
+			if ( uPreFourByte >= 0x00000120 && uPreFourByte <= 0x0000012F )
+			{
+				VLD_STREAM stStrm = { 0, pbyStrm, hDec->seqDataSize };
+				int32_t    i;
+
+				vld_flush_bits( &stStrm, 1+8 );									// random_accessible_vol, video_object_type_indication
+				if (vld_get_bits( &stStrm, 1 ))									// is_object_layer_identifier
+					vld_flush_bits( &stStrm, 4 + 3 );							// video_object_layer_verid, video_object_layer_priority
+
+				if (vld_get_bits( &stStrm, 4 ) == 0xF )							// aspect_ratio_info
+					vld_flush_bits( &stStrm, 8+8 );								// par_width, par_height
+
+				if (vld_get_bits( &stStrm, 1)) 									// vol_control_parameters
+				{
+					if (vld_get_bits( &stStrm, 2+1+1 ) & 1) 					// chroma_format, low_delay, vbv_parameters
+					{
+		                vld_flush_bits( &stStrm, 15+1 );						// first_half_bit_rate, marker_bit
+		                vld_flush_bits( &stStrm, 15+1 );						// latter_half_bit_rate, marker_bit
+		                vld_flush_bits( &stStrm, 15+1 );						// first_half_vbv_buffer_size, marker_bit
+		                vld_flush_bits( &stStrm, 3+11+1 );					// latter_half_vbv_buffer_size, first_half_vbv_occupancy, marker_bit
+		                vld_flush_bits( &stStrm, 15+1 );						// latter_half_vbv_occupancy, marker_bit
+		            }
+		        }
+
+				vld_flush_bits( &stStrm, 2+1);									// video_object_layer_shape, marker_bit
+
+				for (i=0 ; i<16 ; i++)												// vop_time_increment_resolution
+					if ( vld_get_bits( &stStrm, 1) )
+						break;
+				hDec->vopTimeBits = 16 - i;
+				break;
+			}
+		} while(1);
+	}
+
 	if ( pstSeqIn->seqSize == 0 )
 	{
 		seqArg.cropRight = pstSeqIn->width;
@@ -940,7 +996,7 @@ VID_ERROR_E NX_VidDecParseVideoCfg(NX_VID_DEC_HANDLE hDec, NX_VID_SEQ_IN *pstSeq
 	pstSeqOut->width        	= seqArg.cropRight;
 	pstSeqOut->height       	= seqArg.cropBottom;
 	pstSeqOut->frameBufDelay	= seqArg.frameBufDelay;
-	pstSeqOut->isInterlace 		= seqArg.interlace;
+	pstSeqOut->isInterlace 	= seqArg.interlace;
 	pstSeqOut->frameRateNum 	= seqArg.frameRateNum;
 	pstSeqOut->frameRateDen 	= seqArg.frameRateDen;
 
@@ -1067,6 +1123,25 @@ VID_ERROR_E NX_VidDecDecodeFrame( NX_VID_DEC_HANDLE hDec, NX_VID_DEC_IN *pstDecI
 	decArg.decSkipFrameNum = 0;
 	pstDecOut->outImgIdx = -1;
 
+	if ( (hDec->codecStd == CODEC_STD_MPEG4) && (hDec->vopTimeBits > 0) && (decArg.strmDataSize > 0) )
+	{
+		uint8_t *pbyStrm = decArg.strmData;
+		VLD_STREAM stStrm = { 0, pbyStrm, decArg.strmDataSize };
+
+		if (vld_get_bits( &stStrm, 32 ) == 0x000001B6)
+		{
+			vld_flush_bits( &stStrm, 2 );								// vop_coding_type
+			do
+			{
+				if ( vld_get_bits( &stStrm, 1 ) == 0 )	break;
+			} while( stStrm.dwUsedBits < ((unsigned long)decArg.strmDataSize<<3) );
+			vld_flush_bits( &stStrm, 1+hDec->vopTimeBits+1 );			// marker_bits, vop_time_increment, marker_bits
+
+			if ( vld_get_bits( &stStrm, 1 ) == 0 )						// vop_coded
+				decArg.strmDataSize = 0;
+		}
+	}
+
 	ret = ioctl( hDec->hDecDrv, IOCTL_VPU_DEC_RUN_FRAME, &decArg );
 	if( ret != VID_ERR_NONE )
 	{
@@ -1078,33 +1153,32 @@ VID_ERROR_E NX_VidDecDecodeFrame( NX_VID_DEC_HANDLE hDec, NX_VID_DEC_IN *pstDecI
 	pstDecOut->outDecIdx = decArg.indexFrameDecoded;
 	pstDecOut->width     = decArg.outRect.right;
 	pstDecOut->height    = decArg.outRect.bottom;
-	//pstDecOut->picType[DECODED_FRAME] = ( decArg.picType != 7 ) ? ( decArg.picType ) : ( PIC_TYPE_UNKNOWN );
-	pstDecOut->picType   = PIC_TYPE_UNKNOWN;
+	pstDecOut->picType[DECODED_FRAME] = ( decArg.picType != 7 ) ? ( decArg.picType ) : ( PIC_TYPE_UNKNOWN );
 
 	pstDecOut->strmReadPos  = decArg.strmReadPos;
 	pstDecOut->strmWritePos = decArg.strmWritePos;
 
-	if ( decArg.numOfErrMBs == 0 )
-		pstDecOut->outFrmReliable_0_100/*[DECODED_FRAME]*/ = ( pstDecOut->outDecIdx < 0 ) ? ( 0 ) : ( 100 );
-	else
+	if ( pstDecOut->outDecIdx >= 0 )
 	{
-		int TotalMbNum = ( (decArg.outWidth + 15) >> 4 ) * ( (decArg.outHeight + 15) >> 4 );
-		pstDecOut->outFrmReliable_0_100/*[DECODED_FRAME]*/ = (TotalMbNum - decArg.numOfErrMBs) * 100 / TotalMbNum;
+		if ( decArg.numOfErrMBs == 0 )
+			pstDecOut->outFrmReliable_0_100[DECODED_FRAME] = ( pstDecOut->outDecIdx < 0 ) ? ( 0 ) : ( 100 );
+		else
+		{
+			int32_t TotalMbNum = ( (decArg.outWidth + 15) >> 4 ) * ( (decArg.outHeight + 15) >> 4 );
+			pstDecOut->outFrmReliable_0_100[DECODED_FRAME] = (TotalMbNum - decArg.numOfErrMBs) * 100 / TotalMbNum;
+		}
 	}
 
-	DecoderPutDispInfo( hDec, pstDecOut->outDecIdx, &decArg, pstDecIn->timeStamp, pstDecOut->outFrmReliable_0_100/*[DECODED_FRAME]*/ );
+	DecoderPutDispInfo( hDec, pstDecOut->outDecIdx, &decArg, pstDecIn->timeStamp, pstDecOut->outFrmReliable_0_100[DECODED_FRAME] );
 
 	if( (pstDecOut->outImgIdx >= 0) && (pstDecOut->outImgIdx < hDec->numFrameBuffers) )
 	{
 		int32_t iIdx = pstDecOut->outImgIdx;
 		pstDecOut->outImg = *hDec->hFrameBuffer[ iIdx ];
-		//pstDecOut->timeStamp[FIRST_FIELD] = hDec->timeStamp[ iIdx ][ FIRST_FIELD ];
-		//pstDecOut->timeStamp[SECOND_FIELD] = ( hDec->timeStamp[ iIdx ][ SECOND_FIELD ] != -10 ) ? ( hDec->timeStamp[ iIdx ][ SECOND_FIELD ] ) : ( -1 );
-		pstDecOut->timeStamp = ( hDec->timeStamp[ iIdx ][ SECOND_FIELD ] != -10 ) ? ( hDec->timeStamp[ iIdx ][ SECOND_FIELD ] ) : ( -1 );
-       if ( pstDecOut->timeStamp == -1 ) pstDecOut->timeStamp = hDec->timeStamp[ iIdx ][ FIRST_FIELD ];
-
-		pstDecOut->picType/*[DISPLAY_FRAME]*/ = hDec->picType[ iIdx ];
-		//pstDecOut->outFrmReliable_0_100[DISPLAY_FRAME] = hDec->FrmReliable_0_100[ iIdx ];
+		pstDecOut->timeStamp[FIRST_FIELD] = hDec->timeStamp[ iIdx ][ FIRST_FIELD ];
+		pstDecOut->timeStamp[SECOND_FIELD] = ( hDec->timeStamp[ iIdx ][ SECOND_FIELD ] != (uint64_t)(-10) ) ? ( hDec->timeStamp[ iIdx ][ SECOND_FIELD ] ) : ( (uint64_t)(-1) );
+		pstDecOut->picType[DISPLAY_FRAME] = hDec->picType[ iIdx ];
+		pstDecOut->outFrmReliable_0_100[DISPLAY_FRAME] = hDec->FrmReliable_0_100[ iIdx ];
 		pstDecOut->isInterlace = hDec->isInterlace[ iIdx ];
 		pstDecOut->topFieldFirst = hDec->topFieldFirst[ iIdx ];
 		pstDecOut->multiResolution = hDec->multiResolution[ iIdx ];
@@ -1140,13 +1214,11 @@ VID_ERROR_E NX_VidDecDecodeFrame( NX_VID_DEC_HANDLE hDec, NX_VID_DEC_IN *pstDecI
 	}
 	else
 	{
-		pstDecOut->outImgIdx = -1;
-		//pstDecOut->timeStamp[FIRST_FIELD] = -1;
-		//pstDecOut->timeStamp[SECOND_FIELD] = -1;
-		pstDecOut->timeStamp = -1;
+		pstDecOut->timeStamp[FIRST_FIELD] = -1;
+		pstDecOut->timeStamp[SECOND_FIELD] = -1;
 	}
 
-	NX_RelMsg( 0, ("NX_VidDecDecodeFrame() Resol:%dx%d, picType=%d, imgIdx = %d\n", pstDecOut->width, pstDecOut->height, pstDecOut->picType, pstDecOut->outImgIdx) );
+	NX_RelMsg( 0, ("NX_VidDecDecodeFrame() Resol:%dx%d, picType=%d, %d, imgIdx = %d\n", pstDecOut->width, pstDecOut->height, pstDecOut->picType[DECODED_FRAME], pstDecOut->picType[DISPLAY_FRAME], pstDecOut->outImgIdx) );
 	FUNC_OUT();
 	return VID_ERR_NONE;
 }
@@ -1292,7 +1364,7 @@ VID_ERROR_E NX_VidGetVersion( NX_VID_VERSION *pstVersion )
 	pstVersion->iMajor = NX_VID_VER_MAJOR;
 	pstVersion->iMinor = NX_VID_VER_MINOR;
 	pstVersion->iPatch = NX_VID_VER_PATCH;
-	pstVersion->iReserved = NULL;
+	pstVersion->iReserved = (int32_t)NULL;
 	return VID_ERR_NONE;
 }
 
@@ -1600,14 +1672,22 @@ static void DecoderFlushDispInfo( NX_VID_DEC_HANDLE hDec )
 
 static void DecoderPutDispInfo( NX_VID_DEC_HANDLE hDec, int32_t iIndex, VPU_DEC_DEC_FRAME_ARG *pDecArg, uint64_t lTimeStamp, int32_t FrmReliable_0_100 )
 {
-	hDec->picType[ iIndex ] = pDecArg->picType;
+	int32_t iPicStructure = ( hDec->codecStd != CODEC_STD_MPEG2 ) ? ( 0 ) : ( pDecArg->picStructure );
 
-	if( pDecArg->isInterace )
+	hDec->picType[ iIndex ] = pDecArg->picType;
+	hDec->isInterlace[ iIndex ] = pDecArg->isInterace;
+
+	if( (pDecArg->isInterace == 0) || (iPicStructure == 3) )
 	{
-		hDec->isInterlace[ iIndex ] = pDecArg->isInterace;
+		hDec->topFieldFirst[ iIndex ] = pDecArg->topFieldFirst;
+		hDec->timeStamp[ iIndex ][ NONE_FIELD ] = lTimeStamp;
+	}
+	else
+	{
+
 		hDec->picFlag[ iIndex ] |= PIC_FLAG_INTERLACE;
 
-		if ( hDec->timeStamp[iIndex][FIRST_FIELD] == -10 )
+		if ( hDec->timeStamp[iIndex][FIRST_FIELD] == (uint32_t)(-10) )
 		{
 			hDec->topFieldFirst[ iIndex ] = pDecArg->topFieldFirst;
 			hDec->timeStamp[ iIndex ][ FIRST_FIELD ] = lTimeStamp;
@@ -1617,31 +1697,24 @@ static void DecoderPutDispInfo( NX_VID_DEC_HANDLE hDec, int32_t iIndex, VPU_DEC_
 			hDec->timeStamp[ iIndex ][ SECOND_FIELD ] = lTimeStamp;
 		}
 	}
-	else
-	{
-		hDec->isInterlace[ iIndex ] = 0;
-		hDec->topFieldFirst[ iIndex ] = 0;
-		hDec->timeStamp[ iIndex ][ NONE_FIELD ] = lTimeStamp;
-		hDec->FrmReliable_0_100[ iIndex ] = FrmReliable_0_100;
-	}
 
 	if ( hDec->FrmReliable_0_100[ iIndex ] == 0 )
 	{
-		hDec->FrmReliable_0_100[ iIndex ] = ( pDecArg->npf ) ? ( FrmReliable_0_100 ) : ( FrmReliable_0_100 >> 1 );
+		hDec->FrmReliable_0_100[ iIndex ] = ( (pDecArg->isInterace == 0) || (pDecArg->npf) || (iPicStructure == 3) || (iIndex >= 0) ) ? ( FrmReliable_0_100 ) : ( FrmReliable_0_100 >> 1 );
 	}
 	else
 	{
 		hDec->FrmReliable_0_100[ iIndex ] += ( FrmReliable_0_100 >> 1 );
 	}
 
-	/*if( hDec->codecStd == CODEC_STD_AVC )
+	if( hDec->codecStd == CODEC_STD_AVC )
 	{
 		if( pDecArg->picTypeFirst == 6 || pDecArg->picType == 0 || pDecArg->picType == 6 )
 		{
 			hDec->picFlag[ iIndex ] |= PIC_FLAG_KEY;
 		}
 	}
-	else*/ if( hDec->codecStd == CODEC_STD_VC1 )
+	else if( hDec->codecStd == CODEC_STD_VC1 )
 	{
 		hDec->multiResolution[ iIndex ] = pDecArg->multiRes;
 	}

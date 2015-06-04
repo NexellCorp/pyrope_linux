@@ -21,7 +21,7 @@ unsigned char streamBuffer[4*1024*1024];
 unsigned char seqData[1024*4];
 
 //#define _ERROR_AND_SEEK_
-
+//#define _DUMP_ES_
 
 //	Display Window Screen Size
 #define	WINDOW_WIDTH		1024
@@ -52,6 +52,9 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 	int32_t iPrevIdx = -1;
 	uint64_t startTime, endTime, totalTime = 0;
 	FILE *fpOut = NULL;
+#ifdef _DUMP_ES_
+	FILE *fpES = fopen("enc.bit", "wb");
+#endif
 
 	CMediaReader *pMediaReader = new CMediaReader();
 	if( !pMediaReader->OpenFile( pAppData->inFileName ) )
@@ -145,6 +148,10 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 			//	Use External Video Memory
 			seqIn.numBuffers = NUMBER_OF_BUFFER;
 			seqIn.pMemHandle = &hVideoMemory[0];
+#endif
+
+#ifdef _DUMP_ES_
+			fwrite(seqIn.seqInfo, 1, seqIn.seqSize, fpES);
 #endif
 
 			vidRet = NX_VidDecParseVideoCfg(hDec, &seqIn, &seqOut);
@@ -252,14 +259,22 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 		}
 #endif
 
+#ifdef _DUMP_ES_
+		fwrite(decIn.strmBuf, 1, decIn.strmSize, fpES);
+#endif
+
 		startTime = NX_GetTickCount();
 		vidRet = NX_VidDecDecodeFrame( hDec, &decIn, &decOut );
 		endTime = NX_GetTickCount();
 		totalTime += (endTime - startTime);
 
-		printf("Frame[%5d]: size=%6d, DspIdx=%2d, DecIdx=%2d, InTimeStamp=%7lld, outTimeStamp=%7lld, %7lld, time=%6lld, interlace=%d(%d), Reliable=%3d, %3d, type = %d, %d, MultiResol=%d, upW=%d, upH=%d\n",
-			frameCount, decIn.strmSize, decOut.outImgIdx, decOut.outDecIdx, decIn.timeStamp, decOut.timeStamp/*[FIRST_FIELD]*/, 0/*decOut.timeStamp[SECOND_FIELD]*/, (endTime-startTime), decOut.isInterlace, decOut.topFieldFirst,
-			decOut.outFrmReliable_0_100/*[DECODED_FRAME]*/, 0/*decOut.outFrmReliable_0_100[DISPLAY_FRAME]*/, decOut.picType/*[DECODED_FRAME]*/, 0/*decOut.picType[DISPLAY_FRAME]*/, decOut.multiResolution, decOut.upSampledWidth, decOut.upSampledHeight);
+		printf("Frame[%5d]: size=%6d, DspIdx=%2d, DecIdx=%2d, InTimeStamp=%7lld, outTimeStamp=%7lld, %7lld, time=%6lld, interlace=%d(%d), Reliable=%3d, %3d, type = %d, %d, Rd = %x, Wd = %x, %d \n",
+			frameCount, decIn.strmSize, decOut.outImgIdx, decOut.outDecIdx, decIn.timeStamp, decOut.timeStamp[FIRST_FIELD], decOut.timeStamp[SECOND_FIELD], (endTime-startTime), decOut.isInterlace, decOut.topFieldFirst,
+			decOut.outFrmReliable_0_100[DECODED_FRAME], decOut.outFrmReliable_0_100[DISPLAY_FRAME], decOut.picType[DECODED_FRAME], decOut.picType[DISPLAY_FRAME], decOut.strmReadPos, decOut.strmWritePos, decOut.strmWritePos - decOut.strmReadPos );
+
+		//printf("Frame[%5d]: size=%6d, DspIdx=%2d, DecIdx=%2d, InTimeStamp=%7lld, outTimeStamp=%7lld, %7lld, time=%6lld, interlace=%d(%d), Reliable=%3d, %3d, type = %d, %d, MultiResol=%d, upW=%d, upH=%d\n",
+		//	frameCount, decIn.strmSize, decOut.outImgIdx, decOut.outDecIdx, decIn.timeStamp, decOut.timeStamp[FIRST_FIELD], decOut.timeStamp[SECOND_FIELD], (endTime-startTime), decOut.isInterlace, decOut.topFieldFirst,
+		//	decOut.outFrmReliable_0_100, decOut.outFrmReliable_0_100[DISPLAY_FRAME], decOut.picType[DECODED_FRAME], decOut.picType[DISPLAY_FRAME], decOut.multiResolution, decOut.upSampledWidth, decOut.upSampledHeight);
 		//printf("(%2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x)\n", decIn.strmBuf[0], decIn.strmBuf[1], decIn.strmBuf[2], decIn.strmBuf[3], decIn.strmBuf[4], decIn.strmBuf[5], decIn.strmBuf[6], decIn.strmBuf[7],
 		//	decIn.strmBuf[8], decIn.strmBuf[9], decIn.strmBuf[10], decIn.strmBuf[11], decIn.strmBuf[12], decIn.strmBuf[13], decIn.strmBuf[14], decIn.strmBuf[15]);
 
@@ -361,6 +376,10 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 		delete pMediaReader;
 	if ( fpOut )
 		fclose(fpOut);
+#ifdef _DUMP_ES_
+	if ( fpES )
+		fclose(fpES);
+#endif
 
 	return 0;
 }

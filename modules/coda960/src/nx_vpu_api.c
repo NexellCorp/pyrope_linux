@@ -29,6 +29,7 @@
 #include "vpu_hw_interface.h"			//	Register Access
 //#include "../firmware/blackbird.h"	//	v2.1.9
 #include "../firmware/blackbird_v2.3.10.h"	//	v2.3.10
+//#include "../firmware/coda960_v3.1.13.h"		// new version
 #include "../include/nx_vpu_api.h"
 #include "../include/nx_vpu_config.h"
 
@@ -2781,6 +2782,7 @@ static NX_VPU_RET VPU_DecGetOutputInfo(NX_VpuCodecInst *pInst, VPU_DEC_DEC_FRAME
 	{
 		pArg->progressiveFrame  = (val >> 23) & 0x0003;
 		pArg->isInterace = (pArg->progressiveFrame == 0) ? (1) : (0);
+		pArg->picStructure  = (val >> 19) & 0x0003;
 	}
 
 	if (pArg->isInterace)
@@ -2791,6 +2793,7 @@ static NX_VPU_RET VPU_DecGetOutputInfo(NX_VpuCodecInst *pInst, VPU_DEC_DEC_FRAME
 		pArg->npf               = (val >> 15) & 1;
 	}
 	else {
+		pArg->topFieldFirst     = 0;
 		pArg->picTypeFirst   = 6;	// no meaning
 		pArg->picType = val & 0x7;
 	}

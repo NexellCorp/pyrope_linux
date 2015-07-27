@@ -1,0 +1,788 @@
+
+Discarded input sections
+
+ .debug_frame   0x0000000000000000      0x2f4 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+ .debug_info    0x0000000000000000     0xbdd2 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+ .debug_abbrev  0x0000000000000000      0x796 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+ .debug_loc     0x0000000000000000      0xfd3 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+ .debug_aranges
+                0x0000000000000000       0x30 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+ .debug_ranges  0x0000000000000000      0x218 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+ .debug_line    0x0000000000000000      0xe2b /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+ .debug_str     0x0000000000000000     0x6e08 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+ .debug_frame   0x0000000000000000       0xa4 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_debug.o
+ .debug_info    0x0000000000000000     0x8347 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_debug.o
+ .debug_abbrev  0x0000000000000000      0x4cf /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_debug.o
+ .debug_loc     0x0000000000000000      0x4f1 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_debug.o
+ .debug_aranges
+                0x0000000000000000       0x20 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_debug.o
+ .debug_ranges  0x0000000000000000       0x50 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_debug.o
+ .debug_line    0x0000000000000000      0x839 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_debug.o
+ .debug_str     0x0000000000000000     0x479b /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_debug.o
+ .debug_frame   0x0000000000000000      0x158 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_used_memory.o
+ .debug_info    0x0000000000000000     0x89a1 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_used_memory.o
+ .debug_abbrev  0x0000000000000000      0x5d8 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_used_memory.o
+ .debug_loc     0x0000000000000000      0xce4 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_used_memory.o
+ .debug_aranges
+                0x0000000000000000       0x20 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_used_memory.o
+ .debug_ranges  0x0000000000000000      0x110 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_used_memory.o
+ .debug_line    0x0000000000000000      0x998 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_used_memory.o
+ .debug_str     0x0000000000000000     0x5524 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_used_memory.o
+ .debug_frame   0x0000000000000000      0x2e8 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_zbi.o
+ .debug_info    0x0000000000000000     0xa926 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_zbi.o
+ .debug_abbrev  0x0000000000000000      0x6cb /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_zbi.o
+ .debug_loc     0x0000000000000000      0x979 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_zbi.o
+ .debug_aranges
+                0x0000000000000000       0x20 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_zbi.o
+ .debug_ranges  0x0000000000000000      0x120 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_zbi.o
+ .debug_line    0x0000000000000000      0xae2 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_zbi.o
+ .debug_str     0x0000000000000000     0x642e /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_zbi.o
+ .debug_frame   0x0000000000000000      0x1b0 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/reg_save_restore.o
+ .debug_info    0x0000000000000000     0x848f /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/reg_save_restore.o
+ .debug_abbrev  0x0000000000000000      0x5c6 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/reg_save_restore.o
+ .debug_loc     0x0000000000000000      0xa4e /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/reg_save_restore.o
+ .debug_aranges
+                0x0000000000000000       0x20 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/reg_save_restore.o
+ .debug_ranges  0x0000000000000000       0xb8 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/reg_save_restore.o
+ .debug_line    0x0000000000000000      0x8b1 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/reg_save_restore.o
+ .debug_str     0x0000000000000000     0x4c08 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/reg_save_restore.o
+ .debug_frame   0x0000000000000000      0x1f4 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_proc.o
+ .debug_info    0x0000000000000000     0x9bdb /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_proc.o
+ .debug_abbrev  0x0000000000000000      0x728 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_proc.o
+ .debug_loc     0x0000000000000000      0xed0 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_proc.o
+ .debug_aranges
+                0x0000000000000000       0x20 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_proc.o
+ .debug_ranges  0x0000000000000000      0x2b8 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_proc.o
+ .debug_line    0x0000000000000000      0xb33 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_proc.o
+ .debug_str     0x0000000000000000     0x5926 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_proc.o
+ .debug_frame   0x0000000000000000       0xa4 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_trigger.o
+ .debug_info    0x0000000000000000     0x8712 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_trigger.o
+ .debug_abbrev  0x0000000000000000      0x5ae /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_trigger.o
+ .debug_loc     0x0000000000000000      0x1e6 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_trigger.o
+ .debug_aranges
+                0x0000000000000000       0x20 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_trigger.o
+ .debug_ranges  0x0000000000000000       0x48 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_trigger.o
+ .debug_line    0x0000000000000000      0x81d /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_trigger.o
+ .debug_str     0x0000000000000000     0x5202 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_trigger.o
+ .debug_frame   0x0000000000000000      0x18c /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_blk.o
+ .debug_info    0x0000000000000000     0x7f9e /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_blk.o
+ .debug_abbrev  0x0000000000000000      0x3ff /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_blk.o
+ .debug_loc     0x0000000000000000      0x264 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_blk.o
+ .debug_aranges
+                0x0000000000000000       0x20 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_blk.o
+ .debug_ranges  0x0000000000000000       0x30 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_blk.o
+ .debug_line    0x0000000000000000      0x70a /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_blk.o
+ .debug_str     0x0000000000000000     0x4fbf /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_blk.o
+ .debug_frame   0x0000000000000000      0x11c /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_app_inf.o
+ .debug_info    0x0000000000000000     0x85a1 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_app_inf.o
+ .debug_abbrev  0x0000000000000000      0x623 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_app_inf.o
+ .debug_loc     0x0000000000000000      0x80d /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_app_inf.o
+ .debug_aranges
+                0x0000000000000000       0x20 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_app_inf.o
+ .debug_ranges  0x0000000000000000      0x168 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_app_inf.o
+ .debug_line    0x0000000000000000      0x816 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_app_inf.o
+ .debug_str     0x0000000000000000     0x4c4c /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_app_inf.o
+ .debug_frame   0x0000000000000000      0x1a8 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_mmu_nxp4418.o
+ .debug_info    0x0000000000000000     0x9190 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_mmu_nxp4418.o
+ .debug_abbrev  0x0000000000000000      0x5ea /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_mmu_nxp4418.o
+ .debug_loc     0x0000000000000000      0x67d /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_mmu_nxp4418.o
+ .debug_aranges
+                0x0000000000000000       0x20 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_mmu_nxp4418.o
+ .debug_ranges  0x0000000000000000       0x90 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_mmu_nxp4418.o
+ .debug_line    0x0000000000000000      0x929 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_mmu_nxp4418.o
+ .debug_str     0x0000000000000000     0x53f6 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_mmu_nxp4418.o
+ .debug_frame   0x0000000000000000       0xfc /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418.o
+ .debug_info    0x0000000000000000     0x7c95 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418.o
+ .debug_abbrev  0x0000000000000000      0x4be /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418.o
+ .debug_loc     0x0000000000000000      0x227 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418.o
+ .debug_aranges
+                0x0000000000000000       0x20 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418.o
+ .debug_ranges  0x0000000000000000       0x20 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418.o
+ .debug_line    0x0000000000000000      0x749 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418.o
+ .debug_str     0x0000000000000000     0x4e55 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418.o
+ .debug_info    0x0000000000000000     0x73ee /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418_regdata.o
+ .debug_abbrev  0x0000000000000000      0x2e5 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418_regdata.o
+ .debug_aranges
+                0x0000000000000000       0x18 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418_regdata.o
+ .debug_line    0x0000000000000000      0x604 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418_regdata.o
+ .debug_str     0x0000000000000000     0x477d /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418_regdata.o
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+*default*        0x0000000000000000 0xffffffffffffffff
+
+Linker script and memory map
+
+LOAD /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+LOAD /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_debug.o
+LOAD /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_used_memory.o
+LOAD /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_zbi.o
+LOAD /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/reg_save_restore.o
+LOAD /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_proc.o
+LOAD /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_trigger.o
+LOAD /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_blk.o
+LOAD /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_app_inf.o
+LOAD /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_mmu_nxp4418.o
+LOAD /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418.o
+LOAD /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418_regdata.o
+
+.interp
+ *(.interp)
+
+.note.gnu.build-id
+ *(.note.gnu.build-id)
+
+.hash
+ *(.hash)
+
+.gnu.hash
+ *(.gnu.hash)
+
+.dynsym
+ *(.dynsym)
+
+.dynstr
+ *(.dynstr)
+
+.gnu.version
+ *(.gnu.version)
+
+.gnu.version_d
+ *(.gnu.version_d)
+
+.gnu.version_r
+ *(.gnu.version_r)
+
+.rel.init
+ *(.rel.init)
+
+.rela.init
+ *(.rela.init)
+
+.rel.text
+ *(.rel.text)
+
+.rela.text
+ *(.rela.text)
+
+.rel.fini
+ *(.rel.fini)
+
+.rela.fini
+ *(.rela.fini)
+
+.rel.rodata
+ *(.rel.rodata)
+
+.rela.rodata
+ *(.rela.rodata)
+
+.rel.data.rel.ro
+ *(.rel.data.rel.ro)
+
+.rela.data.rel.ro
+ *(.rela.data.rel.ro)
+
+.rel.data
+ *(.rel.data)
+
+.rela.data
+ *(.rela.data)
+
+.rel.tdata
+ *(.rel.tdata)
+
+.rela.tdata
+ *(.rela.tdata)
+
+.rel.tbss
+ *(.rel.tbss)
+
+.rela.tbss
+ *(.rela.tbss)
+
+.rel.ctors
+ *(.rel.ctors)
+
+.rela.ctors
+ *(.rela.ctors)
+
+.rel.dtors
+ *(.rel.dtors)
+
+.rela.dtors
+ *(.rela.dtors)
+
+.rel.got
+ *(.rel.got)
+
+.rela.got
+ *(.rela.got)
+
+.rel.bss
+ *(.rel.bss)
+
+.rela.bss
+ *(.rela.bss)
+
+.rel.iplt
+ *(.rel.iplt)
+
+.rela.iplt
+ *(.rela.iplt)
+
+.rel.plt
+ *(.rel.plt)
+
+.rela.plt
+ *(.rela.plt)
+
+.init
+ *(SORT(.init))
+
+.plt
+ *(.plt)
+
+.iplt
+ *(.iplt)
+
+.text           0x0000000000000000     0x51c8
+ *(.text .stub)
+ .text          0x0000000000000000      0xd30 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+                0x0000000000000000                zero_set_pte_ext_hook_func
+                0x0000000000000078                zb_get_status
+                0x0000000000000088                zb_get_status_waitq
+                0x0000000000000094                zb_pre_setup_dma_area
+                0x00000000000000ec                zb_set_status
+                0x00000000000001e4                zb_add_protected_bootloader_manage_area
+                0x0000000000000218                zb_add_protected_kernel_manage_area
+                0x0000000000000430                zb_add_arch_manage_area
+                0x0000000000000434                zb_add_driver_work
+                0x0000000000000468                zb_add_dma_area
+                0x00000000000004d4                zb_add_boot_copy_area_of_mmu_data_detail
+                0x00000000000005b4                zb_add_boot_copy_area_of_mmu_data_detail1
+                0x0000000000000694                zb_exchange_address_space_with_two_pgd
+                0x00000000000006bc                zb_add_boot_copy_area_of_mmu_data
+                0x00000000000007d4                zb_add_boot_copy_area_of_nalcode
+                0x000000000000082c                zb_add_boot_copy_area_of_m2n
+                0x00000000000008a4                zb_add_boot_copy_area_of_vector
+                0x00000000000008d8                zb_add_boot_copy_area_of_video
+                0x00000000000008dc                zb_add_return_position
+                0x00000000000008fc                zb_add
+                0x0000000000000960                zb_snapshot
+ .text          0x0000000000000d30      0x470 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_debug.o
+                0x0000000000000d30                zb_dump_data
+                0x0000000000000e9c                zb_nalcode_fault_test_zero_data
+                0x0000000000000ec4                zb_nalcode_fault_test_modify_coarse
+                0x0000000000000f38                zba_mark_page_cache_for_process
+ .text          0x00000000000011a0      0x86c /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_used_memory.o
+                0x00000000000011a0                check_boot_reserved
+                0x000000000000127c                zb_registe_reserved_mem
+                0x000000000000128c                check_zbi_reserved_area
+                0x0000000000001300                check_boot_reserved_s5p
+                0x0000000000001380                zb_get_used_mem_count
+                0x0000000000001584                zb_check_used_memory
+                0x00000000000017a8                zb_used_memory_init
+                0x00000000000017dc                zb_used_memory_exit
+                0x00000000000017f8                zb_get_mem_array
+                0x0000000000001808                zb_get_mem_array_size
+                0x0000000000001810                zb_get_next_page
+                0x00000000000019c8                zb_get_exist_npage
+ .text          0x0000000000001a0c      0xc1c /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_zbi.o
+                0x0000000000001a0c                get_nal_access_status
+                0x0000000000001a34                set_nal_access_status
+                0x0000000000001a5c                wait_nal_access_lock
+                0x0000000000001a84                zb_save_cpu_resume
+                0x0000000000001aa0                zbi_change_pgd
+                0x0000000000001abc                zbi_init
+                0x0000000000001b9c                zbi_storage_ready_done
+                0x0000000000001be4                zbi_info_dump
+                0x0000000000001c44                zbi_free
+                0x0000000000001c48                zbi_append_bootcopy_data
+                0x0000000000001cb8                zbi_write_info_of_bootcopy_to_zbi
+                0x0000000000001d74                zbi_build_block_page
+                0x0000000000001e0c                zbi_build_block_page_for_m2n_data
+                0x0000000000001e40                zbi_jump_vaddr
+                0x0000000000001e5c                zbi_set_zblk_io
+                0x0000000000001e74                zbi_set_section_option
+                0x0000000000001e8c                zbi_get_section_option
+                0x0000000000001ea4                zbi_make_fault
+                0x0000000000001ecc                zbi_calculate_m2n_data_sum
+                0x0000000000002058                zbi_save_data_for_zbi_data
+                0x0000000000002200                zbi_save_for_m2n_data
+                0x0000000000002344                zbi_save_header
+                0x00000000000023b8                zbi_display
+                0x00000000000025e8                zb_add_page_value
+                0x0000000000002618                get_zbi_base
+ .text          0x0000000000002628      0x9fc /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/reg_save_restore.o
+                0x00000000000027c4                zeroboot_save_reg
+                0x00000000000028f0                zeroboot_restore_reg
+                0x0000000000002a14                zeroboot_show_reg
+                0x0000000000002aa8                zeroboot_checkin_hw_list
+                0x0000000000002b3c                zeroboot_checkout_hw_list
+                0x0000000000002b94                zeroboot_save_hw_list
+                0x0000000000002bf0                zeroboot_restore_hw_list
+                0x0000000000002c6c                zeroboot_restore_late_hw_list
+                0x0000000000002cec                zeroboot_show_hw_list
+                0x0000000000002fd4                zeroboot_get_hw_list
+ .text          0x0000000000003024      0xc74 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_proc.o
+                0x00000000000039c0                zb_nalcode_deactive
+                0x0000000000003a24                fa_nalcode_func_test
+                0x0000000000003a64                zb_nalcode_init
+                0x0000000000003b6c                zb_nalcode_start_paddr
+                0x0000000000003b80                zb_nalcode_size
+                0x0000000000003b88                zb_nalcode_spare_size
+                0x0000000000003b90                zb_create_trigger_proc
+                0x0000000000003bc4                zb_create_nalcode_proc
+                0x0000000000003c04                zb_proc_init
+                0x0000000000003c54                zb_proc_exit
+ .text          0x0000000000003c98      0x1e4 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_trigger.o
+                0x0000000000003d9c                zb_event_trigger
+                0x0000000000003db4                zb_event_trigger_set_time
+                0x0000000000003dcc                zb_timer_remove
+                0x0000000000003dd8                zb_trigger_init
+                0x0000000000003e38                zb_trigger_exit
+ .text          0x0000000000003e7c      0x228 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_blk.o
+                0x0000000000003e7c                get_zb_blk_info
+                0x0000000000003e88                zblk_probe
+                0x0000000000003eb0                zblk_setup_first
+                0x0000000000003ed8                zblk_get_storage_offset
+                0x0000000000003ef8                zblk_get_io_vaddr
+                0x0000000000003f50                zblk_get_index
+                0x0000000000003f78                zblk_page_write
+                0x0000000000003fa0                zblk_page_read
+                0x0000000000003fc8                zblk_burst_read
+                0x0000000000003ff4                zblk_burst_write
+                0x000000000000401c                zblk_dev_reset
+                0x0000000000004044                zblk_setup_post_zeroboot
+                0x000000000000406c                zb_blk_init
+                0x0000000000004088                zb_blk_exit
+ .text          0x00000000000040a4      0x5c8 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_app_inf.o
+                0x0000000000004570                zbapp_create_proc
+                0x00000000000045a4                zb_app_inf_init
+                0x0000000000004634                zb_app_inf_exit
+ *fill*         0x000000000000466c       0x14 
+ .text          0x0000000000004680      0x940 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_mmu_nxp4418.o
+                0x0000000000004680                mcu_get_cpsr
+                0x00000000000046a0                v7_flush_dcache_all
+                0x0000000000004740                all_tbl_clean
+                0x0000000000004760                mmu_get_ttb_base
+                0x0000000000004780                mmu_get_ttb2_base
+                0x00000000000047a0                mmu_get_ttbc
+                0x00000000000047c0                mmu_set_ttb_base
+                0x00000000000047e0                mmu_set_ttb2_base
+                0x0000000000004800                mmu_snapshot_coprocessor
+                0x00000000000048ac                dump_coprocessor_value
+                0x0000000000004b2c                mmu_snapshot_coprocessor_new
+                0x0000000000004b44                active_dcache
+                0x0000000000004b50                mmu_get_l1_entry
+                0x0000000000004b5c                mmu_get_l2_entry
+                0x0000000000004b90                mmu_set_fault_l2_entry
+                0x0000000000004bdc                mmu_is_coarse
+                0x0000000000004bf0                mmu_virt_to_phys
+                0x0000000000004c1c                zb_dumy_read
+                0x0000000000004c20                zb_make_coarse_dram_entrys
+                0x0000000000004cdc                zb_reset_mmu_by_coarse_dram_entrys
+                0x0000000000004d60                zb_rebuild_mmu_by_coarse_dram_area
+                0x0000000000004e28                zb_show_process_name
+                0x0000000000004e8c                zb_reset_mmu_by_section_dram_entrys
+                0x0000000000004f1c                zb_recover_mmu_by_section_dram_area
+ .text          0x0000000000004fc0      0x208 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418.o
+                0x0000000000004fc0                imx6_gpt_pause
+                0x0000000000004fec                imx6_gpt_resume
+                0x0000000000005030                zb_add_platform_manage_area
+                0x00000000000050d4                zb_io_init
+                0x00000000000050f8                zb_io_free
+                0x00000000000050fc                zb_io_save
+                0x0000000000005138                zb_io_restore
+                0x00000000000051b8                zb_io_restore_with_irq
+                0x00000000000051c4                zb_io_show_all
+ .text          0x00000000000051c8        0x0 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418_regdata.o
+ *(.gnu.warning)
+
+.init.text      0x0000000000000000       0xc0
+ .init.text     0x0000000000000000       0xc0 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+                0x0000000000000000                init_module
+
+.exit.text      0x0000000000000000       0x8c
+ .exit.text     0x0000000000000000       0x8c /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+                0x0000000000000000                cleanup_module
+
+.fini
+ *(SORT(.fini))
+
+.rodata         0x0000000000000000       0x8c
+ *(.rodata)
+ .rodata        0x0000000000000000       0x18 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+ .rodata        0x0000000000000018       0x10 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_trigger.o
+ .rodata        0x0000000000000028       0x64 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_mmu_nxp4418.o
+
+.pv_table       0x0000000000000000       0x7c
+ .pv_table      0x0000000000000000       0x34 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+ .pv_table      0x0000000000000034       0x14 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_debug.o
+ .pv_table      0x0000000000000048       0x1c /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_zbi.o
+ .pv_table      0x0000000000000064       0x18 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_mmu_nxp4418.o
+
+.rodata.str     0x0000000000000000      0x264
+ .rodata.str    0x0000000000000000      0x108 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+ .rodata.str    0x0000000000000108      0x15c /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_zbi.o
+
+__bug_table     0x0000000000000000       0x3c
+ __bug_table    0x0000000000000000       0x18 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+ __bug_table    0x0000000000000018       0x24 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_zbi.o
+
+.ARM.extab.init.text
+                0x0000000000000000        0x0
+ .ARM.extab.init.text
+                0x0000000000000000        0x0 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+
+.ARM.exidx.init.text
+                0x0000000000000000        0x8
+ .ARM.exidx.init.text
+                0x0000000000000000        0x8 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+
+.ARM.extab.exit.text
+                0x0000000000000000        0x0
+ .ARM.extab.exit.text
+                0x0000000000000000        0x0 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+
+.ARM.exidx.exit.text
+                0x0000000000000000        0x8
+ .ARM.exidx.exit.text
+                0x0000000000000000        0x8 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+
+___ksymtab+zb_get_status
+                0x0000000000000000        0x8
+ ___ksymtab+zb_get_status
+                0x0000000000000000        0x8 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+
+.modinfo        0x0000000000000000       0xc8
+ .modinfo       0x0000000000000000       0x58 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+ .modinfo       0x0000000000000058       0x24 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_proc.o
+ .modinfo       0x000000000000007c       0x24 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_trigger.o
+ .modinfo       0x00000000000000a0       0x28 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_blk.o
+
+___ksymtab+zb_set_status
+                0x0000000000000000        0x8
+ ___ksymtab+zb_set_status
+                0x0000000000000000        0x8 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+
+___ksymtab+zb_pre_setup_dma_area
+                0x0000000000000000        0x8
+ ___ksymtab+zb_pre_setup_dma_area
+                0x0000000000000000        0x8 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+
+__ksymtab_strings
+                0x0000000000000000       0x8d
+ __ksymtab_strings
+                0x0000000000000000       0x52 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+ __ksymtab_strings
+                0x0000000000000052       0x2b /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_zbi.o
+ __ksymtab_strings
+                0x000000000000007d       0x10 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_blk.o
+
+.rodata.str1.4  0x0000000000000000     0x1c54
+ .rodata.str1.4
+                0x0000000000000000      0x4d8 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+ .rodata.str1.4
+                0x00000000000004d8      0x188 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_debug.o
+ .rodata.str1.4
+                0x0000000000000660       0xcc /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_used_memory.o
+ .rodata.str1.4
+                0x000000000000072c      0x41c /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_zbi.o
+ .rodata.str1.4
+                0x0000000000000b48      0x2d8 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/reg_save_restore.o
+ .rodata.str1.4
+                0x0000000000000e20      0x524 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_proc.o
+ .rodata.str1.4
+                0x0000000000001344       0x9c /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_trigger.o
+ .rodata.str1.4
+                0x00000000000013e0       0x58 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_blk.o
+ .rodata.str1.4
+                0x0000000000001438      0x150 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_app_inf.o
+ .rodata.str1.4
+                0x0000000000001588      0x588 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_mmu_nxp4418.o
+ .rodata.str1.4
+                0x0000000000001b10      0x144 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418.o
+
+__param         0x0000000000000000       0x10
+ __param        0x0000000000000000       0x10 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+
+___ksymtab+zb_snapshot
+                0x0000000000000000        0x8
+ ___ksymtab+zb_snapshot
+                0x0000000000000000        0x8 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+
+___ksymtab+zb_get_status_waitq
+                0x0000000000000000        0x8
+ ___ksymtab+zb_get_status_waitq
+                0x0000000000000000        0x8 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+
+___ksymtab+wait_nal_access_lock
+                0x0000000000000000        0x8
+ ___ksymtab+wait_nal_access_lock
+                0x0000000000000000        0x8 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_zbi.o
+
+___ksymtab+set_nal_access_status
+                0x0000000000000000        0x8
+ ___ksymtab+set_nal_access_status
+                0x0000000000000000        0x8 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_zbi.o
+
+___ksymtab+get_zb_blk_info
+                0x0000000000000000        0x8
+ ___ksymtab+get_zb_blk_info
+                0x0000000000000000        0x8 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_blk.o
+
+.rodata1
+ *(.rodata1)
+
+.ARM.extab      0x0000000000000000      0x168
+ *(.ARM.extab)
+ .ARM.extab     0x0000000000000000       0x24 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+ .ARM.extab     0x0000000000000024       0x18 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_debug.o
+ .ARM.extab     0x000000000000003c        0xc /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_used_memory.o
+ .ARM.extab     0x0000000000000048       0x3c /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_zbi.o
+ .ARM.extab     0x0000000000000084        0x0 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/reg_save_restore.o
+ .ARM.extab     0x0000000000000084       0x3c /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_proc.o
+ .ARM.extab     0x00000000000000c0        0x0 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_trigger.o
+ .ARM.extab     0x00000000000000c0       0x90 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_blk.o
+ .ARM.extab     0x0000000000000150        0xc /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_app_inf.o
+ .ARM.extab     0x000000000000015c        0x0 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_mmu_nxp4418.o
+ .ARM.extab     0x000000000000015c        0xc /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418.o
+
+.ARM.exidx      0x0000000000000000      0x488
+ *(.ARM.exidx)
+ .ARM.exidx     0x0000000000000000       0xb8 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+ .ARM.exidx     0x00000000000000b8       0x20 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_debug.o
+ .ARM.exidx     0x00000000000000d8       0x60 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_used_memory.o
+ .ARM.exidx     0x0000000000000138       0xc8 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_zbi.o
+ .ARM.exidx     0x0000000000000200       0x60 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/reg_save_restore.o
+ .ARM.exidx     0x0000000000000260       0x80 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_proc.o
+ .ARM.exidx     0x00000000000002e0       0x30 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_trigger.o
+ .ARM.exidx     0x0000000000000310       0x70 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_blk.o
+ .ARM.exidx     0x0000000000000380       0x48 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_app_inf.o
+ .ARM.exidx     0x00000000000003c8       0x78 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_mmu_nxp4418.o
+ .ARM.exidx     0x0000000000000440       0x48 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418.o
+
+.eh_frame_hdr
+ *(.eh_frame_hdr)
+
+.eh_frame
+ *(.eh_frame)
+
+.gcc_except_table
+ *(.gcc_except_table .gcc_except_table.*)
+
+.exception_ranges
+ *(.exception_ranges .exception_ranges*)
+
+.eh_frame
+ *(.eh_frame)
+
+.gcc_except_table
+ *(.gcc_except_table .gcc_except_table.*)
+
+.exception_ranges
+ *(.exception_ranges .exception_ranges*)
+
+.tdata
+ *(.tdata)
+
+.tbss
+ *(.tbss)
+                0x0000000000000488                . = ALIGN (0x4)
+
+.preinit_array
+ *(.preinit_array)
+
+.jcr
+ *(.jcr)
+
+.dynamic
+ *(.dynamic)
+
+.got
+ *(.got.plt)
+ *(.igot.plt)
+ *(.got)
+ *(.igot)
+
+.data           0x0000000000000000     0x15f4
+ *(.data)
+ .data          0x0000000000000000        0x0 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+ .data          0x0000000000000000        0x0 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_debug.o
+ .data          0x0000000000000000       0x48 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_used_memory.o
+ .data          0x0000000000000048        0x0 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_zbi.o
+ .data          0x0000000000000048        0x0 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/reg_save_restore.o
+ .data          0x0000000000000048        0x0 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_proc.o
+ .data          0x0000000000000048       0x14 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_trigger.o
+                0x0000000000000048                zeroboot_waitq
+ .data          0x000000000000005c        0x4 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_blk.o
+                0x000000000000005c                zbi_blk
+ .data          0x0000000000000060       0x68 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_app_inf.o
+ .data          0x00000000000000c8        0x0 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_mmu_nxp4418.o
+ .data          0x00000000000000c8      0x16c /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418.o
+ .data          0x0000000000000234     0x13c0 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418_regdata.o
+                0x0000000000000234                regv_armmp
+                0x00000000000010c4                regv_epit
+                0x0000000000001154                regv_gpt
+                0x00000000000011e4                regv_uart5
+                0x00000000000012b4                regv_uart4
+                0x0000000000001384                regv_uart3
+                0x0000000000001454                regv_uart2
+                0x0000000000001524                regv_uart1
+
+.data1
+ *(.data1)
+
+.bss            0x0000000000000000     0x11a8
+ *(.dynbss)
+ *(.bss)
+ .bss           0x0000000000000000       0xc0 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+                0x0000000000000000                nalcode_func
+                0x000000000000001c                zb_dma_area
+                0x000000000000006c                nalcode
+ .bss           0x00000000000000c0        0x0 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_debug.o
+ .bss           0x00000000000000c0       0x5c /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_used_memory.o
+ .bss           0x000000000000011c     0x1008 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_zbi.o
+ .bss           0x0000000000001124        0x8 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/reg_save_restore.o
+ .bss           0x000000000000112c        0x4 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_proc.o
+ .bss           0x0000000000001130       0x38 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_trigger.o
+ .bss           0x0000000000001168       0x30 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_blk.o
+                0x0000000000001168                zops
+ .bss           0x0000000000001198        0x4 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_app_inf.o
+ .bss           0x000000000000119c        0x4 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_mmu_nxp4418.o
+                0x000000000000119c                zb_coarse_tables
+ .bss           0x00000000000011a0        0x8 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418.o
+ .bss           0x00000000000011a8        0x0 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418_regdata.o
+ *(COMMON)
+
+.stab
+ *(.stab)
+
+.stabstr
+ *(.stabstr)
+
+.stab.excl
+ *(.stab.excl)
+
+.stab.exclstr
+ *(.stab.exclstr)
+
+.stab.index
+ *(.stab.index)
+
+.stab.indexstr
+ *(.stab.indexstr)
+
+.comment        0x0000000000000000       0xc0
+ *(.comment)
+ .comment       0x0000000000000000       0x10 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+ .comment       0x0000000000000010       0x10 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_debug.o
+ .comment       0x0000000000000020       0x10 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_used_memory.o
+ .comment       0x0000000000000030       0x10 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_zbi.o
+ .comment       0x0000000000000040       0x10 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/reg_save_restore.o
+ .comment       0x0000000000000050       0x10 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_proc.o
+ .comment       0x0000000000000060       0x10 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_trigger.o
+ .comment       0x0000000000000070       0x10 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_blk.o
+ .comment       0x0000000000000080       0x10 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_app_inf.o
+ .comment       0x0000000000000090       0x10 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_mmu_nxp4418.o
+ .comment       0x00000000000000a0       0x10 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418.o
+ .comment       0x00000000000000b0       0x10 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418_regdata.o
+
+.debug
+ *(.debug)
+
+.line
+ *(.line)
+
+.debug_srcinfo
+ *(.debug_srcinfo)
+
+.debug_sfnames
+ *(.debug_sfnames)
+
+.debug_aranges
+ *(.debug_aranges)
+
+.debug_pubnames
+ *(.debug_pubnames)
+
+.debug_info
+ *(.debug_info)
+
+.debug_abbrev
+ *(.debug_abbrev)
+
+.debug_line
+ *(.debug_line)
+
+.debug_frame
+ *(.debug_frame)
+
+.debug_str
+ *(.debug_str)
+
+.debug_loc
+ *(.debug_loc)
+
+.debug_macinfo
+ *(.debug_macinfo)
+
+.debug_weaknames
+ *(.debug_weaknames)
+
+.debug_funcnames
+ *(.debug_funcnames)
+
+.debug_typenames
+ *(.debug_typenames)
+
+.debug_varnames
+ *(.debug_varnames)
+
+.debug_pubtypes
+ *(.debug_pubtypes)
+
+.debug_ranges
+ *(.debug_ranges)
+
+.debug_macro
+ *(.debug_macro)
+
+.stack
+ *(.stack)
+
+.ARM.attributes
+                0x0000000000000000       0x33
+ *(.ARM.attributes)
+ .ARM.attributes
+                0x0000000000000000       0x33 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot_main.o
+ .ARM.attributes
+                0x0000000000000033       0x33 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_debug.o
+ .ARM.attributes
+                0x0000000000000066       0x33 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_used_memory.o
+ .ARM.attributes
+                0x0000000000000099       0x33 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_zbi.o
+ .ARM.attributes
+                0x00000000000000cc       0x33 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/reg_save_restore.o
+ .ARM.attributes
+                0x00000000000000ff       0x33 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_proc.o
+ .ARM.attributes
+                0x0000000000000132       0x33 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_trigger.o
+ .ARM.attributes
+                0x0000000000000165       0x33 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_blk.o
+ .ARM.attributes
+                0x0000000000000198       0x33 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/zb_app_inf.o
+ .ARM.attributes
+                0x00000000000001cb       0x33 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_mmu_nxp4418.o
+ .ARM.attributes
+                0x00000000000001fe       0x33 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418.o
+ .ARM.attributes
+                0x0000000000000231       0x33 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/arch_nxp4418/zb_cpu_nxp4418_regdata.o
+ *(.gnu.attributes)
+
+.note.gnu.arm.ident
+ *(.note.gnu.arm.ident)
+OUTPUT(/home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot-nxp4418/drv_zero_snapshot/drv_zero_snapshot.o elf32-littlearm)

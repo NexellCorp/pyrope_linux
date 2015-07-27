@@ -1,0 +1,93 @@
+diff -urN nalcode/Makefile nalcode_old/Makefile
+--- nalcode/Makefile	2015-07-15 13:50:22.937900016 +0900
++++ nalcode_old/Makefile	2015-07-14 04:17:51.931283612 +0900
+@@ -108,7 +108,7 @@
+ C_OPTION	+= -DARCH_V6
+ endif
+ ifeq ($(CONFIG_CPU_V7),y)
+-C_OPTION	+= -march=armv7-a -DARCH_V7
++C_OPTION	+= -march=armv7-a -DARCH_V7 -mtune=cortex-a9
+ ASM_OPTION	+= -DARCH_V7
+ 	ifeq ($(CONFIG_ARCH_OMAP4),y)
+ 		C_OPTION	+= -DARCH_OMAP4
+diff -urN nalcode/memory.map nalcode_old/memory.map
+--- nalcode/memory.map	2015-07-15 13:50:50.641898781 +0900
++++ nalcode_old/memory.map	2015-07-14 21:14:33.500563902 +0900
+@@ -9,7 +9,7 @@
+                 0x0000000080088000                . = 0x80088000
+                 0x0000000080088000                . = ALIGN (0x4)
+ 
+-.text           0x0000000080088000     0x497c
++.text           0x0000000080088000     0x4980
+  *(.text)
+  .text          0x0000000080088000      0x480 fault_entry.o
+                 0x0000000080088000                _fault_entry
+@@ -192,7 +192,7 @@
+  .text          0x000000008008ae94      0x800 vsprintf.o
+                 0x000000008008b158                vsprintf
+                 0x000000008008b674                sprintf
+- .text          0x000000008008b694     0x12e8 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot/drv_storage/arch_nxp/nalcode_mmc_storage_dw.o
++ .text          0x000000008008b694     0x12ec /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot/drv_storage/arch_nxp/nalcode_mmc_storage_dw.o
+                 0x000000008008bdc0                v7_outer_cache_flush_all
+                 0x000000008008bdc4                flush_dcache_all
+                 0x000000008008bdc8                v7_outer_cache_inval_range
+@@ -207,38 +207,38 @@
+                 0x000000008008bf08                mmc_set_clock
+                 0x000000008008bf10                mmc_send_op_cond
+                 0x000000008008bfe4                mmc_complete_op_cond
+-                0x000000008008c080                mmc_start_init
+-                0x000000008008c0bc                mmc_card_bringup
+-                0x000000008008c368                dma_read_dirty
+-                0x000000008008c3d0                get_zb_mmc_info
+-                0x000000008008c3e8                nalcode_storage_first_call
+-                0x000000008008c504                mem_storage_block_4k
+-                0x000000008008c548                nalcode_stroage_read_4k_page
+-                0x000000008008c978                nalcode_stroage_test_function
++                0x000000008008c07c                mmc_start_init
++                0x000000008008c0b8                mmc_card_bringup
++                0x000000008008c370                dma_read_dirty
++                0x000000008008c3d8                get_zb_mmc_info
++                0x000000008008c3f0                nalcode_storage_first_call
++                0x000000008008c50c                mem_storage_block_4k
++                0x000000008008c550                nalcode_stroage_read_4k_page
++                0x000000008008c97c                nalcode_stroage_test_function
+ 
+-.glue_7         0x000000008008c97c        0x0
++.glue_7         0x000000008008c980        0x0
+  .glue_7        0x0000000000000000        0x0 linker stubs
+ 
+-.glue_7t        0x000000008008c97c        0x0
++.glue_7t        0x000000008008c980        0x0
+  .glue_7t       0x0000000000000000        0x0 linker stubs
+ 
+-.vfp11_veneer   0x000000008008c97c        0x0
++.vfp11_veneer   0x000000008008c980        0x0
+  .vfp11_veneer  0x0000000000000000        0x0 linker stubs
+ 
+-.v4_bx          0x000000008008c97c        0x0
++.v4_bx          0x000000008008c980        0x0
+  .v4_bx         0x0000000000000000        0x0 linker stubs
+ 
+-.iplt           0x000000008008c97c        0x0
++.iplt           0x000000008008c980        0x0
+  .iplt          0x0000000000000000        0x0 fault_entry.o
+-                0x000000008008c97c                . = ALIGN (0x4)
++                0x000000008008c980                . = ALIGN (0x4)
+ 
+-.rodata         0x000000008008c97c       0xe0
++.rodata         0x000000008008c980       0xe0
+  *(.rodata)
+- .rodata        0x000000008008c97c        0xc fault_main.o
+- .rodata        0x000000008008c988       0xd4 nal_m2n.o
++ .rodata        0x000000008008c980        0xc fault_main.o
++ .rodata        0x000000008008c98c       0xd4 nal_m2n.o
+ 
+-.alt.smp.init   0x000000008008ca5c       0x40
+- .alt.smp.init  0x000000008008ca5c       0x40 fault_entry.o
++.alt.smp.init   0x000000008008ca60       0x40
++ .alt.smp.init  0x000000008008ca60       0x40 fault_entry.o
+ 
+ __ex_table      0x000000008008caa0       0x10
+                 0x000000008008caa0                PROVIDE (__start___ex_table, .)
+Binary files nalcode/nalcode.bin and nalcode_old/nalcode.bin differ
+Binary files nalcode/nalcode.elf32 and nalcode_old/nalcode.elf32 differ

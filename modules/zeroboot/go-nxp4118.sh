@@ -1,25 +1,14 @@
 #!/bin/sh
-#KDIR=/home/jonghooy/snow_leopard/ltib/rpm/BUILD/linux-3.0.35 \
-#NAL_STORAGE_SRC=$PWD/drv_storage/arch_imx6/nalcode_storage_imx6.c 
-#MODULES_DIR=$SDK_DIR/modules/zeroboot 
-#CP_DIR=/nfs/boggle70/imx6 $SDK_DIR/out 
-#DEBUG_CHECKSUM=y \
-#DEBUG_FULL_RESTORE=y \
+#NALCODE_SOURCE=y \
+#
+#CP_DIR=$TOP/hardware/samsung_slsi/slsiap/prebuilt/modules/ \
 
-# sabreauto no lcd nand
-#K_UART_VIRT=0xea8fe000 \
-#K_UART_PHYS=0x021F0000 \
-
-# sabreai lcd mmc
-#K_UART_VIRT=0xc093e000 \
-#K_UART_PHYS=0x02020000 \
-
-#K_UART_VIRT=0xea8fe000 \
-#K_UART_VIRT=0xea87e000 \
-
-KDIR=$SDK_DIR/kernel-3.4.39-nxp4418 \
+TOP=/home/falinux/work/git/lollipop-avn-4418 \
+ARCH=arm \
+CROSS_COMPILE=$TOP/prebuilts/gcc/linux-x86/arm/arm-eabi-4.8/bin/arm-eabi- \
+KDIR=$TOP/kernel \
 MODULES_DIR=$PWD \
-CP_DIR=$SDK_DIR/out \
+CP_DIR=/home/falinux/work/nxp_zeroboot/out \
 K_PHYS_OFFSET=0x40000000 \
 K_UART_VIRT=0xf00a1000 \
 K_UART_PHYS=0xc00a1000 \
@@ -29,9 +18,12 @@ NAL_STORAGE_OFFSET=0x50000000 \
 NAL_STORAGE_SIZE=0x10000000 \
 make clean $1 || exit $?
 
-KDIR=$SDK_DIR/kernel-3.4.39-nxp4418 \
+TOP=/home/falinux/work/git/lollipop-avn-4418 \
+ARCH=arm \
+CROSS_COMPILE=$TOP/prebuilts/gcc/linux-x86/arm/arm-eabi-4.8/bin/arm-eabi- \
+KDIR=$TOP/kernel \
 MODULES_DIR=$PWD \
-CP_DIR=$SDK_DIR/hardware/samsung_slsi/slsiap/prebuilt/modules/ \
+CP_DIR=/home/falinux/work/nxp_zeroboot/out \
 K_PHYS_OFFSET=0x40000000 \
 K_UART_VIRT=0xf00a1000 \
 K_UART_PHYS=0xc00a1000 \
@@ -43,6 +35,10 @@ NALCODE_SOURCE=y \
 DEBUG_CHECKSUM=y \
 make $1 || exit $?
 
-
 echo "build success & copy to nfs"
 
+#make ARCH=arm clean
+#make ARCH=arm -j4
+#cp nx_vpu.ko ../../../../../hardware/samsung_slsi/slsiap/prebuilt/modules/
+
+scp drv_zero_snapshot/drv_zero_snapshot.ko drv_storage/drv_storage.ko nalcode/nalcode.bin boggle70@192.168.10.190:~/nxp/

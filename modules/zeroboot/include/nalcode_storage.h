@@ -45,7 +45,7 @@
 static zbi_t  		*zbi_head = (zbi_t *)(ZBI_VADDR);
 #define NAL_2_NAND	 zbi_head->align_2048[ZBI_INDEX_STORAGE_ACCESS_FLAG]
 
-extern void nalcode_stroage_read_4k_page( u32 nand_page, u8 *mem_buf, void *vaddr );
+extern void nalcode_stroage_read_4k_page( u32 nand_page, u8 *mem_buf, void *vaddr , unsigned int addr);
 
 typedef struct
 {

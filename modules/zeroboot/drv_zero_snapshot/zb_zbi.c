@@ -97,6 +97,16 @@ extern unsigned long zb_get_idmap_pgd_phys(void);
 extern unsigned long zb_get_resume_ptr(void);
 extern unsigned long zb_get_cpu_resume_phys(void);
 
+#ifdef CONFIG_CACHE_L2X0
+extern unsigned long get_zb_l2x0_base(void);
+extern unsigned long get_zb_l2x0_way_mask(void);
+extern unsigned long get_zb_l2x0_size(void);
+#else
+unsigned long get_zb_l2x0_base(void) { return 0;};
+unsigned long get_zb_l2x0_way_mask(void) { return 0;};
+unsigned long get_zb_l2x0_size(void) { return 0;};
+#endif
+
 extern int (*get_zb_access_status)(void);
 extern void (*set_zb_access_status)(int);
 extern void (*zb_storage_wait_lock)(void);
@@ -135,7 +145,10 @@ static void zbi_clear( void )
 	zbi_work->bootup_marker = ZBI_BOOTUP_MARKER;
 	zbi_work->cpu_idmap 	= zb_get_idmap_pgd_phys();
 	zbi_work->cpu_resume 	= zb_get_cpu_resume_phys();
-	
+	zbi_work->zb_l2x0_base		= get_zb_l2x0_base();
+	zbi_work->zb_l2x0_way_mask	= get_zb_l2x0_way_mask();
+	zbi_work->zb_l2x0_size		= get_zb_l2x0_size();
+
 	zbi_next_page_offset = ZBI_UNIT_SIZE/PAGE_SIZE;
 }
 

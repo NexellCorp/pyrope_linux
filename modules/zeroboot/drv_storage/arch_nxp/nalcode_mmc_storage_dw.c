@@ -635,9 +635,6 @@ static int mmc_send_cmd(struct zb_priv_mmc *mmc,struct mmc_cmd *cmd,
 
 	dwmci_writel(mmc, DWMCI_CMD, flags);
 
-	
-
-
 	for (i = 0; i < retry; i++) {
 		mask = dwmci_readl(mmc, DWMCI_RINTSTS);
 		if (mask & DWMCI_INTMSK_CDONE) {
@@ -1694,8 +1691,8 @@ int dma_read_dirty(struct zb_priv_mmc *mmc)
   @brief   \uba54\ubaa8\ub9ac 4K \ud398\uc774\uc9c0 \ub2e8\uc704\ub85c \uc77d\ub294\ub2e4.
   @remark  
 *///----------------------------------------------------------------------------
-#include <dma_api.h>
-static int mmc_read_block_4k( u32 mem_page,  u8 *page_buf )
+#ifdef NAL_PRE_LOAD
+static int mmc_read_block_4k_preload( u32 mem_page,  u8 *page_buf, unsigned int paddr)
 {
 	u32 count;
 	u32 block_index;
@@ -1707,104 +1704,96 @@ static int mmc_read_block_4k( u32 mem_page,  u8 *page_buf )
 	data		= page_buf;
 	count		= PAGE_SIZE/mmc_block_size;
 
+READ_RETRY:
 
+	while (mmc_bread(&zero_mmc,block_index,count,(void *)zero_mmc.data_buf) == 0) {
+		retry_count++;
 
-#if 0
-#ifdef NAL_PRE_LOAD
-READ_RETRY:	
-		while(mmc_bread(&zero_mmc,block_index,count,(void *)zero_mmc.data_buf)==0 ) {
-			retry_count++;
-		
-			if ( retry_count >=10 )  {
-				put_raw_str("RETRY ERROR Count Limit Over\n");
-				return -1;
-	
-			}
-			while ( dwmci_init_by_retry(&zero_mmc) ==  -1 ) {
-				reset_retry_count++;
-				put_raw_str ("reset_retry\n");
-				if ( reset_retry_count >=10 )  {
-					put_raw_str ("reset_retry counter over \n");
-					return -1;
-
-				}
-				delay(100);
-			}
+		if ( retry_count >=10 ) {
+			put_raw_str("RETRY ERROR Count Limit Over\n");
+			return -1;
 		}
 
-	if ( dma_read_dirty(&zero_mmc)	 ==  -1 ) { goto READ_RETRY; }
+		while ( dwmci_init_by_retry(&zero_mmc) ==  -1 ) {
+			reset_retry_count++;
+			put_raw_str ("reset_retry\n");
+			if ( reset_retry_count >=10 ) {
+				put_raw_str ("reset_retry counter over \n");
+				return -1;
+			}
+			delay(100);
+		}
+	}
 
-	//mmc_bread(&zero_mmc, block_index, count, zero_mmc.data_buf);
+	if (dma_read_dirty(&zero_mmc) == -1) { 
+		goto READ_RETRY;
+	}
+
 	memcpy(data,zero_mmc.data_buf, count*mmc_block_size);
 	flush_dcache_all();
-
-#else
-READ_RETRY:
-
-	while(mmc_bread(&zero_mmc,block_index,count,(void *)zero_mmc.data_buf)==0 ) {
-				retry_count++;
-				
-				if ( retry_count >=10 )  {
-					put_raw_str("RETRY ERROR Count Limit Over\n");
-					return -1;
-		
-				}
-				while ( dwmci_init_by_retry(&zero_mmc) ==  -1 ) {
-					reset_retry_count++;
-					put_raw_str ("reset_retry\n");
-					if ( reset_retry_count >=10 )  {
-						put_raw_str ("reset_retry counter over \n");
-						return -1;
-
-					}
-					delay(100);
-				}
-			}
-
-	if ( dma_read_dirty(&zero_mmc)   ==  -1 ) { goto READ_RETRY; }
-
-	//mmc_bread(&zero_mmc, block_index, count, zero_mmc.data_buf);
-	memcpy(data, zero_mmc.data_buf, count*mmc_block_size);
-
-	start = (unsigned int)data;
-	v7_dma_flush_range(start, start + PAGE_SIZE);
-#endif
-#endif
-
-READ_RETRY:
-
-	while(mmc_bread(&zero_mmc,block_index,count,(void *)zero_mmc.data_buf)==0 ) {
-				retry_count++;
-			
-				if ( retry_count >=10 )  {
-					put_raw_str("RETRY ERROR Count Limit Over\n");
-					return -1;
-		
-				}
-				while ( dwmci_init_by_retry(&zero_mmc) ==  -1 ) {
-					reset_retry_count++;
-					put_raw_str ("reset_retry\n");
-					if ( reset_retry_count >=10 )  {
-						put_raw_str ("reset_retry counter over \n");
-						return -1;
-	
-					}
-					delay(100);
-				}
-			}
-	
-		if ( dma_read_dirty(&zero_mmc)	 ==  -1 ) { goto READ_RETRY; }
-		memcpy(data,zero_mmc.data_buf, count*mmc_block_size);
-		
-#ifdef NAL_PRE_LOAD
-	flush_dcache_all();
-#else
-	start = (unsigned int)data;
-	v7_dma_flush_range(start, start + PAGE_SIZE);
-#endif
 	return count;	
 }
+#else
+#include <dma_api.h>
+static int mmc_read_block_4k_nalload( u32 mem_page,  u8 *page_buf, unsigned int paddr)
+{
+	u32 count;
+	u32 block_index;
+	u8	*data;
+	u32 start;
+	u32 retry_count=0;
+	u32 reset_retry_count=0;
+	block_index 	= mem_index_to_mmc_phys(mem_page);;
+	data		= page_buf;
+	count		= PAGE_SIZE/mmc_block_size;
 
+READ_RETRY:
+
+#if 1
+	while (mmc_bread(&zero_mmc,block_index,count,(void *)zero_mmc.data_buf) == 0) {
+#else
+	while (mmc_bread(&zero_mmc,block_index,count,(void *)data) == 0) {
+#endif
+		retry_count++;
+
+		if ( retry_count >=10 ) {
+			put_raw_str("RETRY ERROR Count Limit Over\n");
+			return -1;
+		}
+
+		while ( dwmci_init_by_retry(&zero_mmc) ==  -1 ) {
+			reset_retry_count++;
+			put_raw_str ("reset_retry\n");
+			if ( reset_retry_count >=10 ) {
+				put_raw_str ("reset_retry counter over \n");
+				return -1;
+			}
+			delay(100);
+		}
+	}
+
+	if (dma_read_dirty(&zero_mmc) == -1) { 
+		goto READ_RETRY;
+	}
+
+	memcpy(data,zero_mmc.data_buf, count*mmc_block_size);
+	start = (unsigned int)data;
+//	//v7_dma_inv_range(start, start + PAGE_SIZE, 0, 0);
+//	v7_inv_range(start, start + PAGE_SIZE, 0, 0);
+
+	v7_dma_flush_range(start, start + PAGE_SIZE, 0, 0);
+
+	return count;	
+}
+#endif
+static int mmc_read_block_4k( u32 mem_page,  u8 *page_buf, unsigned int paddr)
+{
+#ifdef NAL_PRE_LOAD
+	mmc_read_block_4k_preload(mem_page, page_buf, paddr);
+#else
+	mmc_read_block_4k_nalload(mem_page, page_buf, paddr);
+#endif
+}
 
 
 #if 0
@@ -1966,11 +1955,11 @@ void mem_storage_block_4k(u32 mem_page_offset, u8 *mem_buf)
 
 #ifndef NAL_PRE_LOAD
 	start = (unsigned int)mem_buf;
-	v7_dma_flush_range(start, start + PAGE_SIZE);
+	v7_dma_flush_range(start, start + PAGE_SIZE, 0, 0);
 #endif
  }
 #endif
-void nalcode_stroage_read_4k_page( u32 mem_page_offset, u8 *mem_buf, void *vaddr )
+void nalcode_stroage_read_4k_page( u32 mem_page_offset, u8 *mem_buf, void *vaddr , unsigned int paddr)
 {
 #if defined(DEBUG_MEM_STORAGE) && !defined(NAL_PRE_LOAD)
 //#ifndef NAL_PRE_LOAD
@@ -1978,7 +1967,7 @@ void nalcode_stroage_read_4k_page( u32 mem_page_offset, u8 *mem_buf, void *vaddr
 #else
 		__nalcode_stroage_access_begin();
 		{
-			mmc_read_block_4k(mem_page_offset,mem_buf);
+			mmc_read_block_4k(mem_page_offset,mem_buf, paddr);
 			//put_raw_str( "*\n");
 			
 		}

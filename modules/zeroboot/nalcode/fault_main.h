@@ -18,6 +18,11 @@ struct nal_smp {
 	int				m2n_dram_size;
 	int				m2n_dram_page_max;
 
+	// l2x0 support
+	void			*l2x0_base;
+	u32				l2x0_way_mask;
+	u32				l2x0_size;
+
 	// profile
 	int				prof_fault_count;
 };
@@ -37,6 +42,10 @@ struct nal_smp {
 #define	m2n_dram_size		smp_data->m2n_dram_size
 #define	m2n_dram_page_max	smp_data->m2n_dram_page_max
 
+#define	l2x0_base			smp_data->l2x0_base
+#define	l2x0_way_mask		smp_data->l2x0_way_mask
+#define	l2x0_size			smp_data->l2x0_size
+
 #define	prof_fault_count		smp_data->prof_fault_count
 #endif
 
@@ -53,4 +62,15 @@ static void reentrance_debug_exit(void) {};
 #endif
 
 extern unsigned int get_contextidr(void);
+
+struct fault_info {
+	u32		vaddr;			// virtual address
+	u32		paddr;			// phsical address
+
+	u32		*vpte;			// virtual pte
+	u32		*dpte;			// direct mapped pte
+
+	u32		vpte_val;
+	u32		dpte_val;
+};
 #endif // __FAULT_MAIN_H__

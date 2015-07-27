@@ -220,7 +220,7 @@ void zb_add_platform_manage_area(void)
 
 		if (ret) {
 			NAL_CALL(m2n_set_mark_area_of_preloading, phys_base, PAGE_SIZE, 0);
-			printk("zb add dma memory phys 0x%x\n", phys_base);
+//			printk("zb add dma memory phys 0x%x\n", phys_base);
 		}
 	}
 }

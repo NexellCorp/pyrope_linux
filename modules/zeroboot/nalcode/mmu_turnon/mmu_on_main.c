@@ -40,7 +40,7 @@ extern void nalcode_storage_first_call(void);
 extern void zb_init_dma_list(void);
 extern int zb_add_dma_list(unsigned int blkidx, unsigned int phys);
 extern void zb_request_dma_transfer(void);
-#define	zeroboot_read_4k_page( n, m)	nalcode_stroage_read_4k_page(n, m, (void *)0x0)
+#define	zeroboot_read_4k_page( n, m)	nalcode_stroage_read_4k_page(n, m, (void *)0x0, m)
 
 zbi_t	*zbi = (zbi_t *) ZBI_PADDR;
 
@@ -713,73 +713,6 @@ all_tbl_clean:                                                          			\n\
 			    mcr    p15, 0, r0, c8, c7, 0         @ invalidate I + D TLBs        \n\
 																					\n\
 				mov	pc,lr                   										\n\
-");
-#endif
-
-#ifdef ARCH_V7
-void v7_flush_dcache_all( void );
-asm("   	            					                            			\n\
-.align  5									                            			\n\
-.text                                                                   			\n\
-.global v7_flush_dcache_all			                                                \n\
-v7_flush_dcache_all:                                                       			\n\
-				dmb                 @ ensure ordering with previous memory accesses \n\
-				mrc p15, 1, r0, c0, c0, 1       @ read clidr						\n\
-				ands    r3, r0, #0x7000000      @ extract loc from clidr			\n\
-				mov r3, r3, lsr #23         @ left align loc bit field				\n\
-				beq finished            @ if loc is 0, then no need to clean		\n\
-				mov r10, #0             @ start clean at cache level 0				\n\
-loop1:																				\n\
-				add r2, r10, r10, lsr #1        @ work out 3x current cache level	\n\
-				mov r1, r0, lsr r2          @ extract cache type bits from clidr	\n\
-				and r1, r1, #7          @ mask of the bits for current cache only	\n\
-				cmp r1, #2              @ see what cache we have at this level		\n\
-				blt skip                @ skip if no cache, or just i-cache			\n\
-				mcr p15, 2, r10, c0, c0, 0      @ select current cache level in cssr	\n\
-				isb                 @ isb to sych the new cssr&csidr				\n\
-				mrc p15, 1, r1, c0, c0, 0       @ read the new csidr				\n\
-				and r2, r1, #7          @ extract the length of the cache lines		\n\
-				add r2, r2, #4          @ add 4 (line length offset)				\n\
-				ldr r4, =0x3ff														\n\
-				ands    r4, r4, r1, lsr #3      @ find maximum number on the way size	\n\
-				clz r5, r4              @ find bit position of way size increment	\n\
-				ldr r7, =0x7fff														\n\
-				ands    r7, r7, r1, lsr #13     @ extract max number of the index size	\n\
-loop2:																				\n\
-				mov r9, r4              @ create working copy of max way size		\n\
-loop3:																				\n\
-				orr r11, r10, r9, lsl r5        @ factor way and cache number into r11	\n\
-				orr r11, r11, r7, lsl r2        @ factor index number into r11		\n\
-				mcr p15, 0, r11, c7, c14, 2     @ clean & invalidate by set/way		\n\
-				subs    r9, r9, #1          @ decrement the way						\n\
-				bge loop3                                                           \n\
-				subs    r7, r7, #1          @ decrement the index                   \n\
-				bge loop2                                                           \n\
-skip:                                                                               \n\
-				add r10, r10, #2            @ increment cache number                \n\
-				cmp r3, r10                                                         \n\
-				bgt loop1                                                           \n\
-finished:                                                                           \n\
-				mov r10, #0             @ swith back to cache level 0				\n\
-				mcr p15, 2, r10, c0, c0, 0      @ select current cache level in cssr\n\
-				dsb																	\n\
-				isb																	\n\
-				mov pc, lr															\n\
-");
-
-void all_tbl_clean( void );
-asm("   	            					                            			\n\
-											                            			\n\
-.align  5									                            			\n\
-.text                                                                   			\n\
-.global all_tbl_clean                                                  				\n\
-all_tbl_clean:                                                          			\n\
-				stmfd   sp!, {r4-r5, r7, r9-r11, lr}                                \n\
-				bl  v7_flush_dcache_all                                             \n\
-				mov r0, #0                                                          \n\
-				mcr p15, 0, r0, c7, c5, 0       @ I+BTB cache invalidate            \n\
-				ldmfd   sp!, {r4-r5, r7, r9-r11, lr}                                \n\
-				mov pc, lr 															\n\
 ");
 #endif
 

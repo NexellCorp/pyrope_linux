@@ -145,6 +145,11 @@ C_OPTION	+= -DCONFIG_SMP
 ASM_OPTION	+= -DCONFIG_SMP
 endif
 
+ifeq ($(CONFIG_CACHE_L2X0),y)
+C_OPTION	+= -DCONFIG_CACHE_L2X0
+ASM_OPTION	+= -DCONFIG_CACHE_L2X0
+endif
+
 #################################################################
 # build only debugging version
 #################################################################

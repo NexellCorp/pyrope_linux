@@ -147,6 +147,11 @@ typedef struct
 			u32			cpu_nocache;
 			u32			cpu_nr;
 
+			// l2x0 support
+			u32			zb_l2x0_base;
+			u32			zb_l2x0_way_mask;
+			u32			zb_l2x0_size;
+
 			// nalcode used
 			u32			nal_reserv[16];
 

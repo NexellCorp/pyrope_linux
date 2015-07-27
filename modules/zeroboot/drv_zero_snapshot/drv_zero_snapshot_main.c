@@ -716,25 +716,18 @@ int zb_snapshot(unsigned long opt)
 	dram_size = zb_get_exist_npage() * PAGE_SIZE;
 	printk( "\nNow, zero boot start to snapshot. zb_snapshot() = %p high_memory = %08X\n", zb_snapshot, (u32)high_memory );
 	printk( ">>> PAGE_OFFSET = %08lX, PAGE_SIZE = %08lX\n", PAGE_OFFSET, PAGE_SIZE );
+printk(" raw_smp_processor_id %d\n", raw_smp_processor_id());
 
 	zblk_probe();
 	zblk_setup_first();	
-
 	zb_nalcode_init();
-
-	
-
-
 	zbi_set_zblk_io( zblk_get_io_vaddr() );
 
 	// m2n init
 	zb_display_memory_info( PHYS_OFFSET, dram_size);
 	printk("Func: %s, Line: %d...\n", __func__, __LINE__ );
 	m2n_setup(dram_size);
-//OK
 	printk("Func: %s, Line: %d...\n", __func__, __LINE__ );
-
-	
 
 
 	// walk around used memory & add to m2n
@@ -743,11 +736,7 @@ int zb_snapshot(unsigned long opt)
 
 	zb_add();											// 필수 항목에 대한 정보를 추가한다.
 	printk("Func: %s, Line: %d...\n", __func__, __LINE__ );
-
 	zb_save_cpu_resume();
-
-	
-//OK
 
 	// NALCODE Valid info
 	printk(">> dependant core ARMv4, ARMv6, ARMv7 ...\n" );
@@ -758,19 +747,13 @@ int zb_snapshot(unsigned long opt)
 	// analyze data to zbi
 	zbi_write_info_of_bootcopy_to_zbi();				// 분석된 정보를 이용하여 zbi 정보를 만든다.
 
-
-//OK
-
 	// Virtual index 를 block 저장위치를 저장한다.
 	zbi_build_block_page();								// ZBI 의 데이터가 저장될 block PAGE 를 계산한다.
 
 	zbi_build_block_page_for_m2n_data();
 														// 블록 디바이스를 쓸수 있는 상태로 준비한다.
-
 														// NAND 의 경우 모든 파티션을 모두 지운다.
-	
- 	if (1)
-	{
+ 	if (1) {
  		printk( "<*** SNAPSHOT SAVE FLOW 1 ***>\n" );
 
 		/* set function & value for operation */
@@ -797,9 +780,6 @@ int zb_snapshot(unsigned long opt)
 		/* save step 3 */
 		zbi_save_header		();							// ZBI 의 헤더를 block에 저장한다.
 		printk( "snapshot save header end\n" );
-
-		
-
 
 		zbi_display();									// ZBI 의 정보를 보여준다.
  

@@ -31,7 +31,7 @@ make clean $1 || exit $?
 
 KDIR=$SDK_DIR/kernel-3.4.39-nxp4418 \
 MODULES_DIR=$PWD \
-CP_DIR=$SDK_DIR/out \
+CP_DIR=$SDK_DIR/hardware/samsung_slsi/slsiap/prebuilt/modules/ \
 K_PHYS_OFFSET=0x40000000 \
 K_UART_VIRT=0xf00a1000 \
 K_UART_PHYS=0xc00a1000 \

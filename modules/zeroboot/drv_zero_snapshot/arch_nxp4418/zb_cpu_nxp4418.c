@@ -96,6 +96,10 @@ static struct zb_reserved_mem cpu_rev_mem[] = {
 #ifdef CONFIG_FALINUX_ZEROBOOT_MEM_STORAGE
 	{ .base = 0x40000000 + MEM_STORAGE_BASE , .size = ZB_MEM_BLK_SIZE},	// mem block
 #endif
+	{
+		.base = 0x40000000 + 0x0D000000, 
+		.size = SZ_16M,
+	},	// u-boot area
 	{ .base = RESERVED_MEM_END_BASE, .size = 0 }
 };
 

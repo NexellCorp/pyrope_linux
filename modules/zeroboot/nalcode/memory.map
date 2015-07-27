@@ -9,315 +9,317 @@ Linker script and memory map
                 0x0000000080088000                . = 0x80088000
                 0x0000000080088000                . = ALIGN (0x4)
 
-.text           0x0000000080088000     0x497c
+.text           0x0000000080088000     0x4d1c
  *(.text)
- .text          0x0000000080088000      0x480 fault_entry.o
+ .text          0x0000000080088000      0x4c0 fault_entry.o
                 0x0000000080088000                _fault_entry
                 0x0000000080088014                nalcode_func_entry
-                0x0000000080088190                get_fsr
-                0x0000000080088198                get_far_i
-                0x00000000800881a0                get_far_d
-                0x00000000800881b4                save_lr
-                0x0000000080088220                v7_flush_kern_cache_all
-                0x0000000080088240                v7_coherent_kern_range
-                0x00000000800882c0                v7_dma_clean_range
-                0x0000000080088300                v7_inv_range
-                0x0000000080088340                v7_dma_inv_range
-                0x00000000800883a0                v7_dma_flush_range
-                0x00000000800883e0                v7_flush_icache_all
-                0x0000000080088400                v7_imb
-                0x0000000080088420                lock_mutex
-                0x0000000080088460                unlock_mutex
- .text          0x0000000080088480      0x3d0 lib1funcs.o
-                0x0000000080088480                __udivsi3
-                0x0000000080088480                __aeabi_uidiv
-                0x0000000080088568                __umodsi3
-                0x0000000080088624                __aeabi_idiv
-                0x0000000080088624                __divsi3
-                0x000000008008873c                __modsi3
-                0x0000000080088810                __aeabi_uidivmod
-                0x0000000080088828                __aeabi_idivmod
- *fill*         0x0000000080088850       0x10 
- .text          0x0000000080088860      0xa60 fault_main.o
-                0x0000000080088860                v7_flush_dcache_all
-                0x0000000080088900                reset_pte
-                0x0000000080088920                mmu_get_ttbc
-                0x0000000080088940                mmu_get_ttb0_base
-                0x0000000080088960                mmu_get_ttb1_base
-                0x0000000080088980                get_mpdir
-                0x00000000800889a0                get_thread_base
-                0x00000000800889b8                nal_debug_set
-                0x00000000800889e8                nal_m2n_get_release_info
-                0x00000000800889f0                nal_m2n_blk_test_function
-                0x00000000800889f4                nal_m2n_set_debug_checksum
-                0x0000000080088a00                nal_m2n_get_block_phys
-                0x0000000080088a08                nal_m2n_get_block_offset
-                0x0000000080088a10                nal_m2n_build_block_page
-                0x0000000080088a18                nal_m2n_mark_fault
-                0x0000000080088a24                nal_m2n_set_mark_area_of_work
-                0x0000000080088a30                nal_m2n_set_mark_boot_copy_area_of_video
-                0x0000000080088a3c                nal_m2n_set_mark_boot_copy_area_of_vector
-                0x0000000080088a48                nal_m2n_set_mark_boot_copy_area_of_nalcode
-                0x0000000080088a54                nal_m2n_set_page_value
-                0x0000000080088a60                nal_m2n_get_item_boot_copy
-                0x0000000080088a68                nal_m2n_set_mark_boot_copy_area_of_mmu_l2
-                0x0000000080088a74                nal_m2n_set_mark_boot_copy_area_of_mmu_l1
-                0x0000000080088a80                nal_m2n_set_mark_area_of_preloading
+                0x00000000800881a8                get_fsr_i
+                0x00000000800881b0                get_fsr_d
+                0x00000000800881b8                get_far_i
+                0x00000000800881c0                get_far_d
+                0x00000000800881c8                get_cpsr
+                0x00000000800881dc                save_lr
+                0x0000000080088240                v7_flush_kern_cache_all
+                0x0000000080088260                v7_coherent_kern_range
+                0x00000000800882e0                v7_dma_clean_range
+                0x0000000080088320                v7_inv_range
+                0x0000000080088360                v7_dma_inv_range
+                0x00000000800883c0                v7_dma_flush_range
+                0x0000000080088400                v7_flush_icache_all
+                0x0000000080088420                v7_imb
+                0x0000000080088440                lock_mutex
+                0x0000000080088480                unlock_mutex
+                0x00000000800884a0                get_contextidr
+ .text          0x00000000800884c0      0x3d0 lib1funcs.o
+                0x00000000800884c0                __udivsi3
+                0x00000000800884c0                __aeabi_uidiv
+                0x00000000800885a8                __umodsi3
+                0x0000000080088664                __aeabi_idiv
+                0x0000000080088664                __divsi3
+                0x000000008008877c                __modsi3
+                0x0000000080088850                __aeabi_uidivmod
+                0x0000000080088868                __aeabi_idivmod
+ *fill*         0x0000000080088890       0x10 
+ .text          0x00000000800888a0      0xd40 fault_main.o
+                0x00000000800888a0                v7_flush_dcache_all
+                0x0000000080088940                mmu_get_ttbc
+                0x0000000080088960                mmu_get_ttb0_base
+                0x0000000080088980                mmu_get_ttb1_base
+                0x00000000800889a0                get_mpdir
+                0x00000000800889ac                nal_debug_set
+                0x00000000800889d8                nal_m2n_get_release_info
+                0x00000000800889e0                nal_m2n_blk_test_function
+                0x00000000800889e4                nal_m2n_set_dev_status
+                0x00000000800889ec                nal_m2n_wait_lock
+                0x0000000080088a28                nal_m2n_open
+                0x0000000080088a2c                nal_m2n_set_count
+                0x0000000080088a34                nal_m2n_get_dev_status
+                0x0000000080088a38                nal_m2n_set_dram_size
+                0x0000000080088a40                nal_m2n_get_count
+                0x0000000080088a44                nal_m2n_get_size
+                0x0000000080088a48                nal_m2n_get_info
+                0x0000000080088a50                nal_m2n_set_mem
+                0x0000000080088a5c                nal_m2n_get_mem
+                0x0000000080088a60                nal_m2n_clean
+                0x0000000080088a64                nal_m2n_add
+                0x0000000080088a70                nal_disp_m2n_list
+                0x0000000080088a74                nal_disp_zba_info
+                0x0000000080088a78                nal___m2n_set_nand_page
+                0x0000000080088a84                nal___m2n_get_nand_page
                 0x0000000080088a8c                nal_m2n_set_mark_protect_bootloader_manage_area
-                0x0000000080088a98                nal___m2n_get_nand_page
-                0x0000000080088aa0                nal___m2n_set_nand_page
-                0x0000000080088aac                nal_disp_zba_info
-                0x0000000080088ab0                nal_disp_m2n_list
-                0x0000000080088ab4                nal_m2n_add
-                0x0000000080088ac0                nal_m2n_clean
-                0x0000000080088ac4                nal_m2n_get_mem
-                0x0000000080088ac8                nal_m2n_set_mem
-                0x0000000080088ad4                nal_m2n_get_info
-                0x0000000080088adc                nal_m2n_get_size
-                0x0000000080088ae0                nal_m2n_get_count
-                0x0000000080088ae4                nal_m2n_set_dram_size
-                0x0000000080088aec                nal_m2n_get_dev_status
-                0x0000000080088af0                nal_m2n_set_dev_status
-                0x0000000080088af8                nal_m2n_set_count
-                0x0000000080088b00                nal_m2n_open
-                0x0000000080088b04                nal_read_mem_from_paddr
-                0x0000000080088b34                nal_m2n_wait_lock
-                0x0000000080088b6c                nal_set_smp_data
-                0x0000000080088b94                is_debug_on
-                0x0000000080088ba8                get_mmu_base
-                0x0000000080088bdc                nalcode_first_call_func
-                0x0000000080088c44                reset_kernel_pte
-                0x0000000080088cb0                reset_kernel_pte1
-                0x0000000080088ccc                restore_action_from_storage
-                0x0000000080088e04                restore_zero_fault_page_info_mark
-                0x0000000080088ea8                reload_code_data
-                0x0000000080088f70                dump_mmu
-                0x0000000080089064                _reentrance_debug_enter
-                0x0000000080089158                _reentrance_debug_exit
-                0x0000000080089180                fault_main
-                0x000000008008929c                nal_m2n_get_max_page_offset
- .text          0x00000000800892c0      0x1d0 uart.o
-                0x00000000800892c0                nal_delay
-                0x00000000800892c4                uart_init
-                0x00000000800892c8                uart_putc
-                0x00000000800892fc                uart_puts
-                0x0000000080089378                uart_read_ok
-                0x000000008008938c                uart_getc
-                0x000000008008939c                uart_put_hex_nibble
-                0x0000000080089410                uart_put_hex_byte
-                0x000000008008942c                uart_put_hex
-                0x0000000080089464                uart_put_hex_raw
- .text          0x0000000080089490      0x934 string.o
-                0x0000000080089490                strnicmp
-                0x0000000080089514                strcpy
-                0x000000008008952c                strncpy
-                0x0000000080089550                strcat
-                0x000000008008958c                strncat
-                0x0000000080089604                strcmp
-                0x0000000080089634                strncmp
-                0x00000000800896b4                strchr
-                0x0000000080089700                strlen
-                0x0000000080089734                strrchr
-                0x0000000080089788                strnlen
-                0x00000000800897dc                strspn
-                0x0000000080089848                strpbrk
-                0x00000000800898a8                strtok
-                0x0000000080089960                strsep
-                0x00000000800899e4                memset
-                0x0000000080089a04                bcopy
-                0x0000000080089a38                memcpy
-                0x0000000080089a58                memmove
-                0x0000000080089ac0                memcmp
-                0x0000000080089b1c                memscan
-                0x0000000080089b58                strstr
-                0x0000000080089c18                memchr
-                0x0000000080089c48                upper_str
-                0x0000000080089c84                lower_str
-                0x0000000080089cc0                strtoul
- .text          0x0000000080089dc4       0xac printf.o
-                0x0000000080089dc4                putc
-                0x0000000080089dfc                puts
-                0x0000000080089e2c                printf
- .text          0x0000000080089e70     0x1024 nal_m2n.o
-                0x0000000080089e70                nal_line
-                0x0000000080089e78                m2n_open
-                0x0000000080089ea4                m2n_close
-                0x0000000080089ec4                disp_m2n_list
-                0x0000000080089f48                disp_zba_info
-                0x000000008008a14c                m2n_set_count
-                0x000000008008a16c                _m2n_set_dev_state
-                0x000000008008a180                _m2n_get_dev_state
-                0x000000008008a194                m2n_set_dram_size
-                0x000000008008a1c0                m2n_get_count
-                0x000000008008a1d4                m2n_get_size
-                0x000000008008a1dc                m2n_set_mem
-                0x000000008008a1fc                m2n_get_mem
-                0x000000008008a210                m2n_clean
-                0x000000008008a244                m2n_add
-                0x000000008008a2fc                m2n_find
-                0x000000008008a378                m2n_get_info
-                0x000000008008a38c                m2n_get_item_boot_copy
-                0x000000008008a3c0                m2n_set_area
-                0x000000008008a3f0                m2n_get_area
-                0x000000008008a408                m2n_set_boot_copy
-                0x000000008008a42c                m2n_clear_boot_copy
-                0x000000008008a450                m2n_is_boot_copy
-                0x000000008008a468                m2n_set_save_nand
-                0x000000008008a48c                m2n_clear_save_nand
-                0x000000008008a4b0                m2n_is_save_nand
-                0x000000008008a4c8                __m2n_set_nand_page
-                0x000000008008a4f0                m2n_build_block_page
-                0x000000008008a554                m2n_set_nand_page
-                0x000000008008a588                __m2n_get_nand_page
-                0x000000008008a59c                m2n_get_nand_page_clear
-                0x000000008008a5c8                m2n_get_nand_page
-                0x000000008008a5e4                m2n_set_l2_hw
-                0x000000008008a60c                m2n_clear_l2_hw
-                0x000000008008a634                m2n_get_l2_hw
-                0x000000008008a650                m2n_align_addr
-                0x000000008008a65c                m2n_get_page_count
-                0x000000008008a680                m2n_set_mark_protect_bootloader_manage_area
-                0x000000008008a750                m2n_set_mark_boot_copy_area_of_mmu_l1
-                0x000000008008a820                m2n_set_mark_boot_copy_area_of_mmu_l2
-                0x000000008008a938                m2n_set_mark_boot_copy_area_of_nalcode
-                0x000000008008aa44                m2n_set_mark_boot_copy_area_of_vector
-                0x000000008008ab14                m2n_set_mark_boot_copy_area_of_video
-                0x000000008008abb8                m2n_set_mark_area_of_work
-                0x000000008008ac5c                m2n_set_mark_area_of_preloading
-                0x000000008008ad00                m2n_set_page_value
-                0x000000008008ad58                m2n_mark_fault
-                0x000000008008ae1c                m2n_get_block_offset
-                0x000000008008ae40                m2n_get_block_phys
-                0x000000008008ae58                m2n_set_debug_checksum
- .text          0x000000008008ae94      0x800 vsprintf.o
-                0x000000008008b158                vsprintf
-                0x000000008008b674                sprintf
- .text          0x000000008008b694     0x12e8 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot/drv_storage/arch_nxp/nalcode_mmc_storage_dw.o
-                0x000000008008bdc0                v7_outer_cache_flush_all
-                0x000000008008bdc4                flush_dcache_all
-                0x000000008008bdc8                v7_outer_cache_inval_range
-                0x000000008008bdcc                v7_outer_cache_flush_range
-                0x000000008008bdd0                v7_outer_cache_inval_all
-                0x000000008008bdd4                invalidate_dcache_range
-                0x000000008008bdfc                flush_dcache_range
-                0x000000008008be3c                invalidate_dcache_all
-                0x000000008008bef4                dummy_break0
-                0x000000008008bef8                dummy_break1
-                0x000000008008befc                dummy_break2
-                0x000000008008bf08                mmc_set_clock
-                0x000000008008bf10                mmc_send_op_cond
-                0x000000008008bfe4                mmc_complete_op_cond
-                0x000000008008c080                mmc_start_init
-                0x000000008008c0bc                mmc_card_bringup
-                0x000000008008c368                dma_read_dirty
-                0x000000008008c3d0                get_zb_mmc_info
-                0x000000008008c3e8                nalcode_storage_first_call
-                0x000000008008c504                mem_storage_block_4k
-                0x000000008008c548                nalcode_stroage_read_4k_page
-                0x000000008008c978                nalcode_stroage_test_function
+                0x0000000080088a98                nal_m2n_set_mark_area_of_preloading
+                0x0000000080088aa4                nal_m2n_set_mark_boot_copy_area_of_mmu_l1
+                0x0000000080088ab0                nal_m2n_set_mark_boot_copy_area_of_mmu_l2
+                0x0000000080088abc                nal_m2n_get_item_boot_copy
+                0x0000000080088ac4                nal_m2n_set_page_value
+                0x0000000080088ad0                nal_m2n_set_mark_boot_copy_area_of_nalcode
+                0x0000000080088adc                nal_m2n_set_mark_boot_copy_area_of_vector
+                0x0000000080088ae8                nal_m2n_set_mark_boot_copy_area_of_video
+                0x0000000080088af4                nal_m2n_set_mark_area_of_work
+                0x0000000080088b00                nal_m2n_mark_fault
+                0x0000000080088b0c                nal_m2n_build_block_page
+                0x0000000080088b14                nal_m2n_get_block_offset
+                0x0000000080088b1c                nal_m2n_get_block_phys
+                0x0000000080088b24                nal_m2n_set_debug_checksum
+                0x0000000080088b30                nal_set_smp_data
+                0x0000000080088b58                is_debug_on
+                0x0000000080088b6c                get_mmu_base
+                0x0000000080088bf0                nalcode_first_call_func
+                0x0000000080088c64                reset_kernel_pte1
+                0x0000000080088ca4                reset_kernel_pte
+                0x0000000080088d10                restore_action_from_storage
+                0x0000000080088ec0                restore_zero_fault_page_info_mark
+                0x0000000080088fbc                reload_code_data
+                0x000000008008907c                dump_mmu
+                0x0000000080089170                _reentrance_debug_enter
+                0x000000008008926c                _reentrance_debug_exit
+                0x0000000080089294                fault_main
+                0x00000000800893ec                restore_set_pte_from_storage
+                0x0000000080089548                nal_read_mem_from_paddr
+                0x00000000800895ac                nal_m2n_get_max_page_offset
+ .text          0x00000000800895e0      0x1e0 uart.o
+                0x00000000800895e0                nal_delay
+                0x00000000800895e4                uart_init
+                0x00000000800895e8                uart_putc
+                0x000000008008961c                uart_puts
+                0x00000000800896a4                uart_read_ok
+                0x00000000800896b8                uart_getc
+                0x00000000800896c8                uart_put_hex_nibble
+                0x0000000080089740                uart_put_hex_byte
+                0x000000008008975c                uart_put_hex
+                0x0000000080089794                uart_put_hex_raw
+ .text          0x00000000800897c0      0x9ec string.o
+                0x00000000800897c0                strnicmp
+                0x0000000080089854                strcpy
+                0x000000008008986c                strncpy
+                0x0000000080089890                strcat
+                0x00000000800898d0                strncat
+                0x0000000080089940                strcmp
+                0x0000000080089974                strncmp
+                0x00000000800899fc                strchr
+                0x0000000080089a48                strlen
+                0x0000000080089a7c                strrchr
+                0x0000000080089adc                strnlen
+                0x0000000080089b44                strspn
+                0x0000000080089bb8                strpbrk
+                0x0000000080089c10                strtok
+                0x0000000080089d30                strsep
+                0x0000000080089dac                memset
+                0x0000000080089dd0                bcopy
+                0x0000000080089e04                memcpy
+                0x0000000080089e28                memmove
+                0x0000000080089e80                memcmp
+                0x0000000080089ef0                memscan
+                0x0000000080089f30                strstr
+                0x0000000080089ffc                memchr
+                0x000000008008a02c                upper_str
+                0x000000008008a068                lower_str
+                0x000000008008a0a4                strtoul
+ .text          0x000000008008a1ac       0xac printf.o
+                0x000000008008a1ac                putc
+                0x000000008008a1d8                puts
+                0x000000008008a204                printf
+ .text          0x000000008008a258      0xfcc nal_m2n.o
+                0x000000008008a258                nal_line
+                0x000000008008a260                m2n_open
+                0x000000008008a28c                m2n_close
+                0x000000008008a2ac                disp_m2n_list
+                0x000000008008a330                disp_zba_info
+                0x000000008008a51c                m2n_set_count
+                0x000000008008a53c                _m2n_set_dev_state
+                0x000000008008a550                _m2n_get_dev_state
+                0x000000008008a564                m2n_set_dram_size
+                0x000000008008a590                m2n_get_count
+                0x000000008008a5a4                m2n_get_size
+                0x000000008008a5ac                m2n_set_mem
+                0x000000008008a5cc                m2n_get_mem
+                0x000000008008a5e0                m2n_clean
+                0x000000008008a614                m2n_add
+                0x000000008008a6d0                m2n_find
+                0x000000008008a74c                m2n_get_info
+                0x000000008008a760                m2n_get_item_boot_copy
+                0x000000008008a794                m2n_set_area
+                0x000000008008a7c4                m2n_get_area
+                0x000000008008a7dc                m2n_set_boot_copy
+                0x000000008008a800                m2n_clear_boot_copy
+                0x000000008008a824                m2n_is_boot_copy
+                0x000000008008a83c                m2n_set_save_nand
+                0x000000008008a860                m2n_clear_save_nand
+                0x000000008008a884                m2n_is_save_nand
+                0x000000008008a89c                __m2n_set_nand_page
+                0x000000008008a8bc                m2n_build_block_page
+                0x000000008008a91c                m2n_set_nand_page
+                0x000000008008a948                __m2n_get_nand_page
+                0x000000008008a958                m2n_get_nand_page_clear
+                0x000000008008a980                m2n_get_nand_page
+                0x000000008008a998                m2n_set_l2_hw
+                0x000000008008a9c0                m2n_clear_l2_hw
+                0x000000008008a9e8                m2n_get_l2_hw
+                0x000000008008aa04                m2n_align_addr
+                0x000000008008aa10                m2n_get_page_count
+                0x000000008008aa2c                m2n_set_mark_protect_bootloader_manage_area
+                0x000000008008aaf4                m2n_set_mark_boot_copy_area_of_mmu_l1
+                0x000000008008abbc                m2n_set_mark_boot_copy_area_of_mmu_l2
+                0x000000008008acd8                m2n_set_mark_boot_copy_area_of_nalcode
+                0x000000008008addc                m2n_set_mark_boot_copy_area_of_vector
+                0x000000008008aea4                m2n_set_mark_boot_copy_area_of_video
+                0x000000008008af40                m2n_set_mark_area_of_work
+                0x000000008008afdc                m2n_set_mark_area_of_preloading
+                0x000000008008b078                m2n_set_page_value
+                0x000000008008b0d0                m2n_mark_fault
+                0x000000008008b1b0                m2n_get_block_offset
+                0x000000008008b1d0                m2n_get_block_phys
+                0x000000008008b1e8                m2n_set_debug_checksum
+ .text          0x000000008008b224      0x810 vsprintf.o
+                0x000000008008b510                vsprintf
+                0x000000008008ba14                sprintf
+ .text          0x000000008008ba34     0x12e8 /home/swpark/disk3/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot/drv_storage/arch_nxp/nalcode_mmc_storage_dw.o
+                0x000000008008c160                v7_outer_cache_flush_all
+                0x000000008008c164                flush_dcache_all
+                0x000000008008c168                v7_outer_cache_inval_range
+                0x000000008008c16c                v7_outer_cache_flush_range
+                0x000000008008c170                v7_outer_cache_inval_all
+                0x000000008008c174                invalidate_dcache_range
+                0x000000008008c19c                flush_dcache_range
+                0x000000008008c1dc                invalidate_dcache_all
+                0x000000008008c294                dummy_break0
+                0x000000008008c298                dummy_break1
+                0x000000008008c29c                dummy_break2
+                0x000000008008c2a8                mmc_set_clock
+                0x000000008008c2b0                mmc_send_op_cond
+                0x000000008008c384                mmc_complete_op_cond
+                0x000000008008c420                mmc_start_init
+                0x000000008008c45c                mmc_card_bringup
+                0x000000008008c708                dma_read_dirty
+                0x000000008008c770                get_zb_mmc_info
+                0x000000008008c788                nalcode_storage_first_call
+                0x000000008008c8a4                mem_storage_block_4k
+                0x000000008008c8e8                nalcode_stroage_read_4k_page
+                0x000000008008cd18                nalcode_stroage_test_function
 
-.glue_7         0x000000008008c97c        0x0
+.glue_7         0x000000008008cd1c        0x0
  .glue_7        0x0000000000000000        0x0 linker stubs
 
-.glue_7t        0x000000008008c97c        0x0
+.glue_7t        0x000000008008cd1c        0x0
  .glue_7t       0x0000000000000000        0x0 linker stubs
 
-.vfp11_veneer   0x000000008008c97c        0x0
+.vfp11_veneer   0x000000008008cd1c        0x0
  .vfp11_veneer  0x0000000000000000        0x0 linker stubs
 
-.v4_bx          0x000000008008c97c        0x0
+.v4_bx          0x000000008008cd1c        0x0
  .v4_bx         0x0000000000000000        0x0 linker stubs
 
-.iplt           0x000000008008c97c        0x0
+.iplt           0x000000008008cd1c        0x0
  .iplt          0x0000000000000000        0x0 fault_entry.o
-                0x000000008008c97c                . = ALIGN (0x4)
+                0x000000008008cd1c                . = ALIGN (0x4)
 
-.rodata         0x000000008008c97c       0xe0
+.rodata         0x000000008008cd1c       0xe0
  *(.rodata)
- .rodata        0x000000008008c97c        0xc fault_main.o
- .rodata        0x000000008008c988       0xd4 nal_m2n.o
+ .rodata        0x000000008008cd1c        0xc fault_main.o
+ .rodata        0x000000008008cd28       0xd4 nal_m2n.o
 
-.alt.smp.init   0x000000008008ca5c       0x40
- .alt.smp.init  0x000000008008ca5c       0x40 fault_entry.o
+.alt.smp.init   0x000000008008cdfc       0x40
+ .alt.smp.init  0x000000008008cdfc       0x40 fault_entry.o
 
-__ex_table      0x000000008008caa0       0x10
-                0x000000008008caa0                PROVIDE (__start___ex_table, .)
- __ex_table     0x000000008008caa0       0x10 fault_entry.o
-                0x000000008008cab0                PROVIDE (__stop___ex_table, .)
+__ex_table      0x000000008008ce40       0x10
+                0x000000008008ce40                PROVIDE (__start___ex_table, .)
+ __ex_table     0x000000008008ce40       0x10 fault_entry.o
+                0x000000008008ce50                PROVIDE (__stop___ex_table, .)
 
-.rodata.str1.4  0x000000008008cab0      0xb9c
+.rodata.str1.4  0x000000008008ce50      0xc2c
  .rodata.str1.4
-                0x000000008008cab0      0x40d fault_main.o
-                                        0x410 (size before relaxing)
+                0x000000008008ce50      0x49d fault_main.o
+                                        0x4a0 (size before relaxing)
  .rodata.str1.4
-                0x0000000000000000      0x40d uart.o
+                0x0000000000000000      0x49d uart.o
                                           0x4 (size before relaxing)
- *fill*         0x000000008008cebd        0x3 
+ *fill*         0x000000008008d2ed        0x3 
  .rodata.str1.4
-                0x000000008008cec0      0x3d9 nal_m2n.o
+                0x000000008008d2f0      0x3d9 nal_m2n.o
                                         0x3dc (size before relaxing)
- *fill*         0x000000008008d299        0x3 
+ *fill*         0x000000008008d6c9        0x3 
  .rodata.str1.4
-                0x000000008008d29c       0x57 vsprintf.o
+                0x000000008008d6cc       0x57 vsprintf.o
                                          0x58 (size before relaxing)
- *fill*         0x000000008008d2f3        0x1 
+ *fill*         0x000000008008d723        0x1 
  .rodata.str1.4
-                0x000000008008d2f4      0x358 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot/drv_storage/arch_nxp/nalcode_mmc_storage_dw.o
+                0x000000008008d724      0x358 /home/swpark/disk3/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot/drv_storage/arch_nxp/nalcode_mmc_storage_dw.o
                                         0x35c (size before relaxing)
 
-.rel.dyn        0x000000008008d64c        0x0
+.rel.dyn        0x000000008008da7c        0x0
  .rel.iplt      0x0000000000000000        0x0 fault_entry.o
-                0x000000008008d64c                . = ALIGN (0x4)
+                0x000000008008da7c                . = ALIGN (0x4)
 
-.data           0x000000008008d64c      0x1ac
+.data           0x000000008008da7c      0x1b4
  *(.data)
- .data          0x000000008008d64c        0x0 fault_entry.o
- .data          0x000000008008d64c        0x0 lib1funcs.o
- .data          0x000000008008d64c       0xa0 fault_main.o
-                0x000000008008d650                zbi
-                0x000000008008d65c                nal_func
- .data          0x000000008008d6ec        0x0 uart.o
- .data          0x000000008008d6ec      0x100 string.o
-                0x000000008008d6ec                _ctype
- .data          0x000000008008d7ec        0x0 printf.o
- .data          0x000000008008d7ec        0x0 nal_m2n.o
- .data          0x000000008008d7ec        0x0 vsprintf.o
- .data          0x000000008008d7ec        0xc /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot/drv_storage/arch_nxp/nalcode_mmc_storage_dw.o
-                0x000000008008d7ec                collision_flag
-                0x000000008008d7f0                dw_mmc_dma_addr_count
-                0x000000008008d7f4                dw_mmc_start_block_index
+ .data          0x000000008008da7c        0x0 fault_entry.o
+ .data          0x000000008008da7c        0x0 lib1funcs.o
+ .data          0x000000008008da7c       0xa8 fault_main.o
+                0x000000008008da80                zbi
+                0x000000008008da94                nal_func
+ .data          0x000000008008db24        0x0 uart.o
+ .data          0x000000008008db24      0x100 string.o
+                0x000000008008db24                _ctype
+ .data          0x000000008008dc24        0x0 printf.o
+ .data          0x000000008008dc24        0x0 nal_m2n.o
+ .data          0x000000008008dc24        0x0 vsprintf.o
+ .data          0x000000008008dc24        0xc /home/swpark/disk3/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot/drv_storage/arch_nxp/nalcode_mmc_storage_dw.o
+                0x000000008008dc24                collision_flag
+                0x000000008008dc28                dw_mmc_dma_addr_count
+                0x000000008008dc2c                dw_mmc_start_block_index
 
-.igot.plt       0x000000008008d7f8        0x0
+.igot.plt       0x000000008008dc30        0x0
  .igot.plt      0x0000000000000000        0x0 fault_entry.o
-                0x000000008008d7f8                . = ALIGN (0x4)
+                0x000000008008dc30                . = ALIGN (0x4)
 
 .got
  *(.got)
-                0x000000008008d7f8                . = ALIGN (0x4)
-                0x000000008008d7f8                _bss_start = .
-                0x000000008008d7f8                . = ALIGN (0x4)
+                0x000000008008dc30                . = ALIGN (0x4)
+                0x000000008008dc30                _bss_start = .
+                0x000000008008dc30                . = ALIGN (0x4)
 
-.bss            0x000000008008d7f8     0x22f8
+.bss            0x000000008008dc30     0x22f8
  *(.bss)
- .bss           0x000000008008d7f8        0x0 fault_entry.o
- .bss           0x000000008008d7f8        0x0 lib1funcs.o
- .bss           0x000000008008d7f8        0x4 fault_main.o
-                0x000000008008d7f8                smp_data
- .bss           0x000000008008d7fc        0x0 uart.o
- .bss           0x000000008008d7fc        0x4 string.o
-                0x000000008008d7fc                ___strtok
- .bss           0x000000008008d800        0x0 printf.o
- .bss           0x000000008008d800        0x0 nal_m2n.o
- .bss           0x000000008008d800        0x0 vsprintf.o
- .bss           0x000000008008d800     0x22f0 /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot/drv_storage/arch_nxp/nalcode_mmc_storage_dw.o
-                0x000000008008d800                mmc_dirtry_check_regs_zero
-                0x000000008008d838                mmc_dirtry_check_regs_cur
-                0x000000008008d870                zero_mmc
-                0x000000008008dab4                zb_mmc
-                0x000000008008dab8                mmc_backup_regs
-                0x000000008008daf0                dw_mmc_dma_addr_list
-                0x000000008008faf0                . = ALIGN (0x4)
-                0x000000008008faf0                _bss_end = .
+ .bss           0x000000008008dc30        0x0 fault_entry.o
+ .bss           0x000000008008dc30        0x0 lib1funcs.o
+ .bss           0x000000008008dc30        0x4 fault_main.o
+                0x000000008008dc30                smp_data
+ .bss           0x000000008008dc34        0x0 uart.o
+ .bss           0x000000008008dc34        0x4 string.o
+                0x000000008008dc34                ___strtok
+ .bss           0x000000008008dc38        0x0 printf.o
+ .bss           0x000000008008dc38        0x0 nal_m2n.o
+ .bss           0x000000008008dc38        0x0 vsprintf.o
+ .bss           0x000000008008dc38     0x22f0 /home/swpark/disk3/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot/drv_storage/arch_nxp/nalcode_mmc_storage_dw.o
+                0x000000008008dc38                mmc_dirtry_check_regs_zero
+                0x000000008008dc70                mmc_dirtry_check_regs_cur
+                0x000000008008dca8                zero_mmc
+                0x000000008008deec                zb_mmc
+                0x000000008008def0                mmc_backup_regs
+                0x000000008008df28                dw_mmc_dma_addr_list
+                0x000000008008ff28                . = ALIGN (0x4)
+                0x000000008008ff28                _bss_end = .
 LOAD fault_entry.o
 LOAD lib1funcs.o
 LOAD fault_main.o
@@ -326,52 +328,36 @@ LOAD string.o
 LOAD printf.o
 LOAD nal_m2n.o
 LOAD vsprintf.o
-LOAD /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot/drv_storage/arch_nxp/nalcode_mmc_storage_dw.o
+LOAD /home/swpark/disk3/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot/drv_storage/arch_nxp/nalcode_mmc_storage_dw.o
 OUTPUT(nalcode.elf32 elf32-littlearm)
 
 .ARM.attributes
                 0x0000000000000000       0x2d
  .ARM.attributes
-                0x0000000000000000       0x18 fault_entry.o
+                0x0000000000000000       0x1f fault_entry.o
  .ARM.attributes
-                0x0000000000000018       0x16 lib1funcs.o
+                0x000000000000001f       0x1f lib1funcs.o
  .ARM.attributes
-                0x000000000000002e       0x2f fault_main.o
+                0x000000000000003e       0x2f fault_main.o
  .ARM.attributes
-                0x000000000000005d       0x2f uart.o
+                0x000000000000006d       0x2f uart.o
  .ARM.attributes
-                0x000000000000008c       0x2f string.o
+                0x000000000000009c       0x2f string.o
  .ARM.attributes
-                0x00000000000000bb       0x2f printf.o
+                0x00000000000000cb       0x2f printf.o
  .ARM.attributes
-                0x00000000000000ea       0x2f nal_m2n.o
+                0x00000000000000fa       0x2f nal_m2n.o
  .ARM.attributes
-                0x0000000000000119       0x2f vsprintf.o
+                0x0000000000000129       0x2f vsprintf.o
  .ARM.attributes
-                0x0000000000000148       0x2f /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot/drv_storage/arch_nxp/nalcode_mmc_storage_dw.o
+                0x0000000000000158       0x2f /home/swpark/disk3/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot/drv_storage/arch_nxp/nalcode_mmc_storage_dw.o
 
-.comment        0x0000000000000000       0x6f
- .comment       0x0000000000000000       0x60 fault_main.o
-                                         0x61 (size before relaxing)
- .comment       0x0000000000000000       0x61 uart.o
- .comment       0x0000000000000000       0x61 string.o
- .comment       0x0000000000000000       0x61 printf.o
- .comment       0x0000000000000000       0x61 nal_m2n.o
- .comment       0x0000000000000000       0x61 vsprintf.o
- .comment       0x0000000000000060        0xf /home/falinux/work/git/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot/drv_storage/arch_nxp/nalcode_mmc_storage_dw.o
+.comment        0x0000000000000000        0xf
+ .comment       0x0000000000000000        0xf fault_main.o
                                          0x10 (size before relaxing)
-
-.note.GNU-stack
-                0x0000000000000000        0x0
- .note.GNU-stack
-                0x0000000000000000        0x0 fault_main.o
- .note.GNU-stack
-                0x0000000000000000        0x0 uart.o
- .note.GNU-stack
-                0x0000000000000000        0x0 string.o
- .note.GNU-stack
-                0x0000000000000000        0x0 printf.o
- .note.GNU-stack
-                0x0000000000000000        0x0 nal_m2n.o
- .note.GNU-stack
-                0x0000000000000000        0x0 vsprintf.o
+ .comment       0x0000000000000000       0x10 uart.o
+ .comment       0x0000000000000000       0x10 string.o
+ .comment       0x0000000000000000       0x10 printf.o
+ .comment       0x0000000000000000       0x10 nal_m2n.o
+ .comment       0x0000000000000000       0x10 vsprintf.o
+ .comment       0x0000000000000000       0x10 /home/swpark/disk3/lollipop-avn-4418/linux/platform/s5p4418/modules/zeroboot/drv_storage/arch_nxp/nalcode_mmc_storage_dw.o

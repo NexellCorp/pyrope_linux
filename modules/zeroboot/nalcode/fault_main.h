@@ -7,7 +7,8 @@ struct nal_smp {
 	u32 nalcode_reentry_count[8];
 	u32 nalcode_reentry_old; // 1: fault,  2: kernel
 	u32	nalcode_debug_state;
-	u32	mutex_lock;
+	u32	nal_lock;
+	u32	nalcode_last_pte[4];
 	u32	nal_access_state;
 
 	int   			m2n_max;
@@ -17,13 +18,16 @@ struct nal_smp {
 	int				m2n_dram_size;
 	int				m2n_dram_page_max;
 
+	// profile
+	int				prof_fault_count;
 };
 
 #define	nalcode_first_call		smp_data->nalcode_first_call
 #define	nalcode_reentry_count	smp_data->nalcode_reentry_count
 #define	nalcode_reentry_old		smp_data->nalcode_reentry_old
 #define	nalcode_debug_state		smp_data->nalcode_debug_state
-#define	mutex_lock				smp_data->mutex_lock
+#define	nal_lock				smp_data->nal_lock
+#define	nalcode_last_pte		smp_data->nalcode_last_pte
 #define	nal_access_state		smp_data->nal_access_state
 
 #define	m2n_max				smp_data->m2n_max
@@ -32,6 +36,8 @@ struct nal_smp {
 #define	m2n_datas			smp_data->m2n_datas
 #define	m2n_dram_size		smp_data->m2n_dram_size
 #define	m2n_dram_page_max	smp_data->m2n_dram_page_max
+
+#define	prof_fault_count		smp_data->prof_fault_count
 #endif
 
 extern struct nal_smp *smp_data;
@@ -46,4 +52,5 @@ static void reentrance_debug_enter(u32 mode, u32 save_lr) {};
 static void reentrance_debug_exit(void) {};
 #endif
 
+extern unsigned int get_contextidr(void);
 #endif // __FAULT_MAIN_H__

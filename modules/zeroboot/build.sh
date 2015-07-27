@@ -1,4 +1,6 @@
 #!/bin/sh
+#NALCODE_SOURCE=y \
+#
 
 ARCH=arm \
 CROSS_COMPILE=arm-eabi- \
@@ -27,7 +29,6 @@ DRV_STORAGE_SRC=mmc \
 NAL_STORAGE_SRC=$PWD/drv_storage/arch_nxp/ \
 NAL_STORAGE_OFFSET=0x50000000 \
 NAL_STORAGE_SIZE=0x10000000 \
-NALCODE_SOURCE=y \
 DEBUG_CHECKSUM=y \
 make $1 || exit $?
 

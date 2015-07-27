@@ -108,8 +108,8 @@ ifeq ($(CONFIG_CPU_V6),y)
 C_OPTION	+= -DARCH_V6
 endif
 ifeq ($(CONFIG_CPU_V7),y)
-C_OPTION	+= -march=armv7-a -DARCH_V7 -mtune=cortex-a9
-ASM_OPTION	+= -DARCH_V7
+C_OPTION	+= -march=armv7-a -DARCH_V7
+ASM_OPTION	+= -march=armv7-a -DARCH_V7
 	ifeq ($(CONFIG_ARCH_OMAP4),y)
 		C_OPTION	+= -DARCH_OMAP4
 	endif
@@ -135,9 +135,9 @@ ifeq ($(DEBUG_FULL_RESTORE),y)
 C_OPTION	+= -DFULL_RESTORE_AT_BOOT
 ASM_OPTION	+= -DFULL_RESTORE_AT_BOOT
 endif
-ifeq ($(DEBUG_MEM_STORAGE),y)
-C_OPTION	+= -DDEBUG_MEM_STORAGE
-ASM_OPTION	+= -DDEBUG_MEM_STORAGE
+
+ifeq ($(BACKUP_L2),y)
+C_OPTION 	+= -DBACKUP_L2
 endif
 
 ifeq ($(CONFIG_SMP),y)

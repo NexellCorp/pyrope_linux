@@ -7,7 +7,7 @@ SECBOOT_SPI=S5P4418_NSIH_V06_spi_800_16x2_1cs_1GB.txt
 DST_NAME1=nsih_svt
 DST_NAME2=nsih_drone
 DST_NAME3=nsih_lepus
-DST_NAME4=nsih_avb_ref
+DST_NAME4=nsih_avn_ref
 
 cp ../../temporary/nsih/"$SECBOOT_SDMMC" ./"$DST_NAME1"_sdmmc.txt
 cp ../../temporary/nsih/"$SECBOOT_SDMMC" ./"$DST_NAME2"_sdmmc.txt

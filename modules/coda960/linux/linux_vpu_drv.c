@@ -506,6 +506,7 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 			if( ret < 0 )
 			{
 				NX_ErrMsg(("NX_VpuDecRunFrame() failed.(ErrorCode=%d)\n", ret));
+				decArg.iRet = ret;
 				ret = -1;
 				break;
 			}

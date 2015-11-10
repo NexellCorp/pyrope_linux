@@ -613,6 +613,8 @@ int VPU_SWReset(int resetMode)
 		return VPU_RET_ERR_TIMEOUT;
 	}
 
+	VpuWriteReg(BIT_USE_NX_EXPND, USE_NX_EXPND);
+
 	VpuWriteReg(BIT_SW_RESET, 0);
 
 	return VPU_RET_OK;

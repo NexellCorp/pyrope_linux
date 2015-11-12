@@ -3152,6 +3152,17 @@ static NX_VPU_RET VPU_DecStartOneFrameCommand(NX_VpuCodecInst *pInst, VPU_DEC_DE
 	val = pInfo->streamEndian;
 	VpuWriteReg(BIT_BIT_STREAM_CTRL, val);
 
+#if (DBG_REGISTER)
+	{
+		int reg;
+		NX_DbgMsg( DBG_REGISTER, ("[DEC_FRAME]\n") );
+		for (reg = 0x180 ; reg < 0x200 ; reg += 16)
+		{
+			NX_DbgMsg( DBG_REGISTER, ("[Addr = %3x]%x %x %x %x \n", reg, VpuReadReg(BIT_BASE + reg), VpuReadReg(BIT_BASE + reg + 4), VpuReadReg(BIT_BASE + reg + 8), VpuReadReg(BIT_BASE + reg + 12)) );
+		}
+	}
+#endif
+
 	VpuBitIssueCommand(pInst, PIC_RUN);
 
 WAIT_INTERRUPT:

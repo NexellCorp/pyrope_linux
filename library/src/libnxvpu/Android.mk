@@ -6,7 +6,7 @@ include $(CLEAR_VARS)
 SLSIAP_INCLUDE := $(TOP)/hardware/samsung_slsi/slsiap/include
 LINUX_INCLUDE  := $(TOP)/linux/platform/$(TARGET_CPU_VARIANT2)/library/include
 
-RATECONTROL_PATH := $(TOP)/linux/platform/$(TARGET_CPU_VARIANT2)/library/lib/ratecontrol
+RATECONTROL_PATH := $(TOP)/linux/platform/$(TARGET_CPU_VARIANT2)/library/lib
 
 LOCAL_SHARED_LIBRARIES :=	\
 	liblog \

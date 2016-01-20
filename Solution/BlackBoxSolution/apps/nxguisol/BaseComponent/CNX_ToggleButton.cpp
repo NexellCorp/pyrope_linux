@@ -57,7 +57,7 @@ void CNX_ToggleButton::Destroy( void )
 		OBJ_ATTRIBUTE *pNextAttr = pAttr->pAttrList;
 		while( pAttr )
 		{
-			NxDbgMsg( NX_DBG_VBS, (TEXT("[%s()] Delete Component. ( %p )\n"), __func__, pAttr) );
+			NxDbgMsg( NX_DBG_VBS, (TEXT("[%s()] Delete Component. ( %p )\n"), __FUNCTION__, pAttr) );
 			free( pAttr );
 			pAttr = pNextAttr;
 			if( pAttr ) pNextAttr = pAttr->pAttrList;
@@ -77,7 +77,7 @@ void CNX_ToggleButton::Draw( OBJ_STATUS status )
 
 	if( !pAttr )
 	{
-		NxDbgMsg( NX_DBG_ERR, (TEXT("[%s()] Not matched attribute.\n"), __func__) );
+		NxDbgMsg( NX_DBG_ERR, (TEXT("[%s()] Not matched attribute.\n"), __FUNCTION__) );
 		return;
 	}
 
@@ -116,7 +116,7 @@ int32_t CNX_ToggleButton::EventLoop( CNX_BaseObject *pParent, SDL_Event *pSdlEve
 
 	if( !pAttr )
 	{
-		//NxDbgMsg( NX_DBG_ERR, (TEXT("[%s()] Not matched attribute.\n"), __func__) );
+		//NxDbgMsg( NX_DBG_ERR, (TEXT("[%s()] Not matched attribute.\n"), __FUNCTION__) );
 		ret = -1;
 		return ret;
 	}
@@ -171,7 +171,7 @@ int32_t CNX_ToggleButton::SetCurPos( int32_t curStatus )
 {
 	if( curStatus > m_nTotalStatus )
 	{
-		NxDbgMsg( NX_DBG_ERR, (TEXT("[%s()] Status Over-range.(curStatus = %d, totalStatus = %d)\n"), __func__, curStatus, m_nTotalStatus) );
+		NxDbgMsg( NX_DBG_ERR, (TEXT("[%s()] Status Over-range.(curStatus = %d, totalStatus = %d)\n"), __FUNCTION__, curStatus, m_nTotalStatus) );
 		return -1;
 	}
 

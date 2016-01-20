@@ -145,7 +145,7 @@ CNX_DvrManager::~CNX_DvrManager()
 //------------------------------------------------------------------------------
 int32_t CNX_DvrManager::BuildFilter( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	// Create Filter
 	m_pRefClock					= new CNX_RefClock();
@@ -356,14 +356,14 @@ int32_t CNX_DvrManager::BuildFilter( void )
 		if( m_pRtpFilter )			m_pRtpFilter->Init( &m_RtpConfig );
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;	
 }
 
 //------------------------------------------------------------------------------
 int32_t	CNX_DvrManager::SetConfig( NX_DVR_MEDIA_CONFIG *pMediaConfig, NX_DVR_RECORD_CONFIG *pRecordConfig, NX_DVR_DISPLAY_CONFIG *pDisplayConfig )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	m_VideoNum 		= pMediaConfig->nVideoChannel;
 	m_AudioNum		= pMediaConfig->bEnableAudio	? 1 : 0;
@@ -507,14 +507,14 @@ int32_t	CNX_DvrManager::SetConfig( NX_DVR_MEDIA_CONFIG *pMediaConfig, NX_DVR_REC
 		}
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
 //------------------------------------------------------------------------------
 void CNX_DvrManager::SetNotifier( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	if( m_pNotifier ) {
 		for( int32_t i = 0; i < m_VideoNum; i++ ) 
@@ -546,30 +546,30 @@ void CNX_DvrManager::SetNotifier( void )
 		}
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_DvrManager::StartManager( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	if( m_bThreadExit ) {
 		m_bThreadExit = false;
 		if( 0 > pthread_create( &this->m_hThread, NULL, this->ThreadMain, this ) ) {
-			NxDbgMsg( NX_DBG_ERR, ("%s[%s] Fail, Create Thread\n", NX_DTAG, __func__) );
+			NxDbgMsg( NX_DBG_ERR, ("%s[%s] Fail, Create Thread\n", NX_DTAG, __FUNCTION__) );
 			return -1;
 		}
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_DvrManager::StopManager( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	
 	if( !m_bThreadExit ) {
 		m_bThreadExit = true;
@@ -577,14 +577,14 @@ int32_t CNX_DvrManager::StopManager( void )
 		m_hThread = 0x00;
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
 //------------------------------------------------------------------------------
 void CNX_DvrManager::StartNormalWriting( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	
 	for( int32_t i = 0; i < m_VideoNum; i++) {
 		if( m_pMdFilter[i] )	m_pMdFilter[i]->EnableMotionDetect( false );
@@ -594,13 +594,13 @@ void CNX_DvrManager::StartNormalWriting( void )
 	if( m_pMp4MuxerFilter )		m_pMp4MuxerFilter->RegFileNameCallback( NormalFileNameCallbackFunc );
 	if( m_pBufferingFilter )	m_pBufferingFilter->StartFile();
 	
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_DvrManager::StartMotionWriting( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	
 	if( m_pBufferingFilter )	m_pBufferingFilter->ChangeBufferingMode( BUFFERING_MODE_EVENT_ONLY );
 	if( m_pFileWriter ) 		m_pFileWriter->RegFileNameCallback( EventFileNameCallbackFunc );
@@ -609,45 +609,45 @@ void CNX_DvrManager::StartMotionWriting( void )
 		if( m_MdEnable[i] )		m_pMdFilter[i]->EnableMotionDetect( m_MdEnable[i] );
 	}
 	
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_DvrManager::StopWriting( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( m_pBufferingFilter )	m_pBufferingFilter->StopFile();
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_DvrManager::ChangeNormalWriting( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	
 	if( m_pFileWriter )			m_pFileWriter->RegFileNameCallback( NormalFileNameCallbackFunc );
 	if( m_pMp4MuxerFilter )		m_pMp4MuxerFilter->RegFileNameCallback( NormalFileNameCallbackFunc );
 	if( m_pBufferingFilter )	m_pBufferingFilter->ChangeFile();
 	
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_DvrManager::ChangeEventWriting( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	
 	if( m_pFileWriter )			m_pFileWriter->RegFileNameCallback( EventFileNameCallbackFunc );
 	if( m_pMp4MuxerFilter )		m_pMp4MuxerFilter->RegFileNameCallback( EventFileNameCallbackFunc );
 	if( m_pBufferingFilter )	m_pBufferingFilter->PopBufferdData( true );
 	
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_DvrManager::ThreadLoop( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	
 	DVR_STATUS curStatus;
 	uint64_t curTime, prvTime;
@@ -754,7 +754,7 @@ void CNX_DvrManager::ThreadLoop( void )
 
 	StopWriting();
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -775,7 +775,7 @@ void* CNX_DvrManager::ThreadMain( void* arg )
 //------------------------------------------------------------------------------
 int32_t CNX_DvrManager::Init( NX_DVR_MEDIA_CONFIG *pMediaConfig, NX_DVR_RECORD_CONFIG *pRecordConfig, NX_DVR_DISPLAY_CONFIG *pDisplayConfig )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	SetConfig( pMediaConfig, pRecordConfig, pDisplayConfig );
@@ -786,14 +786,14 @@ int32_t CNX_DvrManager::Init( NX_DVR_MEDIA_CONFIG *pMediaConfig, NX_DVR_RECORD_C
 		SetNotifier();
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return ret;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_DvrManager::Deinit( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	if( m_bInit ) {
@@ -863,14 +863,14 @@ int32_t CNX_DvrManager::Deinit( void )
 		SAFE_DELETE_FILTER( m_pRefClock );
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_DvrManager::Start( NX_DVR_ENCODE_TYPE encodeType )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	if( m_bInit ) {
@@ -933,14 +933,14 @@ int32_t CNX_DvrManager::Start( NX_DVR_ENCODE_TYPE encodeType )
 		NxDbgMsg( NX_DBG_ERR, (TEXT("Fail, Filter is not running!\n")) );
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_DvrManager::Stop( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	if( m_bRun ) {
@@ -988,39 +988,39 @@ int32_t CNX_DvrManager::Stop( void )
 		NxDbgMsg( NX_DBG_ERR, (TEXT("Fail, Filter is not running!\n")) );
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_DvrManager::SetEvent( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 	
 	m_bEvent = true;
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_DvrManager::ChangeMode( NX_DVR_ENCODE_TYPE mode )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 	
 	m_nMode = mode;
 	m_bChageMode = true;
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_DvrManager::SetCapture( int32_t channel )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	// a. Check capture channel
@@ -1033,7 +1033,7 @@ int32_t CNX_DvrManager::SetCapture( int32_t channel )
 	if( m_pVipFilter[channel] )
 		m_pVipFilter[channel]->Capture();
 	
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
@@ -1042,7 +1042,7 @@ int32_t CNX_DvrManager::SetCapture( int32_t channel )
 
 int32_t CNX_DvrManager::SetDisplay( NX_DVR_DISPLAY_CONFIG *pDisplayConfig )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 	
 	if( m_DisplayEnable != pDisplayConfig->bEnable ) {
@@ -1087,7 +1087,7 @@ int32_t CNX_DvrManager::SetDisplay( NX_DVR_DISPLAY_CONFIG *pDisplayConfig )
 	}
 
 END:
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
@@ -1095,7 +1095,7 @@ END:
 //------------------------------------------------------------------------------
 int32_t CNX_DvrManager::SetPreview( int32_t channel )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	if( !m_DisplayEnable ) {
@@ -1122,14 +1122,14 @@ int32_t CNX_DvrManager::SetPreview( int32_t channel )
 	m_DisplayChannel = channel;
 
 END:
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_DvrManager::SetPreviewHdmi( int32_t channel )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	if( !m_DisplayEnable ) {
@@ -1156,7 +1156,7 @@ int32_t CNX_DvrManager::SetPreviewHdmi( int32_t channel )
 	m_DisplayChannel = channel;
 
 END:
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
@@ -1173,7 +1173,7 @@ int32_t CNX_DvrManager::RegisterGetFileNameCallback(
 	int32_t (*cbJpegFileName)		(uint8_t*, uint32_t)
 )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 	
 	if( cbNormalFileName )
@@ -1192,7 +1192,7 @@ int32_t CNX_DvrManager::RegisterGetFileNameCallback(
 		}
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
@@ -1201,13 +1201,13 @@ int32_t	CNX_DvrManager::RegisterUserDataCallback(
 	int32_t (*cbUserData)			(uint8_t*, uint32_t)
 )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	if( cbUserData && m_pUserDataFilter[0] )
 		m_pUserDataFilter[0]->RegUserDataCallback( cbUserData );
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
@@ -1217,7 +1217,7 @@ int32_t	CNX_DvrManager::RegisterTextOverlayCallback(
 	int32_t (*cbRearTextOverlay) 	(uint8_t*, uint32_t*, uint32_t*, uint32_t*)
 )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	if( cbFrontTextOverlay && m_pOverlayFilter[0] )
@@ -1226,7 +1226,7 @@ int32_t	CNX_DvrManager::RegisterTextOverlayCallback(
 	if( cbRearTextOverlay  && m_pOverlayFilter[1] )
 		m_pOverlayFilter[1]->RegTextOverlayCallback( cbRearTextOverlay );
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
@@ -1235,13 +1235,13 @@ int32_t	CNX_DvrManager::RegisterNotifyCallback(
 	int32_t (*cbNotify)				(uint32_t, uint8_t*, uint32_t)
 )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	if( cbNotify && m_pNotifier )
 		m_pNotifier->RegisterNotifyCallback( cbNotify );
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
@@ -1251,7 +1251,7 @@ int32_t CNX_DvrManager::RegisterImageEffectCallback(
 	int32_t(*cbRearImageEffect)		(NX_VID_MEMORY_INFO *, NX_VID_MEMORY_INFO *)
 )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	if( cbFrontImageEffect && m_pEffectFilter[0] )
@@ -1260,7 +1260,7 @@ int32_t CNX_DvrManager::RegisterImageEffectCallback(
 	if( cbRearImageEffect  && m_pEffectFilter[1] )
 		m_pEffectFilter[1]->RegImageEffectCallback( cbRearImageEffect );
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
@@ -1270,7 +1270,7 @@ int32_t CNX_DvrManager::RegisterMotionDetectCallback(
 	int32_t (*cbRearMotionDetect)	(NX_VID_MEMORY_INFO *, NX_VID_MEMORY_INFO *)
 )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	if( cbFrontMotionDetect && m_pMdFilter[0] )
@@ -1279,14 +1279,14 @@ int32_t CNX_DvrManager::RegisterMotionDetectCallback(
 	if( cbRearMotionDetect  && m_pMdFilter[1] )
 		m_pMdFilter[1]->RegMotionDetectCallback( cbRearMotionDetect );
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
 //------------------------------------------------------------------------------
 void CNX_DvrManager::GetAPIVersion( int32_t *pMajor, int32_t *pMinor, int32_t *pRevision, uint8_t *pBuildDate, uint8_t *pBuildTime, uint8_t *pBuildAuthor )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	*pMajor			= DVR_MANAGER_MAJOR;
@@ -1297,23 +1297,23 @@ void CNX_DvrManager::GetAPIVersion( int32_t *pMajor, int32_t *pMinor, int32_t *p
 	if( pBuildTime ) 	strcpy( (char*)pBuildTime, DVR_MANAGER_TIME );
 	if( pBuildAuthor )	strcpy( (char*)pBuildAuthor, DVR_MANAGER_USER );
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_DvrManager::ChangeDebugLevel( int32_t dbgLevel )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	NxChgFilterDebugLevel( dbgLevel );
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_DvrManager::GetStatistics( FILTER_STATISTICS *pFilterStatistics )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }

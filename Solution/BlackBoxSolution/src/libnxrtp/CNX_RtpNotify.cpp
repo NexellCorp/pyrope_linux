@@ -52,7 +52,7 @@ bool CNX_RtpNotify::Run( void )
 
 		if( 0 > pthread_create( &this->m_hThread, NULL, this->ThreadMain, this ) )
 		{
-			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __func__) );
+			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __FUNCTION__) );
 			return false;
 		}
 		m_bRun = true;

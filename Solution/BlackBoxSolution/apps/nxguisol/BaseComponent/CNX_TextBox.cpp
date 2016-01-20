@@ -52,7 +52,7 @@ void CNX_TextBox::Destroy( void )
 		OBJ_ATTRIBUTE *pNextAttr = pAttr->pAttrList;
 		while( pAttr )
 		{
-			NxDbgMsg( NX_DBG_VBS, (TEXT("[%s()] Delete Component. ( %p )\n"), __func__, pAttr) );
+			NxDbgMsg( NX_DBG_VBS, (TEXT("[%s()] Delete Component. ( %p )\n"), __FUNCTION__, pAttr) );
 			free( pAttr );
 			pAttr = pNextAttr;
 			if( pAttr ) pNextAttr = pAttr->pAttrList;
@@ -67,7 +67,7 @@ void CNX_TextBox::Draw( OBJ_STATUS status )
 
 	if( !pAttr )
 	{
-		NxDbgMsg( NX_DBG_ERR, (TEXT("[%s()] Not matched attribute.\n"), __func__) );
+		NxDbgMsg( NX_DBG_ERR, (TEXT("[%s()] Not matched attribute.\n"), __FUNCTION__) );
 		return;
 	}
 
@@ -102,7 +102,7 @@ void CNX_TextBox::SetText( char *str,  int32_t r, int32_t g, int32_t b )
 
 	if( !pAttr )
 	{
-		NxDbgMsg( NX_DBG_ERR, (TEXT("[%s()] Not matched attribute.\n"), __func__) );
+		NxDbgMsg( NX_DBG_ERR, (TEXT("[%s()] Not matched attribute.\n"), __FUNCTION__) );
 		return ;
 	}
 

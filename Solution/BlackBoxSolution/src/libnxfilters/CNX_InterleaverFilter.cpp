@@ -51,19 +51,19 @@ CNX_InterleaverFilter::~CNX_InterleaverFilter()
 //------------------------------------------------------------------------------
 void CNX_InterleaverFilter::Init(NX_INTERLEAVER_CONFIG *pConfig)
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	m_InterleaverChannel = pConfig->channel;
 	for(uint32_t i = 0; i < m_InterleaverChannel; i++) {
 		m_InterleaverQueue[i].Reset();
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_InterleaverFilter::Deinit()
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -232,14 +232,14 @@ int32_t	CNX_InterleaverFilter::Stop( void )
 //------------------------------------------------------------------------------
 int32_t	CNX_InterleaverFilter::EnableFilter( uint32_t enable )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
-	NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s : %s -- > %s\n"), __func__, (m_bEnable)?"Enable":"Disable", (enable)?"Enable":"Disable") );
+	NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s : %s -- > %s\n"), __FUNCTION__, (m_bEnable)?"Enable":"Disable", (enable)?"Enable":"Disable") );
 
 	Flush();
 	m_bEnable = enable;
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
@@ -268,7 +268,7 @@ int32_t CNX_InterleaverFilter::GetStatistics( NX_FILTER_STATISTICS *pStatistics 
 //------------------------------------------------------------------------------
 int32_t CNX_InterleaverFilter::Flush( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	for( uint32_t i = 0; i < m_InterleaverChannel; i++ )
 	{
@@ -283,6 +283,6 @@ int32_t CNX_InterleaverFilter::Flush( void )
 	}
 
 	m_bStartInterleaver = false;
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }

@@ -180,7 +180,7 @@ int32_t CNX_TranscodingManager::SetConfig( NX_TRANSCODING_MGR_CONFIG *pConfig )
 //------------------------------------------------------------------------------
 int32_t CNX_TranscodingManager::Init( NX_TRANSCODING_MGR_CONFIG *pConfig )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 	int32_t ret = 0;
 
@@ -193,13 +193,13 @@ int32_t CNX_TranscodingManager::Init( NX_TRANSCODING_MGR_CONFIG *pConfig )
 	}
 
 	return ret;
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_TranscodingManager::Deinit( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	if( m_bInit )
@@ -215,14 +215,14 @@ int32_t CNX_TranscodingManager::Deinit( void )
 		SAFE_DELETE_FILTER( m_pMp4Muxer );
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;	
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_TranscodingManager::Start()
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	if( m_bInit )
@@ -238,14 +238,14 @@ int32_t CNX_TranscodingManager::Start()
 		m_bRun = true;
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_TranscodingManager::Stop( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	if( m_bRun )
@@ -261,7 +261,7 @@ int32_t CNX_TranscodingManager::Stop( void )
 		m_bRun = false;
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 

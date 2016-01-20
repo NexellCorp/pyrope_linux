@@ -15,7 +15,6 @@ apps
     +---+--- adc_test            : ADC test application.
         +--- audio_test          : audio play test application.
         +--- gpio_test           : GPIO test application.      
-        +--- movie_player_app    : Movie player API example application.
         +--- nmea_test           : NMEA parser test application.      
         +--- transcoding_example : Transcoding example application( including scaling )
         +--- typefind_app        : find media information test application.      
@@ -34,7 +33,6 @@ fs
 library 
     +---+--- include                 : common library include directory
         +--- lib                     : library src output directory
-        |     +--- gstreamer-0.10    : Prebuilt gstreamer plugins.
         +--- src
               +--- libion            : ION Memory Allocator Library.
               +--- libnxadc          : ADC Library
@@ -42,10 +40,8 @@ library
               +--- libnxgpio         : Gpio Control Library
               +--- libnxgraphictools : 3D Graphic Library.
               +--- libnxmalloc       : Video Memory Allocatior Library.
-              +--- libnxmovieplayer  : Movie Player Library.
               +--- libnxnmeaparser   : NMEA Parser Library            
               +--- libnxscaler       : Fine Scaler Library.
-              +--- libnxtypefind     : Find Media Information Library            
               +--- libnxv4l2         : V4L2 Wrapper Libarary for Display & Camera Capture.
               +--- libnxvpu          : Video En/Decoder ioctl Wrapper Library.
 

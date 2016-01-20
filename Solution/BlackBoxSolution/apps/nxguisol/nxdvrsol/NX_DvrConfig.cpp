@@ -38,7 +38,7 @@ int32_t DvrConfigWriteDefault( const char *path )
 	memset( &gDvrConfig, 0x00, sizeof(DvrConfig) );
 
 	if( NULL == (fp = fopen(path, "w")) ) {
-		printf("%s(): %s open fail\n", __func__, path);
+		printf("%s(): %s open fail\n", __FUNCTION__, path);
 		return -1;
 	}
 
@@ -55,7 +55,7 @@ int32_t DvrConfigWrite( const char *path )
 	FILE *fp = NULL;
 
 	if( NULL == (fp = fopen(path, "w")) ) {
-		printf("%s(): %s open fail\n", __func__, path);
+		printf("%s(): %s open fail\n", __FUNCTION__, path);
 		return -1;
 	}
 
@@ -66,7 +66,7 @@ int32_t DvrConfigWrite( const char *path )
 	fclose( fp );
 
 	printf("%s(): ch(%d), preview(%d), quality(%d), hls(%d)\n", 
-		__func__, gDvrConfig.nChannel, gDvrConfig.nPreview, gDvrConfig.nEncQuality, gDvrConfig.bHls );
+		__FUNCTION__, gDvrConfig.nChannel, gDvrConfig.nPreview, gDvrConfig.nEncQuality, gDvrConfig.bHls );
 
 	return 0;
 }
@@ -80,12 +80,12 @@ int32_t DvrConfigRead( const char *path  )
 	memset( &gDvrConfig, 0x00, sizeof(DvrConfig) );
 
 	if( access(path, F_OK) ) {
-		printf("%s(): Configuration file is not exist.\n", __func__);
+		printf("%s(): Configuration file is not exist.\n", __FUNCTION__);
 		return -1;
 	}
 	
 	if( NULL == (fp = fopen(path, "r")) ) {
-		printf("%s(): %s open fail\n", __func__, path);
+		printf("%s(): %s open fail\n", __FUNCTION__, path);
 		return -1;
 	}
 
@@ -106,14 +106,14 @@ int32_t DvrConfigRead( const char *path  )
 			gDvrConfig.bHls= configValue;
 		}
 		else {
-			printf("%s(): Unknown Config value.\n", __func__);
+			printf("%s(): Unknown Config value.\n", __FUNCTION__);
 			fclose( fp );
 			return -1;
 		}
 	}
 
 	printf("%s(): ch(%d), preview(%d), quality(%d), hls(%d)\n", 
-		__func__, gDvrConfig.nChannel, gDvrConfig.nPreview, gDvrConfig.nEncQuality, gDvrConfig.bHls );
+		__FUNCTION__, gDvrConfig.nChannel, gDvrConfig.nPreview, gDvrConfig.nEncQuality, gDvrConfig.bHls );
 
 	fclose( fp );
 

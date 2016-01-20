@@ -13,10 +13,6 @@ DIR += libnxv4l2
 DIR += libnxvpu
 DIR += libnxjpeg
 
-# Movie Player for G-Streamer
-DIR += libnxtypefind
-DIR += libnxmovieplayer
-
 # Graphic library
 DIR += libnxscaler
 DIR += libnxgraphictools

@@ -1,3 +1,7 @@
+//#define _ERROR_AND_SEEK_
+//#define _DUMP_ES_
+//#define DEINTERLACE_ENABLE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,23 +20,27 @@
 #include "nx_dsp.h"
 #endif
 
+#ifdef DEINTERLACE_ENABLE
+#include <nx_deinterlace.h>
+#include <nx_graphictools.h>
+
+#define DEINTERLACE_BUFFER_NUM	4
+#endif
+
+//	Display Window Screen Size
+#define	WINDOW_WIDTH			1024
+#define	WINDOW_HEIGHT			600
+#define	NUMBER_OF_BUFFER		12
+
 
 unsigned char streamBuffer[4*1024*1024];
 unsigned char seqData[1024*4];
-
-//#define _ERROR_AND_SEEK_
-
-
-//	Display Window Screen Size
-#define	WINDOW_WIDTH		1024
-#define	WINDOW_HEIGHT		600
-#define	NUMBER_OF_BUFFER	12
 
 
 int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 {
 	VID_TYPE_E vpuCodecType;
-	VID_ERROR_E vidRet;
+	int vidRet;
 	NX_VID_SEQ_IN seqIn;
 	NX_VID_SEQ_OUT seqOut;
 	NX_VID_DEC_HANDLE hDec;
@@ -52,6 +60,16 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 	int32_t iPrevIdx = -1;
 	uint64_t startTime, endTime, totalTime = 0;
 	FILE *fpOut = NULL;
+#ifdef _DUMP_ES_
+	FILE *fpES = fopen("enc.bit", "wb");
+#endif
+
+#ifdef DEINTERLACE_ENABLE
+	void *hDeinterlace = NULL;
+#ifndef ANDROID
+	NX_VID_MEMORY_HANDLE hVideoMemory[DEINTERLACE_BUFFER_NUM];		// For DeInterlaced Frame
+#endif
+#endif
 
 	CMediaReader *pMediaReader = new CMediaReader();
 	if( !pMediaReader->OpenFile( pAppData->inFileName ) )
@@ -99,16 +117,13 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 		printf("Display Failed!!!\n");
 		exit(-1);
 	}
-#endif	//	ANDROID
+#endif
 
 	pMediaReader->GetCodecTagId( AVMEDIA_TYPE_VIDEO, &codecTag, &codecId  );
-
 	vpuCodecType = (VID_TYPE_E)(CodecIdToVpuType(codecId, codecTag));
-
 	mp4Class = fourCCToMp4Class( codecTag );
 	if( mp4Class == -1 )
 		mp4Class = codecIdToMp4Class( codecId );
-
 	printf("vpuCodecType = %d, mp4Class = %d\n", vpuCodecType, mp4Class );
 
 	if( (hDec = NX_VidDecOpen(vpuCodecType, mp4Class, 0, &instanceIdx)) == NULL )
@@ -141,17 +156,22 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 			seqIn.seqSize = seqSize + size;
 			seqIn.enableUserData = 0;
 			seqIn.disableOutReorder = 0;
-#ifdef ANDROID
+			seqIn.width = imgWidth;			// optional
+			seqIn.height = imgHeight;
+#if defined (ANDROID) && !defined (DEINTERLACE_ENABLE)
 			//	Use External Video Memory
 			seqIn.numBuffers = NUMBER_OF_BUFFER;
 			seqIn.pMemHandle = &hVideoMemory[0];
 #endif
 
+#ifdef _DUMP_ES_
+			fwrite(seqIn.seqInfo, 1, seqIn.seqSize, fpES);
+#endif
+
 			vidRet = NX_VidDecParseVideoCfg(hDec, &seqIn, &seqOut);
-			printf("Parser Return = %d(%d) \n", vidRet, seqOut.unsupportedFeature );
 			if ( vidRet != VID_ERR_NONE )
 			{
-				printf("Parser Fail \n");
+				printf("Parser Fail(%d, %d) \n", vidRet, seqOut.unsupportedFeature );
 				exit(-1);
 			}
 
@@ -164,9 +184,38 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 				break;
 			}
 
+#ifdef DEINTERLACE_ENABLE
+			if ( seqOut.isInterlace )
+			{
+				pAppData->deinterlaceMode = ( pAppData->deinterlaceMode ) ? ( pAppData->deinterlaceMode ) : ( DEINTERLACE_BOB );
+				if ( pAppData->deinterlaceMode < 10 )
+					hDeinterlace = NX_DeInterlaceOpen( (DEINTERLACE_MODE)pAppData->deinterlaceMode );
+				else if ( pAppData->deinterlaceMode == 10 )
+					hDeinterlace = (void *)NX_GTDeintOpen( seqOut.width, seqOut.height, MAX_GRAPHIC_BUF_SIZE );
+
+				if ( hDeinterlace == NULL )
+					printf("DeInterlace Init function is failed!!!\n");
+
+#ifndef ANDROID
+				for( int32_t i=0 ; i<DEINTERLACE_BUFFER_NUM ; i++ )
+				{
+					hVideoMemory[i] = NX_VideoAllocateMemory( 4096, seqOut.width, seqOut.height, NX_MEM_MAP_LINEAR, FOURCC_MVS0 );
+					if( 0 == hVideoMemory[i] )
+					{
+						printf("NX_VideoAllocateMemory(64, %d, %d,..) failed.(i=%d)\n", seqOut.width, seqOut.height, i);
+						return -1;
+					}
+				}
+#endif
+				printf("Deinterlace Initialization is Success!!\n");
+			}
+			else
+				pAppData->deinterlaceMode = 0;
+#endif
+
 			printf("<<<<<<<<<<< Init In >>>>>>>>>>>>>> \n");
 			printf("seqInfo = %x \n", seqIn.seqInfo);
-			printf("seqSize = %d \n", seqIn.seqSize);
+			printf("seqSize = %d(0x%x) \n", seqIn.seqSize, seqIn.seqSize);
 			{
 				int32_t i;
 				for (i=0 ; i<seqIn.seqSize ; i++)
@@ -205,8 +254,11 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 
 			bInit = 1;
 			seqSize = 0;
-			size = 0;
-			continue;
+
+			if( vpuCodecType != NX_HEVC_DEC )
+				size = 0;
+			if ( (vpuCodecType == NX_VC1_DEC) && (streamBuffer[0] == 0) && (streamBuffer[1] == 0) && (streamBuffer[2] == 1) )
+				continue;
 		}
 
 		memset(&decIn, 0, sizeof(decIn));
@@ -252,21 +304,31 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 		}
 #endif
 
+#ifdef _DUMP_ES_
+		fwrite(decIn.strmBuf, 1, decIn.strmSize, fpES);
+#endif
+
 		startTime = NX_GetTickCount();
 		vidRet = NX_VidDecDecodeFrame( hDec, &decIn, &decOut );
 		endTime = NX_GetTickCount();
 		totalTime += (endTime - startTime);
 
-		printf("Frame[%5d]: size=%6d, DspIdx=%2d, DecIdx=%2d, InTimeStamp=%7lld, outTimeStamp=%7lld, %7lld, time=%6lld, interlace=%d(%d), Reliable=%3d, %3d, type = %d, %d, MultiResol=%d, upW=%d, upH=%d\n",
-			frameCount, decIn.strmSize, decOut.outImgIdx, decOut.outDecIdx, decIn.timeStamp, decOut.timeStamp/*[FIRST_FIELD]*/, 0/*decOut.timeStamp[SECOND_FIELD]*/, (endTime-startTime), decOut.isInterlace, decOut.topFieldFirst,
-			decOut.outFrmReliable_0_100/*[DECODED_FRAME]*/, 0/*decOut.outFrmReliable_0_100[DISPLAY_FRAME]*/, decOut.picType/*[DECODED_FRAME]*/, 0/*decOut.picType[DISPLAY_FRAME]*/, decOut.multiResolution, decOut.upSampledWidth, decOut.upSampledHeight);
+		printf("Frame[%5d]: size=%6d, DecIdx=%2d, DspIdx=%2d, InTimeStamp=%7lld, outTimeStamp=%7lld, %7lld, time=%6lld, interlace=%1d(%2d), Reliable=%3d, %3d, type = %d, %d, Rd = %6x, Wd = %6x, %d \n",
+			frameCount, decIn.strmSize, decOut.outDecIdx, decOut.outImgIdx, decIn.timeStamp, decOut.timeStamp[FIRST_FIELD], decOut.timeStamp[SECOND_FIELD], (endTime-startTime), decOut.isInterlace, decOut.topFieldFirst,
+			decOut.outFrmReliable_0_100[DECODED_FRAME], decOut.outFrmReliable_0_100[DISPLAY_FRAME], decOut.picType[DECODED_FRAME], decOut.picType[DISPLAY_FRAME], decOut.strmReadPos, decOut.strmWritePos, decOut.strmWritePos - decOut.strmReadPos );
+
+		//printf("Frame[%5d]: size=%6d, DspIdx=%2d, DecIdx=%2d, InTimeStamp=%7lld, outTimeStamp=%7lld, %7lld, time=%6lld, interlace=%d(%d), Reliable=%3d, %3d, type = %d, %d, MultiResol=%d, upW=%d, upH=%d\n",
+		//	frameCount, decIn.strmSize, decOut.outImgIdx, decOut.outDecIdx, decIn.timeStamp, decOut.timeStamp[FIRST_FIELD], decOut.timeStamp[SECOND_FIELD], (endTime-startTime), decOut.isInterlace, decOut.topFieldFirst,
+		//	decOut.outFrmReliable_0_100, decOut.outFrmReliable_0_100[DISPLAY_FRAME], decOut.picType[DECODED_FRAME], decOut.picType[DISPLAY_FRAME], decOut.multiResolution, decOut.upSampledWidth, decOut.upSampledHeight);
 		//printf("(%2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x %2x)\n", decIn.strmBuf[0], decIn.strmBuf[1], decIn.strmBuf[2], decIn.strmBuf[3], decIn.strmBuf[4], decIn.strmBuf[5], decIn.strmBuf[6], decIn.strmBuf[7],
 		//	decIn.strmBuf[8], decIn.strmBuf[9], decIn.strmBuf[10], decIn.strmBuf[11], decIn.strmBuf[12], decIn.strmBuf[13], decIn.strmBuf[14], decIn.strmBuf[15]);
 
 		if( vidRet < 0 )
 		{
 			printf("Decoding Error!!!\n");
-			exit(-2);
+			if ( vidRet == VID_ERR_TIMEOUT )
+				NX_VidDecFlush( hDec );
+			//exit(-2);
 		}
 
 #ifdef _ERROR_AND_SEEK_
@@ -288,14 +350,46 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 
 		if( decOut.outImgIdx >= 0  )
 		{
+			NX_VID_MEMORY_HANDLE hDispBuff;
+			int32_t OutImgIdx;
+
+#ifdef DEINTERLACE_ENABLE
+			if ( hDeinterlace )
+			{
 #ifdef ANDROID
-			pAndRender->DspQueueBuffer( NULL, decOut.outImgIdx );
+				OutImgIdx = outCount % NUMBER_OF_BUFFER;
+#else
+				OutImgIdx = outCount % DEINTERLACE_BUFFER_NUM;
+#endif
+				hDispBuff = hVideoMemory[OutImgIdx];
+
+				startTime = NX_GetTickCount();
+				if ( pAppData->deinterlaceMode < 10 )
+					vidRet = NX_DeInterlaceFrame( hDeinterlace, &decOut.outImg, decOut.topFieldFirst, hDispBuff );
+				else if ( pAppData->deinterlaceMode == 10 )
+					vidRet = NX_GTDeintDoDeinterlace( (NX_GT_DEINT_HANDLE)hDeinterlace, &decOut.outImg, hDispBuff );
+				endTime = NX_GetTickCount();
+
+				if ( vidRet < 0 )
+				{
+					printf( "%d Frame is failed in DeInterlace function!!!\n", frameCount );
+					exit(-2);
+				}
+				printf("[%3d Frm]DeInterlace Timer = %6lld \n", outCount, endTime - startTime );
+			}
+#else
+			OutImgIdx = decOut.outImgIdx;
+			hDispBuff = &decOut.outImg;
+#endif
+
+#ifdef ANDROID
+			pAndRender->DspQueueBuffer( NULL, OutImgIdx );
 			if( prevIdx != -1 )
 			{
 				pAndRender->DspDequeueBuffer(NULL, NULL);
 			}
 #else
-			NX_DspQueueBuffer( hDsp, &decOut.outImg );
+			NX_DspQueueBuffer( hDsp, hDispBuff );
 			if( outCount != 0 )
 			{
 				NX_DspDequeueBuffer( hDsp );
@@ -305,25 +399,26 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 			if ( fpOut )
 			{
 				int32_t h;
-				uint8_t *pbyImg = (uint8_t *)(decOut.outImg.luVirAddr);
-				for(h=0 ; h<decOut.height ; h++)
+				uint8_t *pbyImg = (uint8_t *)(hDispBuff->luVirAddr);
+
+				for(h=0 ; h<hDispBuff->imgHeight ; h++)
 				{
-					fwrite(pbyImg, 1, decOut.width, fpOut);
-					pbyImg += decOut.outImg.luStride;
+					fwrite(pbyImg, 1, h<hDispBuff->imgWidth, fpOut);
+					pbyImg += hDispBuff->luStride;
 				}
 
-				pbyImg = (uint8_t *)(decOut.outImg.cbVirAddr);
-				for(h=0 ; h<decOut.height/2 ; h++)
+				pbyImg = (uint8_t *)(hDispBuff->cbVirAddr);
+				for(h=0 ; h<hDispBuff->imgHeight/2 ; h++)
 				{
-					fwrite(pbyImg, 1, decOut.width/2, fpOut);
-					pbyImg += decOut.outImg.cbStride;
+					fwrite(pbyImg, 1, hDispBuff->imgWidth/2, fpOut);
+					pbyImg += hDispBuff->cbStride;
 				}
 
-				pbyImg = (uint8_t *)(decOut.outImg.crVirAddr);
-				for(h=0 ; h<decOut.height/2 ; h++)
+				pbyImg = (uint8_t *)(hDispBuff->crVirAddr);
+				for(h=0 ; h<hDispBuff->imgHeight/2 ; h++)
 				{
-					fwrite(pbyImg, 1, decOut.width/2, fpOut);
-					pbyImg += decOut.outImg.crStride;
+					fwrite(pbyImg, 1, hDispBuff->imgWidth/2, fpOut);
+					pbyImg += hDispBuff->crStride;
 				}
 			}
 
@@ -361,6 +456,19 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 		delete pMediaReader;
 	if ( fpOut )
 		fclose(fpOut);
+#ifdef _DUMP_ES_
+	if ( fpES )
+		fclose(fpES);
+#endif
+#ifdef DEINTERLACE_ENABLE
+	if ( hDeinterlace )
+	{
+		if ( pAppData->deinterlaceMode < 10 )
+			NX_DeInterlaceClose( hDeinterlace );
+		else if ( pAppData->deinterlaceMode == 10 )
+			NX_GTDeintClose( (NX_GT_DEINT_HANDLE)hDeinterlace );
+	}
+#endif
 
 	return 0;
 }

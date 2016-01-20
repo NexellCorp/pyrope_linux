@@ -23,6 +23,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+// #define ENABLE_LED 
+
 int32_t DvrLedEventStart( void );
 int32_t DvrLedEventStop( void );
 

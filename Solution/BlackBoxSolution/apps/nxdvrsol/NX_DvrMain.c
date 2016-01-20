@@ -44,6 +44,7 @@
 #include "NX_DvrFileManager.h"
 #include "NX_DvrLedCtrl.h"
 #include "NX_DvrTools.h"
+#include "NX_DvrConfigParser.h"
 
 #include <nx_alloc_mem.h>
 #include <nx_graphictools.h>
@@ -51,13 +52,8 @@
 #include <nx_gpio.h>
 #include <nx_dsp.h>
 
-// #define VEHICLE_TEST
-// #define DEMO
-
-#define BOARD_TYPE_LYNX
-//#define CAMERA_TYPE_FHD
-
-// #define DISABLE_AUDIO
+// #define ENABLE_AUDIO
+// #define ENABLE_POWER_MANAGER
 
 #define DISPLAY_TICK
 
@@ -66,124 +62,68 @@
 
 #define MMCBLOCK				"mmcblk0"
 #define DIRECTORY_TOP			"/mnt/mmc"
+#define CONFIG_FILE				"/root/dvr.cfg"
 
-static int32_t DvrInputEventThreadStart( void );
-static int32_t DvrInputEventThreadStop( void );
+static int32_t DvrEventTaskStart( void );
+static int32_t DvrEventTaskStop( void );
 
-static int32_t DvrShellThreadStart( void );
-static int32_t DvrShellThreadStop( void );
+static int32_t DvrInputEventTaskStart( void );
+static int32_t DvrInputEventTaskStop( void );
 
-static int32_t DvrSDCheckerThreadStart( void );
-static int32_t DvrSDCheckerThreadStop( void );
+static int32_t DvrConsoleTaskStart( void );
+static int32_t DvrConsoleTaskStop( void );
 
-enum {
-	CONTAINER_TYPE_TS,
-	CONTAINER_TYPE_MP4,
-};
+static int32_t DvrSDCheckerTaskStart( void );
+static int32_t DvrSDCheckerTaskStop( void );
 
-// Handle
-static NX_DVR_HANDLE			g_hDvr = NULL;
-static CMD_QUEUE_HANDLE			g_hCmd = NULL;
-static GPS_MANAGER_HANDLE		g_hGpsManager = NULL;
-static GSENSOR_MANAGER_HANDLE	g_hGsensorManager = NULL;
-static POWER_MANAGER_HANDLE		g_hPowerManager = NULL;
-static FILE_MANAGER_HANDLE		g_hNormalFileManager = NULL;
-static FILE_MANAGER_HANDLE		g_hEventFileManager = NULL;
-static FILE_MANAGER_HANDLE		g_hCaptureFileManager = NULL;
-static NX_GT_SCALER_HANDLE		g_hFrontEffect = NULL;
-static NX_GT_SCALER_HANDLE		g_hRearEffect = NULL;
-static NX_AUDIO_HANDLE			g_hAudio = NULL;
+typedef struct AppInfo {
+	NX_DVR_HANDLE			hDvr;
+	GPS_MANAGER_HANDLE		hGpsManager;
+	GSENSOR_MANAGER_HANDLE	hGsensorManager;
+	POWER_MANAGER_HANDLE	hPowerManager;
+	FILE_MANAGER_HANDLE		hNormalFileManager;
+	FILE_MANAGER_HANDLE		hEventFileManager;
+	FILE_MANAGER_HANDLE		hCaptureFileManager;
+	NX_GT_SCALER_HANDLE		hFrontEffect;
+	NX_GT_SCALER_HANDLE		hRearEffect;
+	NX_AUDIO_HANDLE			hAudio;
+	CMD_QUEUE_HANDLE		hCmd;
 
-static uint8_t dir_top[256]	 	= {0x00, };
-static uint8_t dir_normal[256]	= {0x00, };
-static uint8_t dir_event[256]	= {0x00, };
-static uint8_t dir_capture[256]	= {0x00, };
+	CONFIG_HANDLE			hConfig;
+	CONFIG_INFO				sConfig;
 
-static pthread_mutex_t	gstModeLock; 
-static int32_t			gDvrMode 	= DVR_MODE_NORMAL;	// DVR_MODE_NORMAL / DVR_MODE_MOTION
+	int32_t					iMode;
+	int32_t					bConsoleDebug;
+	int32_t					bEventDebug;
+	int32_t					bLoopMsg;
 
-static uint8_t gstSdNode[64];
+	int32_t					iVersionMajor;
+	int32_t					iVersionMinor;
+	int32_t					iVersionRevision;
 
-static int32_t gstMsg = false;
-static int32_t gstNoConsole = false;
-static int32_t gstVideoChannel = 1;
-static int32_t gstAudioEnable = false;
-static int32_t gstUserDataEnable = false;
-static int32_t gstNetworkType = false;
+	char					cSDNode[256];
 
-#ifdef DEMO
-static int32_t gstMotionEnable = true;
-#else
-static int32_t gstMotionEnable = false;
-#endif
+	char					cTopDir[256];
+	char					cNormalDir[256];
+	char					cEventDir[256];
+	char					cCaptureDir[256];
 
-static int32_t gstApiMajor = 0, gstApiMinor = 0, gstApiRevision = 0;
-static int32_t gstContainer = CONTAINER_TYPE_TS;		// CONTAINER_TYPE_MP4 / CONTAINER_TYPE_TS
-static int32_t gstTestEvent	= false;
+	pthread_mutex_t			hLock;
 
-static int32_t gstPreviewChannel = 0;
-
-////////////////////////////////////////////////////////////////////////////////
-//
-// Test Thread
-//
-static int32_t bTestEventTask		= false;
-static int32_t bEventTaskThreadRun 	= false;
-static pthread_t hEventTaskThread	= 0;
-
-void *DvrEventTaskThread( void *arg )
-{
-	int32_t i = 0;
-	CMD_MESSAGE	cmd;
-
-	memset( &cmd, 0x00, sizeof(CMD_MESSAGE) );
-	cmd.cmdType = CMD_TYPE_EVENT;
-
-	while( bEventTaskThreadRun )
-	{
-		for( i = 0; i < 100; i++)	// 100sec
-		{
-			usleep(1000000);	// 1sec
-		}
-		DvrCmdQueuePush( g_hCmd, &cmd );
-	}
-
-	return (void*)0xDEADDEAD;
-}
-
-static int32_t DvrEventTaskStart( void )
-{
-	if( bEventTaskThreadRun ) {
-		printf("%s(): Fail, Already running.\n", __func__);
-		return -1;
-	}
-
-	bEventTaskThreadRun = true;
-	if( 0 > pthread_create( &hEventTaskThread, NULL, &DvrEventTaskThread, NULL) ) {
-		printf("%s(): Fail, Create Thread.\n", __func__);
-		return -1;
-	}
-
-	printf("%s(): Activation Test Event Task.\n", __func__);
+	pthread_t				hEventTask;
+	int32_t					bEventTaskRun;
 	
-	return 0;
-}
-
-static int32_t DvrEventTaskStop( void )
-{
-	if( !bTestEventTask )
-		return 0;
-
-	if( !bEventTaskThreadRun) {
-		printf("%s(): Fail, Already stopping.\n", __func__);
-		return -1;
-	}
+	pthread_t				hConsoleTask;
+	int32_t					bConsoleTaskRun;
 	
-	bEventTaskThreadRun = false;
-	pthread_join( hEventTaskThread, NULL );
-	
-	return 0;
-}
+	pthread_t				hSDCheckerTask;
+	int32_t					bSDCheckerTaskRun;
+
+	pthread_t				hInputEventTask;
+	int32_t					bInputEventTaskRun;
+} AppInfo;
+
+static AppInfo gstAppInfo;
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -192,6 +132,7 @@ static int32_t DvrEventTaskStop( void )
 static void MicomKillSignal( void )
 {
 	NX_GPIO_HANDLE hGPIOA18 = NX_GpioInit( GPIOA18 );
+
 	if( hGPIOA18 ) NX_GpioDirection( hGPIOA18, GPIO_DIRECTION_OUT );
 	if( hGPIOA18 ) NX_GpioSetValue( hGPIOA18, false );
 	if( hGPIOA18 ) NX_GpioDeinit( hGPIOA18 );
@@ -199,57 +140,58 @@ static void MicomKillSignal( void )
 
 static void ExitApp( void )
 {
-	DvrInputEventThreadStop();
+	if( gstAppInfo.hAudio )	NX_AudioPlay( gstAppInfo.hAudio, "/root/wav/stop.wav" );
 
-	if( gstTestEvent ) DvrEventTaskStop();
-	if( !gstNoConsole ) DvrShellThreadStop();
+	DvrInputEventTaskStop();
+	DvrSDCheckerTaskStop();
+	DvrEventTaskStop();
+	DvrConsoleTaskStop();
 
-	DvrSDCheckerThreadStop();
+	if( gstAppInfo.hDvr )				NX_DvrStop( gstAppInfo.hDvr );
+	if( gstAppInfo.hDvr )				NX_DvrDeinit( gstAppInfo.hDvr );
 
-	if( g_hDvr )	NX_DvrStop( g_hDvr );
-	if( g_hDvr )	NX_DvrDeinit( g_hDvr );
+	if( gstAppInfo.hFrontEffect )		NX_GTSclClose( gstAppInfo.hFrontEffect );
+	if( gstAppInfo.hRearEffect )		NX_GTSclClose( gstAppInfo.hRearEffect );
 
-	if( g_hFrontEffect )	NX_GTSclClose( g_hFrontEffect );
-	if( g_hRearEffect )		NX_GTSclClose( g_hRearEffect );
+	if( gstAppInfo.hGpsManager ) 		DvrGpsManagerStop( gstAppInfo.hGpsManager );
+	if( gstAppInfo.hGpsManager ) 		DvrGpsManagerDeinit( gstAppInfo.hGpsManager );
 
-	if( g_hGpsManager ) 	DvrGpsManagerStop( g_hGpsManager );
-	if( g_hGpsManager ) 	DvrGpsManagerDeinit( g_hGpsManager );
+	if( gstAppInfo.hGsensorManager )	DvrGsensorManagerStop( gstAppInfo.hGsensorManager );
+	if( gstAppInfo.hGsensorManager )	DvrGsensorManagerDeinit( gstAppInfo.hGsensorManager );
 
-	if( g_hGsensorManager ) DvrGsensorManagerStop( g_hGsensorManager );
-	if( g_hGsensorManager ) DvrGsensorManagerDeinit( g_hGsensorManager );
+	if( gstAppInfo.hPowerManager )		DvrPowerManagerStop( gstAppInfo.hPowerManager );
+	if( gstAppInfo.hPowerManager )		DvrPowerManagerDeinit( gstAppInfo.hPowerManager );
 
-	if( g_hPowerManager )	DvrPowerManagerStop( g_hPowerManager );
-	if( g_hPowerManager )	DvrPowerManagerDeinit( g_hPowerManager );
+	if( gstAppInfo.hNormalFileManager )	DvrFileManagerStop( gstAppInfo.hNormalFileManager );
+	if( gstAppInfo.hEventFileManager )	DvrFileManagerStop( gstAppInfo.hEventFileManager );
+	if( gstAppInfo.hCaptureFileManager )DvrFileManagerStop( gstAppInfo.hCaptureFileManager );
 
-	if( g_hNormalFileManager )	DvrFileManagerStop( g_hNormalFileManager );
-	if( g_hEventFileManager )	DvrFileManagerStop( g_hEventFileManager );
-	if( g_hCaptureFileManager )	DvrFileManagerStop( g_hCaptureFileManager );
+	if( gstAppInfo.hNormalFileManager )	DvrFileManagerDeinit( gstAppInfo.hNormalFileManager );
+	if( gstAppInfo.hEventFileManager )	DvrFileManagerDeinit( gstAppInfo.hEventFileManager );
+	if( gstAppInfo.hCaptureFileManager )DvrFileManagerDeinit( gstAppInfo.hCaptureFileManager );
 
-	if( g_hNormalFileManager )	DvrFileManagerDeinit( g_hNormalFileManager );
-	if( g_hEventFileManager )	DvrFileManagerDeinit( g_hEventFileManager );
-	if( g_hCaptureFileManager )	DvrFileManagerDeinit( g_hCaptureFileManager );
+	gstAppInfo.bLoopMsg = false;
+	DvrCmdQueueDeinit( gstAppInfo.hCmd );
+	pthread_mutex_destroy( &gstAppInfo.hLock );
 
-	gstMsg = false;
-	DvrCmdQueueDeinit( g_hCmd );
-	pthread_mutex_destroy( &gstModeLock );
-	
-	if( g_hAudio )	NX_AudioStop( g_hAudio, true );
-	if( g_hAudio )	NX_AudioDeinit( g_hAudio );
+	printf("%s(): umount mmc.\n", __FUNCTION__);
+	int32_t iPendCount = 0;
 
-	printf("%s(): umount mmc.\n", __func__);
-	int32_t pendCnt = 0;
 	while( 1 )
 	{
-		pendCnt++;
+		iPendCount++;
 		sync();
 		usleep(100000);
 		if( !umount("/mnt/mmc") ) break;
-		if( pendCnt > 10) {
+		if( iPendCount > 10) {
 			printf("Fail, umount..\n");
 			break;
 		}
-		printf("[%d] Retry umount..\n", pendCnt);
+		printf("[%d] Retry umount..\n", iPendCount);
 	}
+
+	if( gstAppInfo.hAudio )	NX_AudioStop( gstAppInfo.hAudio, true );
+	if( gstAppInfo.hAudio )	NX_AudioDeinit( gstAppInfo.hAudio );
 }
 
 static void signal_handler(int sig)
@@ -268,10 +210,7 @@ static void signal_handler(int sig)
 			break;
 	}   
 
-	if( g_hAudio )	NX_AudioPlay( g_hAudio, "/root/wav/stop.wav" );
-	usleep(2000000);
 	ExitApp();
-
 	exit(EXIT_FAILURE);
 }
 
@@ -293,12 +232,13 @@ int32_t cbGetNormalFileName( uint8_t *buf, uint32_t bufSize )
 	
 	time( &eTime);
 	eTm = localtime( &eTime );
-	if( gstContainer == CONTAINER_TYPE_TS ) {
-		sprintf((char*)buf, "%s/normal_%04d%02d%02d_%02d%02d%02d.ts", dir_normal,
+
+	if( gstAppInfo.sConfig.iContainer ) {
+		sprintf((char*)buf, "%s/normal_%04d%02d%02d_%02d%02d%02d.ts", gstAppInfo.cNormalDir,
 			eTm->tm_year + 1900, eTm->tm_mon + 1, eTm->tm_mday, eTm->tm_hour, eTm->tm_min, eTm->tm_sec);
 	}
 	else {
-		sprintf((char*)buf, "%s/normal_%04d%02d%02d_%02d%02d%02d.mp4", dir_normal,
+		sprintf((char*)buf, "%s/normal_%04d%02d%02d_%02d%02d%02d.mp4", gstAppInfo.cNormalDir,
 			eTm->tm_year + 1900, eTm->tm_mon + 1, eTm->tm_mday, eTm->tm_hour, eTm->tm_min, eTm->tm_sec);
 	}
 
@@ -312,12 +252,13 @@ int32_t cbGetEventFileName( uint8_t *buf, uint32_t bufSize )
 	
 	time( &eTime);
 	eTm = localtime( &eTime );
-	if( gstContainer == CONTAINER_TYPE_TS ) {
-		sprintf((char*)buf, "%s/event_%04d%02d%02d_%02d%02d%02d.ts", dir_event,
+
+	if( gstAppInfo.sConfig.iContainer ) {
+		sprintf((char*)buf, "%s/event_%04d%02d%02d_%02d%02d%02d.ts", gstAppInfo.cEventDir,
 			eTm->tm_year + 1900, eTm->tm_mon + 1, eTm->tm_mday, eTm->tm_hour, eTm->tm_min, eTm->tm_sec);
 	}
 	else {
-		sprintf((char*)buf, "%s/event_%04d%02d%02d_%02d%02d%02d.mp4", dir_event,
+		sprintf((char*)buf, "%s/event_%04d%02d%02d_%02d%02d%02d.mp4", gstAppInfo.cEventDir,
 			eTm->tm_year + 1900, eTm->tm_mon + 1, eTm->tm_mday, eTm->tm_hour, eTm->tm_min, eTm->tm_sec);
 	}
 
@@ -332,7 +273,7 @@ int32_t cbGetCaptureFileName( uint8_t *buf, uint32_t bufSize )
 	time( &eTime);
 	eTm = localtime( &eTime );
 
-	sprintf((char*)buf, "%s/capture_%04d%02d%02d_%02d%02d%02d.jpeg", dir_capture,
+	sprintf((char*)buf, "%s/capture_%04d%02d%02d_%02d%02d%02d.jpg", gstAppInfo.cCaptureDir,
 		eTm->tm_year + 1900, eTm->tm_mon + 1, eTm->tm_mday, eTm->tm_hour, eTm->tm_min, eTm->tm_sec);
 
 	return 0;
@@ -348,40 +289,44 @@ int32_t cbGetFrontTextOverlay( uint8_t *buf, uint32_t *bufSize, uint32_t *x, uin
 	memset( &gpsData, 0x00, sizeof( struct nmea_gprmc ) );
 	memset( &gsensorData, 0x00, sizeof( GSENSOR_VALUE) );
 
-	if( g_hGpsManager )		DvrGpsGetData( g_hGpsManager, &gpsData );
-	if( g_hGsensorManager )	DvrGsensorGetData( g_hGsensorManager, &gsensorData );
-	if( g_hPowerManager )	DvrPowerGetData( g_hPowerManager, &powerData, &tempData );
+	if( gstAppInfo.hGpsManager )		DvrGpsGetData( gstAppInfo.hGpsManager, &gpsData );
+	if( gstAppInfo.hGsensorManager )	DvrGsensorGetData( gstAppInfo.hGsensorManager, &gsensorData );
+	if( gstAppInfo.hPowerManager )		DvrPowerGetData( gstAppInfo.hPowerManager, &powerData, &tempData );
 
-	pthread_mutex_lock( &gstModeLock );
-#ifndef DISPLAY_TICK
+	pthread_mutex_lock( &gstAppInfo.hLock );
+	int32_t iMode = gstAppInfo.iMode;
+	pthread_mutex_unlock( &gstAppInfo.hLock );
+
+#ifdef DISPLAY_TICK
+	static uint64_t uPrvTick = 0;
+	if( !uPrvTick ) GetSystemTickCount();
+	uint64_t uCurTick = GetSystemTickCount();
+	
+	sprintf((char*)buf, "[CAM#0 %s] [%08lld] [%08lld/%04lld] [lat = %+010.06f, long = %+011.06f, speed = %03dKm, x = %+05dmg, y = %+05dmg, z = %+05dmg, pwr = %+05.02fV]",
+		(iMode == DVR_MODE_NORMAL) ? "NOR" : (iMode == DVR_MODE_EVENT) ? "EVT" : "MOT",
+		++frameCounter, uCurTick, uCurTick - uPrvTick,
+		gpsData.latitude, gpsData.longitude, (int)(gpsData.ground_speed * 1.852),
+		gsensorData.x, gsensorData.y, gsensorData.z,
+		(double)(powerData / 1000.)
+	);
+
+	uPrvTick = uCurTick;
+#else
 	time_t eTime;
 	struct tm *eTm;
 	time( &eTime);
 	eTm = localtime( &eTime );
 
 	sprintf((char*)buf, "[CAM#0 %s] [%08lld] [%4d-%02d-%02d %02d:%02d:%02d] [lat = %+010.06f, long = %+011.06f, speed = %03dKm, x = %+05dmg, y = %+05dmg, z = %+05dmg, pwr = %+05.02fV]",
-		(gDvrMode == DVR_MODE_NORMAL) ? "NOR" : (gDvrMode == DVR_MODE_EVENT) ? "EVT" : "MOT",
+		(iMode == DVR_MODE_NORMAL) ? "NOR" : (iMode == DVR_MODE_EVENT) ? "EVT" : "MOT",
 		++frameCounter,
 		eTm->tm_year + 1900, eTm->tm_mon + 1, eTm->tm_mday, eTm->tm_hour, eTm->tm_min, eTm->tm_sec,
 		gpsData.latitude, gpsData.longitude, (int)(gpsData.ground_speed * 1.852),
 		gsensorData.x, gsensorData.y, gsensorData.z,
 		(double)(powerData / 1000.)
 	);
-#else
-	static uint64_t		prvTick = 0;
-	if( !prvTick ) GetSystemTickCount();
-	uint64_t curTick = GetSystemTickCount();
-	
-	sprintf((char*)buf, "[CAM#0 %s] [%08lld] [%08lld/%04lld] [lat = %+010.06f, long = %+011.06f, speed = %03dKm, x = %+05dmg, y = %+05dmg, z = %+05dmg, pwr = %+05.02fV]",
-		(gDvrMode == DVR_MODE_NORMAL) ? "NOR" : (gDvrMode == DVR_MODE_EVENT) ? "EVT" : "MOT",
-		++frameCounter, curTick, curTick - prvTick,
-		gpsData.latitude, gpsData.longitude, (int)(gpsData.ground_speed * 1.852),
-		gsensorData.x, gsensorData.y, gsensorData.z,
-		(double)(powerData / 1000.)
-	);
-	prvTick = curTick;
 #endif
-	pthread_mutex_unlock( &gstModeLock );
+
 	*bufSize = strlen((char*)buf);
 	*x = *y = 1;
 
@@ -398,40 +343,44 @@ int32_t cbGetRearTextOverlay( uint8_t *buf, uint32_t *bufSize, uint32_t *x, uint
 	memset( &gpsData, 0x00, sizeof( struct nmea_gprmc ) );
 	memset( &gsensorData, 0x00, sizeof( GSENSOR_VALUE) );
 
-	if( g_hGpsManager ) 	DvrGpsGetData( g_hGpsManager, &gpsData );
-	if( g_hGsensorManager )	DvrGsensorGetData( g_hGsensorManager, &gsensorData);
-	if( g_hPowerManager )	DvrPowerGetData( g_hPowerManager, &powerData, &tempData );
+	if( gstAppInfo.hGpsManager ) 	DvrGpsGetData( gstAppInfo.hGpsManager, &gpsData );
+	if( gstAppInfo.hGsensorManager )DvrGsensorGetData( gstAppInfo.hGsensorManager, &gsensorData);
+	if( gstAppInfo.hPowerManager )	DvrPowerGetData( gstAppInfo.hPowerManager, &powerData, &tempData );
 
-	pthread_mutex_lock( &gstModeLock );
-#ifndef DISPLAY_TICK	
+	pthread_mutex_lock( &gstAppInfo.hLock );
+	int32_t iMode = gstAppInfo.iMode;
+	pthread_mutex_unlock( &gstAppInfo.hLock );
+
+#ifdef DISPLAY_TICK
+	static uint64_t uPrvTick = 0;
+	if( !uPrvTick ) GetSystemTickCount();
+	uint64_t uCurTick = GetSystemTickCount();
+	
+	sprintf((char*)buf, "[CAM#1 %s] [%08lld] [%08lld/%04lld] [lat = %+010.06f, long = %+011.06f, speed = %03dKm, x = %+05dmg, y = %+05dmg, z = %+05dmg, pwr = %+05.02fV]",
+		(iMode == DVR_MODE_NORMAL) ? "NOR" : (iMode == DVR_MODE_EVENT) ? "EVT" : "MOT",
+		++frameCounter, uCurTick, uCurTick - uPrvTick,
+		gpsData.latitude, gpsData.longitude, (int)(gpsData.ground_speed * 1.852),
+		gsensorData.x, gsensorData.y, gsensorData.z,
+		(double)(powerData / 1000.)
+	);
+
+	uPrvTick = uCurTick;
+#else
 	time_t eTime;
 	struct tm *eTm;
 	time( &eTime);
 	eTm = localtime( &eTime );
 
 	sprintf((char*)buf, "[CAM#1 %s] [%08lld] [%4d-%02d-%02d %02d:%02d:%02d] [lat = %+010.06f, long = %+011.06f, speed = %03dKm, x = %+05dmg, y = %+05dmg, z = %+05dmg, pwr = %+05.02fV]",
-		(gDvrMode == DVR_MODE_NORMAL) ? "NOR" : (gDvrMode == DVR_MODE_EVENT) ? "EVT" : "MOT",
+		(iMode == DVR_MODE_NORMAL) ? "NOR" : (iMode == DVR_MODE_EVENT) ? "EVT" : "MOT",
 		++frameCounter,
 		eTm->tm_year + 1900, eTm->tm_mon + 1, eTm->tm_mday, eTm->tm_hour, eTm->tm_min, eTm->tm_sec,
 		gpsData.latitude, gpsData.longitude, (int)(gpsData.ground_speed * 1.852),
 		gsensorData.x, gsensorData.y, gsensorData.z,
 		(double)(powerData / 1000.)
 	);
-#else
-	static uint64_t		prvTick = 0;
-	if( !prvTick ) GetSystemTickCount();
-	uint64_t curTick = GetSystemTickCount();
-	
-	sprintf((char*)buf, "[CAM#1 %s] [%08lld] [%08lld/%04lld] [lat = %+010.06f, long = %+011.06f, speed = %03dKm, x = %+05dmg, y = %+05dmg, z = %+05dmg, pwr = %+05.02fV]",
-		(gDvrMode == DVR_MODE_NORMAL) ? "NOR" : (gDvrMode == DVR_MODE_EVENT) ? "EVT" : "MOT",
-		++frameCounter, curTick, curTick - prvTick,
-		gpsData.latitude, gpsData.longitude, (int)(gpsData.ground_speed * 1.852),
-		gsensorData.x, gsensorData.y, gsensorData.z,
-		(double)(powerData / 1000.)
-	);
-	prvTick = curTick;
-#endif	
-	pthread_mutex_unlock( &gstModeLock );
+#endif
+
 	*bufSize = strlen((char*)buf);
 	*x = *y = 1;
 
@@ -446,8 +395,8 @@ int32_t cbUserData( uint8_t *buf, uint32_t bufSize)
 	memset( &gpsData, 0x00, sizeof( struct nmea_gprmc ) );
 	memset( &gsensorData, 0x00, sizeof( GSENSOR_VALUE) );
 
-	if( g_hGpsManager )		DvrGpsGetData( g_hGpsManager, &gpsData );
-	if( g_hGsensorManager )	DvrGsensorGetData( g_hGsensorManager, &gsensorData );
+	if( gstAppInfo.hGpsManager )		DvrGpsGetData( gstAppInfo.hGpsManager, &gpsData );
+	if( gstAppInfo.hGsensorManager )	DvrGsensorGetData( gstAppInfo.hGsensorManager, &gsensorData );
 
 	sprintf((char*)buf, "%+010.06f %+011.06f %03d %+05d %+05d %+05d",
 		gpsData.latitude, gpsData.longitude, (int)(gpsData.ground_speed * 1.852),
@@ -462,50 +411,64 @@ int32_t cbNotifier( uint32_t eventCode, uint8_t *pEventData, uint32_t dataSize )
 	switch( eventCode )
 	{
 	case DVR_NOTIFY_NORALWIRTHING_DONE :
-		if( pEventData && dataSize > 0 ) {
-			printf("[%s] : Normal file writing done. ( %s )\n", __func__, pEventData);
-			DvrFileManagerPush( g_hNormalFileManager, (char*)pEventData );
+		if( pEventData && dataSize > 0 )
+		{
+			printf("[%s] : Normal file writing done. ( %s )\n", __FUNCTION__, pEventData);
+			DvrFileManagerPush( gstAppInfo.hNormalFileManager, (char*)pEventData );
 		}
 		break;
+	
 	case DVR_NOTIFY_EVENTWRITING_DONE :
-		if( pEventData && dataSize > 0 ) {
-			printf("[%s] : Event file writing done. ( %s )\n", __func__, pEventData);
-			pthread_mutex_lock( &gstModeLock );
-			if( gDvrMode != DVR_MODE_MOTION ) {
-				gDvrMode = DVR_MODE_NORMAL;
-				pthread_mutex_unlock( &gstModeLock );
+		if( pEventData && dataSize > 0 )
+		{
+			printf("[%s] : Event file writing done. ( %s )\n", __FUNCTION__, pEventData);
+			pthread_mutex_lock( &gstAppInfo.hLock );
+			if( gstAppInfo.iMode != DVR_MODE_MOTION )
+			{
+				gstAppInfo.iMode = DVR_MODE_NORMAL;
+				pthread_mutex_unlock( &gstAppInfo.hLock );
+				
 				DvrLedEventStop();
-				if( g_hGsensorManager ) DvrGsensorManagerSetStatus( g_hGsensorManager, DVR_MODE_NORMAL );
+				if( gstAppInfo.hGsensorManager ) 
+					DvrGsensorManagerSetStatus( gstAppInfo.hGsensorManager, DVR_MODE_NORMAL );
 			}
-			else {
-				pthread_mutex_unlock( &gstModeLock );
+			else
+			{
+				pthread_mutex_unlock( &gstAppInfo.hLock );
 				DvrLedEventStop();
 			}
-			DvrFileManagerPush( g_hEventFileManager, (char*)pEventData );
+			DvrFileManagerPush( gstAppInfo.hEventFileManager, (char*)pEventData );
 		}
 		break;
+	
 	case DVR_NOTIFY_JPEGWRITING_DONE :
-		if( pEventData && dataSize > 0 ) {
-			printf("[%s] : Jpeg file writing done. ( %s )\n", __func__, pEventData);
-			DvrFileManagerPush( g_hCaptureFileManager, (char*)pEventData );
+		if( pEventData && dataSize > 0 )
+		{
+			printf( "[%s] : Jpeg file writing done. ( %s )\n", __FUNCTION__, pEventData );
+			DvrFileManagerPush( gstAppInfo.hCaptureFileManager, (char*)pEventData );
 		}
 		break;
+	
 	case DVR_NOTIFY_MOTION :
 		DvrLedEventStart();
-		if( g_hDvr )	NX_DvrEvent( g_hDvr );
+		if( gstAppInfo.hDvr )	NX_DvrEvent( gstAppInfo.hDvr );
 		break;
+	
 	case DVR_NOTIFY_ERR_VIDEO_INPUT :
 		break;
+	
 	case DVR_NOTIFY_ERR_VIDEO_ENCODE :
 		break;
+	
 	case DVR_NOTIFY_ERR_OPEN_FAIL :
 		if( pEventData && dataSize > 0 ) {
-			printf("[%s] : File open failed. ( %s )\n", __func__, pEventData);
+			printf("[%s] : File open failed. ( %s )\n", __FUNCTION__, pEventData);
 		}
 		break;
+
 	case DVR_NOTIFY_ERR_WRITE :
 		if( pEventData && dataSize > 0 ) {	
-			printf("[%s] : File writing failed. ( %s )\n", __func__, pEventData);
+			printf("[%s] : File writing failed. ( %s )\n", __FUNCTION__, pEventData);
 		}
 		break;
 	}
@@ -515,13 +478,13 @@ int32_t cbNotifier( uint32_t eventCode, uint8_t *pEventData, uint32_t dataSize )
 
 int32_t cbFrontImageEffect( NX_VID_MEMORY_INFO *pInBuf, NX_VID_MEMORY_INFO *pOutBuf )
 {
-	if( g_hFrontEffect ) NX_GTSclDoScale( g_hFrontEffect, pInBuf, pOutBuf);
+	if( gstAppInfo.hFrontEffect ) NX_GTSclDoScale( gstAppInfo.hFrontEffect, pInBuf, pOutBuf);
 	return 0;
 }
 
 int32_t cbRearImageEffect( NX_VID_MEMORY_INFO *pInBuf, NX_VID_MEMORY_INFO *pOutBuf )
 {
-	if( g_hRearEffect ) NX_GTSclDoScale( g_hRearEffect, pInBuf, pOutBuf);
+	if( gstAppInfo.hRearEffect ) NX_GTSclDoScale( gstAppInfo.hRearEffect, pInBuf, pOutBuf);
 	return 0;
 }
 
@@ -566,13 +529,77 @@ int32_t cbMotionDetect( NX_VID_MEMORY_INFO *pPrevMemory, NX_VID_MEMORY_INFO *pCu
 
 ////////////////////////////////////////////////////////////////////////////////
 //
+// Test Thread
+//
+void *DvrEventTaskThread( void *arg )
+{
+	int32_t i = 0, bLoop;
+	CMD_MESSAGE	cmd;
+
+	memset( &cmd, 0x00, sizeof(CMD_MESSAGE) );
+	cmd.cmdType = CMD_TYPE_EVENT;
+
+	while( gstAppInfo.bEventTaskRun )
+	{
+		for( i = 0; i < 100; i++)
+		{
+			usleep(100000);
+			
+			pthread_mutex_lock( &gstAppInfo.hLock );
+			bLoop = gstAppInfo.bEventTaskRun;
+			pthread_mutex_unlock( &gstAppInfo.hLock );
+			
+			if( !bLoop ) break;
+		}
+
+		if( bLoop )
+			DvrCmdQueuePush( gstAppInfo.hCmd, &cmd );
+	}
+
+	return (void*)0xDEADDEAD;
+}
+
+static int32_t DvrEventTaskStart( void )
+{
+	if( !gstAppInfo.bEventDebug )
+		return 0;
+
+	if( gstAppInfo.bEventTaskRun ) {
+		printf("%s(): Fail, Already running.\n", __FUNCTION__);
+		return -1;
+	}
+
+	gstAppInfo.bEventTaskRun = true;
+	if( 0 > pthread_create( &gstAppInfo.hEventTask, NULL, &DvrEventTaskThread, NULL) ) {
+		printf("%s(): Fail, Create Thread.\n", __FUNCTION__ );
+		return -1;
+	}
+
+	printf("%s(): Activation Test Event Task.\n", __FUNCTION__);
+	
+	return 0;
+}
+
+static int32_t DvrEventTaskStop( void )
+{
+	if( !gstAppInfo.bEventDebug )
+		return 0;
+
+	if( !gstAppInfo.bEventTaskRun )
+		return -1;
+
+	gstAppInfo.bEventTaskRun = false;
+	pthread_join( gstAppInfo.hEventTask, NULL );
+	
+	return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//
 // debug shell
 //
 #define	SHELL_MAX_ARG	32
 #define	SHELL_MAX_STR	1024
-
-static int32_t bDvrShellThreadRun = false;
-static pthread_t hDvrShellThread = 0;
 
 static int32_t GetArgument( char *pSrc, char arg[][SHELL_MAX_STR] )
 {
@@ -626,7 +653,7 @@ void shell_usage( void )
 	printf("+----------------------------------------------------------------+\n");
 }
 
-void *DvrShellThread( void *arg )
+void *DvrConsoleTask( void *arg )
 {
 	static char cmdString[SHELL_MAX_ARG * SHELL_MAX_STR];
 	static char cmd[SHELL_MAX_ARG][SHELL_MAX_STR];
@@ -642,7 +669,7 @@ void *DvrShellThread( void *arg )
 
 	printf(" > ");
 
-	while( bDvrShellThreadRun )
+	while( gstAppInfo.bConsoleTaskRun )
 	{
 		FD_ZERO(&readfds);
 		FD_SET(STDIN_FILENO, &readfds);
@@ -653,7 +680,7 @@ void *DvrShellThread( void *arg )
 
 		if( state < 0 )
 		{
-			printf("%s(): Select Error!!!\n", __func__);
+			printf("%s(): Select Error!!!\n", __FUNCTION__);
 			break;
 		}
 		else if( state == 0 )
@@ -674,8 +701,6 @@ void *DvrShellThread( void *arg )
 
 			if( !strcasecmp( cmd[0], "exit") ) {
 				printf("Exit.\n");
-				if( g_hAudio )	NX_AudioPlay( g_hAudio, "/root/wav/stop.wav" );
-				usleep(2000000);
 				ExitApp();
 				break;
 			}
@@ -686,7 +711,7 @@ void *DvrShellThread( void *arg )
 				printf("Event.\n");
 				memset( &cmdMsg, 0x00, sizeof(CMD_MESSAGE) );
 				cmdMsg.cmdType = CMD_TYPE_EVENT;
-				DvrCmdQueuePush( g_hCmd, &cmdMsg );
+				DvrCmdQueuePush( gstAppInfo.hCmd, &cmdMsg );
 			}
 			else if( !strcasecmp( cmd[0], "capture") ) {
 				if( !strcasecmp( cmd[1], "0" ) || !strcasecmp( cmd[1], "1" ) ) {
@@ -694,7 +719,7 @@ void *DvrShellThread( void *arg )
 					printf("Capture. (ch = %d)\n", ch );
 					cmdMsg.cmdType = CMD_TYPE_CAPTURE;
 					cmdMsg.cmdData = ch;
-					DvrCmdQueuePush( g_hCmd, &cmdMsg );
+					DvrCmdQueuePush( gstAppInfo.hCmd, &cmdMsg );
 				}
 				else {
 					printf("unknown argument. ( 0 or 1 )\n");
@@ -706,7 +731,7 @@ void *DvrShellThread( void *arg )
 					memset( &dspConf, 0x00, sizeof(dspConf) );
 					dspConf.bEnable	= atoi(cmd[1]);
 
-					NX_DvrSetDisplay( g_hDvr, &dspConf );
+					NX_DvrSetDisplay( gstAppInfo.hDvr, &dspConf );
 				}
 				else {
 					printf("unknown argument. ( 0 or 1 )\n");	
@@ -722,7 +747,7 @@ void *DvrShellThread( void *arg )
 					dspConf.cropRect.nRight 	= atoi(cmd[3]);
 					dspConf.cropRect.nBottom	= atoi(cmd[4]);
 
-					NX_DvrSetDisplay( g_hDvr, &dspConf );
+					NX_DvrSetDisplay( gstAppInfo.hDvr, &dspConf );
 				}
 				else {
 					printf("unknwon argument.\n");
@@ -738,7 +763,7 @@ void *DvrShellThread( void *arg )
 					dspConf.dspRect.nRight 		= atoi(cmd[3]);
 					dspConf.dspRect.nBottom		= atoi(cmd[4]);
 
-					NX_DvrSetDisplay( g_hDvr, &dspConf );
+					NX_DvrSetDisplay( gstAppInfo.hDvr, &dspConf );
 				}
 				else {
 					printf("unknwon argument.\n");
@@ -750,7 +775,7 @@ void *DvrShellThread( void *arg )
 					printf("LCD Preview. (ch = %d)\n", ch );
 					cmdMsg.cmdType = CMD_TYPE_CHG_LCD;
 					cmdMsg.cmdData = ch;
-					DvrCmdQueuePush( g_hCmd, &cmdMsg );
+					DvrCmdQueuePush( gstAppInfo.hCmd, &cmdMsg );
 				}
 				else {
 					printf("unknown argument. ( 0 or 1 )\n");
@@ -762,7 +787,7 @@ void *DvrShellThread( void *arg )
 					printf("HDMI Preview. (ch = %d)\n", ch );
 					cmdMsg.cmdType = CMD_TYPE_CHG_HDMI;
 					cmdMsg.cmdData = ch;
-					DvrCmdQueuePush( g_hCmd, &cmdMsg );
+					DvrCmdQueuePush( gstAppInfo.hCmd, &cmdMsg );
 				}
 				else {
 					printf("unknown argument. ( 0 or 1 )\n");
@@ -784,7 +809,7 @@ void *DvrShellThread( void *arg )
 						level == 3 ? "NX_DBG_INFO" :
 						level == 4 ? "NX_DBG_DEBUG" : "NX_DBG_VBS");
 					
-					NX_DvrChgDebugLevel( g_hDvr, level );
+					NX_DvrChgDebugLevel( gstAppInfo.hDvr, level );
 				}
 				else {
 					printf("unknown argument. (0 - 5)\n");
@@ -800,23 +825,38 @@ void *DvrShellThread( void *arg )
 	return (void*)0xDEADDEAD;
 }
 
-static int32_t DvrShellThreadStart( void )
+static int32_t DvrConsoleTaskStart( void )
 {
-	bDvrShellThreadRun = true;
-	if( 0 > pthread_create( &hDvrShellThread, NULL, &DvrShellThread, NULL) )
+	if( !gstAppInfo.bConsoleDebug )
+		return 0;
+
+	if( gstAppInfo.bConsoleTaskRun )
 	{
-		printf("%s(: Fail, Create Thread.\n", __func__);
+		printf("%s(): Fail, Already running.\n", __FUNCTION__);
+		return -1;
+	}
+
+	gstAppInfo.bConsoleTaskRun = true;
+	if( 0 > pthread_create( &gstAppInfo.hConsoleTask, NULL, &DvrConsoleTask, NULL) )
+	{
+		printf("%s(: Fail, Create Thread.\n", __FUNCTION__);
 		return -1;
 	}
 
 	return 0;
 }
 
-static int32_t DvrShellThreadStop( void )
+static int32_t DvrConsoleTaskStop( void )
 {
-	bDvrShellThreadRun = false;
+	if( !gstAppInfo.bConsoleDebug )
+		return 0;
+
+	if( !gstAppInfo.bConsoleTaskRun )
+		return -1;
+
+	gstAppInfo.bConsoleTaskRun = false;
 	fputs("exit", stdin);
-	pthread_join( hDvrShellThread, NULL );
+	pthread_join( gstAppInfo.hConsoleTask, NULL );
 
 	return 0;
 }
@@ -827,23 +867,7 @@ static void Usage( void )
 	printf(" Usage :\n");
 	printf("   -h                     : Show usage.\n");
 	printf("   -b                     : No command line.\n");
-	printf("   -a                     : Audio enable.\n");
 	printf("   -e                     : Test event task. ( 100sec cycle )\n");
-	printf("   -u                     : Userdata enable.\n");
-	printf("   -m                     : Motion detection enable.\n");
-	printf("   -n [network type]      : Network streaming enable.( 1:HLS or 2:RTP )\n");
-	printf("   -t [stoage positon]    : Storage Position.\n");
-	printf("   -c [encoding channel]  : Encoding Channel.( 1 or 2 )\n");
-
-	printf("\n");
-	printf(" Default Setting :\n");
-	printf("   stoage positon         : /mnt/mmc\n");
-	printf("   video channel          : 1 channel.\n");
-	printf("   audio status           : disable.\n");
-	printf("   userdata status        : disable.\n");
-	printf("   motion detection       : disable.\n");
-	printf("   network streaming      : disable.\n");
-
 
 	printf("\n");
 }
@@ -852,10 +876,7 @@ static void Usage( void )
 //
 // SD Card Checker
 //
-static int32_t bSDCheckerThreadRun	= false;
-static pthread_t hSDCheckerThread	= 0;
-
-void *DvrSDCheckerThread( void *arg )
+void *DvrSDCheckerTask( void *arg )
 {
 	CMD_MESSAGE	cmd;
 
@@ -876,27 +897,27 @@ void *DvrSDCheckerThread( void *arg )
 	socketFd = socket(AF_NETLINK, SOCK_RAW, NETLINK_KOBJECT_UEVENT);
 
 	if( socketFd < 0 ) {
-		printf("%s(): socket error.\n", __func__);
+		printf("%s(): socket error.\n", __FUNCTION__);
 		goto ERROR;
 	}
 	if( bind(socketFd, (struct sockaddr*)&sockAddr, sizeof(sockAddr)) ) {
-		printf("%s(): bind error.\n", __func__);
+		printf("%s(): bind error.\n", __FUNCTION__);
 		close( socketFd );
 		goto ERROR;
 	}
 
 	// first node checker
 	sprintf( sdNodekeyword, "%sp1", MMCBLOCK );
-	sprintf( (char*)gstSdNode, "/dev/%s", sdNodekeyword );
-	if( !access( (char*)gstSdNode, F_OK) )
+	sprintf( (char*)gstAppInfo.cSDNode, "/dev/%s", sdNodekeyword );
+	if( !access( (char*)gstAppInfo.cSDNode, F_OK) )
 	{
-		printf("%s(): Insert SD Card. ( node : %s)\n", __func__, gstSdNode);
+		printf("%s(): Insert SD Card. ( node : %s)\n", __FUNCTION__, gstAppInfo.cSDNode);
 		memset( &cmd, 0x00, sizeof(CMD_MESSAGE) );
 		cmd.cmdType = CMD_TYPE_SD_INSERT;
-		if( g_hCmd )	DvrCmdQueuePush( g_hCmd, &cmd );
+		if( gstAppInfo.hCmd )	DvrCmdQueuePush( gstAppInfo.hCmd, &cmd );
 	}
 
-	while( bSDCheckerThreadRun )
+	while( gstAppInfo.bSDCheckerTaskRun )
 	{
 		FD_ZERO(&readfds);
 		FD_SET(socketFd, &readfds);
@@ -907,36 +928,36 @@ void *DvrSDCheckerThread( void *arg )
 
 		if( state < 0 )
 		{
-			printf("%s(): Select Error!!!\n", __func__);
+			printf("%s(): Select Error!!!\n", __FUNCTION__);
 			break;
 		}
 		else if( state == 0 )
 		{
-			//printf("%s(): System Message Wait Timeout\n", __func__);
+			//printf("%s(): System Message Wait Timeout\n", __FUNCTION__);
 		}
 		else
 		{
 			memset( buf, 0x00, sizeof(buf) );
 			len = recvmsg( socketFd, &msg, 0 );
 			if( len < 0 ) {
-				printf("%s(): recvmsg error.\n", __func__);
+				printf("%s(): recvmsg error.\n", __FUNCTION__);
 				break;
 			}
 
 			if( strstr(buf, "add@") && strstr(buf, sdNodekeyword) )
 			{
-				printf("%s(): Insert SD Card. ( node : %s)\n", __func__, gstSdNode);
+				printf("%s(): Insert SD Card. ( node : %s)\n", __FUNCTION__, gstAppInfo.cSDNode);
 				memset( &cmd, 0x00, sizeof(CMD_MESSAGE) );
 				cmd.cmdType = CMD_TYPE_SD_INSERT;
-				if( g_hCmd )	DvrCmdQueuePush( g_hCmd, &cmd );
+				if( gstAppInfo.hCmd )	DvrCmdQueuePush( gstAppInfo.hCmd, &cmd );
 			}
 
 			if( strstr(buf, "remove@") && strstr(buf, "mmcblk0p1") )
 			{
-				printf("%s(): Remove SD Card. ( node : %s)\n", __func__, gstSdNode);
+				printf("%s(): Remove SD Card. ( node : %s)\n", __FUNCTION__, gstAppInfo.cSDNode);
 				memset( &cmd, 0x00, sizeof(CMD_MESSAGE) );
 				cmd.cmdType = CMD_TYPE_SD_REMOVE;
-				if( g_hCmd )	DvrCmdQueuePush( g_hCmd, &cmd );
+				if( gstAppInfo.hCmd )	DvrCmdQueuePush( gstAppInfo.hCmd, &cmd );
 			}
 		}
 	}
@@ -945,39 +966,39 @@ void *DvrSDCheckerThread( void *arg )
 	close( socketFd );
 
 ERROR:
-	bSDCheckerThreadRun = false;
+	gstAppInfo.bSDCheckerTaskRun = false;
 	return (void*)0xDEADDEAD;
 }
 
-static int32_t DvrSDCheckerThreadStart( void )
+static int32_t DvrSDCheckerTaskStart( void )
 {
-	if( bSDCheckerThreadRun )
+	if( gstAppInfo.bSDCheckerTaskRun )
 	{
-		printf("%s(): Fail, Already running.\n", __func__);
+		printf("%s(): Fail, Already running.\n", __FUNCTION__);
 		return -1;
 	}
 
-	bSDCheckerThreadRun = true;
-	if( 0 > pthread_create( &hSDCheckerThread, NULL, &DvrSDCheckerThread, NULL) )
+	gstAppInfo.bSDCheckerTaskRun = true;
+	if( 0 > pthread_create( &gstAppInfo.hSDCheckerTask, NULL, &DvrSDCheckerTask, NULL) )
 	{
-		printf("%s(: Fail, Create Thread.\n", __func__);
+		printf("%s(: Fail, Create Thread.\n", __FUNCTION__);
 		return -1;
 	}
 
 	return 0;
 }
 
-static int32_t DvrSDCheckerThreadStop( void )
+static int32_t DvrSDCheckerTaskStop( void )
 {
-	if( !bSDCheckerThreadRun )
+	if( !gstAppInfo.bSDCheckerTaskRun )
 	{
-		printf("%s(): Fail, Already stopppng.\n", __func__);
+		printf("%s(): Fail, Already stopppng.\n", __FUNCTION__);
 		return -1;
 	}
 
-	bSDCheckerThreadRun = false;
+	gstAppInfo.bSDCheckerTaskRun = false;
 
-	pthread_join( hSDCheckerThread, NULL );
+	pthread_join( gstAppInfo.hSDCheckerTask, NULL );
 	return 0;
 }
 
@@ -989,9 +1010,6 @@ static int32_t DvrSDCheckerThreadStop( void )
 
 #define EVENT_BUF_NUM 	1
 #define	EVENT_DEV_NAME	"/dev/input/event0"
-
-static int32_t bInputEventThreadRun	= false;
-static pthread_t hInputEventThread	= 0;
 
 #define KEY_CAPTURE		234
 
@@ -1007,13 +1025,13 @@ static int parse_ev_key(struct input_event * evt)
 	{
 		memset( &cmd, 0x00, sizeof(CMD_MESSAGE) );
 		cmd.cmdType = CMD_TYPE_CAPTURE;
-		DvrCmdQueuePush( g_hCmd, &cmd );
+		DvrCmdQueuePush( gstAppInfo.hCmd, &cmd );
 	}
 
 	return 0;
 }
 
-void *DvrInputEventThread( void* arg )
+void *DvrInputEventTask( void* arg )
 {
 	int    evt_fd;
     char   evt_dev[256] = EVENT_DEV_NAME;
@@ -1029,12 +1047,13 @@ void *DvrInputEventThread( void* arg )
    	zero.tv_usec = 0;
 
 	evt_fd = open(evt_dev, O_RDONLY);
-    if (0 > evt_fd) {
-		printf("%s: device open failed!\n", __func__);
+    if( 0 > evt_fd )
+    {
+		printf("%s: Device open failed!\n", __FUNCTION__);
         goto ERROR;
     }
 
-    while( bInputEventThreadRun )
+    while( gstAppInfo.bInputEventTaskRun )
     {
 		FD_ZERO(&fdset);
    		FD_SET(evt_fd, &fdset);
@@ -1046,7 +1065,7 @@ void *DvrInputEventThread( void* arg )
 
                 length = read(evt_fd, &evt_buf, sizeof(struct input_event) );
                 if (0 > (int)length) {
-                    printf("%s(): read failed.\n", __func__);
+                    printf("%s(): read failed.\n", __FUNCTION__);
                     close(evt_fd);
                     goto ERROR;
                 }
@@ -1059,43 +1078,43 @@ void *DvrInputEventThread( void* arg )
 		}
     }
 
-   	FD_CLR(evt_fd, &fdset);
+   	FD_CLR( evt_fd, &fdset );
 
-    close(evt_fd);
+    close( evt_fd );
 
 ERROR:
     return (void*)0xDEADDEAD;
 }
 
-static int32_t DvrInputEventThreadStart( void )
+static int32_t DvrInputEventTaskStart( void )
 {
-	if( bInputEventThreadRun )
+	if( gstAppInfo.bInputEventTaskRun )
 	{
-		printf("%s(): Fail, Already running.\n", __func__);
+		printf("%s(): Fail, Already running.\n", __FUNCTION__);
 		return -1;
 	}
 
-	bInputEventThreadRun = true;
-	if( 0 > pthread_create( &hInputEventThread, NULL, &DvrInputEventThread, NULL) )
+	gstAppInfo.bInputEventTaskRun = true;
+	if( 0 > pthread_create( &gstAppInfo.hInputEventTask, NULL, &DvrInputEventTask, NULL) )
 	{
-		printf("%s(: Fail, Create Thread.\n", __func__);
+		printf("%s(: Fail, Create Thread.\n", __FUNCTION__);
 		return -1;
 	}
 
 	return 0;
 }
 
-static int32_t DvrInputEventThreadStop( void )
+static int32_t DvrInputEventTaskStop( void )
 {
-	if( !bInputEventThreadRun )
+	if( !gstAppInfo.bInputEventTaskRun )
 	{
-		printf("%s(): Fail, Already stopppng.\n", __func__);
+		printf("%s(): Fail, Already stopppng.\n", __FUNCTION__);
 		return -1;
 	}
 
-	bInputEventThreadRun = false;
+	gstAppInfo.bInputEventTaskRun = false;
 
-	pthread_join( hInputEventThread, NULL );
+	pthread_join( gstAppInfo.hInputEventTask, NULL );
 	return 0;
 }
 
@@ -1105,46 +1124,30 @@ void DvrPrintConfig( NX_DVR_MEDIA_CONFIG *pMediaConfig )
 	//      0123456789012345678901234567890123456789012345678901234567890123456789012345678901
 	printf("##################################################################################\n");
 	printf(" Confiugration value\n");
-	printf("   API Version   : %d.%d.%d\n", gstApiMajor, gstApiMinor, gstApiRevision);
-	printf("   Storage       : %s\n", dir_top );
-	printf("   Video Channel : %d channel\n", gstVideoChannel);
-	printf("   Audio         : %s\n", gstAudioEnable ? "enable" : "disable");
-	printf("   UserData      : %s\n", gstUserDataEnable ? "enable" : "disable" );
-	printf("   Network       : %s\n", (gstNetworkType == DVR_NETWORK_HLS) ? "HLS enable" : (gstNetworkType == DVR_NETWORK_RTP) ? "RTP enable" : "disable" );
-	printf("   Motion Detect : %s\n", gstMotionEnable ? "enable" : "disable" );
+	printf("   API Version   : %d.%d.%d        \n", gstAppInfo.iVersionMajor , gstAppInfo.iVersionMinor, gstAppInfo.iVersionRevision);
+	printf("   Storage       : %s              \n", gstAppInfo.cTopDir );
+	printf("   Video Channel : %d channel      \n", gstAppInfo.sConfig.iChannel );
+	printf("   Audio         : %s              \n", gstAppInfo.sConfig.bAudio ? "enable" : "disable");
+	printf("   UserData      : %s              \n", gstAppInfo.sConfig.bUserData ? "enable" : "disable" );
+	printf("   Network       : %s              \n", (gstAppInfo.sConfig.iNetwork == DVR_NETWORK_HLS) ? "HLS enable" : (gstAppInfo.sConfig.iNetwork == DVR_NETWORK_RTP) ? "RTP enable" : "disable" );
+	printf("   Motion Detect : %s              \n", gstAppInfo.sConfig.bMotion ? "enable" : "disable" );
 	
 	{
-#if(0)		
 		printf("   Cam0 Resol    : %d x %d, %dfps, %dbps\n",
 			pMediaConfig->videoConfig[0].nSrcWidth,
 			pMediaConfig->videoConfig[0].nSrcHeight,
 			pMediaConfig->videoConfig[0].nFps,
 			pMediaConfig->videoConfig[0].nBitrate );
-#else
-		printf("   \033[1;37;41mCam0 Resol    : %d x %d, %dfps, %dbps\033[0m\n",
-			pMediaConfig->videoConfig[0].nSrcWidth,
-			pMediaConfig->videoConfig[0].nSrcHeight,
-			pMediaConfig->videoConfig[0].nFps,
-			pMediaConfig->videoConfig[0].nBitrate );
-#endif		
 	}
 	
-	if( pMediaConfig->nVideoChannel == 2 ) {
-#if(0)		
+	if( pMediaConfig->nVideoChannel == 2 )
+	{
 		printf("   Cam1 Resol    : %d x %d, %dfps, %dbps\n",
 			pMediaConfig->videoConfig[1].nSrcWidth,
 			pMediaConfig->videoConfig[1].nSrcHeight,
 			pMediaConfig->videoConfig[1].nFps,
 			pMediaConfig->videoConfig[1].nBitrate );
-#else
-		printf("   \033[1;37;41mCam1 Resol    : %d x %d, %dfps, %dbps\033[0m\n",
-			pMediaConfig->videoConfig[1].nSrcWidth,
-			pMediaConfig->videoConfig[1].nSrcHeight,
-			pMediaConfig->videoConfig[1].nFps,
-			pMediaConfig->videoConfig[1].nBitrate );
-#endif		
 	}
-
 	printf("##################################################################################\n");
 }
 
@@ -1159,123 +1162,71 @@ int main( int32_t argc, char *argv[] )
 
 	CMD_MESSAGE cmd; 
 
-#ifdef BOARD_TYPE_LYNX
-	NX_DspVideoSetPriority( DISPLAY_MODULE_MLC0, 0 );
-#endif
-
 	// Core Dump Debug
 	// echo "1" > /proc/sys/kernel/core_uses_pid;echo "/mnt/mmc/core.%e" > /proc/sys/kernel/core_pattern;ulimit -c 99999999
 	// system("echo \"1\" > /proc/sys/kernel/core_uses_pid");
 	// system("echo \"/mnt/mmc/core.%e\" > /proc/sys/kernel/core_pattern");
 	// system("ulimit -c 99999999");
-
-	pthread_mutex_init( &gstModeLock, NULL );
 	
-	memset( dir_top, 0x00, sizeof(dir_top) );
-	sprintf( (char*)dir_top, "%s", DIRECTORY_TOP );
+	memset( &gstAppInfo, 0x00, sizeof(AppInfo) );
+	gstAppInfo.hConfig = DvrConfigParserInit( CONFIG_FILE );
+	if( !gstAppInfo.hConfig ) {
+		printf("Invalid Configuration File.\n");
+		goto END;
+	}
 
-	while( -1 != (opt = getopt(argc, argv, "umhn:beat:c:"))  )
+	DvrConfigParser( gstAppInfo.hConfig, &gstAppInfo.sConfig );
+	DvrConfigParserDeinit( gstAppInfo.hConfig );
+	
+	gstAppInfo.bConsoleDebug = true;
+
+	pthread_mutex_init( &gstAppInfo.hLock, NULL );
+
+	memset( gstAppInfo.cTopDir, 0x00, sizeof(gstAppInfo.cTopDir) );
+	sprintf( (char*)gstAppInfo.cTopDir, "%s", DIRECTORY_TOP );
+
+	while( -1 != (opt = getopt(argc, argv, "hbe"))  )
 	{
 		switch(opt)
 		{
 		case 'h':
 			Usage();
 			goto END;
+
 		case 'b':
-			gstNoConsole = true;
+			gstAppInfo.bConsoleDebug = false;
 			break;
-		case 'a':
-			gstAudioEnable = true;
-			break;
-		case 'n':
-			if( atoi( optarg ) == 1 )
-				gstNetworkType = DVR_NETWORK_HLS;
-			else if( atoi( optarg ) == 2 )
-				gstNetworkType = DVR_NETWORK_RTP;
-			else {
-				printf("Incorrect argument. (1 or 2)\n");
-				goto END;
-			}
-			break;
+
 		case 'e':
-			gstTestEvent = true;
+			gstAppInfo.bConsoleDebug = false;
+			gstAppInfo.bEventDebug = true;
 			break;
-		case 'u':
-			gstUserDataEnable = true;
-			break;
-		case 't':
-			memset( dir_top, 0x00, sizeof(dir_top) );
-			sprintf( (char*)dir_top, "%s", optarg );
-			break;
-		case 'm':
-			gstMotionEnable = true;
-			break;
-		case 'c':
-			gstVideoChannel = atoi( optarg );
-			if( gstVideoChannel != 1 && gstVideoChannel != 2 )
-			{
-				printf("Incorrect argument. (1 or 2)\n");
-				goto END;
-			}	
 		}
 	}
 
-	mediaConfig.nVideoChannel	= gstVideoChannel;
-	mediaConfig.bEnableAudio	= gstAudioEnable;
-	mediaConfig.bEnableUserData = gstUserDataEnable;
-	if( gstContainer == CONTAINER_TYPE_TS ) {
-		mediaConfig.nContainer		= DVR_CONTAINER_TS;	
-	}
-	else {
-		mediaConfig.nContainer		= DVR_CONTAINER_MP4;
-	}
+	mediaConfig.nVideoChannel				= gstAppInfo.sConfig.iChannel;
+	mediaConfig.bEnableAudio				= gstAppInfo.sConfig.bAudio;
+	mediaConfig.bEnableUserData 			= gstAppInfo.sConfig.bUserData;
+	mediaConfig.nContainer					= gstAppInfo.sConfig.iContainer;
 
-
-#ifndef BOARD_TYPE_LYNX
-	mediaConfig.videoConfig[0].nPort 		= DVR_CAMERA_VIP1;
-	mediaConfig.videoConfig[0].nSrcWidth	= 1280;
-	mediaConfig.videoConfig[0].nSrcHeight	= 720;
-	mediaConfig.videoConfig[0].nFps			= 30;
-#else
-#ifdef CAMERA_TYPE_FHD
-	mediaConfig.videoConfig[0].nPort 		= DVR_CAMERA_MIPI;
-	mediaConfig.videoConfig[0].nSrcWidth	= 1920;
-	mediaConfig.videoConfig[0].nSrcHeight	= 1080;
-	mediaConfig.videoConfig[0].nFps			= 30;
-#else
-	mediaConfig.videoConfig[0].nPort 		= DVR_CAMERA_MIPI;
-	mediaConfig.videoConfig[0].nSrcWidth	= 1024;
-	mediaConfig.videoConfig[0].nSrcHeight	= 768;
-	mediaConfig.videoConfig[0].nFps			= 15;
-#endif	
-#endif
+	mediaConfig.videoConfig[0].nPort 		= gstAppInfo.sConfig.cam0Info.iPort;
+	mediaConfig.videoConfig[0].nSrcWidth	= gstAppInfo.sConfig.cam0Info.iWidth;
+	mediaConfig.videoConfig[0].nSrcHeight	= gstAppInfo.sConfig.cam0Info.iHeight;
+	mediaConfig.videoConfig[0].nFps			= gstAppInfo.sConfig.cam0Info.iFps;
 	mediaConfig.videoConfig[0].bExternProc	= false;
 	mediaConfig.videoConfig[0].nDstWidth	= !mediaConfig.videoConfig[0].bExternProc ? mediaConfig.videoConfig[0].nSrcWidth : 1920;
 	mediaConfig.videoConfig[0].nDstHeight	= !mediaConfig.videoConfig[0].bExternProc ? mediaConfig.videoConfig[0].nSrcHeight : 1080;
-
-#ifdef CAMERA_TYPE_FHD
-	mediaConfig.videoConfig[0].nBitrate		= 10000000;
-#else
-	mediaConfig.videoConfig[0].nBitrate		= 5000000;	// 3M( ), 7M(middle), 12M(MAX)
-#endif
-
+	mediaConfig.videoConfig[0].nBitrate		= gstAppInfo.sConfig.cam0Info.iBitrate;
 	mediaConfig.videoConfig[0].nCodec		= DVR_CODEC_H264;
 	
-#ifndef BOARD_TYPE_LYNX
-	mediaConfig.videoConfig[1].nPort		= DVR_CAMERA_VIP0;
-	mediaConfig.videoConfig[1].nSrcWidth	= 1280;
-	mediaConfig.videoConfig[1].nSrcHeight	= 720;
-	mediaConfig.videoConfig[1].nFps			= 30;
-#else
-	mediaConfig.videoConfig[1].nPort		= DVR_CAMERA_VIP0;
-	mediaConfig.videoConfig[1].nSrcWidth	= 640;
-	mediaConfig.videoConfig[1].nSrcHeight	= 480;
-	mediaConfig.videoConfig[1].nFps			= 15;
-#endif	
+	mediaConfig.videoConfig[1].nPort		= gstAppInfo.sConfig.cam1Info.iPort;
+	mediaConfig.videoConfig[1].nSrcWidth	= gstAppInfo.sConfig.cam1Info.iWidth;
+	mediaConfig.videoConfig[1].nSrcHeight	= gstAppInfo.sConfig.cam1Info.iHeight;
+	mediaConfig.videoConfig[1].nFps			= gstAppInfo.sConfig.cam1Info.iFps;
 	mediaConfig.videoConfig[1].bExternProc	= false;
 	mediaConfig.videoConfig[1].nDstWidth	= !mediaConfig.videoConfig[1].bExternProc ? mediaConfig.videoConfig[1].nSrcWidth : 720;
 	mediaConfig.videoConfig[1].nDstHeight	= !mediaConfig.videoConfig[1].bExternProc ? mediaConfig.videoConfig[1].nSrcHeight : 480;
-	mediaConfig.videoConfig[1].nBitrate		= 5000000;
+	mediaConfig.videoConfig[1].nBitrate		= gstAppInfo.sConfig.cam1Info.iBitrate;
 	mediaConfig.videoConfig[1].nCodec		= DVR_CODEC_H264;
 	
 	mediaConfig.textConfig.nBitrate			= 3000000;
@@ -1284,17 +1235,13 @@ int main( int32_t argc, char *argv[] )
 	mediaConfig.audioConfig.nChannel		= 2;
 	mediaConfig.audioConfig.nFrequency		= 48000;
 	mediaConfig.audioConfig.nBitrate		= 128000;
-#ifdef AUDIO_TYPE_AAC
-	mediaConfig.audioConfig.nCodec			= DVR_CODEC_AAC;
-#else
-	mediaConfig.audioConfig.nCodec			= DVR_CODEC_MP3;
-#endif
+	mediaConfig.audioConfig.nCodec			= gstAppInfo.sConfig.iAudioEnc ? DVR_CODEC_AAC : DVR_CODEC_MP3 ;
 
 	recordConfig.nNormalDuration			= 20000;
 	recordConfig.nEventDuration				= 10000;
 	recordConfig.nEventBufferDuration		= 10000;
-
-	recordConfig.networkType				= gstNetworkType;
+	
+	recordConfig.networkType				= gstAppInfo.sConfig.iNetwork;
 
 	// HLS Configuration
 	recordConfig.hlsConfig.nSegmentDuration = 10;
@@ -1305,12 +1252,12 @@ int main( int32_t argc, char *argv[] )
 
 	// RTP Configuration
 	recordConfig.rtpConfig.nPort			= 554;
-	recordConfig.rtpConfig.nSessionNum		= gstVideoChannel;
+	recordConfig.rtpConfig.nSessionNum		= gstAppInfo.sConfig.iChannel;
 	recordConfig.rtpConfig.nConnectNum		= 2;
 	sprintf( (char*)recordConfig.rtpConfig.sessionName[0],	"video0" );
 	sprintf( (char*)recordConfig.rtpConfig.sessionName[1],	"video1" );
 
-	recordConfig.bMdEnable[0]				= gstMotionEnable;
+	recordConfig.bMdEnable[0]				= gstAppInfo.sConfig.bMotion;
 	recordConfig.mdConfig[0].nMdThreshold	= 100;
 	recordConfig.mdConfig[0].nMdSensitivity	= 100;
 	recordConfig.mdConfig[0].nMdSampingFrame= 1;
@@ -1320,41 +1267,27 @@ int main( int32_t argc, char *argv[] )
 	recordConfig.mdConfig[1].nMdSensitivity	= 100;
 	recordConfig.mdConfig[1].nMdSampingFrame= 1;
 
-#ifndef BOARD_TYPE_LYNX
-	displayConfig.bEnable			= false;
+	displayConfig.bEnable			= gstAppInfo.sConfig.bDisplay;
 	displayConfig.nChannel			= 0;
 	displayConfig.nModule			= 0;
 	displayConfig.cropRect.nLeft	= 0;
 	displayConfig.cropRect.nTop		= 0;
-	displayConfig.cropRect.nRight	= 640;
-	displayConfig.cropRect.nBottom	= 480;
+	displayConfig.cropRect.nRight	= gstAppInfo.sConfig.cam0Info.iWidth;
+	displayConfig.cropRect.nBottom	= gstAppInfo.sConfig.cam0Info.iHeight;
 	displayConfig.dspRect.nLeft		= 0;
 	displayConfig.dspRect.nTop		= 0;
-	displayConfig.dspRect.nRight	= 640;
+	displayConfig.dspRect.nRight	= 720;
 	displayConfig.dspRect.nBottom	= 480;
-#else
-	displayConfig.bEnable			= true;
-	displayConfig.nChannel			= gstPreviewChannel;
-	displayConfig.nModule			= 0;
-	displayConfig.cropRect.nLeft	= 0;
-	displayConfig.cropRect.nTop		= 0;
-	displayConfig.cropRect.nRight	= 640;
-	displayConfig.cropRect.nBottom	= 480;
-	displayConfig.dspRect.nLeft		= 0;
-	displayConfig.dspRect.nTop		= 0;
-	displayConfig.dspRect.nRight	= 640;
-	displayConfig.dspRect.nBottom	= 480;
-#endif
 
-#ifndef DISABLE_AUDIO
-	g_hAudio	= NX_AudioInit();	
+	if( gstAppInfo.sConfig.bDisplay )
+		NX_DspVideoSetPriority( DISPLAY_MODULE_MLC0, 0 );
+
+#ifdef ENABLE_AUDIO
+	gstAppInfo.hAudio	= NX_AudioInit();	
 #endif
-	g_hCmd 		= DvrCmdQueueInit();
+	gstAppInfo.hCmd		= DvrCmdQueueInit();
 
 	printf("############################## STARTING APPLICATION ##############################\n");
-#ifdef DEMO
-	printf("\033[1;37;41mBlackbox Demo Mode\033[0m\n");
-#endif
 	printf(" Build Infomation\n");
 	printf("   Build Time : %s, %s\n", __TIME__, __DATE__);
 	printf("   Author     : Sung-won Jo\n");
@@ -1364,13 +1297,14 @@ int main( int32_t argc, char *argv[] )
 
 	register_signal( );
 
-	DvrSDCheckerThreadStart();
+	DvrSDCheckerTaskStart();
 
-	gstMsg = true;
-	while( gstMsg )
+	gstAppInfo.bLoopMsg = true;
+
+	while( gstAppInfo.bLoopMsg )
 	{
 		memset( &cmd, 0x00, sizeof(CMD_MESSAGE) );
-		if( 0 > DvrCmdQueuePop( g_hCmd, &cmd) )
+		if( 0 > DvrCmdQueuePop( gstAppInfo.hCmd, &cmd) )
 			continue;
 
 		switch( cmd.cmdType )
@@ -1378,138 +1312,107 @@ int main( int32_t argc, char *argv[] )
 			case CMD_TYPE_SD_INSERT :
 				usleep(100000);
 				
-				if( !mount( (char*)gstSdNode, DIRECTORY_TOP, "vfat", 0, "") ) {
-					printf("%s(): mount mmc. (mount pos: %s)\n", __func__, DIRECTORY_TOP);
+				if( !mount( (char*)gstAppInfo.cSDNode, DIRECTORY_TOP, "vfat", 0, "") ) {
+					printf("%s(): mount mmc. (mount pos: %s)\n", __FUNCTION__, DIRECTORY_TOP);
 				}
 				else {
-					printf("%s(): mount failed.", __func__);
+					printf("%s(): mount failed.", __FUNCTION__);
 				}
 
-#ifdef DEMO
-				if( !access("/mnt/mmc/network.txt", F_OK) ) {
-					gstVideoChannel		= 1;
-					gstAudioEnable		= true;
-					gstUserDataEnable	= false;
-					gstNetworkType		= DVR_NETWORK_HLS;
+				gstAppInfo.hDvr = NX_DvrInit( &mediaConfig, &recordConfig, &displayConfig );
+				if( gstAppInfo.hDvr )	NX_DvrGetAPIVersion( gstAppInfo.hDvr, &gstAppInfo.iVersionMajor, &gstAppInfo.iVersionMinor, &gstAppInfo.iVersionRevision );
 
-					mediaConfig.nVideoChannel	= gstVideoChannel;
-					mediaConfig.bEnableAudio	= gstAudioEnable;
-					mediaConfig.bEnableUserData = gstUserDataEnable;
-					recordConfig.networkType	= gstNetworkType;
-
-					mediaConfig.videoConfig[0].nBitrate	= 4000000;
-					mediaConfig.videoConfig[1].nBitrate	= 4000000;
-				}
-				else {
-					gstVideoChannel		= 2;
-					gstAudioEnable		= true;
-					gstUserDataEnable	= true;
-					gstNetworkType		= false;
-
-					mediaConfig.nVideoChannel	= gstVideoChannel;
-					mediaConfig.bEnableAudio	= gstAudioEnable;
-					mediaConfig.bEnableUserData = gstUserDataEnable;
-					recordConfig.networkType	= gstNetworkType;					
-
-					mediaConfig.videoConfig[0].nBitrate	= 7000000;
-					mediaConfig.videoConfig[1].nBitrate	= 7000000;
-				}
-#endif
-
-				g_hDvr = NX_DvrInit( &mediaConfig, &recordConfig, &displayConfig );
-				if( g_hDvr )	NX_DvrGetAPIVersion( g_hDvr, &gstApiMajor, &gstApiMinor, &gstApiRevision );
-				
 				DvrPrintConfig( &mediaConfig );
 
-				memset( dir_normal, 0x00, sizeof(dir_normal) );
-				memset( dir_event, 0x00, sizeof(dir_event) );
-				memset( dir_capture, 0x00, sizeof(dir_capture) );
+				memset( gstAppInfo.cNormalDir,	0x00, sizeof(gstAppInfo.cNormalDir)	);
+				memset( gstAppInfo.cEventDir,	0x00, sizeof(gstAppInfo.cEventDir)	);
+				memset( gstAppInfo.cCaptureDir,	0x00, sizeof(gstAppInfo.cCaptureDir));
 
-				sprintf( (char*)dir_normal,	"%s/normal", dir_top);
-				sprintf( (char*)dir_event, "%s/event", dir_top);
-				sprintf( (char*)dir_capture, "%s/capture", dir_top);
+				sprintf( (char*)gstAppInfo.cNormalDir,	"%s/normal",	gstAppInfo.cTopDir );
+				sprintf( (char*)gstAppInfo.cEventDir,	"%s/event",		gstAppInfo.cTopDir );
+				sprintf( (char*)gstAppInfo.cCaptureDir,	"%s/capture",	gstAppInfo.cTopDir );
 
-				g_hNormalFileManager	= DvrFileManagerInit( (const char*)dir_normal, 50, gstContainer == CONTAINER_TYPE_TS ? "ts" : "mp4" );
-				g_hEventFileManager		= DvrFileManagerInit( (const char*)dir_event, 20, gstContainer == CONTAINER_TYPE_TS ? "ts" : "mp4" );
-				g_hCaptureFileManager	= DvrFileManagerInit( (const char*)dir_capture, 1, "jpeg" );
+				gstAppInfo.hNormalFileManager	= DvrFileManagerInit( (const char*)gstAppInfo.cNormalDir,	50,	gstAppInfo.sConfig.iContainer ? "ts" : "mp4" );
+				gstAppInfo.hEventFileManager	= DvrFileManagerInit( (const char*)gstAppInfo.cEventDir,	20,	gstAppInfo.sConfig.iContainer ? "ts" : "mp4" );
+				gstAppInfo.hCaptureFileManager	= DvrFileManagerInit( (const char*)gstAppInfo.cCaptureDir,	1,	"jpeg" );
 
-				g_hGpsManager			= DvrGpsManagerInit();
-#ifndef BOARD_TYPE_LYNX
-				g_hGsensorManager 		= DvrGsensorManagerInit();
-				g_hPowerManager			= DvrPowerManagerInit();
+				gstAppInfo.hGpsManager			= DvrGpsManagerInit();
+				gstAppInfo.hGsensorManager 		= DvrGsensorManagerInit();
+
+#ifdef ENABLE_POWER_MANAGER
+				gstAppInfo.hPowerManager		= DvrPowerManagerInit();
 #endif
 
-				if( g_hPowerManager )	DvrPowerManagerRegCmd( g_hPowerManager, g_hCmd );
-				if( g_hGsensorManager )	DvrGsensorManagerRegCmd( g_hGsensorManager, g_hCmd );
-				if( g_hGsensorManager )	DvrGsensorManagerMotionEnable( g_hGsensorManager, gstMotionEnable );
+				if( gstAppInfo.hPowerManager )			DvrPowerManagerRegCmd( gstAppInfo.hPowerManager, gstAppInfo.hCmd );
+				if( gstAppInfo.hGsensorManager )		DvrGsensorManagerRegCmd( gstAppInfo.hGsensorManager, gstAppInfo.hCmd );
+				if( gstAppInfo.hGsensorManager )		DvrGsensorManagerMotionEnable( gstAppInfo.hGsensorManager, gstAppInfo.sConfig.bMotion );
 
-				if( g_hNormalFileManager )	DvrFileManagerStart( g_hNormalFileManager );
-				if( g_hEventFileManager )	DvrFileManagerStart( g_hEventFileManager );
-				if( g_hCaptureFileManager )	DvrFileManagerStart( g_hCaptureFileManager );
+				if( gstAppInfo.hNormalFileManager )		DvrFileManagerStart( gstAppInfo.hNormalFileManager );
+				if( gstAppInfo.hEventFileManager )		DvrFileManagerStart( gstAppInfo.hEventFileManager );
+				if( gstAppInfo.hCaptureFileManager )	DvrFileManagerStart( gstAppInfo.hCaptureFileManager );
 	
 				if( mediaConfig.videoConfig[0].bExternProc )
-					g_hFrontEffect		= NX_GTSclOpen( mediaConfig.videoConfig[0].nSrcWidth, mediaConfig.videoConfig[0].nSrcHeight, mediaConfig.videoConfig[0].nDstWidth, mediaConfig.videoConfig[0].nDstHeight, 12 );
+					gstAppInfo.hFrontEffect		= NX_GTSclOpen( mediaConfig.videoConfig[0].nSrcWidth, mediaConfig.videoConfig[0].nSrcHeight, mediaConfig.videoConfig[0].nDstWidth, mediaConfig.videoConfig[0].nDstHeight, 12 );
 				if( mediaConfig.videoConfig[1].bExternProc )
-					g_hRearEffect		= NX_GTSclOpen( mediaConfig.videoConfig[1].nSrcWidth, mediaConfig.videoConfig[1].nSrcHeight, mediaConfig.videoConfig[1].nDstWidth, mediaConfig.videoConfig[1].nDstHeight, 12 );
+					gstAppInfo.hRearEffect		= NX_GTSclOpen( mediaConfig.videoConfig[1].nSrcWidth, mediaConfig.videoConfig[1].nSrcHeight, mediaConfig.videoConfig[1].nDstWidth, mediaConfig.videoConfig[1].nDstHeight, 12 );
 
-				if( g_hDvr )	NX_DvrRegisterFileNameCallback( g_hDvr, cbGetNormalFileName, cbGetEventFileName, NULL , cbGetCaptureFileName );
-				if( g_hDvr )	NX_DvrRegisterTextOverlayCallback( g_hDvr, cbGetFrontTextOverlay, cbGetRearTextOverlay );
-				if( g_hDvr )	NX_DvrRegisterUserDataCallback( g_hDvr, cbUserData );
-				if( g_hDvr )	NX_DvrRegisterNotifyCallback( g_hDvr, cbNotifier );
-				if( g_hDvr )	NX_DvrRegisterImageEffectCallback( g_hDvr, cbFrontImageEffect, cbRearImageEffect );
+				if( gstAppInfo.hDvr )	NX_DvrRegisterFileNameCallback( gstAppInfo.hDvr, cbGetNormalFileName, cbGetEventFileName, NULL , cbGetCaptureFileName );
+				if( gstAppInfo.hDvr )	NX_DvrRegisterTextOverlayCallback( gstAppInfo.hDvr, cbGetFrontTextOverlay, cbGetRearTextOverlay );
+				if( gstAppInfo.hDvr )	NX_DvrRegisterUserDataCallback( gstAppInfo.hDvr, cbUserData );
+				if( gstAppInfo.hDvr )	NX_DvrRegisterNotifyCallback( gstAppInfo.hDvr, cbNotifier );
+				if( gstAppInfo.hDvr )	NX_DvrRegisterImageEffectCallback( gstAppInfo.hDvr, cbFrontImageEffect, cbRearImageEffect );
 #ifdef EXTERNAL_MOTION_DETECTION
-				if( g_hDvr )	NX_DvrRegisterMotionDetectCallback( g_hDvr, cbMotionDetect, cbMotionDetect );
+				if( gstAppInfo.hDvr )	NX_DvrRegisterMotionDetectCallback( gstAppInfo.hDvr, cbMotionDetect, cbMotionDetect );
 #endif
-				NX_DvrStart( g_hDvr, (gDvrMode == DVR_MODE_NORMAL) ? DVR_ENCODE_NORMAL : DVR_ENCODE_MOTION );
-				if( g_hAudio )	NX_AudioPlay( g_hAudio, "/root/wav/start.wav");
+				NX_DvrStart( gstAppInfo.hDvr, (gstAppInfo.iMode == DVR_MODE_NORMAL) ? DVR_ENCODE_NORMAL : DVR_ENCODE_MOTION );
+				if( gstAppInfo.hAudio )	NX_AudioPlay( gstAppInfo.hAudio, "/root/wav/start.wav");
 
-				if( g_hGpsManager )		DvrGpsManagerStart( g_hGpsManager );
-				if( g_hGsensorManager )	DvrGsensorManagerStart( g_hGsensorManager );
-				if( g_hPowerManager )	DvrPowerManagerStart( g_hPowerManager );
+				if( gstAppInfo.hGpsManager )		DvrGpsManagerStart( gstAppInfo.hGpsManager );
+				if( gstAppInfo.hGsensorManager )	DvrGsensorManagerStart( gstAppInfo.hGsensorManager );
+				if( gstAppInfo.hPowerManager )		DvrPowerManagerStart( gstAppInfo.hPowerManager );
 
-				if( !gstNoConsole )	DvrShellThreadStart();
-				if( gstTestEvent)	DvrEventTaskStart();
+				DvrConsoleTaskStart();
+				DvrEventTaskStart();
 
-				DvrInputEventThreadStart();
+				DvrInputEventTaskStart();
 				break;
 
 			case CMD_TYPE_SD_REMOVE :
-				DvrInputEventThreadStop();
+				DvrInputEventTaskStop();
 
-				if( gstTestEvent) DvrEventTaskStop();
-				if( !gstNoConsole ) DvrShellThreadStop();
+				DvrEventTaskStop();
+				DvrConsoleTaskStop();
 
-				if( g_hDvr ) NX_DvrStop( g_hDvr );
-				if( g_hDvr ) NX_DvrDeinit( g_hDvr );
+				if( gstAppInfo.hDvr ) NX_DvrStop( gstAppInfo.hDvr );
+				if( gstAppInfo.hDvr ) NX_DvrDeinit( gstAppInfo.hDvr );
 
-				if( g_hAudio )	NX_AudioPlay( g_hAudio, "/root/wav/stop.wav" );
-				usleep(2000000);
-				if( g_hAudio )	NX_AudioStop( g_hAudio, true );
+				if( gstAppInfo.hAudio )	NX_AudioPlay( gstAppInfo.hAudio, "/root/wav/stop.wav" );
+				if( gstAppInfo.hAudio )	NX_AudioStop( gstAppInfo.hAudio, true );
 
-				if( g_hGpsManager ) 	DvrGpsManagerStop( g_hGpsManager );
-				if( g_hGpsManager ) 	DvrGpsManagerDeinit( g_hGpsManager );
+				if( gstAppInfo.hGpsManager ) 	DvrGpsManagerStop( gstAppInfo.hGpsManager );
+				if( gstAppInfo.hGpsManager ) 	DvrGpsManagerDeinit( gstAppInfo.hGpsManager );
 
-				if( g_hGsensorManager ) DvrGsensorManagerStop( g_hGsensorManager );
-				if( g_hGsensorManager ) DvrGsensorManagerDeinit( g_hGsensorManager );
+				if( gstAppInfo.hGsensorManager ) DvrGsensorManagerStop( gstAppInfo.hGsensorManager );
+				if( gstAppInfo.hGsensorManager ) DvrGsensorManagerDeinit( gstAppInfo.hGsensorManager );
 
-				if( g_hPowerManager )	DvrPowerManagerStop( g_hPowerManager );
-				if( g_hPowerManager )	DvrPowerManagerDeinit( g_hPowerManager );
+				if( gstAppInfo.hPowerManager )	DvrPowerManagerStop( gstAppInfo.hPowerManager );
+				if( gstAppInfo.hPowerManager )	DvrPowerManagerDeinit( gstAppInfo.hPowerManager );
 
-				if( g_hNormalFileManager )	DvrFileManagerStop( g_hNormalFileManager );
-				if( g_hNormalFileManager )	DvrFileManagerDeinit( g_hNormalFileManager );
-				if( g_hEventFileManager )	DvrFileManagerStop( g_hEventFileManager );
-				if( g_hEventFileManager )	DvrFileManagerDeinit( g_hEventFileManager );
-				if( g_hCaptureFileManager )	DvrFileManagerStop( g_hCaptureFileManager );
-				if( g_hCaptureFileManager )	DvrFileManagerDeinit( g_hCaptureFileManager );				
+				if( gstAppInfo.hNormalFileManager )	DvrFileManagerStop( gstAppInfo.hNormalFileManager );
+				if( gstAppInfo.hNormalFileManager )	DvrFileManagerDeinit( gstAppInfo.hNormalFileManager );
+				if( gstAppInfo.hEventFileManager )	DvrFileManagerStop( gstAppInfo.hEventFileManager );
+				if( gstAppInfo.hEventFileManager )	DvrFileManagerDeinit( gstAppInfo.hEventFileManager );
+				if( gstAppInfo.hCaptureFileManager )	DvrFileManagerStop( gstAppInfo.hCaptureFileManager );
+				if( gstAppInfo.hCaptureFileManager )	DvrFileManagerDeinit( gstAppInfo.hCaptureFileManager );				
 
-				if( g_hGpsManager ) 		g_hGpsManager = NULL;
-				if( g_hGsensorManager ) 	g_hGsensorManager = NULL;
-				if( g_hPowerManager )		g_hPowerManager = NULL;
-				if( g_hNormalFileManager )	g_hNormalFileManager = NULL;
-				if( g_hEventFileManager )	g_hEventFileManager = NULL;
-				if( g_hCaptureFileManager )	g_hCaptureFileManager = NULL;
+				if( gstAppInfo.hGpsManager ) 		gstAppInfo.hGpsManager = NULL;
+				if( gstAppInfo.hGsensorManager ) 	gstAppInfo.hGsensorManager = NULL;
+				if( gstAppInfo.hPowerManager )		gstAppInfo.hPowerManager = NULL;
+				if( gstAppInfo.hNormalFileManager )	gstAppInfo.hNormalFileManager = NULL;
+				if( gstAppInfo.hEventFileManager )	gstAppInfo.hEventFileManager = NULL;
+				if( gstAppInfo.hCaptureFileManager )	gstAppInfo.hCaptureFileManager = NULL;
 
-				printf("%s(): umount mmc.\n", __func__);
+				printf("%s(): umount mmc.\n", __FUNCTION__);
 				int32_t pendCnt = 0;
 				while( 1 )
 				{
@@ -1526,81 +1429,81 @@ int main( int32_t argc, char *argv[] )
 				break;
 
 			case CMD_TYPE_EVENT :
-				pthread_mutex_lock( &gstModeLock );
-				if( gDvrMode != DVR_MODE_EVENT ) {
-					gDvrMode = DVR_MODE_EVENT;
-					pthread_mutex_unlock( &gstModeLock );	
-					if( g_hAudio )	NX_AudioPlay( g_hAudio, "/root/wav/event.wav" );
+				pthread_mutex_lock( &gstAppInfo.hLock );
+				if( gstAppInfo.iMode != DVR_MODE_EVENT ) {
+					gstAppInfo.iMode = DVR_MODE_EVENT;
+					pthread_mutex_unlock( &gstAppInfo.hLock );	
+					if( gstAppInfo.hAudio )	NX_AudioPlay( gstAppInfo.hAudio, "/root/wav/event.wav" );
 					DvrLedEventStart();
-					if( g_hDvr )	NX_DvrEvent( g_hDvr );
+					if( gstAppInfo.hDvr )	NX_DvrEvent( gstAppInfo.hDvr );
 				}
 				else {
-					pthread_mutex_unlock( &gstModeLock );	
+					pthread_mutex_unlock( &gstAppInfo.hLock );	
 				}
 				break;
 
 			case CMD_TYPE_CAPTURE :
-				if( g_hAudio )	NX_AudioPlay( g_hAudio, "/root/wav/capture.wav" );
-				if( g_hDvr )	NX_DvrCapture( g_hDvr, cmd.cmdData );
+				if( gstAppInfo.hAudio )	NX_AudioPlay( gstAppInfo.hAudio, "/root/wav/capture.wav" );
+				if( gstAppInfo.hDvr )	NX_DvrCapture( gstAppInfo.hDvr, cmd.cmdData );
 				break;
 
 			case CMD_TYPE_CHG_LCD :
-				if( g_hDvr )	NX_DvrSetPreview( g_hDvr, cmd.cmdData );
+				if( gstAppInfo.hDvr )	NX_DvrSetPreview( gstAppInfo.hDvr, cmd.cmdData );
 				break;
 
 			case CMD_TYPE_CHG_HDMI :
-				if( g_hDvr )	NX_DvrSetPreviewHdmi( g_hDvr, cmd.cmdData );
+				if( gstAppInfo.hDvr )	NX_DvrSetPreviewHdmi( gstAppInfo.hDvr, cmd.cmdData );
 				break;
 
 			case CMD_TYPE_CHG_MODE :
-				pthread_mutex_lock( &gstModeLock );
-				if( gDvrMode != DVR_MODE_MOTION ) {
-					gDvrMode = DVR_MODE_MOTION;
+				pthread_mutex_lock( &gstAppInfo.hLock );
+				if( gstAppInfo.iMode != DVR_MODE_MOTION ) {
+					gstAppInfo.iMode = DVR_MODE_MOTION;
 					DvrLedMotionStart();
 				}
 				else {
-					gDvrMode = DVR_MODE_NORMAL;
+					gstAppInfo.iMode = DVR_MODE_NORMAL;
 					DvrLedMotionStop();
 				}
-				pthread_mutex_unlock( &gstModeLock );
+				pthread_mutex_unlock( &gstAppInfo.hLock );
 
-				if( g_hDvr )	NX_DvrChangeMode( g_hDvr, cmd.cmdData );
+				if( gstAppInfo.hDvr )	NX_DvrChangeMode( gstAppInfo.hDvr, cmd.cmdData );
 				break;
 
 			case CMD_TYPE_LOW_VOLTAGE :
 				printf("Detect Low voltage.\n");
-				if( g_hAudio )	NX_AudioPlay( g_hAudio, "/root/wav/poweroff.wav" );
+				if( gstAppInfo.hAudio )	NX_AudioPlay( gstAppInfo.hAudio, "/root/wav/poweroff.wav" );
 				interval = GetSystemTickCount();
 				ExitApp();
 				interval = GetSystemTickCount() - interval;
 				printf("Stop Application. ( %lld mSec )\n", interval );
 
 				MicomKillSignal();
-				gstMsg = false;
+				gstAppInfo.bLoopMsg = false;
 				break;
 
 			case CMD_TYPE_HIGH_TEMP :
 				printf("Detect High Temperature.\n");
-				if( g_hAudio )	NX_AudioPlay( g_hAudio, "/root/wav/poweroff.wav" );
+				if( gstAppInfo.hAudio )	NX_AudioPlay( gstAppInfo.hAudio, "/root/wav/poweroff.wav" );
 				interval = GetSystemTickCount();
 				ExitApp();
 				interval = GetSystemTickCount() - interval;
 				printf("Stop Application. ( %lld mSec )\n", interval );
 
 				MicomKillSignal();
-				gstMsg = false;
+				gstAppInfo.bLoopMsg = false;
 				break;
 
 			case CMD_TYPE_MICOM_INT :
 				printf("Micom Interrput.\n");
-				if( g_hAudio )	NX_AudioPlay( g_hAudio, "/root/wav/poweroff.wav" );
+				if( gstAppInfo.hAudio )	NX_AudioPlay( gstAppInfo.hAudio, "/root/wav/poweroff.wav" );
 				interval = GetSystemTickCount();
 				ExitApp();
 				interval = GetSystemTickCount() - interval;
 				printf("Stop Application. ( %lld mSec )\n", interval );
 
 				MicomKillSignal();
-				gstMsg = false;
+				gstAppInfo.bLoopMsg = false;
 				break;
 				
 			default :

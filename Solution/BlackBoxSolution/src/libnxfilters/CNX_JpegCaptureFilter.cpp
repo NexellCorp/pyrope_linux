@@ -50,7 +50,7 @@ CNX_JpegCaptureFilter::~CNX_JpegCaptureFilter( void )
 //------------------------------------------------------------------------------
 void	CNX_JpegCaptureFilter::Init( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( false == m_bInit );
 
 	if( false == m_bInit )
@@ -58,13 +58,13 @@ void	CNX_JpegCaptureFilter::Init( void )
 		m_bInit = true;
 	}
 	
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void	CNX_JpegCaptureFilter::Deinit( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( true == m_bInit );
 
 	if( true == m_bInit )
@@ -73,7 +73,7 @@ void	CNX_JpegCaptureFilter::Deinit( void )
 		m_bInit = false;
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -97,23 +97,23 @@ int32_t	CNX_JpegCaptureFilter::ReleaseSample( CNX_Sample *pSample )
 //------------------------------------------------------------------------------
 int32_t	CNX_JpegCaptureFilter::Run( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( false == m_bRun ) {
 		m_bRun = true;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t	CNX_JpegCaptureFilter::Stop( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( true == m_bRun ) {
 		m_bRun = false;
 		m_pSemWait->Post();
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
@@ -144,24 +144,24 @@ int32_t CNX_JpegCaptureFilter::JpegEncode( CNX_Sample *pSample )
 //------------------------------------------------------------------------------
 int32_t CNX_JpegCaptureFilter::Capture( int32_t iCount )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hLock );
 
 	if( m_iCaptureCount ) {
 		NxDbgMsg( NX_DBG_WARN, (TEXT("Fail, Capture Running ( remind %d ).\n"), m_iCaptureCount) );
-		NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+		NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 		return -1;
 	}
 
 	m_iCaptureCount = iCount;
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 
 int32_t CNX_JpegCaptureFilter::CaptureWait( int32_t iCount )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 
 	pthread_mutex_lock( &m_hLock );
 	m_iCaptureCount = iCount;
@@ -175,7 +175,7 @@ int32_t CNX_JpegCaptureFilter::CaptureWait( int32_t iCount )
 	m_bCaptureWait	= false;
 	pthread_mutex_unlock( &m_hLock );
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return 0;
 }
 

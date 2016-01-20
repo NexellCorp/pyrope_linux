@@ -123,11 +123,11 @@ int32_t		bPlayerRun = false;
 static void cbMessage( void *privateDesc, uint32_t message, uint32_t param1, uint32_t param2 )
 {
 	if( message == CALLBACK_MSG_EOS ) {
-		printf("%s(): end of stream.\n", __func__);
+		printf("%s(): end of stream.\n", __FUNCTION__);
 		SetPlayerStatus( PLAYER_STATUS_EOS );
 	}
 	else if( message == CALLBACK_MSG_PLAY_ERR ) {
-		printf("%s(): cannot play contents.\n", __func__);
+		printf("%s(): cannot play contents.\n", __FUNCTION__);
 	}
 }
 
@@ -197,7 +197,7 @@ int32_t PlayerStart( const char *filename )
 	printf("file name : %s\n", filename);
 
 	if( access(filename, F_OK) || filename[0] == 0x00 ) {
-		printf("%s(): File is not exist.\n", __func__);
+		printf("%s(): File is not exist.\n", __FUNCTION__);
 		return -1;
 	}
 
@@ -207,11 +207,11 @@ int32_t PlayerStart( const char *filename )
 
 	// typefind
 	if (ERROR_NONE != NX_TypeFind_Open(&pMediaInfo)) {
-		printf("%s(): NX_TypeFind_Open failed!\n", __func__);
+		printf("%s(): NX_TypeFind_Open failed!\n", __FUNCTION__);
 	}
 
 	if (ERROR_NONE != NX_TypeFind(pMediaInfo, stUri)) {
-		printf("%s(): NX_TypeFind failed! (is not support contents)\n", __func__);
+		printf("%s(): NX_TypeFind failed! (is not support contents)\n", __FUNCTION__);
 	}
 	else {
 		typefind_debug(pMediaInfo);
@@ -229,7 +229,7 @@ int32_t PlayerStart( const char *filename )
 				while (1)
 				{
 					if (video_request_track_num < 1 || video_request_track_num >(signed)pMediaInfo->VideoTrackTotNum) {
-						printf("%s(): Error Input video request number.\n", __func__);
+						printf("%s(): Error Input video request number.\n", __FUNCTION__);
 					}
 					else {
 						video_request_track_num--;
@@ -242,7 +242,7 @@ int32_t PlayerStart( const char *filename )
 				while (1)
 				{
 					if (audio_request_track_num < 1 || audio_request_track_num >(signed)pMediaInfo->AudioTrackTotNum) {
-						printf("%s(): Error Input audio request number.\n", __func__);
+						printf("%s(): Error Input audio request number.\n", __FUNCTION__);
 						//scanf("%d", &audio_request_track_num);
 					}
 					else {
@@ -256,23 +256,23 @@ int32_t PlayerStart( const char *filename )
 
 	mpResult = NX_MPSetFileName( &hPlayer, stUri, (char *)&MediaInfo );
 	if (ERROR_NONE != mpResult) {
-		printf("%s(): NX_MPSetFileName failed!\n", __func__);
+		printf("%s(): NX_MPSetFileName failed!\n", __FUNCTION__);
 	}
 
 	mpResult = NX_MPOpen(hPlayer, 100, 0, 0, audio_request_track_num, video_request_track_num, display, &cbMessage, NULL);
 	if (ERROR_NONE != mpResult) {
-		printf("%s(): NX_MPOpen failed!\n", __func__);
+		printf("%s(): NX_MPOpen failed!\n", __FUNCTION__);
 	}
 
 	int32_t dspModule = 0, dspPort = 0;
 	mpResult = NX_MPSetDspPosition(hPlayer, dspModule, dspPort, 0, 0, 800, 480);
 	if (ERROR_NONE != mpResult) {
-		printf("%s(): NX_MPSetDspPosition failed!\n", __func__);
+		printf("%s(): NX_MPSetDspPosition failed!\n", __FUNCTION__);
 	}
 
 	mpResult = NX_MPPlay(hPlayer, 1.);
 	if (ERROR_NONE != mpResult) {
-		printf("%s(): NX_MPPlay failed!\n", __func__);
+		printf("%s(): NX_MPPlay failed!\n", __FUNCTION__);
 	}
 	bPlayerRun = true;
 	SetPlayerStatus( PLAYER_STATUS_RUN );
@@ -316,7 +316,7 @@ int32_t PlayerSeek( uint32_t position )
 	uint32_t seekTime = ((float)position / 100.) * duration;
 	if(hPlayer) NX_MPSeek( hPlayer, seekTime );
 
-	printf( "%s(): seekTime = %d, duration = %d\n", __func__, seekTime, duration );
+	printf( "%s(): seekTime = %d, duration = %d\n", __FUNCTION__, seekTime, duration );
 
 	return 0;
 }

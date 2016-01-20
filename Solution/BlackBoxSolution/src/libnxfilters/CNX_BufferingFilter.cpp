@@ -97,7 +97,7 @@ CNX_BufferingFilter::~CNX_BufferingFilter()
 //------------------------------------------------------------------------------
 void CNX_BufferingFilter::Init( NX_BUFFERING_CONFIG *pConfig )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( false == m_bInit );
 	NX_ASSERT( NULL != pConfig );
 	NX_ASSERT( pConfig->bufferedTime / 1000 <= MAX_BUFFERD_TIME);
@@ -106,13 +106,13 @@ void CNX_BufferingFilter::Init( NX_BUFFERING_CONFIG *pConfig )
 		m_EventBufferedTime = pConfig->bufferedTime;
 		m_bInit = true;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
 void CNX_BufferingFilter::Deinit( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	NX_ASSERT( true == m_bInit );
 
 	if( true == m_bInit ) {
@@ -121,7 +121,7 @@ void CNX_BufferingFilter::Deinit( void )
 		
 		m_bInit = false;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -159,26 +159,26 @@ int32_t	CNX_BufferingFilter::ReleaseSample( CNX_Sample *pSample )
 //------------------------------------------------------------------------------
 int32_t	CNX_BufferingFilter::Run( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( m_bRun == false ) {
 		m_bThreadExit = false;
 		NX_ASSERT( !m_hThread );
 
 		if( 0 > pthread_create( &this->m_hThread, NULL, this->ThreadMain, this ) ) {
-			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __func__) );
+			NxDbgMsg( NX_DBG_ERR, (TEXT("%s(): Fail, Create Thread\n"), __FUNCTION__) );
 			return false;
 		}
 
 		m_bRun = true;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t	CNX_BufferingFilter::Stop( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	if( true == m_bRun ) {
 		m_bThreadExit = true;
 		m_pSemIn->Post();		// Send Dummy
@@ -186,23 +186,23 @@ int32_t	CNX_BufferingFilter::Stop( void )
 		m_hThread = 0x00;
 		m_bRun = false;
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_BufferingFilter::AllocateMemory( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s++\n"), __func__) );
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s++\n"), __FUNCTION__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t	CNX_BufferingFilter::FreeMemory( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s--\n"), __FUNCTION__) );
 	return true;
 }
 
@@ -222,7 +222,7 @@ int32_t	CNX_BufferingFilter::GetSample( CNX_Sample **ppSample )
 //------------------------------------------------------------------------------
 void CNX_BufferingFilter::ThreadLoop(void)
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	
 	CNX_MuxerSample	*pSample = NULL;
 	
@@ -264,7 +264,7 @@ void CNX_BufferingFilter::ThreadLoop(void)
 		PopStream();
 	}
 
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 }
 
 //------------------------------------------------------------------------------
@@ -396,7 +396,7 @@ int32_t	CNX_BufferingFilter::PushStream( CNX_MuxerSample *pSample )
 
 		m_PrvTimeStamp = m_CurTimeStamp;
 
-		NxDbgPushPopMsg( NX_DBG_DEBUG, (TEXT("%s(): Head( %d ), Tail( %d ), Count( %d )\n"), __func__, m_EventHead, m_EventTail, m_EventCount) );
+		NxDbgPushPopMsg( NX_DBG_DEBUG, (TEXT("%s(): Head( %d ), Tail( %d ), Count( %d )\n"), __FUNCTION__, m_EventHead, m_EventTail, m_EventCount) );
 	}
 
 	// Gathering sample ( for 1sec unit )
@@ -419,7 +419,7 @@ int32_t	CNX_BufferingFilter::PopStream( void )
 	m_EventTail = (m_EventTail + 1) % (m_EventBufferedTime + 1);
 	m_EventCount--;
 
-	NxDbgPushPopMsg( NX_DBG_DEBUG, (TEXT("%s(): Head( %d ), Tail( %d ), Count( %d )\n"), __func__, m_EventHead, m_EventTail, m_EventCount) );
+	NxDbgPushPopMsg( NX_DBG_DEBUG, (TEXT("%s(): Head( %d ), Tail( %d ), Count( %d )\n"), __FUNCTION__, m_EventHead, m_EventTail, m_EventCount) );
 
 	return true;
 }
@@ -427,8 +427,8 @@ int32_t	CNX_BufferingFilter::PopStream( void )
 //------------------------------------------------------------------------------
 int32_t	CNX_BufferingFilter::PopStreamAll( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
-	NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s(): Buffering Data : %d sec\n"), __func__, m_EventCount) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
+	NxDbgMsg( NX_DBG_DEBUG, (TEXT("%s(): Buffering Data : %d sec\n"), __FUNCTION__, m_EventCount) );
 	
 	while( m_EventCount > 0)
 	{
@@ -444,59 +444,59 @@ int32_t	CNX_BufferingFilter::PopStreamAll( void )
 		m_EventTail = (m_EventTail + 1) % (m_EventBufferedTime + 1);
 		m_EventCount--;
 
-		NxDbgPushPopMsg( NX_DBG_DEBUG, (TEXT("%s(): Head( %d ), Tail( %d ), Count( %d )\n"), __func__, m_EventHead, m_EventTail, m_EventCount) );
+		NxDbgPushPopMsg( NX_DBG_DEBUG, (TEXT("%s(): Head( %d ), Tail( %d ), Count( %d )\n"), __FUNCTION__, m_EventHead, m_EventTail, m_EventCount) );
 	}
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_BufferingFilter::ChangeBufferingMode( int32_t mode )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hBufferedLock );
 	m_BufferingMode = mode;
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t	CNX_BufferingFilter::PopBufferdData( int32_t bPopBufferdData )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hBufferedLock );
 	m_bPopBufferdData = bPopBufferdData;
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_BufferingFilter::StartFile( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hBufferedLock );
 	m_bStartFile = true;
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_BufferingFilter::StopFile( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hBufferedLock );
 	m_bStopFile = true;
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_BufferingFilter::ChangeFile( void )
 {
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()++\n"), __FUNCTION__) );
 	CNX_AutoLock lock( &m_hBufferedLock );
 	m_bChangeFile = true;
-	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __func__) );
+	NxDbgMsg( NX_DBG_VBS, (TEXT("%s()--\n"), __FUNCTION__) );
 	return true;
 }
 

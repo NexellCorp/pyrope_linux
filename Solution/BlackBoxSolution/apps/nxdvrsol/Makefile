@@ -25,6 +25,7 @@ COBJS	+= NX_DvrFileManager.o NX_DvrFileQueue.o
 COBJS	+= NX_DvrGpsManager.o
 COBJS	+= NX_DvrGsensorManager.o NX_DvrGsensor.o
 COBJS	+= NX_DvrPowerManager.o
+COBJS	+= NX_DvrConfigParser.o
 COBJS	+= NX_DvrMain.o
 
 TARGET 	:= nxdvrsol

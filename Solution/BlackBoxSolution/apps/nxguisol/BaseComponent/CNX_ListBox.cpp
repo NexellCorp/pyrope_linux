@@ -64,7 +64,7 @@ void CNX_ListBox::Destroy( void )
 		OBJ_ATTRIBUTE *pNextAttr = pAttr->pAttrList;
 		while( pAttr )
 		{
-			NxDbgMsg( NX_DBG_VBS, (TEXT("[%s()] Delete Component. ( %p )\n"), __func__, pAttr) );
+			NxDbgMsg( NX_DBG_VBS, (TEXT("[%s()] Delete Component. ( %p )\n"), __FUNCTION__, pAttr) );
 			free( pAttr );
 			pAttr = pNextAttr;
 			if( pAttr ) pNextAttr = pAttr->pAttrList;
@@ -93,7 +93,7 @@ void CNX_ListBox::UpdateList( OBJ_STATUS status )
 
 	if( !pAttr )
 	{
-		NxDbgMsg( NX_DBG_ERR, (TEXT("[%s()] Not matched attribute.\n"), __func__) );
+		NxDbgMsg( NX_DBG_ERR, (TEXT("[%s()] Not matched attribute.\n"), __FUNCTION__) );
 		return;
 	}
 
@@ -157,7 +157,7 @@ int32_t CNX_ListBox::EventLoop( CNX_BaseObject *pParent, SDL_Event *pSdlEvent )
 
 	if( !pAttr )
 	{
-		NxDbgMsg( NX_DBG_ERR, (TEXT("[%s()] Not matched attribute.\n"), __func__) );
+		NxDbgMsg( NX_DBG_ERR, (TEXT("[%s()] Not matched attribute.\n"), __FUNCTION__) );
 		ret = -1;
 		return ret;
 	}
@@ -318,7 +318,7 @@ int32_t	CNX_ListBox::AddString( uint8_t *str )
 	}
 	
 	m_nTotalItemNum++;
-	//printf("%s():: m_pListItem[%p], pItem[%p], pItem.item = %s\n", __func__, m_pListItem, pItem, pItem->item);
+	//printf("%s():: m_pListItem[%p], pItem[%p], pItem.item = %s\n", __FUNCTION__, m_pListItem, pItem, pItem->item);
 
 	return 0;
 }
@@ -418,7 +418,7 @@ void	CNX_ListBox::UpdateInfo( void )
 	OBJ_ATTRIBUTE	*pAttr = GetAttrList(); 
 
 	if( !pAttr ){
-		NxDbgMsg( NX_DBG_ERR, (TEXT("[%s()] Not matched attribute.\n"), __func__) );
+		NxDbgMsg( NX_DBG_ERR, (TEXT("[%s()] Not matched attribute.\n"), __FUNCTION__) );
 		return;
 	}
 

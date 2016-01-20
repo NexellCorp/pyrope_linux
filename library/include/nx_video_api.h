@@ -30,6 +30,7 @@ typedef enum {
 	NX_THEORA_DEC   = 0x07,         // Theora
 	NX_VP8_DEC      = 0x08,         // VP8
 	NX_JPEG_DEC     = 0x09,         // JPEG
+	NX_HEVC_DEC		= 0x0A,			// H.265( HEVC )
 
 	//  Encoders
 	NX_AVC_ENC      = 0x10,
@@ -202,16 +203,16 @@ typedef struct tNX_VID_DEC_OUT{
 	int32_t outDecIdx;                      // Decode Index
 	int32_t width;
 	int32_t height;
-	int32_t picType;                        // Picture Type
+	int32_t picType[2];                     // Picture Type
 
-	uint64_t timeStamp;                     // Time stamp
+	uint64_t timeStamp[2];                  // Time stamp
 	uint32_t strmReadPos;                   // Remained bitstream buffer size
 	uint32_t strmWritePos;                  // Remained bitstream buffer size
 
 	int32_t isInterlace;                    // 0 : progressive, 1 : interlace
 	int32_t topFieldFirst;                  // 0 : top field first, 1 : bottom field first
 
-	int32_t outFrmReliable_0_100;           // Percentage of MB's are reliable ranging from 0[all damage] to 100 [all clear]
+	int32_t outFrmReliable_0_100[2];        // Percentage of MB's are reliable ranging from 0[all damage] to 100 [all clear]
 
 	// for VC1 Decoder
 	int32_t multiResolution;                // 0 : non multi-resulution, 1 : horizontal scale is half, 2 : vertical scale is half, 3 : horizontal & vertical scale is half

@@ -239,7 +239,7 @@ function build_ramdisk()
 	$_SUDO_ mount -o loop $disk_name $mount_dir;
 
 	# copy files
-	cp -dR $root_path/* $mount_dir/
+	$_SUDO_ cp -dR $root_path/* $mount_dir/
 
 	# build device nodes
 	if [ $make_node = "y" ] || [ -n "$ext_mk_sh" ]; then
@@ -253,9 +253,9 @@ function build_ramdisk()
 	rm -rf $mount_dir
 
 	# copy image
-	if [ ! -z $copy_path ] && [ -d $copy_path ]; then
-		cp -f $disk_name.gz $copy_path
-	fi
+#	if [ ! -z $copy_path ] && [ -d $copy_path ]; then
+#		cp -f $disk_name.gz $copy_path
+#	fi
 }
 
 

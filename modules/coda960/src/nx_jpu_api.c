@@ -348,8 +348,8 @@ void JPU_DeinitInterrupt(void)
 
 static int JPU_WaitInterrupt(int timeOut)
 {
-#ifdef ENABLE_INTERRUPT_MODE
 	unsigned int reason=0;
+#ifdef ENABLE_INTERRUPT_MODE
 	if( 0 == wait_event_interruptible_timeout(gst_JPU_WaitQueue, atomic_read(&gJpuEventPresent), msecs_to_jiffies(timeOut)) )
 	{
 		reason=JPU_GetStatus();
@@ -361,10 +361,11 @@ static int JPU_WaitInterrupt(int timeOut)
 	{
 		atomic_set(&gJpuEventPresent, 0);
 		reason = gJpuIntrReason;
+		//printk("R = %x, W = %x, Phy = %x, ErrMb = %d, Reason = %x \n", VpuReadReg(MJPEG_BBC_RD_PTR_REG), VpuReadReg(MJPEG_BBC_WR_PTR_REG),
+		//	VpuReadReg(MJPEG_BBC_BAS_ADDR_REG), VpuReadReg(MJPEG_PIC_ERRMB_REG), reason );
 		return reason;
 	}
 #else
-	unsigned int reason=0;
 	while(timeOut > 0)
 	{
 		DrvMSleep( 1 );
@@ -935,6 +936,7 @@ NX_VPU_RET NX_VpuJpegRunFrame( NX_VPU_INST_HANDLE handle, VPU_ENC_RUN_FRAME_ARG 
 	val = VpuReadReg(MJPEG_PIC_STATUS_REG);
 
 	if ((val & 0x4) >> 2) {
+		NX_ErrMsg(("JPU Encode Error( reason = 0x%08x ) : VPU_RET_ERR_WRONG_SEQ \n", reason));
 		return VPU_RET_ERR_WRONG_SEQ;
 	}
 
@@ -1300,7 +1302,7 @@ NX_VPU_RET JPU_DecStartOneFrameCommand( NX_VpuCodecInst *pInst, VPU_DEC_DEC_FRAM
 		val = VpuReadReg(GDI_STATUS);
 
 	{
-		int format;
+		int format = -1;	// For no warning (  by doriya )
 		if (  pArg->hCurrFrameBuffer->fourCC == FOURCC_GRAY ) format = IMG_FORMAT_400;
 		else if ( pArg->hCurrFrameBuffer->fourCC == FOURCC_MVS4 ) format = IMG_FORMAT_444;
 		else if ( pArg->hCurrFrameBuffer->fourCC == FOURCC_V422 ) format = IMG_FORMAT_224;
@@ -1326,7 +1328,7 @@ NX_VPU_RET JPU_DecStartOneFrameCommand( NX_VpuCodecInst *pInst, VPU_DEC_DEC_FRAM
 
 	VpuWriteReg(MJPEG_PIC_START_REG, 1);
 
-WAIT_INTERRUPT:
+// WAIT_INTERRUPT:	// For no warning. ( by doriya )
 	if ( !(reason = JPU_WaitInterrupt( JPU_DEC_TIMEOUT )) )
 	{
 		NX_ErrMsg(("VPU_JpgDecStartOneFrameCommand() Failed. Timeout(%d)\n", JPU_DEC_TIMEOUT));

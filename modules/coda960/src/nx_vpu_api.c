@@ -2045,6 +2045,7 @@ static int FillBuffer(NX_VPU_INST_HANDLE handle, unsigned char *stream, int size
 			return -1;
 		vWriteOffset = size-remain;
 	}
+
 	pDecInfo->writePos = vWriteOffset + pDecInfo->strmBufPhyAddr;
 	return 0;
 }

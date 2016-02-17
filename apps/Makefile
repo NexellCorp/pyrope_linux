@@ -6,29 +6,20 @@ DIR		:=
 ######################################################################
 # Build options
 
-# Multi Media Libraries
-DIR += libion
-DIR += libnxmalloc
-DIR += libnxv4l2
-DIR += libnxvpu
-DIR += libnxjpeg
-DIR += libnxdeinterlace
+DIR += adc_test
+DIR += audio_test
+DIR += cec_test
+DIR += fb_test
+DIR += gpio_test
+DIR += jpeg_test
+DIR += nmea_test
+DIR += spi_test
+DIR += transcoding_example
+DIR += v4l2_test
+DIR += vip_test
+DIR += vpu_test
+DIR += vpu_test2
 
-# Graphic library
-DIR += libnxscaler
-DIR += libnxgraphictools
-
-# I/O Wrapper
-DIR += libcec
-DIR += libnxadc
-DIR += libnxgpio
-DIR += libnxaudio
-DIR += libnxpwm
-DIR += libnxiso7816
-
-# Etc Libraries
-DIR += libnxuevent
-DIR += libnxnmeaparser
 
 ######################################################################
 # Build

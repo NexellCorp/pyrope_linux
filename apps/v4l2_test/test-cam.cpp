@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
         width = atoi(argv[2]);
         height = atoi(argv[3]);
     } else {
-        printf("usage: ./test module width height\n");
+        printf("usage: ./camera_test [Module Index] [Clipper Width] [Clipper Height]\n");
         return 0;
     }
 

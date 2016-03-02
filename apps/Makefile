@@ -17,7 +17,6 @@ DIR += spi_test
 DIR += transcoding_example
 DIR += v4l2_test
 DIR += vip_test
-DIR += vpu_test
 DIR += vpu_test2
 
 

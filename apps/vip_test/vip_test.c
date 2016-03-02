@@ -395,8 +395,8 @@ static void def_param( APP_DATA *pAppData )
 	vipInfo.port 			= VIP_PORT_0;
 	vipInfo.mode 			= VIP_MODE_CLIPPER;	// VIP_MODE_CLIPPER / VIP_MODE_DECIMATOR / VIP_MODE_CLIP_DEC / VIP_MODE_CLIP_DEC2
 	
-	vipInfo.width			= 1024;
-	vipInfo.height			= 768;
+	vipInfo.width			= 800;
+	vipInfo.height			= 600;
 	vipInfo.numPlane		= 1;
 	vipInfo.fpsNum 			= 30;
 	vipInfo.fpsDen 			= 1;

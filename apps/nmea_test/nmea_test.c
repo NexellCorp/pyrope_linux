@@ -27,7 +27,7 @@
 #include <nx_nmea_parser.h>
 #include "gps_data.h"
 
-#define GPS_DEV_NAME		"/dev/ttyAMA2"
+#define GPS_DEV_NAME		"/dev/ttyAMA1"
 #define MAX_BUFFER_SIZE		1024
 
 #define GPS_DATA_SAMPLE

@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
         sensor_width = atoi(argv[4]);
         sensor_height = atoi(argv[5]);
     } else {
-        printf("usage: ./test module width height sensor_width sensor_height\n");
+        printf("usage: ./camera_test_4418 [Module Index] [Clipper Width] [Clipper Height] [Sensor Width] [Sensor Height]\n");
         return 0;
     }
 

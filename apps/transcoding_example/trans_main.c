@@ -14,11 +14,11 @@
 #ifdef __cplusplus
 extern "C"{
 #endif
-#include <libavformat/avformat.h>
-#include <libavcodec/avcodec.h>
-#include <libavcodec/opt.h>
-#include <libavutil/pixdesc.h>
-#include <libavdevice/avdevice.h>
+#include "libavformat/avformat.h"
+#include "libavcodec/avcodec.h"
+#include "libavcodec/opt.h"
+#include "libavutil/pixdesc.h"
+#include "libavdevice/avdevice.h"
 #ifdef __cplusplus
 }
 #endif
@@ -44,8 +44,8 @@ extern "C"{
 #endif
 
 
-#define	LCD_WIDTH	1280
-#define	LCD_HEIGHT	800
+#define	LCD_WIDTH	1024
+#define	LCD_HEIGHT	600
 
 #define	SRC_WIDTH	1920
 #define	SRC_HEIGHT	1080
@@ -214,7 +214,7 @@ FFMPEG_STREAM_READER *OpenMediaFile( const char *fileName )
 				goto ErrorExit;
 			}
 
-			if( avcodec_open(stream->codec, video_codec)<0 )
+			if( avcodec_open2(stream->codec, video_codec, NULL)<0 )
 			{
 				printf( "Error while opening codec for input stream %d\n", stream->index );
 				goto ErrorExit;
@@ -240,7 +240,7 @@ FFMPEG_STREAM_READER *OpenMediaFile( const char *fileName )
 				goto ErrorExit;
 			}
 
-			if( avcodec_open(stream->codec, audio_codec)<0 )
+			if( avcodec_open2(stream->codec, audio_codec, NULL)<0 )
 			{
 				printf( "Error while opening codec for input stream %d\n", stream->index );
 				goto ErrorExit;
@@ -298,7 +298,7 @@ void CloseFile( FFMPEG_STREAM_READER *fmt_ctx )
 int GetSequenceInformation( FFMPEG_STREAM_READER *streamReader, AVStream *stream, unsigned char *buffer, int size )
 {
 	unsigned char *pbHeader = buffer;
-	enum CodecID codecId = stream->codec->codec_id;
+	enum AVCodecID codecId = stream->codec->codec_id;
 	int fourcc;
 	int frameRate = 0;
 	int nMetaData = stream->codec->extradata_size;
@@ -596,7 +596,7 @@ int ReadStream( FFMPEG_STREAM_READER *streamReader, AVStream *stream, unsigned c
 {
 	int ret;
 	AVPacket pkt;
-	enum CodecID codecId = stream->codec->codec_id;
+	enum AVCodecID codecId = stream->codec->codec_id;
 	*size = 0;
 	do{
 		ret = av_read_frame( streamReader->fmt_ctx, &pkt );

@@ -53,6 +53,7 @@ install:
 	install -m 644 $(TARGET) $(LIB_INSTALL)
 	install -m 644 $(LIBNAME).a $(LIB_INSTALL)
 	cp -av ./libs/*.so* $(LIB_INSTALL)
+	cp -av ./libs/vr.ko $(LIB_INSTALL)
 
 distclean: clean
 	rm -f $(LIB_INSTALL)/$(TARGET)
@@ -61,6 +62,7 @@ distclean: clean
 	rm -f $(LIB_INSTALL)/libGLESv1_CM.so
 	rm -f $(LIB_INSTALL)/libGLESv2.so
 	rm -f $(LIB_INSTALL)/libVR.so
+	rm -f $(LIB_INSTALL)/vr.ko
 
 #########################################################################
 # Dependency

@@ -47,13 +47,13 @@ extern "C"{
 #define	LCD_WIDTH	1024
 #define	LCD_HEIGHT	600
 
-#define	SRC_WIDTH	1920
-#define	SRC_HEIGHT	1080
+#define	SRC_WIDTH	1280
+#define	SRC_HEIGHT	720
 
 // #define	ENC_WIDTH	1920
 // #define	ENC_HEIGHT	1080
-#define	ENC_WIDTH	1280
-#define	ENC_HEIGHT	720
+#define	ENC_WIDTH	720
+#define	ENC_HEIGHT	480
 
 #define	RCV_V2
 
@@ -63,17 +63,17 @@ extern "C"{
 #define	NX_MAX_PPS_SIZE		1024
 
 typedef struct {
-	int				version;
-	int				profile_indication;
-	int				compatible_profile;
-	int				level_indication;
-	int				nal_length_size;
-	int				num_sps;
-	int				sps_length[NX_MAX_NUM_SPS];
-	unsigned char	sps_data  [NX_MAX_NUM_SPS][NX_MAX_SPS_SIZE];
-	int				num_pps;
-	int				pps_length[NX_MAX_NUM_PPS];
-	unsigned char	pps_data  [NX_MAX_NUM_PPS][NX_MAX_PPS_SIZE];
+	int32_t		version;
+	int32_t		profile_indication;
+	int32_t		compatible_profile;
+	int32_t		level_indication;
+	int32_t		nal_length_size;
+	int32_t		num_sps;
+	int32_t		sps_length[NX_MAX_NUM_SPS];
+	uint8_t		sps_data  [NX_MAX_NUM_SPS][NX_MAX_SPS_SIZE];
+	int32_t		num_pps;
+	int32_t		pps_length[NX_MAX_NUM_PPS];
+	uint8_t		pps_data  [NX_MAX_NUM_PPS][NX_MAX_PPS_SIZE];
 } NX_AVCC_TYPE;
 
 
@@ -81,14 +81,14 @@ typedef struct tFFMPEG_STREAM_READER {
 	AVFormatContext		*fmt_ctx;
 
 	//	Video Stream Information
-	int					video_stream_idx;
+	int32_t				video_stream_idx;
 	AVStream			*video_stream;
 	AVCodec				*video_codec;
 
 	NX_AVCC_TYPE		h264AvcCHeader;		//	for h.264
 
 	//	Audio Stream Information
-	int					audio_stream_idx;
+	int32_t				audio_stream_idx;
 	AVStream			*audio_stream;
 	AVCodec				*audio_codec;
 } FFMPEG_STREAM_READER;
@@ -96,10 +96,10 @@ typedef struct tFFMPEG_STREAM_READER {
 
 typedef struct TRANS_APP_DATA
 {
-	int					srcWidth;
-	int					srcHeight;
-	int					encWidth;
-	int					encHeight;
+	int32_t				srcWidth;
+	int32_t				srcHeight;
+	int32_t				encWidth;
+	int32_t				encHeight;
 
 	NX_QUEUE			decRelQueue;
 	NX_QUEUE			decOutQueue;
@@ -115,8 +115,8 @@ typedef struct TRANS_APP_DATA
 	pthread_t			hEncThread;				//	Encode Loop Thread Handler
 	pthread_t			hImgProcThread;			//	Image Processing Loop Thread Handler
 
-	char				inFileName[1024];
-	char				outFileName[1024];
+	char				*inFileName;
+	char				*outFileName;
 
 
 	NX_VID_MEMORY_HANDLE outImageProc[3];
@@ -125,14 +125,14 @@ typedef struct TRANS_APP_DATA
 } TRANS_APP_DATA;
 
 
-unsigned char streamBuffer[8*1024*1024];
-unsigned char seqData[1024*4];
+uint8_t streamBuffer[8*1024*1024];
+uint8_t seqData[1024*4];
 
 
 //==============================================================================
-static int NX_ParseSpsPpsFromAVCC( unsigned char *extraData, int extraDataSize, NX_AVCC_TYPE *avcCInfo );
-static void NX_MakeH264StreamAVCCtoANNEXB( NX_AVCC_TYPE *avcc, unsigned char *pBuf, int *size );
-static void dumpdata( void *data, int len, const char *msg );
+static int32_t NX_ParseSpsPpsFromAVCC( uint8_t *extraData, int32_t extraDataSize, NX_AVCC_TYPE *avcCInfo );
+static void NX_MakeH264StreamAVCCtoANNEXB( NX_AVCC_TYPE *avcc, uint8_t *pBuf, int32_t *size );
+static void dumpdata( void *data, int32_t len, const char *msg );
 
 
 
@@ -141,25 +141,25 @@ static void dumpdata( void *data, int len, const char *msg );
 #endif
 
 #define PUT_LE32(_p, _var) \
-	*_p++ = (unsigned char)((_var)>>0);  \
-	*_p++ = (unsigned char)((_var)>>8);  \
-	*_p++ = (unsigned char)((_var)>>16); \
-	*_p++ = (unsigned char)((_var)>>24); 
+	*_p++ = (uint8_t)((_var)>>0);  \
+	*_p++ = (uint8_t)((_var)>>8);  \
+	*_p++ = (uint8_t)((_var)>>16); \
+	*_p++ = (uint8_t)((_var)>>24); 
 
 #define PUT_BE32(_p, _var) \
-	*_p++ = (unsigned char)((_var)>>24);  \
-	*_p++ = (unsigned char)((_var)>>16);  \
-	*_p++ = (unsigned char)((_var)>>8); \
-	*_p++ = (unsigned char)((_var)>>0); 
+	*_p++ = (uint8_t)((_var)>>24);  \
+	*_p++ = (uint8_t)((_var)>>16);  \
+	*_p++ = (uint8_t)((_var)>>8); \
+	*_p++ = (uint8_t)((_var)>>0); 
 
 #define PUT_LE16(_p, _var) \
-	*_p++ = (unsigned char)((_var)>>0);  \
-	*_p++ = (unsigned char)((_var)>>8);  
+	*_p++ = (uint8_t)((_var)>>0);  \
+	*_p++ = (uint8_t)((_var)>>8);  
 
 
 #define PUT_BE16(_p, _var) \
-	*_p++ = (unsigned char)((_var)>>8);  \
-	*_p++ = (unsigned char)((_var)>>0);  
+	*_p++ = (uint8_t)((_var)>>8);  \
+	*_p++ = (uint8_t)((_var)>>0);  
 
 
 
@@ -175,9 +175,9 @@ FFMPEG_STREAM_READER *OpenMediaFile( const char *fileName )
 	AVCodec *audio_codec = NULL;
 	AVStream *video_stream = NULL;
 	AVStream *audio_stream = NULL;
-	int video_stream_idx = -1;
-	int audio_stream_idx = -1;
-	int i;
+	int32_t video_stream_idx = -1;
+	int32_t audio_stream_idx = -1;
+	int32_t i;
 
 	fmt_ctx = avformat_alloc_context();
 
@@ -202,7 +202,7 @@ FFMPEG_STREAM_READER *OpenMediaFile( const char *fileName )
 #endif
 
 	//	Video Codec Binding
-	for( i=0; i<(int)fmt_ctx->nb_streams ; i++ )
+	for( i=0; i<(int32_t)fmt_ctx->nb_streams ; i++ )
 	{
 		AVStream *stream = fmt_ctx->streams[i];
 
@@ -291,25 +291,26 @@ void CloseFile( FFMPEG_STREAM_READER *fmt_ctx )
 	if( fmt_ctx )
 	{
 		av_close_input_file( (struct AVFormatContext*)fmt_ctx->fmt_ctx );
+		free(fmt_ctx);
 	}
 }
 
 
-int GetSequenceInformation( FFMPEG_STREAM_READER *streamReader, AVStream *stream, unsigned char *buffer, int size )
+int32_t GetSequenceInformation( FFMPEG_STREAM_READER *streamReader, AVStream *stream, uint8_t *buffer, int32_t size )
 {
-	unsigned char *pbHeader = buffer;
+	uint8_t *pbHeader = buffer;
 	enum AVCodecID codecId = stream->codec->codec_id;
-	int fourcc;
-	int frameRate = 0;
-	int nMetaData = stream->codec->extradata_size;
-	unsigned char *pbMetaData = stream->codec->extradata;
-	int retSize = 0;
-	unsigned int tag = stream->codec->codec_tag;
+	int32_t fourcc;
+	int32_t frameRate = 0;
+	int32_t nMetaData = stream->codec->extradata_size;
+	uint8_t *pbMetaData = stream->codec->extradata;
+	int32_t retSize = 0;
+	uint32_t tag = stream->codec->codec_tag;
 
 	if (stream->avg_frame_rate.den && stream->avg_frame_rate.num)
-		frameRate = (int)((double)stream->avg_frame_rate.num/(double)stream->avg_frame_rate.den);
+		frameRate = (int32_t)((double)stream->avg_frame_rate.num/(double)stream->avg_frame_rate.den);
 	if (!frameRate && stream->r_frame_rate.den && stream->r_frame_rate.num)
-		frameRate = (int)((double)stream->r_frame_rate.num/(double)stream->r_frame_rate.den);
+		frameRate = (int32_t)((double)stream->r_frame_rate.num/(double)stream->r_frame_rate.den);
 
 	if( (codecId == CODEC_ID_H264) && (stream->codec->extradata_size>0) )
 	{
@@ -434,14 +435,14 @@ int GetSequenceInformation( FFMPEG_STREAM_READER *streamReader, AVStream *stream
 
 
 
-static int PasreAVCStream( AVPacket *pkt, int nalLengthSize, unsigned char *buffer, int outBufSize )
+static int32_t PasreAVCStream( AVPacket *pkt, int32_t nalLengthSize, uint8_t *buffer, int32_t outBufSize )
 {
-	int nalLength;
+	int32_t nalLength;
 
 	//	input
-	unsigned char *inBuf = pkt->data;
-	int inSize = pkt->size;
-	int pos=0;
+	uint8_t *inBuf = pkt->data;
+	int32_t inSize = pkt->size;
+	int32_t pos=0;
 
 	//	'avcC' format
 	do{
@@ -467,7 +468,7 @@ static int PasreAVCStream( AVPacket *pkt, int nalLengthSize, unsigned char *buff
 		inBuf  += nalLengthSize;
 		inSize -= nalLengthSize;
 
-		if( 0==nalLength || inSize<(int)nalLength )
+		if( 0==nalLength || inSize<(int32_t)nalLength )
 		{
 			printf("Error : avcC type nal length error (nalLength = %d, inSize=%d, nalLengthSize=%d)\n", nalLength, inSize, nalLengthSize);
 			return -1;
@@ -489,12 +490,12 @@ static int PasreAVCStream( AVPacket *pkt, int nalLengthSize, unsigned char *buff
 	return pos;
 }
 
-static int MakeRvStream( AVPacket *pkt, AVStream *stream, unsigned char *buffer, int outBufSize )
+static int32_t MakeRvStream( AVPacket *pkt, AVStream *stream, uint8_t *buffer, int32_t outBufSize )
 {
-	unsigned char *p = pkt->data;
-    int cSlice, nSlice;
-    int i, val, offset;
-	int size;
+	uint8_t *p = pkt->data;
+    int32_t cSlice, nSlice;
+    int32_t i, val, offset;
+	int32_t size;
 
 	cSlice = p[0] + 1;
 	nSlice =  pkt->size - 1 - (cSlice * 8);
@@ -507,14 +508,14 @@ static int MakeRvStream( AVPacket *pkt, AVStream *stream, unsigned char *buffer,
 	}
 	else
 	{
-		PUT_LE32(buffer, (int)((double)(pkt->pts/stream->time_base.den))); // milli_sec
+		PUT_LE32(buffer, (int32_t)((double)(pkt->pts/stream->time_base.den))); // milli_sec
 	}
 	PUT_BE16(buffer, stream->codec->frame_number);
 	PUT_BE16(buffer, 0x02); //Flags
 	PUT_BE32(buffer, 0x00); //LastPacket
 	PUT_BE32(buffer, cSlice); //NumSegments
 	offset = 1;
-	for (i = 0; i < (int) cSlice; i++)
+	for (i = 0; i < (int32_t) cSlice; i++)
 	{
 		val = (p[offset+3] << 24) | (p[offset+2] << 16) | (p[offset+1] << 8) | p[offset];
 		PUT_BE32(buffer, val); //isValid
@@ -532,10 +533,10 @@ static int MakeRvStream( AVPacket *pkt, AVStream *stream, unsigned char *buffer,
 	return size;
 }
 
-static int MakeVC1Stream( AVPacket *pkt, AVStream *stream, unsigned char *buffer, int outBufSize )
+static int32_t MakeVC1Stream( AVPacket *pkt, AVStream *stream, uint8_t *buffer, int32_t outBufSize )
 {
-	int size=0;
-	unsigned char *p = pkt->data;
+	int32_t size=0;
+	uint8_t *p = pkt->data;
 
 	if( stream->codec->codec_id == CODEC_ID_VC1 )
 	{
@@ -566,7 +567,7 @@ static int MakeVC1Stream( AVPacket *pkt, AVStream *stream, unsigned char *buffer
 		}
 		else
 		{
-			PUT_LE32(buffer, (int)((double)(pkt->pts/stream->time_base.den))); // milli_sec
+			PUT_LE32(buffer, (int32_t)((double)(pkt->pts/stream->time_base.den))); // milli_sec
 		}
 		size += 4;
 #endif
@@ -577,10 +578,10 @@ static int MakeVC1Stream( AVPacket *pkt, AVStream *stream, unsigned char *buffer
 }
 
 
-static int MakeDIVX3Stream( AVPacket *pkt, AVStream *stream, unsigned char *buffer, int outBufSize )
+static int32_t MakeDIVX3Stream( AVPacket *pkt, AVStream *stream, uint8_t *buffer, int32_t outBufSize )
 {
-	int size = pkt->size;
-	unsigned int tag = stream->codec->codec_tag;
+	int32_t size = pkt->size;
+	uint32_t tag = stream->codec->codec_tag;
 	if( tag == MKTAG('D', 'I', 'V', '3') || tag == MKTAG('M', 'P', '4', '3') ||
 		tag == MKTAG('M', 'P', 'G', '3') || tag == MKTAG('D', 'V', 'X', '3') || tag == MKTAG('A', 'P', '4', '1') )
 	{
@@ -592,9 +593,9 @@ static int MakeDIVX3Stream( AVPacket *pkt, AVStream *stream, unsigned char *buff
 	memcpy( buffer, pkt->data, pkt->size );
 	return size;
 }
-int ReadStream( FFMPEG_STREAM_READER *streamReader, AVStream *stream, unsigned char *buffer, int *size, int *isKey )
+int32_t ReadStream( FFMPEG_STREAM_READER *streamReader, AVStream *stream, uint8_t *buffer, int32_t *size, int32_t *isKey )
 {
-	int ret;
+	int32_t ret;
 	AVPacket pkt;
 	enum AVCodecID codecId = stream->codec->codec_id;
 	*size = 0;
@@ -647,9 +648,9 @@ int ReadStream( FFMPEG_STREAM_READER *streamReader, AVStream *stream, unsigned c
 	return -1;
 }
 
-int ReadStream2( FFMPEG_STREAM_READER *streamReader, AVStream *stream,  AVPacket *pkt )
+int32_t ReadStream2( FFMPEG_STREAM_READER *streamReader, AVStream *stream,  AVPacket *pkt )
 {
-	int ret;
+	int32_t ret;
 	do{
 		ret = av_read_frame( streamReader->fmt_ctx, pkt );
 		if( ret < 0 )
@@ -667,10 +668,10 @@ int ReadStream2( FFMPEG_STREAM_READER *streamReader, AVStream *stream,  AVPacket
 }
 
 
-static void dumpdata( void *data, int len, const char *msg )
+static void dumpdata( void *data, int32_t len, const char *msg )
 {
-	int i=0;
-	unsigned char *byte = (unsigned char *)data;
+	int32_t i=0;
+	uint8_t *byte = (uint8_t *)data;
 	printf("Dump Data : %s", msg);
 	for( i=0 ; i<len ; i ++ )
 	{
@@ -681,10 +682,10 @@ static void dumpdata( void *data, int len, const char *msg )
 	printf("\n");
 }
 
-int isIdrFrame( unsigned char *buf, int size )
+int32_t isIdrFrame( uint8_t *buf, int32_t size )
 {
-	int i;
-	int isIdr=0;
+	int32_t i;
+	int32_t isIdr=0;
 
 	for( i=0 ; i<size-4; i++ )
 	{
@@ -699,26 +700,26 @@ int isIdrFrame( unsigned char *buf, int size )
 }
 
 
-static int NX_ParseSpsPpsFromAVCC( unsigned char *extraData, int extraDataSize, NX_AVCC_TYPE *avcCInfo )
+static int32_t NX_ParseSpsPpsFromAVCC( uint8_t *extraData, int32_t extraDataSize, NX_AVCC_TYPE *avcCInfo )
 {
-	int pos = 0;
-	int i;
-	int length;
+	int32_t pos = 0;
+	int32_t i;
+	int32_t length;
 	if( 1!=extraData[0] || 11>extraDataSize ){
 		printf( "Error : Invalid \"avcC\" data\n" );
 		return -1;
 	}
 
 	//	Parser "avcC" format data
-	avcCInfo->version				= (int)extraData[pos];			pos++;
-	avcCInfo->profile_indication	= (int)extraData[pos];			pos++;
-	avcCInfo->compatible_profile	= (int)extraData[pos];			pos++;
-	avcCInfo->level_indication		= (int)extraData[pos];			pos++;
-	avcCInfo->nal_length_size		= (int)(extraData[pos]&0x03)+1;	pos++;
+	avcCInfo->version				= (int32_t)extraData[pos];			pos++;
+	avcCInfo->profile_indication	= (int32_t)extraData[pos];			pos++;
+	avcCInfo->compatible_profile	= (int32_t)extraData[pos];			pos++;
+	avcCInfo->level_indication		= (int32_t)extraData[pos];			pos++;
+	avcCInfo->nal_length_size		= (int32_t)(extraData[pos]&0x03)+1;	pos++;
 	//	parser SPSs
-	avcCInfo->num_sps				= (int)(extraData[pos]&0x1f);	pos++;
+	avcCInfo->num_sps				= (int32_t)(extraData[pos]&0x1f);	pos++;
 	for( i=0 ; i<avcCInfo->num_sps ; i++){
-		length = avcCInfo->sps_length[i] = (int)(extraData[pos]<<8)|extraData[pos+1];
+		length = avcCInfo->sps_length[i] = (int32_t)(extraData[pos]<<8)|extraData[pos+1];
 		pos+=2;
 		if( (pos+length) > extraDataSize ){
 			printf("Error : extraData size too small(SPS)\n" );
@@ -729,9 +730,9 @@ static int NX_ParseSpsPpsFromAVCC( unsigned char *extraData, int extraDataSize, 
 	}
 
 	//	parse PPSs
-	avcCInfo->num_pps				= (int)extraData[pos];			pos++;
+	avcCInfo->num_pps				= (int32_t)extraData[pos];			pos++;
 	for( i=0 ; i<avcCInfo->num_pps ; i++ ){
-		length = avcCInfo->pps_length[i] = (int)(extraData[pos]<<8)|extraData[pos+1];
+		length = avcCInfo->pps_length[i] = (int32_t)(extraData[pos]<<8)|extraData[pos+1];
 		pos+=2;
 		if( (pos+length) > extraDataSize ){
 			printf( "Error : extraData size too small(PPS)\n");
@@ -743,10 +744,10 @@ static int NX_ParseSpsPpsFromAVCC( unsigned char *extraData, int extraDataSize, 
 	return 0;
 }
 
-static void NX_MakeH264StreamAVCCtoANNEXB( NX_AVCC_TYPE *avcc, unsigned char *pBuf, int *size )
+static void NX_MakeH264StreamAVCCtoANNEXB( NX_AVCC_TYPE *avcc, uint8_t *pBuf, int32_t *size )
 {
-	int i;
-	int pos = 0;
+	int32_t i;
+	int32_t pos = 0;
 	for( i=0 ; i<avcc->num_sps ; i++ )
 	{
 		pBuf[pos++] = 0x00;
@@ -769,9 +770,9 @@ static void NX_MakeH264StreamAVCCtoANNEXB( NX_AVCC_TYPE *avcc, unsigned char *pB
 }
 
 
-static int CodecIdToVpuType( int codecId, unsigned int fourcc )
+static int32_t CodecIdToVpuType( int32_t codecId, uint32_t fourcc )
 {
-	int vpuCodecType =-1;
+	int32_t vpuCodecType =-1;
 	printf("codecId = %d, fourcc=%c%c%c%c\n", codecId, fourcc, fourcc>>8, fourcc>>16, fourcc>>24);
 	if( codecId == CODEC_ID_MPEG4 || codecId == CODEC_ID_FLV1 )
 	{
@@ -833,20 +834,6 @@ long long GetCurrentTime( void )
 }
 
 
-int multi_thread_transcoding( const char *inFileName, const char *outFileName );
-
-int main( int argc, char *argv[] )
-{
-	if( argc < 3 )
-	{
-		printf("Usage : %s [Input File] [Output File]\n", argv[0]);
-		return -1;
-	}
-
-//	return transcoding( argv[1], argv[2] );
-	return multi_thread_transcoding( argv[1], argv[2] );
-}
-
 
 //
 //                                |--- Scaling 0
@@ -855,7 +842,7 @@ int main( int argc, char *argv[] )
 //
 void *ImageProcessingThread( void *arg )
 {
-	unsigned int inIndex;
+	uint32_t inIndex;
 	TRANS_APP_DATA *pAppData = (TRANS_APP_DATA *)arg;
 	NX_SEMAPHORE *pSemDecOutBuf = pAppData->pSemDecOutBuf;	//	Post (Image Processing Thread), Pend(Decoding Thread), Initialize Value(Decodeable Buffer Size=4)
 	NX_SEMAPHORE *pSemImgInBuf  = pAppData->pSemImgInBuf ;	//	Post (Decoding Thread) , Pend (Image Processing Thread), Initial Value (0)
@@ -872,7 +859,7 @@ void *ImageProcessingThread( void *arg )
 	struct timeval startTime, endTime;
 	long long fpsTime = 0;
 	long long totalTime = 0;
-	unsigned int outCount=0;
+	uint32_t outCount=0;
 #endif
 
 #ifdef ENABLE_DISPLAY
@@ -881,7 +868,7 @@ void *ImageProcessingThread( void *arg )
 	DSP_IMG_RECT dspSrcRect;
 	DSP_IMG_RECT dspDstRect;
 
-	int displayCnt = 0;
+	int32_t displayCnt = 0;
 
 	memset( &dspInfo, 0x00, sizeof(dspInfo) );
 	dspInfo.port	= 0;
@@ -1004,7 +991,7 @@ void *EncodeThread( void *arg )
 	TRANS_APP_DATA *pAppData = (TRANS_APP_DATA *)arg;
 	//	Encoder Parameters
 	NX_VID_ENC_INIT_PARAM encInitParam;
-	unsigned char *seqBuffer = (unsigned char *)malloc( MAX_SEQ_BUF_SIZE );
+	uint8_t *seqBuffer = (uint8_t *)malloc( MAX_SEQ_BUF_SIZE );
 	NX_VID_ENC_HANDLE hEnc;
 	NX_VID_ENC_IN encIn;
 	NX_VID_ENC_OUT encOut;
@@ -1038,7 +1025,7 @@ void *EncodeThread( void *arg )
 
 	if( fdOut )
 	{
-		int size;
+		int32_t size;
 		//	Write Sequence Data
 		NX_VidEncGetSeqInfo( hEnc, seqBuffer, &size );
 		fwrite( seqBuffer, 1, size, fdOut );
@@ -1064,7 +1051,7 @@ void *EncodeThread( void *arg )
 		{
 			//	Write Sequence Data
 			fwrite( encOut.outBuf, 1, encOut.bufSize, fdOut );
-			printf("outSize = %d\n", encOut.bufSize);
+			//printf("outSize = %d\n", encOut.bufSize);
 		}
 		//	Writing Semaphore
 		NX_PushQueue(&pAppData->imgOutQueue, (void*)encInputImg);
@@ -1081,28 +1068,25 @@ void *EncodeThread( void *arg )
 void *DecodeThread( void *arg )
 {
 	FFMPEG_STREAM_READER *pReader;
-	int vpuCodecType;
+	int32_t vpuCodecType;
 	VID_ERROR_E vidRet;
 	NX_VID_SEQ_IN seqIn;
 	NX_VID_SEQ_OUT seqOut;
 	NX_VID_DEC_HANDLE hDec;
 	NX_VID_DEC_IN decIn;
 	NX_VID_DEC_OUT decOut;
-	int seqSize = 0;
-	int bInit=0, pos=0;
-	int readSize, frameCount = 0;
-	int isKey = 0;
-	int needKey = 1;
-	int mp4Class=0;
-	int relIndex;
-	int seqNeedMoreBuffer = 0;
+	int32_t seqSize = 0;
+	int32_t bInit=0, pos=0;
+	int32_t readSize, frameCount = 0;
+	int32_t isKey = 0;
+	int32_t needKey = 1;
+	int32_t mp4Class=0;
+	int32_t relIndex;
+	int32_t seqNeedMoreBuffer = 0;
 
 	TRANS_APP_DATA *pAppData = (TRANS_APP_DATA *)arg;
 	NX_SEMAPHORE *pSemDecOutBuf = pAppData->pSemDecOutBuf;	//	Post (Image Processing Thread), Pend(Decoding Thread), Initialize Value(Decodeable Buffer Size=4)
 	NX_SEMAPHORE *pSemImgInBuf  = pAppData->pSemImgInBuf ;	//	Post (Decoding Thread) , Pend (Image Processing Thread), Initial Value (0)
-
-
-	av_register_all();
 
 	pReader = OpenMediaFile( pAppData->inFileName );
 	if( !pReader )
@@ -1167,6 +1151,7 @@ void *DecodeThread( void *arg )
 				seqIn.seqInfo = streamBuffer;
 				seqIn.seqSize = readSize+seqSize;
 				seqIn.enableUserData = 0;
+				seqIn.addNumBuffers = 4;
 				vidRet = NX_VidDecParseVideoCfg(hDec, &seqIn, &seqOut);
 				seqIn.width = seqOut.width;
 				seqIn.height = seqOut.height;
@@ -1182,6 +1167,7 @@ void *DecodeThread( void *arg )
 				seqIn.seqInfo = streamBuffer;
 				seqIn.seqSize = readSize;
 				seqIn.enableUserData = 0;
+				seqIn.addNumBuffers = 4;
 				vidRet = NX_VidDecParseVideoCfg(hDec, &seqIn, &seqOut);
 				seqIn.width = seqOut.width;
 				seqIn.height = seqOut.height;
@@ -1218,6 +1204,7 @@ void *DecodeThread( void *arg )
 			if( 0 == NX_PopQueue(&pAppData->decRelQueue, (void**)&relIndex) )
 			{
 				NX_VidDecClrDspFlag( hDec, &pAppData->decOutImage[relIndex], relIndex );
+				break;
 			}
 		}
 
@@ -1255,23 +1242,9 @@ void *DecodeThread( void *arg )
 }
 
 
-int multi_thread_transcoding( const char *inFileName, const char *outFileName )
+static int32_t multi_thread_transcoding( TRANS_APP_DATA *appData )
 {
-	int i;
-	TRANS_APP_DATA *appData = (TRANS_APP_DATA *)malloc( sizeof(TRANS_APP_DATA) );
-	static char cmdBuf[1024];
-
-	memset(cmdBuf, 0, sizeof(cmdBuf));
-
-	memset( appData, 0, sizeof(TRANS_APP_DATA) );
-
-	appData->srcWidth  = SRC_WIDTH;
-	appData->srcHeight = SRC_HEIGHT;
-	appData->encWidth  = ENC_WIDTH;
-	appData->encHeight = ENC_HEIGHT;
-
-	strcpy( appData->inFileName, inFileName );
-	strcpy( appData->outFileName, outFileName );
+	int32_t i;
 
 	//	Create Queue
 	NX_InitQueue(&appData->decOutQueue,   16);
@@ -1320,4 +1293,69 @@ int multi_thread_transcoding( const char *inFileName, const char *outFileName )
 	}
 
 	return 0;
+}
+
+void print_usage( const char *appName )
+{
+	printf(" Usage : %s -i [input file] -o [output file] -r [x,y]\n", appName);
+	printf("    -i [input file]      : Input source filename.\n");
+	printf("    -o [input file]      : Output source filename.\n");
+	printf("    -r [x,y]             : Encoder output resolution.\n\n");
+	printf(" example> \n");
+	printf("    %s -i 1920x1080.mp4 -o 1280x720 -r 1280,720\n", appName);
+}
+
+int32_t main( int32_t argc, char *argv[] )
+{
+	int32_t opt;
+	FFMPEG_STREAM_READER *pReader = NULL;
+	TRANS_APP_DATA *appData = (TRANS_APP_DATA *)malloc( sizeof(TRANS_APP_DATA) );
+	memset( appData, 0, sizeof(TRANS_APP_DATA) );
+
+	av_register_all();
+
+	appData->encWidth  = ENC_WIDTH;
+	appData->encHeight = ENC_HEIGHT;
+
+	while( -1 != (opt=getopt(argc, argv, "hi:o:r:")))
+	{
+		switch( opt )
+		{
+			case 'h':	print_usage( argv[0] );	break;
+			case 'i':	appData->inFileName  = strdup( optarg );  break;
+			case 'o':	appData->outFileName = strdup( optarg );  break;
+			case 'r':	sscanf(optarg, "%d,%d", &appData->encWidth, &appData->encHeight);  break;
+		}
+	}
+
+	if( NULL==appData->inFileName || NULL==appData->outFileName )
+	{
+		print_usage( argv[0] );
+		exit(-1);
+	}
+
+	pReader = OpenMediaFile( appData->inFileName );
+	if( !pReader )
+	{
+		printf("Cannot open input file (%s)\n", appData->inFileName);
+		exit(-1);
+	}
+	if( pReader && pReader->video_stream )
+	{
+		appData->srcWidth  = pReader->video_stream->codec->width;
+		appData->srcHeight = pReader->video_stream->codec->height;
+	}
+	CloseFile(pReader);
+
+
+	printf("=============================================\n");
+	printf("  Input File  : %s\n", appData->inFileName);
+	printf("  Output File : %s\n", appData->inFileName);
+	printf("  Resolution  : %dx%d\n", appData->encWidth, appData->encHeight);
+	printf("=============================================\n");
+
+	multi_thread_transcoding( appData );
+
+	if( appData )
+		free( appData );
 }

@@ -14,7 +14,7 @@
 //	Author		: 
 //	Export		:
 //	History		:
-//
+//  Supported	: WAV
 //------------------------------------------------------------------------------
 
 #include <stdio.h>
@@ -60,6 +60,7 @@ static void register_signal(void)
 void print_usage(void)
 {
 	printf("##### Audio Library Test Application #####\n");
+	printf("Supported format : WAV\n");
 	printf("  play        :  play wav-audio\n");
 	printf("  stop        :  stop wav-audio\n");
 	printf("  up          :  volume up\n");

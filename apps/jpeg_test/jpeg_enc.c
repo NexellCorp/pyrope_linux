@@ -30,8 +30,10 @@
 #include <nx_vip.h>
 #include <nx_fourcc.h>
 
-#define CAMERA_WIDTH		1024
-#define CAMERA_HEIGHT		768
+#define CAMERA_WIDTH		800
+#define CAMERA_HEIGHT		600
+
+#define VIP_PORT	VIP_PORT_0
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -147,7 +149,7 @@ int main( int argc, char *argv[] )
 
 	// Memory allocator
 	memset( &vipInfo, 0, sizeof(vipInfo) );
-	vipInfo.port 		= VIP_PORT_MIPI;
+	vipInfo.port 		= VIP_PORT;
 	vipInfo.mode 		= VIP_MODE_CLIPPER;
 	vipInfo.width 		= CAMERA_WIDTH;
 	vipInfo.height 		= CAMERA_HEIGHT;

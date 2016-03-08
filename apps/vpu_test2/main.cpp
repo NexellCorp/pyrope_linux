@@ -69,7 +69,12 @@ int32_t main( int32_t argc, char *argv[] )
 	appData.dspWidth = 1024;
 	appData.dspHeight = 600;
 
-	while( -1 != (opt=getopt(argc, argv, "m:i:o:d:hr:c:s:f:b:g:q:v:x:l:a:t:")))
+    if (argc == 1) {
+		print_usage(argv[0]);
+		return 0;
+	}
+
+	while( -1 != (opt=getopt(argc, argv, "hm:i:o:d:hr:c:s:f:b:g:q:v:x:l:a:t:")))
 	{
 		switch( opt ){
 			case 'm':

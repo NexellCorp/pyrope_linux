@@ -13,6 +13,7 @@ DIR += libnxv4l2
 DIR += libnxvpu
 DIR += libnxjpeg
 DIR += libnxdeinterlace
+DIR += libhevc
 
 # Graphic library
 DIR += libnxscaler

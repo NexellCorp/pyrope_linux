@@ -24,7 +24,6 @@ apps
 ├── transcoding_example : Transcoding example application( including scaling )
 ├── v4l2_test           : v4l2 module test application.
 ├── vip_test            : Video input test application.
-├── vpu_test            : video en/decoding test application.
 └── vpu_test2           : video en/decoding test application.(support Android)
 
 

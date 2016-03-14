@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
         return -EINVAL;
     }
 
-    if (argc >= 4) {
+    if (argc >= 6) {
         module = atoi(argv[1]);
         width = atoi(argv[2]);
         height = atoi(argv[3]);

@@ -30,8 +30,8 @@
 int main(int argc, char *argv[])
 {
     int ion_fd = ion_open();
-    int width;
-    int height;
+    int width, sensor_width;
+    int height, sensor_height;
     int clipper_id = nxp_v4l2_clipper0;
     int sensor_id = nxp_v4l2_sensor0;
     int video_id = nxp_v4l2_mlc0_video;
@@ -45,12 +45,14 @@ int main(int argc, char *argv[])
     }
 
 
-    if (argc >= 4) {
+    if (argc >= 6) {
         module = atoi(argv[1]);
         width = atoi(argv[2]);
         height = atoi(argv[3]);
+        sensor_width = atoi(argv[4]);
+        sensor_height = atoi(argv[5]);
     } else {
-        printf("usage: ./csi-test [Module Index] [Clipper Width] [Clipper Height]\n");
+        printf("usage: ./csi_test [Module Index] [Clipper Width] [Clipper Height] [Sensor Width] [Sensor Height]\n");
         return 0;
     }
 
@@ -76,11 +78,11 @@ int main(int argc, char *argv[])
 
     CHECK_COMMAND(v4l2_set_format(clipper_id, width, height, format));
     CHECK_COMMAND(v4l2_set_crop(clipper_id, 0, 0, width, height));
-    CHECK_COMMAND(v4l2_set_format(sensor_id, width, height, V4L2_MBUS_FMT_YUYV8_2X8));
+    CHECK_COMMAND(v4l2_set_format(sensor_id, sensor_width, sensor_height, V4L2_MBUS_FMT_YUYV8_2X8));
     CHECK_COMMAND(v4l2_set_format(nxp_v4l2_mipicsi, width, height, V4L2_MBUS_FMT_YUYV8_2X8));
     CHECK_COMMAND(v4l2_set_format(video_id, width, height, format));
 
-		// setting destination position
+	// setting destination position
     CHECK_COMMAND(v4l2_set_crop(video_id, 0, 0, width, height));
     // setting source crop
     CHECK_COMMAND(v4l2_set_crop_with_pad(video_id, 2, 0, 0, width, height)); //psw 20150331

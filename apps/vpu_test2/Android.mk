@@ -37,7 +37,6 @@ LOCAL_SHARED_LIBRARIES := \
 	libion-nexell	\
 	libnx_vpu	\
 	libnx_deinterlace	\
-	libnxgraphictools	\
 	libv4l2-nexell
 
 LOCAL_STATIC_LIBRARIES := \

@@ -8,7 +8,7 @@ INCLUDE += -I./
 INCLUDE += -I../../library/include 
 LIBRARY	+= -L../../library/lib -L../../library/lib/ratecontrol
 LIBRARY += -lnxjpeg -lturbojpeg -lnxvip -lnxdsp -lnxv4l2 -lnxvmem -lnxscaler -lnxvpu -lnxvidrc
-LIBRARY	+= -lstdc++
+LIBRARY	+= -lstdc++ -lpthread
 
 ######################################################################
 # Target

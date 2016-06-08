@@ -50,11 +50,10 @@ clean:
 
 install:
 	install -m 755 -d $(LIB_INSTALL)
-	install -m 755 -d $(INC_INSTALL)
 	install -m 644 $(TARGET) $(LIB_INSTALL)
 	install -m 644 $(LIBNAME).a $(LIB_INSTALL)
-	install -m 644 ./libs/*.so $(LIB_INSTALL)
-	install -m 644 src/nx_graphictools.h $(INC_INSTALL)
+	cp -av ./libs/*.so* $(LIB_INSTALL)
+	cp -av ./libs/vr.ko $(LIB_INSTALL)
 
 distclean: clean
 	rm -f $(LIB_INSTALL)/$(TARGET)
@@ -63,7 +62,7 @@ distclean: clean
 	rm -f $(LIB_INSTALL)/libGLESv1_CM.so
 	rm -f $(LIB_INSTALL)/libGLESv2.so
 	rm -f $(LIB_INSTALL)/libVR.so
-	rm -f $(INC_INSTALL)/nx_graphictools.h
+	rm -f $(LIB_INSTALL)/vr.ko
 
 #########################################################################
 # Dependency

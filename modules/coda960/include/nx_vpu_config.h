@@ -4,8 +4,8 @@
 
 
 #define	NX_MAX_VPU_INST_SPACE	5
-#define	NX_MAX_VPU_INSTANCE		3
-#define	NX_MAX_VPU_ENC_INST		2
+#define	NX_MAX_VPU_INSTANCE		5
+#define	NX_MAX_VPU_ENC_INST		3
 #define	NX_MAX_VPU_DEC_INST		2
 #define	NX_MAX_VPU_JPG_INST		1
 
@@ -20,11 +20,16 @@
 
 //	VPU Internal SRAM
 #define	VPU_SRAM_PHYSICAL_BASE	0xFFFF0000
+#if defined (CONFIG_ARCH_S5P4418)
+#define VPU_SRAM_SIZE			(0x10000)
+#endif
+#if defined (CONFIG_ARCH_S5P6818)
 #define VPU_SRAM_SIZE			(0x8000)
+#endif
 
 //	VPU Clock Gating
-#define	ENABLE_CLOCK_GATING	
-#define	ENABLE_POWER_SAVING	
+#define	ENABLE_CLOCK_GATING
+#define	ENABLE_POWER_SAVING
 
 
 #define	NX_DBG_INFO			1
@@ -83,7 +88,7 @@
 #define VPU_ENC_TIMEOUT			1000		//	1 sec
 #define VPU_DEC_TIMEOUT			300			//	300 msec
 #define JPU_ENC_TIMEOUT			1000		//	1 sec
-
+#define JPU_DEC_TIMEOUT			1000		//	1 sec
 
 
 #define VPU_GBU_SIZE    1024	//No modification required

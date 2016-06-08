@@ -57,7 +57,7 @@ int vrCreateEGLContext(unsigned int program);
 int vrDestroyEGLContext(unsigned int program);
 int vrTerminateEGL(void);
 EGLNativePixmapType vrCreatePixmap(unsigned int uiWidth, unsigned int uiHeight, void* pData, int is_video_dma_buf, 
-									unsigned int pixel_bits, int is_yuv_format);
+									unsigned int pixel_bits, VRImageFormatMode format);
 void vrDestroyPixmap(EGLNativePixmapType pPixmap);
 void __vr_base_dbg_halt( void );
 VR_ULONG base_util_time_get_usec(void);

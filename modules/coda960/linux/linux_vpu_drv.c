@@ -19,9 +19,21 @@
 #include "../include/vpu_types.h"
 
 #include <mach/soc.h>
-#include <mach/nxp4330.h>
+
+#if defined (CONFIG_ARCH_S5P6818)
+#include <mach/s5p6818.h>
+#endif
+
+#if defined (CONFIG_ARCH_S5P4418)
+#include <mach/s5p4418.h>
+#endif
+
 #include <mach/devices.h>
 #include <linux/clk.h>
+
+#ifdef CONFIG_NEXELL_DFS_BCLK
+#include <mach/nxp-dfs-bclk.h>
+#endif
 
 //----------------------------------------------------------------------------
 //								Global Variables
@@ -37,7 +49,7 @@ static dma_addr_t	gstFirmPhyAddress = 0;		//	Fimmware Physical Address
 static unsigned int	gstFirmVirAddress = 0;		//	Firmware Virtual Address
 
 //	Mutex
-static NX_MutexHandle gstDrvMutex = 0;	//	Inter IOCTL Lock
+static LinuxMutex gstDrvMutex;	//	Inter IOCTL Lock
 
 //	Platform device
 static struct platform_device *nx_vpu_device;
@@ -50,11 +62,12 @@ static struct platform_device *nx_vpu_device;
 //----------------------------------------------------------------------------
 static int nx_vpu_open( struct inode *inode, struct file *flip )
 {
-	DrvMutexLock( gstDrvMutex );
+	DrvMutexLock( &gstDrvMutex );
+
 	if( gstCurNumInstance >= NX_MAX_VPU_INSTANCE )
 	{
 		NX_ErrMsg( ("Cannot open vpu driver.(gstCurNumInstance=%d)\n", gstCurNumInstance) );
-		DrvMutexLock( gstDrvMutex );
+		DrvMutexUnlock( &gstDrvMutex );
 		return -1;
 	}
 
@@ -62,6 +75,9 @@ static int nx_vpu_open( struct inode *inode, struct file *flip )
 	if( gstCurNumInstance == 0 )
 	{
 		//	H/W Power On
+#ifdef CONFIG_NEXELL_DFS_BCLK
+        bclk_get(BCLK_USER_MPEG);
+#endif
 		NX_VPU_Clock( 1 );
 		NX_VpuInit( gstFirmVirAddress, gstFirmPhyAddress );
 #ifdef ENABLE_CLOCK_GATING
@@ -72,7 +88,7 @@ static int nx_vpu_open( struct inode *inode, struct file *flip )
 
 	gstCurNumInstance ++;
 	flip->private_data = 0;
-	DrvMutexUnlock( gstDrvMutex );
+	DrvMutexUnlock( &gstDrvMutex );
 	return 0;
 }
 
@@ -80,28 +96,27 @@ static int nx_vpu_open( struct inode *inode, struct file *flip )
 static int nx_vpu_close( struct inode *inode, struct file *filp )
 {
 	NX_VPU_INST_HANDLE hInst = (NX_VPU_INST_HANDLE)filp->private_data;
-	DrvMutexLock( gstDrvMutex );
+	DrvMutexLock( &gstDrvMutex );
 
 #ifdef ENABLE_CLOCK_GATING
 	NX_VPU_Clock( 1 );
 #endif
 
-	if( hInst )
+	if( hInst && hInst->inUse )
 	{
-		if( hInst->inUse )
-		{
-			hInst->inUse = 0;
+		hInst->inUse = 0;
+		if( hInst->codecMode < AVC_ENC )	gstCruDecInstance --;
+		else								gstCruEncInstance --;
 
-			if( hInst->isInitialized )
-			{
-				if( hInst->codecMode < AVC_ENC )
-					NX_VpuDecClose( hInst );
-				else
-					NX_VpuEncClose( hInst );
-				hInst->isInitialized = 0;
-			}
-			NX_DrvMemset( &hInst->codecInfo, 0, sizeof(hInst->codecInfo) );
+		if( hInst->isInitialized )
+		{
+			if( hInst->codecMode < AVC_ENC )
+				NX_VpuDecClose( hInst );
+			else
+				NX_VpuEncClose( hInst );
+			hInst->isInitialized = 0;
 		}
+		NX_DrvMemset( &hInst->codecInfo, 0, sizeof(hInst->codecInfo) );
 	}
 	gstCurNumInstance --;
 
@@ -114,7 +129,10 @@ static int nx_vpu_close( struct inode *inode, struct file *filp )
 #ifdef ENABLE_CLOCK_GATING
 		NX_VPU_Clock( 0 );
 #endif
-		NX_DbgMsg(1, ("End of power saving!!!\n"));
+		NX_DbgMsg(0, ("End of power saving!!!\n"));
+#ifdef CONFIG_NEXELL_DFS_BCLK
+        bclk_put(BCLK_USER_MPEG);
+#endif
 	}
 #endif
 
@@ -122,7 +140,7 @@ static int nx_vpu_close( struct inode *inode, struct file *filp )
 		NX_VPU_Clock( 0 );
 #endif
 
-	DrvMutexUnlock( gstDrvMutex );
+	DrvMutexUnlock( &gstDrvMutex );
 	return 0;
 }
 
@@ -132,19 +150,21 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 {
 	int ret = 0;
 	NX_VPU_INST_HANDLE hInst = (NX_VPU_INST_HANDLE)filp->private_data;
-	DrvMutexLock( gstDrvMutex );
+
+	DrvMutexLock( &gstDrvMutex );
 
 	FUNCIN();
 #ifdef ENABLE_CLOCK_GATING
 	NX_VPU_Clock(1);
 #endif
+
 	switch( cmd )
 	{
 	case IOCTL_VPU_OPEN_INSTANCE:
 		{
 			NX_VPU_RET vpuRet;
 			NX_VPU_INST_HANDLE hInst = 0;
-			static VPU_OPEN_ARG openArg;
+			VPU_OPEN_ARG openArg;
 
 			if( 0 != copy_from_user( &openArg, (void*)arg, sizeof(openArg) ) )
 			{
@@ -152,14 +172,28 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 				ret = -1;
 				break;
 			}
+
 			if( openArg.isEncoder )
 			{
-				 vpuRet = NX_VpuEncOpen( &openArg, &nx_vpu_device->dev, &hInst );
+				if( gstCruEncInstance >= NX_MAX_VPU_ENC_INST )
+				{
+					NX_ErrMsg( ("Maximum encoder limit error. Current(%d) vs. MAX(%d)!!!", gstCruEncInstance, NX_MAX_VPU_ENC_INST) );
+					ret = -1;
+					break;
+				}
+				vpuRet = NX_VpuEncOpen( &openArg, &nx_vpu_device->dev, &hInst );
 			}
 			else
 			{
+				if( gstCruDecInstance >= NX_MAX_VPU_DEC_INST )
+				{
+					NX_ErrMsg( ("Maximum decoder limit error. Current(%d) vs. MAX(%d)!!!", gstCruDecInstance, NX_MAX_VPU_DEC_INST) );
+					ret = -1;
+					break;
+				}
 				vpuRet = NX_VpuDecOpen( &openArg, &nx_vpu_device->dev, &hInst );
 			}
+
 			if( (VPU_RET_OK!=vpuRet) || (0==hInst) )
 			{
 				NX_ErrMsg(("Cannot open VPU Instance( codecStd=%d, isEncoder=%d, hInst=%p )\n", openArg.codecStd, openArg.isEncoder, hInst));
@@ -176,8 +210,14 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 				break;
 			}
 			filp->private_data = hInst;
+			if( ret == 0 )
+			{
+				if( openArg.isEncoder )	gstCruEncInstance ++;
+				else					gstCruDecInstance ++;
+			}
 		}
 		break;
+
 	case IOCTL_VPU_CLOSE_INSTANCE:
 		{
 			if( !hInst )
@@ -186,11 +226,12 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 				ret = -1;
 				break;
 			}
+
 			if( (MP4_ENC == hInst->codecMode) ||  (AVC_ENC == hInst->codecMode) )
 			{
 				NX_VpuEncClose( hInst );
 			}
-			else if( MJPG_ENC == hInst->codecMode )
+			else if( (MJPG_ENC == hInst->codecMode) || (MJPG_DEC == hInst->codecMode) )
 			{
 				//	N/A yet
 			}
@@ -209,69 +250,71 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 	case IOCTL_VPU_ENC_SET_SEQ_PARAM:
 		{
 			NX_VPU_RET vpuRet;
-			static VPU_ENC_SEQ_ARG seqArg;
+			VPU_ENC_SEQ_ARG seqArg;
 			if( !hInst )
 			{
 				NX_ErrMsg(("IOCTL_VPU_CLOSE_INSTANCE : Invalid Instance!!\n"));
-				ret = -1;
+				ret = VPU_RET_ERR_INST;
 				break;
 			}
-			
+
 			if( 0 != copy_from_user( &seqArg, (void*)arg, sizeof(seqArg) ) )
 			{
 				NX_ErrMsg(("IOCTL_VPU_ENC_SET_SEQ_PARAM : copy_from_user failed!!\n"));
-				ret = -1;
+				ret = VPU_RET_ERROR;
 				break;
 			}
 
 			if( VPU_RET_OK != (vpuRet = NX_VpuEncSetSeqParam( hInst, &seqArg )) )
 			{
 				NX_ErrMsg(("NX_VpuEncSetSeqParam() failed.(ErrorCode=%d)\n", vpuRet));
-				ret = -1;
+				ret = vpuRet;
 				break;
 			}
 
 			if( 0 != copy_to_user( (void*)arg, &seqArg, sizeof(seqArg) ) )
 			{
 				NX_ErrMsg(("IOCTL_VPU_ENC_SET_SEQ_PARAM : copy_to_user failed!!\n"));
-				ret = -1;
+				ret = VPU_RET_ERROR;
 				break;
 			}
 		}
 		break;
+
 	case IOCTL_VPU_ENC_SET_FRAME_BUF:
 		{
 			NX_VPU_RET vpuRet;
-			static VPU_ENC_SET_FRAME_ARG frmArg;
+			VPU_ENC_SET_FRAME_ARG frmArg;
 			if( !hInst )
 			{
 				NX_ErrMsg(("IOCTL_VPU_CLOSE_INSTANCE : Invalid Instance!!\n"));
-				ret = -1;
+				ret = VPU_RET_ERR_INST;
 				break;
 			}
-			
+
 			if( 0 != copy_from_user( &frmArg, (void*)arg, sizeof(frmArg) ) )
 			{
 				NX_ErrMsg(("IOCTL_VPU_ENC_SET_FRAME_BUF : copy_from_user failed!!\n"));
-				ret = -1;
+				ret = VPU_RET_ERROR;
 				break;
 			}
 
 			if( VPU_RET_OK != (vpuRet = NX_VpuEncSetFrame( hInst, &frmArg )) )
 			{
 				NX_ErrMsg(("NX_VpuEncSetFrame() failed.(ErrorCode=%d)\n", vpuRet));
-				ret = -1;
+				ret = vpuRet;
 				break;
 			}
 
 			if( 0 != copy_to_user( (void*)arg, &frmArg, sizeof(frmArg) ) )
 			{
 				NX_ErrMsg(("IOCTL_VPU_ENC_SET_FRAME_BUF : copy_to_user failed!!\n"));
-				ret = -1;
+				ret = VPU_RET_ERROR;
 				break;
 			}
 		}
 		break;
+
 	case IOCTL_VPU_ENC_GET_HEADER:
 		{
 			NX_VPU_RET vpuRet;
@@ -279,28 +322,28 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 			if( !hInst )
 			{
 				NX_ErrMsg(("IOCTL_VPU_CLOSE_INSTANCE : Invalid Instance!!\n"));
-				ret = -1;
+				ret = VPU_RET_ERR_INST;
 				break;
 			}
-			
+
 			if( 0 != copy_from_user( &hdrArg, (void*)arg, sizeof(hdrArg) ) )
 			{
 				NX_ErrMsg(("IOCTL_VPU_ENC_SET_FRAME_BUF : copy_from_user failed!!\n"));
-				ret = -1;
+				ret = VPU_RET_ERROR;
 				break;
 			}
 
 			if( VPU_RET_OK != (vpuRet = NX_VpuEncGetHeader( hInst, &hdrArg )) )
 			{
 				NX_ErrMsg(("NX_VpuEncGetHeader() failed.(ErrorCode=%d)\n", vpuRet));
-				ret = -1;
+				ret = vpuRet;
 				break;
 			}
 
 			if( 0 != copy_to_user( (void*)arg, &hdrArg, sizeof(hdrArg) ) )
 			{
 				NX_ErrMsg(("IOCTL_VPU_ENC_SET_FRAME_BUF : copy_to_user failed!!\n"));
-				ret = -1;
+				ret = VPU_RET_ERROR;
 				break;
 			}
 		}
@@ -309,37 +352,70 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 	case IOCTL_VPU_ENC_RUN_FRAME:
 		{
 			NX_VPU_RET vpuRet;
-			static VPU_ENC_RUN_FRAME_ARG runArg;
+			VPU_ENC_RUN_FRAME_ARG runArg;
 			if( !hInst )
 			{
 				NX_ErrMsg(("IOCTL_VPU_CLOSE_INSTANCE : Invalid Instance!!\n"));
-				ret = -1;
+				ret = VPU_RET_ERR_INST;
 				break;
 			}
-			
+
 			if( 0 != copy_from_user( &runArg, (void*)arg, sizeof(runArg) ) )
 			{
 				NX_ErrMsg(("IOCTL_VPU_ENC_RUN_FRAME : copy_from_user failed!!\n"));
-				ret = -1;
+				ret = VPU_RET_ERROR;
 				break;
 			}
 
 			if( VPU_RET_OK != (vpuRet = NX_VpuEncRunFrame( hInst, &runArg )) )
 			{
 				NX_ErrMsg(("NX_VpuEncRunFrame() failed.(ErrorCode=%d)\n", vpuRet));
-				ret = -1;
+				ret = vpuRet;
 				break;
 			}
 
 			if( 0 != copy_to_user( (void*)arg, &runArg, sizeof(runArg) ) )
 			{
 				NX_ErrMsg(("IOCTL_VPU_ENC_RUN_FRAME : copy_to_user failed!!\n"));
-				ret = -1;
+				ret = VPU_RET_ERROR;
 				break;
 			}
 		}
 		break;
 
+	case IOCTL_VPU_ENC_CHG_PARAM:
+		{
+			NX_VPU_RET vpuRet;
+			VPU_ENC_CHG_PARA_ARG chgArg;
+			if( !hInst )
+			{
+				NX_ErrMsg(("IOCTL_VPU_CLOSE_INSTANCE : Invalid Instance!!\n"));
+				ret = VPU_RET_ERR_INST;
+				break;
+			}
+
+			if( 0 != copy_from_user( &chgArg, (void*)arg, sizeof(chgArg) ) )
+			{
+				NX_ErrMsg(("IOCTL_VPU_ENC_CHG_PARAM : copy_from_user failed!!\n"));
+				ret = VPU_RET_ERROR;
+				break;
+			}
+
+			if( VPU_RET_OK != (vpuRet = NX_VpuEncChgParam( hInst, &chgArg )) )
+			{
+				NX_ErrMsg(("NX_VpuEncChgParam() failed.(ErrorCode=%d)\n", vpuRet));
+				ret = vpuRet;
+				break;
+			}
+
+			if( 0 != copy_to_user( (void*)arg, &chgArg, sizeof(chgArg) ) )
+			{
+				NX_ErrMsg(("IOCTL_VPU_ENC_CHG_PARAM : copy_to_user failed!!\n"));
+				ret = VPU_RET_ERROR;
+				break;
+			}
+		}
+		break;
 
 		//////////////////////////////////////////////////////////////////////
 		//
@@ -348,7 +424,7 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 	case IOCTL_VPU_DEC_SET_SEQ_INFO:
 		{
 			NX_VPU_RET vpuRet;
-			static VPU_DEC_SEQ_INIT_ARG seqArg;
+			VPU_DEC_SEQ_INIT_ARG seqArg;
 			if( !hInst )
 			{
 				NX_ErrMsg(("IOCTL_VPU_DEC_SET_SEQ_INFO : Invalid Instance!!\n"));
@@ -372,7 +448,6 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 					pbuf[ 8],pbuf[ 9],pbuf[10],pbuf[11], pbuf[12],pbuf[13],pbuf[14],pbuf[15]);
 			}
 
-
 			if( VPU_RET_OK != (vpuRet = NX_VpuDecSetSeqInfo( hInst, &seqArg )) )
 			{
 				NX_ErrMsg(("NX_VpuDecSetSeqInfo() failed.(ErrorCode=%d)\n", vpuRet));
@@ -387,6 +462,7 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 			}
 		}
 		break;
+
 	case IOCTL_VPU_DEC_REG_FRAME_BUF:
 		{
 			NX_VPU_RET vpuRet;
@@ -413,7 +489,7 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 		break;
 	case IOCTL_VPU_DEC_RUN_FRAME:
 		{
-			static VPU_DEC_DEC_FRAME_ARG decArg;
+			VPU_DEC_DEC_FRAME_ARG decArg;
 			if( !hInst )
 			{
 				NX_ErrMsg(("IOCTL_VPU_DEC_RUN_FRAME : Invalid Instance!!\n"));
@@ -430,8 +506,9 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 			if( ret < 0 )
 			{
 				NX_ErrMsg(("NX_VpuDecRunFrame() failed.(ErrorCode=%d)\n", ret));
+				decArg.iRet = ret;
 				ret = -1;
-				break;
+				//break;
 			}
 			if( 0 != copy_to_user( (void*)arg, &decArg, sizeof(decArg) ) )
 			{
@@ -508,7 +585,7 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 		}
 	case IOCTL_VPU_JPG_RUN_FRAME:
 		{
-			static VPU_ENC_RUN_FRAME_ARG encArg;
+			VPU_ENC_RUN_FRAME_ARG encArg;
 			if( !hInst )
 			{
 				NX_ErrMsg(("IOCTL_VPU_DEC_RUN_FRAME : Invalid Instance!!\n"));
@@ -545,7 +622,7 @@ static long nx_vpu_ioctl( struct file *filp, unsigned int cmd, unsigned long arg
 #endif
 	FUNCOUT();
 
-	DrvMutexUnlock( gstDrvMutex );
+	DrvMutexUnlock( &gstDrvMutex );
 
 	return ret;
 }
@@ -585,7 +662,7 @@ static int nx_vpu_drv_remove( struct platform_device *pdev )
 /* suspend and resume support for the video firmware */
 static int nx_vpu_drv_suspend(struct platform_device *dev, pm_message_t state)
 {
-	DrvMutexLock( gstDrvMutex );
+	DrvMutexLock( &gstDrvMutex );
 	PM_DBGOUT("nx_vpu_drv_suspend++\n");
 	NX_VPU_Clock( 1 );
 
@@ -594,13 +671,13 @@ static int nx_vpu_drv_suspend(struct platform_device *dev, pm_message_t state)
 	NX_VPU_Clock( 0 );
 #endif
 	PM_DBGOUT("nx_vpu_drv_suspend--\n");
-	DrvMutexUnlock( gstDrvMutex );
+	DrvMutexUnlock( &gstDrvMutex );
 	return 0;
 }
 
 static int nx_vpu_drv_resume(struct platform_device *dev)
 {
-	DrvMutexLock( gstDrvMutex );
+	DrvMutexLock( &gstDrvMutex );
 	PM_DBGOUT("nx_vpu_drv_resume++\n");
 	NX_VPU_Clock( 1 );
 	NX_VpuResume();
@@ -608,7 +685,7 @@ static int nx_vpu_drv_resume(struct platform_device *dev)
 	NX_VPU_Clock( 0 );
 #endif
 	PM_DBGOUT("nx_vpu_drv_resume--\n");
-	DrvMutexUnlock( gstDrvMutex );
+	DrvMutexUnlock( &gstDrvMutex );
 	return 0;
 }
 
@@ -630,7 +707,7 @@ static struct platform_driver nx_vpu_driver = {
 static int __devinit nx_vpu_init(void)
 {
 	int res = -1;
-	gstDrvMutex = DrvCreateMutex( "NX_VPU_MUTEX" );
+	DrvInitMutex( &gstDrvMutex, "NX_VPU_MUTEX" );
 
 
 	/* register platform device */
@@ -665,6 +742,7 @@ static int __devinit nx_vpu_init(void)
 
 static void __exit nx_vpu_exit(void)
 {
+	DrvMutexLock( &gstDrvMutex );
 	if(gstCurNumInstance > 0)
 	{
 		NX_DbgMsg( NX_DBG_INFO, ("Warning Video Frimware is running.(Total(%d)=Enc(%d)+Dec(%d)+Jpeg(%d)\n" ,
@@ -687,8 +765,9 @@ static void __exit nx_vpu_exit(void)
 	{
 		NX_LinearFree( &nx_vpu_device->dev, gstFirmPhyAddress, gstFirmVirAddress );
 	}
+	DrvMutexUnlock( &gstDrvMutex );
 
-	DrvDestroyMutex( gstDrvMutex );
+	DrvCloseMutex( &gstDrvMutex );
 
 	NX_DbgMsg( NX_DBG_INFO, ( TEXT("Nexell VPU Driver Unloaded\n") ) );
 }

@@ -1,6 +1,6 @@
 TARGET			= nx_vpu
 
-KDIR			:= ../../../kernel/kernel-3.4.x
+KDIR			:= ../../../../kernel/kernel-3.4.39
 #STRIP_CMD		= arm-cortex_a9-linux-gnueabi-strip
 
 obj-m			:= $(TARGET).o

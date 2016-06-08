@@ -2,7 +2,7 @@
 #define __dbgmsg_h__
 
 
-#if 1
+#if 0
 
 #ifdef ANDROID
 #include <cutils/log.h>

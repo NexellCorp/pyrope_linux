@@ -8,17 +8,23 @@ INC_INSTALL	:= 	../../include
 ######################################################################
 # Build options
 INCLUDE += -I./ -I../../include -I$(KERNDIR)/include
+#INCLUDE	+= -I../libhevc/common -I../libhevc/decoder
 
 LIBRARY += -L../../lib/
-LIBRARY += -lnxvip -lnxdsp -lnxv4l2 -lnxvmem
+LIBRARY += -lnxvmem
+LIBRARY += -lnxvidrc
+#LIBRARY += -lhevcdec
 
 ######################################################################
 # Target
 COBJS  	:= 
-COBJS  	+= nx_video_api.o
+COBJS  	+= parser_vld.o nx_video_api.o
 CPPOBJS	:=  
 
-CFLAGS	+= -g
+#CFLAGS	+= -DHEVC_DEC
+CFLAGS	+= -fPIC
+
+LDFLAGS := -Wl,-Bsymbolic
 
 LIBNAME	:= libnxvpu
 TARGET  := libnxvpu.so
@@ -31,24 +37,19 @@ all: $(TARGET)
 
 $(TARGET):	depend $(OBJS)
 	$(AR) $(ARFLAGS) $(LIBNAME).a $(OBJS)
-	$(CC) $(LDFLAGS) -shared -Wl,-soname,$(TARGET) -o $@ $(OBJS)
+	$(CC) $(LDFLAGS) -shared -Wl,-soname,$(TARGET) -o $@ $(OBJS) $(LIBRARY)
 
 install:
 	install -m 755 -d $(LIB_INSTALL)
-	install -m 755 -d $(INC_INSTALL)
 	install -m 644 $(TARGET) $(LIB_INSTALL)
 	install -m 644 $(LIBNAME).a $(LIB_INSTALL)
-	install -m 644 nx_video_api.h $(INC_INSTALL)
-	install -m 644 vpu_types.h $(INC_INSTALL)
 
 clean:
 	rm -f *.o *.so *.a .depend
 
 distclean: clean
-	rm -f $(LIB_INSTALL)/lib/$(TARGET)
-	rm -f $(LIB_INSTALL)/lib/$(LIBNAME).a
-	rm -f $(INC_INSTALL)/nx_video_api.h
-	rm -f $(INC_INSTALL)/vpu_types.h
+	rm -f $(LIB_INSTALL)/$(TARGET)
+	rm -f $(LIB_INSTALL)/$(LIBNAME).a
 
 
 #########################################################################

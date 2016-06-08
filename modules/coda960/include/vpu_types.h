@@ -15,49 +15,70 @@ typedef struct
 {
 	//	Input Arguments
 	int codecStd;
-	int isEncoder;			//	Encoder
-	int mp4Class;			//	Mpeg4 Class
+	int isEncoder;			// Encoder
+	int mp4Class;			// Mpeg4 Class
+	int chromaInterleave;	// CbCr Interleaved
 
 	NX_MEMORY_INFO	instanceBuf;
 	NX_MEMORY_INFO	streamBuf;
 
 	//	Output Arguments
-	int instIndex;			//	Instance Index
+	int instIndex;			// Instance Index
 } VPU_OPEN_ARG;
 
 typedef struct
 {
-	//	
-	int srcWidth;		//	source image's width
-	int srcHeight;		//	source image's height
+	// input image size
+	int srcWidth;			// source image's width
+	int srcHeight;			// source image's height
 
 	//	Set Stream Buffer Handle
 	unsigned int strmBufVirAddr;
 	unsigned int strmBufPhyAddr;
 	int strmBufSize;
 
-	int frameRate;		//	frame rate
-	int gopSize;		//	group of picture size
+	int frameRateNum;		// frame rate
+	int frameRateDen;
+	int gopSize;			// group of picture size
 
 	//	Rate Control
-	int	enableRC;		//	Enable Rate Control
-	int bitrate;		//	Bitrate
-	int rcAutoSkip;		//	Auto Skip
-	int maxQScale;		//	Max Quantization Scale
-	int userQScale;		//	User Quantization Scale
+	int	RCModule;			// 0 : VBR, 1 : CnM RC, 2 : NX RC
+	int bitrate;			// Target Bitrate
+	int disableSkip;		// Flag of Skip frame disable
+	int initialDelay;		// This value is valid if RCModule is 1.(MAX 0x7FFF)
+							// 0 does not check Reference decoder buffer delay constraint.
+	int	vbvBufferSize;		// Reference Decoder buffer size in bytes
+							// This valid is ignored if RCModule is 1 and initialDelay is is 0.(MAX 0x7FFFFFFF)
+	int gammaFactor;		// It is valid when RCModule is 1.
+
+	//	Quantization Scale [ H.264/AVC(0~51), MPEG4(1~31) ]
+	int maxQP;				// Max Quantization Scale
+	int initQP;				// This value is Initial QP whne CBR. (Initial QP is computed if initQP is 0.)
+							// This value is user QP when VBR.
 
 	//	Input Buffer Chroma Interleaved
 	int chromaInterleave;	//	Input Buffer Chroma Interleaved Format
 	int refChromaInterleave;//	Reference Buffer's Chorma Interleaved Format
 
 	//	ME Search Range
-	int searchRange;	//	ME_SEARCH_RAGME_[0~3] ( recomand ME_SEARCH_RAGME_2 )
+	int searchRange;		//	ME_SEARCH_RAGME_[0~3] ( recomand ME_SEARCH_RAGME_2 )
+							//	0 : H(-128~127), V(-64~63)
+							//	1 : H( -64~ 63), V(-32~31)
+							//	2 : H( -32~ 31), V(-16~15)
+							//	3 : H( -16~ 15), V(-16~15)
 
-	//	JPEG Specific
+	//	Other Options
+	int intraRefreshMbs;	//	an Intra MB refresh number.
+							//	It must be less than total MacroBlocks.
+
 	int rotAngle;
 	int mirDirection;
-	int quality;
 
+	//	AVC Only
+	int	enableAUDelimiter;	//	enable/disable Access Unit Delimiter
+
+	//	JPEG Specific
+	int quality;
 }VPU_ENC_SEQ_ARG;
 
 
@@ -68,7 +89,7 @@ typedef struct
 	NX_VID_MEMORY_INFO frameBuffer[2];	//	Frame Buffer Informations
 
 	//	Sub Sample A/B Buffer ( 1 sub sample buffer size = Framebuffer size/4 )
-	NX_MEMORY_INFO subSampleBuffer[2];	//	
+	NX_MEMORY_INFO subSampleBuffer[2];	//
 
 	//	Data partition Buffer size ( MAX WIDTH * MAX HEIGHT * 3 / 4 )
 	NX_MEMORY_INFO dataPartitionBuffer;	//	Mpeg4 Only
@@ -82,6 +103,8 @@ typedef union
 		int vosSize;
 		unsigned char volData[512];
 		int volSize;
+		unsigned char voData[512];
+		int voSize;
 	} mp4Header;
 	struct {
 		unsigned char spsData[512];
@@ -116,8 +139,23 @@ typedef struct
 	int frameType;					//	I, P, B, SKIP,.. etc
 	unsigned char *outStreamAddr;	//	mmapped virtual address
 	int outStreamSize;				//	Stream buffer size
+	int reconImgIdx;				// 	reconstructed image buffer index
 }VPU_ENC_RUN_FRAME_ARG;
 
+typedef struct
+{
+	int chgFlg;
+	int gopSize;
+	int intraQp;
+	int bitrate;
+	int frameRateNum;
+	int frameRateDen;
+	int intraRefreshMbs;
+	int sliceMode;
+	int sliceSizeMode;
+	int sliceSizeNum;
+	int hecMode;
+} VPU_ENC_CHG_PARA_ARG;
 
 typedef struct {
 	int fixedFrameRateFlag;
@@ -166,6 +204,8 @@ typedef struct
 	int minFrameBufCnt;
 	int frameBufDelay;
 
+	int enablePostFilter;	// 1 : Deblock filter, 0 : Disable post filter
+
 	//	Mpeg4 Specific Info
 	int mp4ShortHeader;
 	int mp4PartitionEnable;
@@ -211,7 +251,7 @@ typedef struct
 {
 	//	Frame Buffers
 	int	numFrameBuffer;					//	Number Of Frame Buffers
-	NX_VID_MEMORY_INFO frameBuffer[20];	//	Frame Buffer Informations
+	NX_VID_MEMORY_INFO frameBuffer[30];	//	Frame Buffer Informations
 
 	//	MV Buffer Address
 	NX_MEMORY_INFO colMvBuffer;
@@ -249,6 +289,7 @@ typedef struct
 	int iFrameSearchEnable;
 	int skipFrameMode;
 	int decSkipFrameNum;
+	int eos;
 
 	//	Output Arguments
 	int outWidth;
@@ -267,6 +308,7 @@ typedef struct
 	int repeatFirstField;
 	int progressiveFrame;
 	int fieldSequence;
+	int npf;
 
 	int isSuccess;
 
@@ -274,6 +316,9 @@ typedef struct
 	int errAddress;
 	int numOfErrMBs;
 	int sequenceChanged;
+
+	unsigned int strmReadPos;
+	unsigned int strmWritePos;
 
 	//	AVC Specific Informations
 	int avcFpaSeiExist;
@@ -284,7 +329,7 @@ typedef struct
 	unsigned int frameStartPos;
 	unsigned int frameEndPos;
 
-	// 
+	//
 	unsigned int notSufficientPsBuffer;
 	unsigned int notSufficientSliceBuffer;
 
@@ -301,14 +346,53 @@ typedef struct
 	Vp8ScaleInfo vp8ScaleInfo;
 	Vp8PicInfo vp8PicInfo;
 
+	//  VC1 Info
+	int multiRes;
+
 	NX_VID_MEMORY_INFO outFrameBuffer;
 
 	//	MPEG2 User Data
 	int userDataNum;        // User Data
 	int userDataSize;
 	int userDataBufFull;
-    int activeFormat;
+	int activeFormat;
 
+	int iRet;
+
+	//	Jpeg Info
+	int rstInterval;
+	int userHuffTable;
+
+	unsigned char *huffBits;
+	unsigned char *huffPtr;
+	unsigned int  *huffMin;
+	unsigned int  *huffMax;
+	unsigned char *huffValue;
+	unsigned char *infoTable;
+	unsigned char *quantTable;
+
+	int huffAcIdx;
+	int huffDcIdx;
+	//int qIdx;
+
+	int busReqNum;
+	int mcuBlockNum;
+	int compNum;
+	int *compInfo;
+	//int mcuwidth;
+	//int mcuHeight;
+
+	int width;
+	int height;
+
+	int pagePtr;
+	int wordPtr;
+	int bitPtr;
+
+	int downScaleWidth;                // 0 : No scaling, 1 : 1/2 down scaling, 2 : 1/4 down scaling, 3 : 1/8 down scaling
+	int downScaleHeight;               // 0 : No scaling, 1 : 1/2 down scaling, 2 : 1/4 down scaling, 3 : 1/8 down scaling
+
+	NX_VID_MEMORY_HANDLE hCurrFrameBuffer;
 } VPU_DEC_DEC_FRAME_ARG;
 
 

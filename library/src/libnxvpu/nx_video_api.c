@@ -668,7 +668,7 @@ VID_ERROR_E NX_VidEncJpegRunFrame( NX_VID_ENC_HANDLE hEnc, NX_VID_MEMORY_HANDLE 
 #define HEVC_MAX_FRAME_HEIGHT			1088	// 1600
 #define HEVC_MAX_REF_FRAMES			16
 #define HEVC_MAX_REORDER_FRAMES		16
-#define HEVC_MAX_NUM_CORES				4
+#define HEVC_MAX_NUM_CORES				3
 
 #define HEVC_DEFAULT_WIDTH				1920
 #define HEVC_DEFAULT_HEIGHT			1080
@@ -909,9 +909,9 @@ VID_ERROR_E NX_VidDecClose( NX_VID_DEC_HANDLE hDec )
         if ( IV_SUCCESS != ihevcd_cxa_api_function( hDec->codec_obj, (void *)&s_retrieve_dec_ip, (void *)&s_retrieve_dec_op) )
         {
             NX_ErrMsg( ("Error in Retrieve Memrec\n") );
-            return -1;
+            //return -1;
         }
-
+        else
         {
             iv_mem_rec_t *ps_mem_rec = hDec->pv_mem_rec_location;
 
@@ -2868,7 +2868,10 @@ static VID_ERROR_E NX_HevcDecDecodeFrame( NX_VID_DEC_HANDLE hDec, NX_VID_DEC_IN 
 
     if ( IV_SUCCESS != ihevcd_cxa_api_function( hDec->codec_obj, (void *)&s_video_decode_ip, (void *)&s_video_decode_op) )
     {
-        NX_ErrMsg( ("Error in video Frame decode : Error %x\n", s_video_decode_op.u4_error_code) );
+        NX_ErrMsg( ("Error in video Frame decode : Error %x, output %d\n", s_video_decode_op.u4_error_code, s_video_decode_op.u4_output_present) );
+        //	Internal Error
+        return VID_ERR_RUN;
+
     }
 
 	switch( s_video_decode_op.e_pic_type )

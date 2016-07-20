@@ -273,11 +273,8 @@ s32 fc8080_init(HANDLE handle)
 #ifdef FC8080_I2C
 	bbm_write(handle, BBM_TSO_SELREG, 0xc0);
 #endif
-	//printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%s:%d\t] tpeg fc8080_init()\n", __FUNCTION__, __LINE__);
 
 	fc8080_reset(handle);
-	//return BBM_NOK;
-
 	fc8080_set_xtal(handle);
 
 	bbm_write(handle, BBM_LDO_VCTRL, 0x35);
@@ -583,13 +580,6 @@ s32 fc8080_ber_overrun_check(HANDLE handle, u32 *ber)
 	if (overrun & dmb_mode) {
 
           localinfo->buff[1] = 0x1;
-
-          u16 ver;
-          bbm_word_read(handle, BBM_CHIP_ID, &ver);
-          print_log(handle, "ID: %x\n", ver);
-
-
-
 
 		/* overrun clear */
 		bbm_word_write(handle, BBM_BUF_OVERRUN, overrun);

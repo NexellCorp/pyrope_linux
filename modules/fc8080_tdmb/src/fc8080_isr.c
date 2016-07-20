@@ -23,10 +23,6 @@
 	History :
 	----------------------------------------------------------------------
 *******************************************************************************/
-#include <linux/input.h>
-#include <linux/spi/spi.h>
-#include <linux/module.h>
-
 #include <linux/kernel.h>
 #include "../include/fci_types.h"
 #include "../include/fci_hal.h"
@@ -86,10 +82,7 @@ void fc8080_isr(HANDLE handle)
 {
 	u16 buf_int_status = 0;
 
-	//printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%d\t] TDMB \n", __FUNCTION__, __LINE__);
-
 	bbm_word_read(handle, BBM_BUF_STATUS, &buf_int_status);
-	//printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%s:%d\t] BBM_BUF_STATUS:0x%x, buf_int_status:%d \n", __FUNCTION__, strrchr(__FILE__, '/')+1, __LINE__, BBM_BUF_STATUS, buf_int_status);
 
 	if (buf_int_status) {
 		bbm_word_write(handle, BBM_BUF_STATUS, buf_int_status);

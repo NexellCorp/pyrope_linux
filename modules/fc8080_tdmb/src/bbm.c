@@ -22,9 +22,7 @@
 	History :
 	----------------------------------------------------------------------
 *******************************************************************************/
-#include <linux/input.h>
-#include <linux/spi/spi.h>
-#include <linux/module.h>
+
 #include "../include/fci_types.h"
 #include "../include/fci_tun.h"
 #include "../include/fci_hal.h"
@@ -45,7 +43,6 @@ s32 bbm_com_probe(HANDLE handle)
 {
 	s32 res;
 
-	printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%s:%d\t]  \n", __FUNCTION__, strrchr(__FILE__, '/')+1, __LINE__);
 	res = fc8080_probe(handle);
 
 	return res;

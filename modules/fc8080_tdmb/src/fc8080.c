@@ -238,8 +238,6 @@ static int dmb_open(struct inode *inode, struct file *filp)
 	struct DMB_OPEN_INFO_T *hOpen;
 
 
-	printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%d\t] tdmb open \n", __FUNCTION__, __LINE__);
-
 	hOpen = kmalloc(sizeof(struct DMB_OPEN_INFO_T), GFP_KERNEL);
 
 	hOpen->buf = kmalloc(RING_BUFFER_SIZE, GFP_KERNEL);
@@ -272,6 +270,7 @@ static ssize_t dmb_read
 	ssize_t len = 0;;
 
    	//print_log(hInit, "dmb read\n");
+
 
     if (!cibuf->data || !count)	{
 		print_log(hInit, "return 0\n");
@@ -365,18 +364,14 @@ static long dmb_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 	switch (cmd) {
 	case IOCTL_DMB_RESET:
-		//printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%s:%d\t] IOCTL_DMB_RESET \n", __FUNCTION__, strrchr(__FILE__, '/')+1, __LINE__);
 		res = bbm_com_reset(hInit);
 		break;
 	case IOCTL_DMB_INIT:
                 /* once created, and use it; workaround in a condition of the case  */
                 /* that PULL_UP for irq became void */
-		//printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%s:%d\t] IOCTL_DMB_INIT \n", __FUNCTION__, strrchr(__FILE__, '/')+1, __LINE__);
 		res = bbm_com_init(hInit);
 		break;
 	case IOCTL_DMB_DEINIT:
-		//printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%s:%d\t] IOCTL_DMB_DEINIT \n", __FUNCTION__, strrchr(__FILE__, '/')+1, __LINE__);
-
 	{
 			u8 data[64]={0};
 			u16 len = 64;

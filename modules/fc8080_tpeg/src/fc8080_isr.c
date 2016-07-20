@@ -82,7 +82,6 @@ void fc8080_isr(HANDLE handle)
 {
 	u16 buf_int_status = 0;
 
-	//printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%d\t] TPEG \n", __FUNCTION__, __LINE__);
 	bbm_word_read(handle, BBM_BUF_STATUS, &buf_int_status);
 
 	if (buf_int_status) {

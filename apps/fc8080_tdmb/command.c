@@ -542,9 +542,7 @@ void mmi_tuner_set_1(void)
 	u32 freq = 0;
 	struct esbinfo_t *esb;
 
-	freq = 205280;
-	print_log(NULL, "freq:%d \n", freq);
-
+	freq = 184736;
 	if(freq)
 	{
 		if(tdmb_set_channel(dmb_control, freq))
@@ -567,8 +565,7 @@ void mmi_tuner_set_1(void)
 		stop_get_fic();
 
 		esb = fic_decoder_get_ensemble_info(0);
-		if (1)//esb->flag != 99) 
-		{
+		if (esb->flag != 99) {
 			print_log(NULL, "ESB ERROR \n");
 			fic_decoder_subchannel_info_clean();
 			return;
@@ -667,7 +664,7 @@ void mmi_bbm_reset_cmd(int argc, char *argv[])
 	}
 }
 
-int mmi_bbm_init_cmd(int argc, char *argv[])
+void mmi_bbm_init_cmd(int argc, char *argv[])
 {
 	int res = BBM_NOK;
 	float test;
@@ -679,13 +676,12 @@ int mmi_bbm_init_cmd(int argc, char *argv[])
 	if (!dmb_video)
 		res |= tdmb_drv_open(&dmb_video);
 
+
 	//tdmb_power_on(dmb_control);
-	res = tdmb_init(dmb_control);
+	res |= tdmb_init(dmb_control);
 
 	if(res)
 		print_log(NULL, "DMB init fail : %d\n", res);
-
-	return res;
 }
 
 void mmi_bbm_deinit_cmd(int argc, char *argv[])

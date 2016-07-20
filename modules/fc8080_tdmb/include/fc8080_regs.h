@@ -191,43 +191,24 @@ extern "C" {
 	/* DM */
 #define BBM_DM                      0xf000
 
-
-// [768 BYTES]
-// 50.00% = 384  BYTES   
-// 34.89% = 268  BYTES
-// 25.00% = 192  BYTES
-
-// [9024 BYTES]
-// 50.00% = 4012 BYTES   
-// 35.01% = 3160 BYTES
-// 25.00% = 2006 BYTES
-
-// [4096 BYTES]
-// 50.00% = 2048 BYTES
-// 35.00% = 1434 BYTES
-// 25.00% = 1024 BYTES     
-
-
-
-
-
 	/* BUFFER MANAGEMENT */
 #define FIC_BUF_START   0x0000
-#define FIC_BUF_LENGTH  (32 * 24) //768 BYTES
+#define FIC_BUF_LENGTH  (32 * 24)
 #define FIC_BUF_END     (FIC_BUF_START + FIC_BUF_LENGTH - 1)
-#define FIC_BUF_THR     (FIC_BUF_LENGTH / 4 - 1)
+#define FIC_BUF_THR     (FIC_BUF_LENGTH / 2 - 1)
 
 /* the size of CH0 buffer became 188 * 16 * 2 from 188 * 24 * 2 */
 #define CH0_BUF_START   (FIC_BUF_START + FIC_BUF_LENGTH)
-#define CH0_BUF_LENGTH  (188 * 24 * 2)		/* (188 * 24 * 2 = 9024 BYTES ) */
+#define CH0_BUF_LENGTH  (188 * 16 * 2)		/* (188 * 16 * 2) */
+//#define CH0_BUF_LENGTH  (188 * 4 * 2)		/* (188 * 16 * 2) */
 #define CH0_BUF_END     (CH0_BUF_START + CH0_BUF_LENGTH - 1)
-#define CH0_BUF_THR     (CH0_BUF_LENGTH / 4 - 1)
+#define CH0_BUF_THR     (CH0_BUF_LENGTH / 2 - 1)
 
-/* the size of CH1 buffer became 188 * 16 * 2 from 188 * 22 * 2 */
+/* the size of CH0 buffer became 188 * 16 * 2 from 188 * 22 * 2 */
 #define CH1_BUF_START   (CH0_BUF_START + CH0_BUF_LENGTH)
-#define CH1_BUF_LENGTH  (128 * 16 * 2)		/* (128 * 16 * 2 = 4096 BYTES ) */
+#define CH1_BUF_LENGTH  (128 * 16 * 2)		/* (188 * 16) */
 #define CH1_BUF_END     (CH1_BUF_START + CH1_BUF_LENGTH - 1)
-#define CH1_BUF_THR     (CH1_BUF_LENGTH / 4 - 1)
+#define CH1_BUF_THR     (CH1_BUF_LENGTH / 2 - 1)
 
 #define CH2_BUF_START   (CH1_BUF_START + CH1_BUF_LENGTH)
 #define CH2_BUF_LENGTH  (0)				/* (128 * 6) */

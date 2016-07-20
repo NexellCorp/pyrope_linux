@@ -68,8 +68,6 @@ int fc8080_spi_write_then_read(u8 *txbuf, u16 tx_length, u8 *rxbuf, u16 rx_lengt
 	struct spi_message message;
 	struct spi_transfer	transfer;
 
-	//printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%s:%d\t] tpeg1 <<< \n", __FUNCTION__, __LINE__);
-
 //
 //        if (fc8080_spi != spi_master_tref) {
 //          print_log(NULL, "memory corruption happens (w/r) \n");
@@ -100,8 +98,6 @@ int fc8080_spi_write_then_read(u8 *txbuf, u16 tx_length, u8 *rxbuf, u16 rx_lengt
 
 	memcpy(rxbuf, transfer.rx_buf + tx_length, rx_length);
 
-	//printk(KERN_ERR " 0x%x tpeg1 >>> \n", rxbuf[0]);
-
 	return res;
 }
 
@@ -112,9 +108,6 @@ int fc8080_spi_write_then_burstread(u8 *txbuf, u16 tx_length, u8 *rxbuf, u16 rx_
 
 	struct spi_message	message;
 	struct spi_transfer	transfer;
-
-	//printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%s:%d\t] tpeg2 <<< \n", __FUNCTION__, __LINE__);
-
 //
 //        if (fc8080_spi != spi_master_tref) {
 //          print_log(NULL, "memory corruption happens (w/r burst) \n");
@@ -139,24 +132,14 @@ int fc8080_spi_write_then_burstread(u8 *txbuf, u16 tx_length, u8 *rxbuf, u16 rx_
     
     res = spi_sync(&g_spi, &message);
 
-	//printk(KERN_ERR " 0x%x tpeg2 >>> \n", rxbuf[0]);
 
 	return res;
 }
-
-extern int tdmb_spi_temp_bulkread;
-extern int tdmb_spi_temp_bulwrite;
-extern int tdmb_spi_temp_dataread;
-
-extern void check_tdmb_printf(void);
 
 static s32 tpeg_spi_bulkread(HANDLE handle, u16 addr, u8 command, u8 *data,
 			u16 length)
 {
 	s32 res = BBM_OK;
-
-	check_tdmb_printf();
-	tdmb_spi_temp_bulkread = 1;
 
 	fc8080_tx_data[0] = (u8) (addr & 0xff);
 	fc8080_tx_data[1] = (u8) ((addr >> 8) & 0xff);
@@ -166,7 +149,6 @@ static s32 tpeg_spi_bulkread(HANDLE handle, u16 addr, u8 command, u8 *data,
     
 
 	res = fc8080_spi_write_then_read(&fc8080_tx_data[0], 4, &data[0], length);
-	tdmb_spi_temp_bulkread = 0;
 
 	if (res) {
 		print_log(0, "fc8080_tpeg_spi_bulkread fail : %d\n", res);
@@ -186,9 +168,6 @@ static s32 tpeg_spi_bulkwrite(HANDLE handle, u16 addr, u8 command, u8 *data,
 	s32 res = BBM_OK;
 	s32 i = 0;
 
-	check_tdmb_printf();
-	tdmb_spi_temp_bulwrite = 1;
-
 	fc8080_tx_data[0] = (u8) (addr & 0xff);
 	fc8080_tx_data[1] = (u8) ((addr >> 8) & 0xff);
 	fc8080_tx_data[2] = (u8) ((command & 0xfc) | CHIPID);
@@ -201,7 +180,6 @@ static s32 tpeg_spi_bulkwrite(HANDLE handle, u16 addr, u8 command, u8 *data,
 		fc8080_tx_data[4+i] = data[i];
 
 	res = fc8080_spi_write_then_read(&fc8080_tx_data[0], length+4, NULL, 0);
-	tdmb_spi_temp_bulwrite = 0;
 
 	if (res) {
 		print_log(0, "fc8080_tpeg_spi_bulkwrite fail : %d\n", res);
@@ -216,9 +194,6 @@ static s32 tpeg_spi_dataread(HANDLE handle, u8 addr, u8 command, u8 *data,
 {
 	s32 res = BBM_OK;
 
-	check_tdmb_printf();
-	tdmb_spi_temp_dataread = 1;
-
 	fc8080_tx_data[0] = (u8) (addr & 0xff);
 	fc8080_tx_data[1] = (u8) ((addr >> 8) & 0xff);
 	fc8080_tx_data[2] = (u8) ((command & 0xfc) | CHIPID);
@@ -228,7 +203,6 @@ static s32 tpeg_spi_dataread(HANDLE handle, u8 addr, u8 command, u8 *data,
 
 	//res = fc8080_spi_write_then_read(&fc8080_tx_data[0], 4, &data[0], length);
 	
-	tdmb_spi_temp_dataread = 0;
     
     if (res) {
 		print_log(0, "fc8080_tpeg_spi_dataread fail : %d\n", res);

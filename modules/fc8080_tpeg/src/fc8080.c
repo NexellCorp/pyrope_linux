@@ -238,8 +238,6 @@ static int dmb_open(struct inode *inode, struct file *filp)
 	struct DMB_OPEN_INFO_T *hOpen;
 
 
-	printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%d\t] tpeg open \n", __FUNCTION__, __LINE__);
-
 	print_log(hInit, "tpeg open\n");
 
 	hOpen = kmalloc(sizeof(struct DMB_OPEN_INFO_T), GFP_KERNEL);
@@ -274,7 +272,6 @@ static ssize_t dmb_read
 	ssize_t len = 0;;
 
    	//print_log(hInit, "dmb read\n");
-	//printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%d\t] tpeg read \n", __FUNCTION__, __LINE__);
 
 
     if (!cibuf->data || !count)	{

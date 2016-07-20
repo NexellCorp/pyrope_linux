@@ -110,7 +110,7 @@ void dmb_drv_isr()
 	bbm_com_isr(NULL);
 }
 
-#define FEATURE_INTERFACE_TEST_MODE 1
+//#define FEATURE_INTERFACE_TEST_MODE 1
 #define CONFIG_TDMB_SPI             1
 
 unsigned char dmb_drv_init(void)
@@ -123,8 +123,6 @@ unsigned char dmb_drv_init(void)
 	u8 temp = 0x1e;
 #endif
 
-
-	printk(KERN_ERR "## \e[31m PJSMSG \e[0m [%s():%s:%d\t] tdmb \n", __FUNCTION__, strrchr(__FILE__, '/')+1, __LINE__);
 
 #ifdef CONFIG_TDMB_SPI
 	if (bbm_com_hostif_select(NULL, BBM_SPI))

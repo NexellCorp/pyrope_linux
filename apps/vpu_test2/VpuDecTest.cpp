@@ -15,6 +15,8 @@
 #include "CodecInfo.h"
 #include "Util.h"
 
+#include <libnxscaler.h>
+
 #ifdef ANDROID
 #include "NX_AndroidRenderer.h"
 #else
@@ -85,6 +87,9 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 		fpOut = fopen( pAppData->outFileName, "wb" );
 	}
 
+	printf(">>>>>>>>>>>>> imgWidth( %d ), imgHeight( %d )\n", imgWidth, imgHeight );
+
+
 #ifdef ANDROID
 	CNX_AndroidRenderer *pAndRender = new CNX_AndroidRenderer(WINDOW_WIDTH, WINDOW_HEIGHT);
 	NX_VID_MEMORY_HANDLE *pMemHandle;
@@ -100,17 +105,17 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 	DISPLAY_INFO dspInfo;
 	dspInfo.port = 0;
 	dspInfo.module = 0;
-	dspInfo.width = imgWidth;
-	dspInfo.height = imgHeight;
+	dspInfo.width = pAppData->dspWidth;
+	dspInfo.height = pAppData->dspHeight;
 	dspInfo.numPlane = 1;
 	dspInfo.dspSrcRect.left = 0;
 	dspInfo.dspSrcRect.top = 0;
-	dspInfo.dspSrcRect.right = imgWidth;
-	dspInfo.dspSrcRect.bottom = imgHeight;
-	dspInfo.dspDstRect.left = pAppData->dspX;
-	dspInfo.dspDstRect.top = pAppData->dspY;
-	dspInfo.dspDstRect.right = pAppData->dspX + pAppData->dspWidth;
-	dspInfo.dspDstRect.bottom = pAppData->dspY + pAppData->dspHeight;
+	dspInfo.dspSrcRect.right = pAppData->dspWidth;
+	dspInfo.dspSrcRect.bottom = pAppData->dspHeight;
+	dspInfo.dspDstRect.left = 0;
+	dspInfo.dspDstRect.top = 0;
+	dspInfo.dspDstRect.right = pAppData->dspWidth;
+	dspInfo.dspDstRect.bottom = pAppData->dspHeight;
 	hDsp = NX_DspInit( &dspInfo );
 	NX_DspVideoSetPriority(0, 0);
 	if( hDsp == NULL )
@@ -118,6 +123,15 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 		printf("Display Failed!!!\n");
 		exit(-1);
 	}
+
+	int scaler_idx = 0;
+	NX_SCALER_HANDLE hScaler;
+	NX_VID_MEMORY_HANDLE hDstMem[2];
+	hScaler = NX_SCLOpen();
+	hDstMem[0] = NX_VideoAllocateMemory( 4096, pAppData->dspWidth, pAppData->dspHeight, NX_MEM_MAP_LINEAR, FOURCC_MVS0 );
+	hDstMem[1] = NX_VideoAllocateMemory( 4096, pAppData->dspWidth, pAppData->dspHeight, NX_MEM_MAP_LINEAR, FOURCC_MVS0 );
+
+
 #endif
 
 	pMediaReader->GetCodecTagId( AVMEDIA_TYPE_VIDEO, &codecTag, &codecId  );
@@ -398,6 +412,8 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 			hDispBuff = &decOut.outImg;
 #endif
 
+
+#if 0
 #ifdef ANDROID
 			pAndRender->DspQueueBuffer( NULL, OutImgIdx );
 			if( prevIdx != -1 )
@@ -407,11 +423,19 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 #else
 			NX_DspQueueBuffer( hDsp, hDispBuff );
 			if( outCount != 0 )
+ 			{
+ 				NX_DspDequeueBuffer( hDsp );
+ 			}
+#endif
+#else
+			NX_SCLScaleImage( hScaler, hDispBuff, hDstMem[scaler_idx] );
+			NX_DspQueueBuffer( hDsp, hDstMem[scaler_idx] );
+			if( outCount != 0 )
 			{
 				NX_DspDequeueBuffer( hDsp );
 			}
+			scaler_idx = (scaler_idx + 1) % 2 ;
 #endif
-
 			if ( fpOut )
 			{
 				int32_t h;
@@ -514,6 +538,12 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 			NX_GTDeintClose( (NX_GT_DEINT_HANDLE)hDeinterlace );
 	}
 #endif
+
+
+	NX_FreeVideoMemory( hDstMem[0] );
+	NX_FreeVideoMemory( hDstMem[1] );
+
+	NX_SCLClose( hScaler );
 
 	return 0;
 }

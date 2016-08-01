@@ -1,4 +1,8 @@
-
+*.cmd
+*.ko
+*.order
+.tmp_versions
+*_test*
 *backup
 *.so
 *.o

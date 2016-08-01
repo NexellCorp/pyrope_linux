@@ -12,6 +12,7 @@ LIBRARY	+= -L../../library/lib -L../../library/lib/ratecontrol
 LIBRARY += -lnxvpu -lnxdsp -lnxvip -lnxv4l2 -lnxvmem -lnxvidrc -lnxdeinterlace -lnxgraphictools
 #LIBRARY += -lnxvpu -lnxdsp -lnxvip -lnxv4l2 -lnxvmem -lnxvidrc -lhevcdec -lnxdeinterlace -lnxgraphictools
 LIBRARY += -ltheoraparser
+LIBRARY += -lnxscaler
 LIBRARY	+= -lstdc++ -lm
 
 LIBRARY	+= -L./ffmpeg/libs -lavcodec -lavformat -lavutil

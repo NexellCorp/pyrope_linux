@@ -36,7 +36,7 @@
 #define NX_DTAG	"[GDC Server]"
 #include <NX_DbgMsg.h>
 
-#define MAX_PAYLOAD_SIZE		4096
+#define MAX_PAYLOAD_SIZE		65535
 
 //------------------------------------------------------------------------------
 class CNX_GDCServer
@@ -223,8 +223,8 @@ void CNX_GDCServer::ThreadProc()
 				pPayload = pBuf + 2;
 			}
 
-			NxDbgMsg( NX_DBG_VBS, "\n======================================================================\n");
-			NxDbgMsg( NX_DBG_VBS, "iKey = 0x%08x, iPayloadSize = %d\n", iKey, iPayloadSize );
+			printf("-->> Receive Data( 0x%08x, %d )\n", iKey, iPayloadSize );
+
 			if( 0 != ProcessCommand( clientSocket, iKey, pPayload, iPayloadSize ) )
 				break;
 		}
@@ -330,7 +330,8 @@ int32_t CNX_GDCServer::ProcessCommand( int32_t fd, uint32_t key, void *pPayload,
 		{
 			printf("======================================================================\n");
 			printf("> Receive Plane Data.\n");
-			printf("payload:\n%s\n", (char*)pPayload);
+			// printf("payload:\n%s\n", (char*)pPayload);
+			m_pServerSSL->DumpHex("payload(hex):", (uint8_t*)pPayload, payloadSize);
 			printf("======================================================================\n");
 
 			uint8_t *pSignData = (uint8_t*)malloc(256);

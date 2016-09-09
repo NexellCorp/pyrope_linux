@@ -1,0 +1,22 @@
+################################################################################
+[ req ]
+default_bits			= 1024
+default_keyfile			= private_key.pem
+default_md				= sha256
+prompt					= no
+
+distinguished_name		= req_distinguished_name
+x509_extensions			= v3_ca
+
+[ req_distinguished_name ]
+countryName				= KR
+stateOrProvinceName		= Gyeonggi
+localityName			= Suwon
+organizationName		= VideoDisplay
+organizationalUnitName	= Devel
+commonName				= PR
+emailAddress			= example@samsung.com
+
+[ v3_ca ]
+basicConstraints		= CA:true
+################################################################################

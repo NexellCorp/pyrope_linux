@@ -274,15 +274,12 @@ int32_t NX_SLinkServerGotoSleep()
 	return hSlink->GotoSleep();
 }
 
-<<<<<<< HEAD
 int32_t NX_SLinkServerPowerOn( int32_t on )
 {
 	CNX_SLinkServer *hSlink = CNX_SLinkServer::GetInstance();
 	return hSlink->PowerOn( on );
 }
 
-=======
->>>>>>> 3792299d84d5ffb07d99016b53a68f11ae878317
 void NX_SLinkServerRegEventCB( int32_t (*callback)( void *, int32_t , void *, int32_t ), void *pParam )
 {
 	CNX_SLinkServer *hSlink = CNX_SLinkServer::GetInstance();

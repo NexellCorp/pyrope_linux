@@ -29,6 +29,8 @@ $(TARGET): depend $(OBJS)
 clean:
 	rm -f $(TARGET) $(TARGET2) *.o .depend
 
+install:
+
 ################################################################################
 # Dependency
 ifeq (.depend,$(wildcard .depend))

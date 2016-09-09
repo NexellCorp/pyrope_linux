@@ -4,5 +4,3 @@ NX_CINEMA_APP	:= $(LOCAL_PATH)
 include $(NX_CINEMA_APP)/nap_server/Android.mk
 include $(NX_CINEMA_APP)/nap_con_client/Android.mk
 #include $(NX_CINEMA_APP)/test/Android.mk
-include $(NX_CINEMA_APP)/test/reset_test/Android.mk
-include $(NX_CINEMA_APP)/test/uart_test/Android.mk

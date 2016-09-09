@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:id="@+id/title_bar_login"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_alignParentTop="true" />
+
+    <!--Normal Login Mode-->
+    <LinearLayout
+        android:id="@+id/layoutLoginNormal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/title_bar_login"
+        android:layout_above="@+id/status_bar_login"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:weightSum="1">
+
+        <LinearLayout
+            android:layout_width="500dp"
+            android:layout_height="wrap_content"
+            android:weightSum="1"
+            android:padding="10dp">
+
+            <TextView
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="Account"
+                android:gravity="center"
+                android:layout_weight="0.3" />
+
+            <Spinner
+                android:id="@+id/spinnerAccount"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_weight="0.7" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="500dp"
+            android:layout_height="wrap_content"
+            android:weightSum="1"
+            android:padding="10dp" >
+
+            <TextView
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="Password"
+                android:gravity="center"
+                android:layout_weight="0.3"/>
+
+            <EditText
+                android:id="@+id/editTextLoginPw"
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:inputType="textPassword"
+                android:ems="4"
+                android:gravity="center"
+                android:layout_weight="0.7"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="500dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="20dp"
+            android:padding="30dp"
+            android:weightSum="1"
+            android:layout_gravity="center_horizontal">
+
+            <LinearLayout
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.15" />
+
+            <Button
+                android:id="@+id/btnLoginRescue"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Rescue Mode"
+                android:layout_weight="0.3" />
+
+            <LinearLayout
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.15" />
+
+            <Button
+                android:id="@+id/btnLoginNormalAccept"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Accept"
+                android:layout_weight="0.3" />
+
+            <LinearLayout
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.15" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!--Rescue Root Login Mode-->
+    <LinearLayout
+        android:id="@+id/layoutLoginRescue"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/title_bar_login"
+        android:layout_above="@+id/status_bar_login"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:weightSum="1">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="Input 3 operator password for root rescue."
+            android:textStyle="bold"
+            android:padding="30dp"
+            android:gravity="center"/>
+
+        <LinearLayout
+            android:layout_width="500dp"
+            android:layout_height="wrap_content"
+            android:weightSum="1"
+            android:padding="10dp">
+
+            <TextView
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="operator"
+                android:gravity="center"
+                android:layout_weight="0.3" />
+
+            <EditText
+                android:id="@+id/editTextLoginPw1"
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:inputType="textPassword"
+                android:ems="4"
+                android:gravity="center"
+                android:layout_weight="0.7"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="500dp"
+            android:layout_height="wrap_content"
+            android:weightSum="1"
+            android:padding="10dp">
+
+            <TextView
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="operator"
+                android:gravity="center"
+                android:layout_weight="0.3" />
+
+            <EditText
+                android:id="@+id/editTextLoginPw2"
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:inputType="textPassword"
+                android:ems="4"
+                android:gravity="center"
+                android:layout_weight="0.7"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="500dp"
+            android:layout_height="wrap_content"
+            android:weightSum="1"
+            android:padding="10dp">
+
+            <TextView
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="operator"
+                android:gravity="center"
+                android:layout_weight="0.3" />
+
+            <EditText
+                android:id="@+id/editTextLoginPw3"
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:inputType="textPassword"
+                android:ems="4"
+                android:gravity="center"
+                android:layout_weight="0.7"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="500dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="20dp"
+            android:padding="30dp"
+            android:weightSum="1"
+            android:layout_gravity="center_horizontal">
+
+            <LinearLayout
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.15" />
+
+            <Button
+                android:id="@+id/btnLoginNormal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Normal Mode"
+                android:layout_weight="0.3" />
+
+            <LinearLayout
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.15" />
+
+            <Button
+                android:id="@+id/btnLoginRescueAccept"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Accept"
+                android:layout_weight="0.3" />
+
+            <LinearLayout
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.15" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/status_bar_login"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_alignParentBottom="true"/>
+
+</RelativeLayout>

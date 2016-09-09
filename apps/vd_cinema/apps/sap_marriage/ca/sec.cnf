@@ -1,0 +1,65 @@
+################################################################################
+[ ca ]
+default_ca						= CA_default
+
+[ CA_default ]
+dir								= .
+database						= $dir/index.txt
+new_certs_dir					= $dir
+certificate						= $dir/rootcert.pem
+serial							= $dir/serial
+private_key						= $dir/rootkey.pem
+default_days					= 365
+default_crl_days				= 30
+default_md						= sha256
+
+policy							= policy_match
+x509_extensions					= v3_ca
+
+[ policy_match ]
+countryName						= supplied
+stateOrProvinceName				= supplied
+organizationName				= supplied
+organizationalUnitName			= supplied
+commonName						= supplied
+emailAddress					= supplied
+
+[ req ]
+default_bits					= 1024
+default_keyfile					= private_key.pem
+default_md						= sha256
+default_days					= 365
+
+distinguished_name				= req_distinguished_name
+x509_extensions					= v3_ca
+
+[ req_distinguished_name ]
+countryName						= Country Name (2 letter code)
+countryName_default				= KR
+
+countryName_min					= 2
+countryName_max					= 2
+
+stateOrProvinceName				= State or Province Name (full name)
+stateOrProvinceName_default		= Gyeonggi
+
+localityName					= Locality Name (eq. city)
+localityName_default			= Suwon
+
+organizationName				= VideoDisplay
+organizationName_default		= VideoDisplay
+
+organizationalUnitName			= Devel
+organizationalUnitName_default	= Devel
+
+commonName						= PR
+commonName_default				= PR
+commonName_max					= 64
+
+emailAddress					= example@samsung.com
+emailAddress_default			= example@samsung.com
+emailAddress_max				= 40
+
+[ v3_ca ]
+basicConstraints				= CA:false
+################################################################################

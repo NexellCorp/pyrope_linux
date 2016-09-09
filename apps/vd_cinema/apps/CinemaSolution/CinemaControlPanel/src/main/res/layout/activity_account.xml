@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:id="@+id/titleBarLayoutAccount"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="50dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:layout_below="@+id/titleBarLayoutAccount"
+        android:layout_above="@+id/statusBarLayoutAccount"
+        android:layout_alignParentStart="true">
+
+        <LinearLayout
+            android:background="#FFE0E0E0"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:weightSum="1">
+
+            <TextView
+                android:background="@drawable/draw_line_left_top_bottom"
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="@string/txt_account"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:paddingTop="10dp"
+                android:paddingBottom="11dp"
+                android:layout_weight="0.25" />
+
+            <TextView
+                android:background="@drawable/draw_line_left_top_bottom"
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="@string/txt_id_number"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:paddingTop="10dp"
+                android:paddingBottom="11dp"
+                android:layout_weight="0.3" />
+
+            <TextView
+                android:background="@drawable/draw_line_left_top_bottom"
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="@string/txt_password"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:paddingTop="10dp"
+                android:paddingBottom="11dp"
+                android:layout_weight="0.3" />
+
+            <TextView
+                android:background="@drawable/draw_line_border"
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="@string/txt_modify"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:paddingTop="10dp"
+                android:paddingBottom="11dp"
+                android:layout_weight="0.15" />
+        </LinearLayout>
+
+        <!--listview-->
+        <ListView
+            android:id="@+id/listview_account"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/statusBarLayoutAccount"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_alignParentBottom="true"/>
+
+</RelativeLayout>

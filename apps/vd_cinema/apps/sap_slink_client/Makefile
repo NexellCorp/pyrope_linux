@@ -1,12 +1,18 @@
 ################################################################################
 # Get Linux Build Enviornment:
-include ../../build.env
+VD_CINEMA_TOP := ../..
+include $(VD_CINEMA_TOP)/build.env
 
 ################################################################################
 # Build options
-INCLUDE += -I./ -I../../src/include
+INCLUDE += \
+	-I./ \
+	-I$(VD_CINEMA_TOP)/src/include \
+	-I$(VD_CINEMA_TOP)/src/utils \
+	-I$(VD_CINEMA_TOP)/src/uart
 
-LIBRARY	+= -L../../lib
+
+LIBRARY	+= -L$(VD_CINEMA_TOP)/lib
 LIBRARY += -lnxcinema_linux
 LIBRARY	+= -lstdc++ -lpthread
 
@@ -15,7 +21,7 @@ LIBRARY	+= -lstdc++ -lpthread
 COBJS	:=
 CPPOBJS	:= main.o
 
-TARGET	:= sap_marriage
+TARGET	:= sap_slink_client
 
 ################################################################################
 # Build
@@ -28,6 +34,8 @@ $(TARGET): depend $(OBJS)
 
 clean:
 	rm -f $(TARGET) $(TARGET2) *.o .depend
+
+install:
 
 ################################################################################
 # Dependency

@@ -1,0 +1,1 @@
+ifconfig sit0 192.168.254.243 netmask 192.168.254.240 up

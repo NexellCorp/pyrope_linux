@@ -50,6 +50,7 @@ CPPOBJS += \
 	utils/ping.o \
 	utils/NX_DbgMsg.o \
 	utils/NX_Queue.o \
+	utils/NX_Pwm.o \
 	utils/CNX_GpioControl.o \
 	utils/SockUtils.o
 

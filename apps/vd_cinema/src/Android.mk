@@ -27,6 +27,7 @@ LOCAL_SRC_FILES += \
 	utils/ping.cpp \
 	utils/NX_DbgMsg.cpp \
 	utils/CNX_GpioControl.cpp \
+	utils/NX_Pwm.cpp \
 	utils/NX_Queue.cpp \
 	utils/SockUtils.cpp
 

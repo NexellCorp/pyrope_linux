@@ -49,7 +49,7 @@
 #endif
 
 #define	GDC_KEY(N)		MAKE_KEY_4BYTE('G','D','C',N)
-#define SEC_KEY(N)		MAKE_KEY_4BYTE('S','E','C',N)
+#define SEC_KEY(N)		MAKE_KEY_4BYTE('S','A','M',N)
 
 //
 //	APIs

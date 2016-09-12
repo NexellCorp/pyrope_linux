@@ -184,6 +184,19 @@ void CNX_SLinkServer::ThreadProc()
 		{
 			NxErrMsg("Packet Parsing Error");
 		}
+
+		switch( rcvPacket.command )
+		{
+			case CMD_BOOT_DONE:
+				NxDbgMsg( NX_DBG_DEBUG, "CMD_BOOT_DONE\n");
+				break;
+			case CMD_ALIVE:
+				NxDbgMsg( NX_DBG_DEBUG, "CMD_ALIVE\n");
+				break;
+			case CMD_MARRIAGE_STATE:
+				NxDbgMsg( NX_DBG_DEBUG, "CMD_MARRIAGE_STATE\n");
+				break;
+		}
 	}
 }
 

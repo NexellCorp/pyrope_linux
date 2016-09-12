@@ -41,6 +41,7 @@ int32_t ReadData(CNX_Uart *hUart, uint8_t *pBuf, int32_t size)
 		size -= readSize;
 		pBuf += readSize;
 		totalSize += readSize;
+		printf("readSize = %d\n", readSize);
 	}while(size > 0);
 	return totalSize;
 }
@@ -100,6 +101,8 @@ int main( int argc, char *argv[] )
 			break;
 		}
 		length = buf[0]<<24 | buf[1]<<8 | buf[2]<<8 | buf[3];
+
+		printf("length = %d\n", length);
 
 		if( length < 0 || length > 4096 )
 		{

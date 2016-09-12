@@ -22,6 +22,13 @@
 
 #define UART_START_CODE		0xCafeFace
 
+#define CMD_BOOT_DONE		0x00000001
+#define CMD_ALIVE			0x00000002
+#define CMD_DOOR_CHECK		0x00000003
+#define CMD_GOTO_SLEEP		0x00000004
+
+#define CMD_REQ_MARRIAGE	0x00000100
+
 struct _NX_UART_PACKET{
 	uint32_t startCode;
 	int32_t length;

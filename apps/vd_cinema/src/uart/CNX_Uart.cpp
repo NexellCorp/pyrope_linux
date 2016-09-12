@@ -29,6 +29,8 @@
 
 #define UART_DEV_PREFIX		"/dev/ttyAMA"
 
+#define ENABLE_BLOCK_MODE	0
+
 CNX_Uart::CNX_Uart()
 	: m_hUart(-1)
 	, m_PortNum(0)
@@ -56,12 +58,15 @@ bool CNX_Uart::Init( int32_t port, int32_t speed )
 
 	sprintf( devName, "%s%d", UART_DEV_PREFIX, port );
 
+#if (ENABLE_BLOCK_MODE)
 	if( 0 > (m_hUart = open(devName, O_RDWR | O_NOCTTY)) ) {
 		return false;
 	}
-	// if( 0 > (m_hUart = open(devName, O_RDWR | O_NOCTTY | O_NONBLOCK)) ) {
-	// 	return false;
-	// }
+#else
+	if( 0 > (m_hUart = open(devName, O_RDWR | O_NOCTTY | O_NONBLOCK)) ) {
+		return false;
+	}
+#endif
 
 	tcgetattr(m_hUart, &oldtio);
 	memset( &newtio, 0x00, sizeof(newtio) );

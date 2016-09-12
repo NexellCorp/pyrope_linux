@@ -14,11 +14,11 @@ int main( int32_t argc, char *argv[] )
 
 	if( !strcasecmp( argv[1], "off" ) )
 	{
-		NX_SLinkServerPowerOn( 0 );
+		NX_SapPowerOn( 0 );
 	}
 	else if( !strcasecmp( argv[1], "on" ) )
 	{
-		NX_SLinkServerPowerOn( 1 );
+		NX_SapPowerOn( 1 );
 	}
 	printf("Done\n");
 	return 0;

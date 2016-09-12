@@ -27,7 +27,119 @@
 #include <NX_UartProtocol.h>
 #include <NX_Utils.h>
 #include <NX_Queue.h>
+#include <Board_Port.h>
 #include <CNX_BaseClass.h>
+
+
+#define NX_DTAG "[S.AP Client]"
+#include <NX_DbgMsg.h>
+
+
+class SapGpio : public CNX_Thread
+{
+public:
+	SapGpio();
+	virtual ~SapGpio();
+
+	//	Implement Pure Virtual Function
+	virtual void ThreadProc();
+
+	int32_t StartMonitor();
+	void StopMonitor();
+
+	void RegisterGpioCallback( void (*callback)( void *, uint32_t , uint32_t ), void * );
+
+public:
+	CNX_GpioControl m_Request;
+	CNX_GpioControl m_BootOk0;
+	CNX_GpioControl m_BootOk1;
+
+	CNX_GpioControl m_DoorTemper;	//	Temper
+
+	enum { REQUEST, BOOT0, BOOT1, DOOR, GPIO_MAX_VAL };
+
+private:
+	void *m_pCbPrivate;
+	void (*m_Callback)( void *, uint32_t , uint32_t );
+	int32_t m_GpioStatus[GPIO_MAX_VAL];
+	CNX_GpioControl *m_hGpio[GPIO_MAX_VAL];
+};
+
+
+SapGpio::SapGpio()
+	: m_pCbPrivate(NULL)
+	, m_Callback(NULL)
+{
+	m_Request.Init(UART_REQUEST);
+	m_BootOk0.Init(BOOT_OK_0);
+	m_BootOk1.Init(BOOT_OK_1);
+	m_DoorTemper.Init(DOOR_TEMPER);
+	m_hGpio[0] = &m_Request;
+	m_hGpio[1] = &m_BootOk0;
+	m_hGpio[2] = &m_BootOk1;
+	m_hGpio[3] = &m_DoorTemper;
+
+	for( int32_t i=0 ; i<GPIO_MAX_VAL ; i++ )
+	{
+		m_hGpio[i]->SetDirection(GPIO_DIRECTION_IN);
+		m_GpioStatus[i] = 1;	//	 Init All 1
+	}
+}
+
+SapGpio::~SapGpio()
+{
+}
+
+int32_t SapGpio::StartMonitor()
+{
+	Start();
+	return 0;
+}
+
+void SapGpio::StopMonitor()
+{
+	Stop();
+}
+
+void SapGpio::ThreadProc()
+{
+	int32_t value;
+	// Check Every 500 msec
+	while(1)
+	{
+		usleep(500000);
+		for( int32_t i=0 ; i<GPIO_MAX_VAL ; i++ )
+		{
+			value = m_hGpio[i]->GetValue();
+			if( m_GpioStatus[i] != value )
+			{
+				if( value )
+				{
+					//	Button Up
+					printf("Button Up\n");
+				}
+				else
+				{
+					//	Button Down
+					printf("Button Down\n");
+				}
+				if( m_Callback )
+				{
+					m_Callback( m_pCbPrivate, i, value );
+				}
+
+				m_GpioStatus[i] = value;
+			}
+		}
+	}
+}
+
+
+void SapGpio::RegisterGpioCallback( void (*callback)( void *, uint32_t , uint32_t ), void *pCbPrivate )
+{
+	m_pCbPrivate = pCbPrivate;
+	m_Callback = callback;
+}
 
 
 class SlinkClient : public CNX_Thread
@@ -42,7 +154,7 @@ public:
 
 
 	//
-	//	Implementation Secure Link Client
+	//	Implementation Pure Virtual Function
 	//
 	virtual void ThreadProc();
 
@@ -108,7 +220,7 @@ void SlinkClient::ThreadProc()
 				pkt.frameNumber = m_FrameCounter++;
 				sendSize = NX_MakeUartPacket(&pkt, m_SendBuf, sendBufSize );
 				written = m_hUart->Write(m_SendBuf, sendSize);
-				printf( "CMD_BOOT_DONE\n" );
+				NxDbgMsg( NX_DBG_VBS, "CMD_BOOT_DONE\n" );
 				break;
 			}
 			case CMD_ALIVE:
@@ -121,7 +233,7 @@ void SlinkClient::ThreadProc()
 				pkt.frameNumber = m_FrameCounter++;
 				sendSize = NX_MakeUartPacket(&pkt, m_SendBuf, sendBufSize );
 				written = m_hUart->Write(m_SendBuf, sendSize);
-				printf( "CMD_ALIVE\n" );
+				NxDbgMsg( NX_DBG_VBS, "CMD_ALIVE\n" );
 				break;
 			}
 			case CMD_MARRIAGE_STATE:
@@ -135,7 +247,7 @@ void SlinkClient::ThreadProc()
 				pkt.frameNumber = m_FrameCounter++;
 				sendSize = NX_MakeUartPacket(&pkt, m_SendBuf, sendBufSize );
 				written = m_hUart->Write(m_SendBuf, sendSize);
-				printf( "CMD_MARRIAGE_STATE\n" );
+				NxDbgMsg( NX_DBG_VBS, "CMD_MARRIAGE_STATE\n" );
 				break;
 			}
 			default:
@@ -165,69 +277,44 @@ int32_t  SlinkClient::AddCommand( int32_t cmd )
 	return NX_PushQueue( &m_CmdQ, (void*)cmd );
 }
 
+
+
+
+//
+//	Main Application Part
+//
+
+SlinkClient *gstSlinkClient = NULL;
+SapGpio *gstSapGpio = NULL;
+
+void GpioCallbackFunction( void *pPrivate, uint32_t gpioPort, uint32_t value )
+{
+	NxDbgMsg( NX_DBG_DEBUG, "gpioPort = %d, value = %d\n", gpioPort, value);
+}
+
 int32_t main( int32_t argc, char *argv[] )
 {
-#if 0
-	const char *TestString = "1234567890abcdef";
-	CNX_Uart *hUart = new CNX_Uart();
-	int32_t written;
-	uint32_t frameNumber = 0;
-	int32_t port = 0; 
+	gstSlinkClient = new SlinkClient();
+	gstSapGpio = new SapGpio();
 
-	int32_t count = 1;
+	gstSlinkClient->StartService();
 
-	if( argc>1 )
-	{
-		port = atoi(argv[1]);
-	}
+	//	GPIO Start & Register Callback
+	gstSapGpio->RegisterGpioCallback(GpioCallbackFunction, gstSapGpio);
+	gstSapGpio->StartMonitor();
 
-	if( !hUart->Init( port ) )
-	{
-		printf("Uart Init Error!!!\n");
-		return -1;
-	}
-
-	NX_UART_PACKET pkt;
-	NX_InitPacket( &pkt );
-	pkt.command = 0x12344321;
-	pkt.payload = (void *)TestString;
-	pkt.payloadSize = strlen(TestString);
-
-	int32_t sendBufSize = NX_GetSendBufferSize( &pkt );
-	uint8_t *sendBuffer = (uint8_t *)malloc(4096);
-
-	int32_t sendSize;
-
-	if( count == -1 )
-	{
-		count = 0x7fffffff;
-	}
-
-	for( int32_t i=0 ; i < count ; i++ )
-	{
-		pkt.frameNumber = frameNumber;
-		sendSize = NX_MakeUartPacket(&pkt, sendBuffer, sendBufSize );
-		written = hUart->Write(sendBuffer, sendSize);
-		frameNumber++;
-	}
-
-	free(sendBuffer);
-
-	delete hUart;
-#endif
-	SlinkClient *hClient = new SlinkClient();
-	hClient->StartService();
+	gstSlinkClient->AddCommand( CMD_BOOT_DONE );
 
 	while( 1 )
 	{
-		hClient->AddCommand( CMD_BOOT_DONE );
-		hClient->AddCommand( CMD_MARRIAGE_STATE );
-		hClient->AddCommand( CMD_ALIVE );		//	Alive Command
+		gstSlinkClient->AddCommand( CMD_MARRIAGE_STATE );
+		gstSlinkClient->AddCommand( CMD_ALIVE );		//	Alive Command
 		usleep( 1000000 );
 	}
 
-	hClient->StopService();
-	delete hClient;
-
+	gstSlinkClient->StopService();
+	delete gstSlinkClient;
+	delete gstSapGpio;
+	return 0;
 }
 

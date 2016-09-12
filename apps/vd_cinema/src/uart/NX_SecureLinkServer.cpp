@@ -185,18 +185,25 @@ void CNX_SLinkServer::ThreadProc()
 			NxErrMsg("Packet Parsing Error");
 		}
 
+		if( m_CbEventCallback )
+		{
+			NxDbgMsg( NX_DBG_VBS, "Callback(%d, NULL, 0)\n", rcvPacket.command);
+			m_CbEventCallback( m_hEvtParam, rcvPacket.command, NULL, 0 );
+		}
+
 		switch( rcvPacket.command )
 		{
 			case CMD_BOOT_DONE:
-				NxDbgMsg( NX_DBG_DEBUG, "CMD_BOOT_DONE\n");
+				NxDbgMsg( NX_DBG_VBS, "CMD_BOOT_DONE\n");
 				break;
 			case CMD_ALIVE:
-				NxDbgMsg( NX_DBG_DEBUG, "CMD_ALIVE\n");
+				NxDbgMsg( NX_DBG_VBS, "CMD_ALIVE\n");
 				break;
 			case CMD_MARRIAGE_STATE:
-				NxDbgMsg( NX_DBG_DEBUG, "CMD_MARRIAGE_STATE\n");
+				NxDbgMsg( NX_DBG_VBS, "CMD_MARRIAGE_STATE\n");
 				break;
 		}
+
 	}
 }
 
@@ -287,7 +294,7 @@ int32_t NX_SLinkServerGotoSleep()
 	return hSlink->GotoSleep();
 }
 
-int32_t NX_SLinkServerPowerOn( int32_t on )
+int32_t NX_SapPowerOn( int32_t on )
 {
 	CNX_SLinkServer *hSlink = CNX_SLinkServer::GetInstance();
 	return hSlink->PowerOn( on );
@@ -297,10 +304,4 @@ void NX_SLinkServerRegEventCB( int32_t (*callback)( void *, int32_t , void *, in
 {
 	CNX_SLinkServer *hSlink = CNX_SLinkServer::GetInstance();
 	hSlink->RegisterEventCallback( callback, pParam );
-}
-
-void NX_SLinkServerRegAliveCB( int32_t (*callback)( void * ), void *pParam )
-{
-	CNX_SLinkServer *hSlink = CNX_SLinkServer::GetInstance();
-	hSlink->RegisterAliveCallback( callback, pParam );
 }

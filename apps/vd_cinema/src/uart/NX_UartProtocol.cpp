@@ -95,7 +95,7 @@ int32_t NX_MakeUartPacket( NX_UART_PACKET *pPacket, void *pOutBuf, int32_t outBu
 	//	Calculate CRC
 	crc32 = 0;
 	crc32 = calc_crc32( crc32, (const uint8_t*)pCrcStart, length-4 );
-	printf("%7d = 0x%08x\n", pPacket->frameNumber, crc32);
+	//printf("%7d = 0x%08x\n", pPacket->frameNumber, crc32);
 
 	//	write CRC
 	*pBuf++ = (( crc32 >> 24) & 0xFF);

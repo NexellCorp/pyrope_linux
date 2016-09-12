@@ -19,7 +19,6 @@ int32_t main(int32_t argc, char *argv[])
 
 	//	Start Secure Link Service
 	NX_SLinkServerRegEventCB( SecurelinkeEventCallback, NULL );
-	NX_SLinkServerRegAliveCB( SecurelinkeAliveCallback, NULL );
 
 	if( 0 != NX_SLinkServerStart() )
 	{

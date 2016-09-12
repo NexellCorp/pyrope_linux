@@ -1,16 +1,23 @@
 #include <CNX_GpioControl.h>
+#include <NX_Pwm.h>
 
 //	GPIO Port NAP <--> SAP
 #define UART_REQUEST	GPIOA16
-#define BOOT_OK0		GPIOD11
-#define BOOT_OK1		GPIOD10
+#define BOOT_OK_0		GPIOD11
+#define BOOT_OK_1		GPIOD10
+
+//	PFGA <-> NAP Status 
+#define PFPGA_BOOT_OK	GPIOA14
+
+//	DOOR_TEMPER  --> SAP
+//              |
+//               --> NAP
+#define DOOR_TEMPER		ALIVE2
 
 
-//	P.FPGA  --> SAP
-//         |
-//          --> NAP
-#define PFPGA_OK		ALIVE2
 
-
-#define PFPGA_FAN_L
-#define PFPGA_FAN_R
+//
+//	PWM
+//
+#define PFPGA_FAN_L		1
+#define PFPGA_FAN_R		2

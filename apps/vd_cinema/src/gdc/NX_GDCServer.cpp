@@ -52,6 +52,8 @@ public:
 	int32_t StartServer( int32_t iPort,  const char *pCertFile, const char *pPrivFile );
 	void StopServer();
 
+	void RegisterEventCallback( int32_t (*callback)( void *, int32_t , void *, int32_t ) , void *pParam );
+
 protected:
 	//	Implementation CNX_Thread pure virtual function
 	virtual void ThreadProc();
@@ -74,6 +76,9 @@ private:
 
 	CNX_OpenSSL *m_pServerSSL;
 
+	int32_t		(*m_cbEventCallback)( void *pObj, int32_t iEventCode , void *pData, int32_t iSize );
+	void		*m_hEventParam;
+
 private:
 	//	For Singletone
 	static CNX_GDCServer	*m_psInstance;
@@ -87,6 +92,8 @@ CNX_GDCServer::CNX_GDCServer()
 	, m_hThread( 0x00 )
 	, m_hSocket (-1)
 	, m_pServerSSL( NULL )
+	, m_cbEventCallback( NULL )
+	, m_hEventParam( NULL )
 {
 	memset( m_PayloadBuf, 0x00, sizeof(m_PayloadBuf) );
 	memset( m_SendBuf, 0x00, sizeof(m_SendBuf) );
@@ -166,6 +173,13 @@ void CNX_GDCServer::StopServer()
 }
 
 //------------------------------------------------------------------------------
+void CNX_GDCServer::RegisterEventCallback( int32_t (*callback)( void *, int32_t , void *, int32_t ), void *pParam )
+{
+	m_cbEventCallback = callback;
+	m_hEventParam = pParam;
+}
+
+//------------------------------------------------------------------------------
 void CNX_GDCServer::ThreadProc()
 {
 	int32_t iSize;
@@ -195,13 +209,11 @@ void CNX_GDCServer::ThreadProc()
 				}
 
 				iKey = (iKey << 8) | tempData;
-				if( iKey == GDC_KEY(1) ||
-					iKey == GDC_KEY(2) ||
-					iKey == GDC_KEY(3) )
+				if( iKey == GDC_KEY(tempData) )
 				{
 					break;
 				}
-			} while( 1 );
+			} while( m_bThreadRun );
 
 			iSize = ReadData( clientSocket, pBuf, 2 );
 			if( 0 > iSize )
@@ -223,7 +235,7 @@ void CNX_GDCServer::ThreadProc()
 				pPayload = pBuf + 2;
 			}
 
-			printf("-->> Receive Data( 0x%08x, %d )\n", iKey, iPayloadSize );
+			// printf("-->> Receive Data( 0x%08x, %d )\n", iKey, iPayloadSize );
 
 			if( 0 != ProcessCommand( clientSocket, iKey, pPayload, iPayloadSize ) )
 				break;
@@ -310,59 +322,80 @@ int32_t CNX_GDCServer::ProcessCommand( int32_t fd, uint32_t key, void *pPayload,
 	{
 		case GDC_KEY(1):
 		{
-			printf("======================================================================\n");
-			printf("> Receive Ceriticate.\n");
-			printf("payload:\n%s\n", (char*)pPayload);
-			printf("======================================================================\n");
+			if( m_cbEventCallback )	m_cbEventCallback( m_hEventParam, EVENT_RECEIVE_CERTIFICATE, pPayload, payloadSize );
 
-			CNX_OpenSSL clientSSL;
-			clientSSL.ReadCertificate( (uint8_t*)pPayload, payloadSize );
+			// CNX_OpenSSL *pClientSSL = new CNX_OpenSSL();
+			// pClientSSL->ReadCertificate( (uint8_t*)pPayload, payloadSize );
+			// delete pClientSSL;
 
 			uint8_t *pCertBuf = NULL;
 			int32_t iCertSize = m_pServerSSL->GetCertificate( &pCertBuf );
 
 			iWriteSize = GDC_MakePacket( SEC_KEY(1), (void*)pCertBuf, iCertSize, m_SendBuf, sizeof(m_SendBuf) );
+			if( 0 > iWriteSize )
+			{
+				if( m_cbEventCallback )	m_cbEventCallback( m_hEventParam, ERROR_MAKE_PACKET, NULL,  0 );
+				return -1;
+			}
+
 			WriteData( fd, (uint8_t*)m_SendBuf, iWriteSize );
+			if( m_cbEventCallback )	m_cbEventCallback( m_hEventParam, EVENT_ACK_CERTIFICATE, m_SendBuf, iWriteSize );
+
+			return 0;
 		}
 		break;
 
 		case GDC_KEY(2):
 		{
-			printf("======================================================================\n");
-			printf("> Receive Plane Data.\n");
-			// printf("payload:\n%s\n", (char*)pPayload);
-			m_pServerSSL->DumpHex("payload(hex):", (uint8_t*)pPayload, payloadSize);
-			printf("======================================================================\n");
+			if( m_cbEventCallback )	m_cbEventCallback( m_hEventParam, EVENT_RECEIVE_PLANE_DATA, pPayload, payloadSize );
 
 			uint8_t *pSignData = (uint8_t*)malloc(256);
 			int32_t iSignSize;
 			if( 0 > m_pServerSSL->Sign( (uint8_t*)pPayload, payloadSize, &pSignData, &iSignSize) )
 			{
+				if( m_cbEventCallback )	m_cbEventCallback( m_hEventParam, ERROR_SIGN_PLANE_TEXT, NULL,  0 );
+
 				printf("Fail, Sign().\n");
 				free( pSignData );
+				
 				return -1;
 			}
 
 			iWriteSize = GDC_MakePacket( SEC_KEY(2), (void*)pSignData, iSignSize, m_SendBuf, sizeof(m_SendBuf) );
+			if( 0 > iWriteSize )
+			{
+				if( m_cbEventCallback )	m_cbEventCallback( m_hEventParam, ERROR_MAKE_PACKET, NULL,  0 );
+				return -1;
+			}
+
 			WriteData( fd, (uint8_t*)m_SendBuf, iWriteSize );
 			free( pSignData );
+			if( m_cbEventCallback ) m_cbEventCallback( m_hEventParam, EVENT_ACK_SIGN_PLANE_TEXT, m_SendBuf, iWriteSize );
+
+			return 0;
 		}
 		break;
 
 		case GDC_KEY(3):
 		{
-			printf("======================================================================\n");
-			printf("> Receive Marriage OK.\n");
-			printf("payload:\n%s\n", (char*)pPayload);
-			printf("======================================================================\n");
+			if( m_cbEventCallback )	m_cbEventCallback( m_hEventParam, EVENT_RECEIVE_MARRIAGE_OK, pPayload, payloadSize );
 
 			iWriteSize = GDC_MakePacket( SEC_KEY(3), NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
+			if( 0 > iWriteSize )
+			{
+				if( m_cbEventCallback )	m_cbEventCallback( m_hEventParam, ERROR_MAKE_PACKET, NULL,  0 );
+				return -1;
+			}
+
 			WriteData( fd, (uint8_t*)m_SendBuf, iWriteSize );
+			if( m_cbEventCallback ) m_cbEventCallback( m_hEventParam, EVENT_ACK_MARRIAGE_OK, m_SendBuf, iWriteSize );
+
 			return 1;
 		}
 		break;
 	}
-	return 0;
+
+	return -1;
 }
 
 
@@ -372,7 +405,7 @@ int32_t CNX_GDCServer::ProcessCommand( int32_t fd, uint32_t key, void *pPayload,
 //
 
 //------------------------------------------------------------------------------
-CNX_GDCServer* CNX_GDCServer::GetInstance( )
+CNX_GDCServer* CNX_GDCServer::GetInstance()
 {
 	if( NULL == m_psInstance )
 	{
@@ -382,7 +415,7 @@ CNX_GDCServer* CNX_GDCServer::GetInstance( )
 }
 
 //------------------------------------------------------------------------------
-void CNX_GDCServer::ReleaseInstance( )
+void CNX_GDCServer::ReleaseInstance()
 {
 	if( NULL != m_psInstance )
 	{
@@ -409,4 +442,11 @@ void NX_MarriageServerStop()
 {
 	CNX_GDCServer *hGdc = CNX_GDCServer::GetInstance();
 	hGdc->StopServer();
+}
+
+//------------------------------------------------------------------------------
+void NX_MarraigeEventCallback( int32_t (*callback)( void *, int32_t , void *, int32_t ), void *pParam )
+{
+	CNX_GDCServer *hGdc = CNX_GDCServer::GetInstance();
+	hGdc->RegisterEventCallback( callback, pParam );
 }

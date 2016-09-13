@@ -7,12 +7,9 @@ adb push script/run_adb.sh /mnt/mmc/
 adb push lib/libnxcinema_linux.so /usr/lib/
 adb push lib/libnxcinema_linux.so /mnt/mmc/lib/
 
-# Marriage Test Application
-adb push apps/sap_marriage/sap_marriage /mnt/mmc/bin/
-
 # Secure Link Test Application
 adb push apps/sap_slink_client/sap_slink_client /mnt/mmc/bin/
 
 # Ruby Script for Digital Certificate
 adb shell mkdir -p /mnt/mmc/bin/ruby
-adb push apps/sap_marriage/ruby/ /mnt/mmc/bin/ruby/
+adb push script/ruby/ /mnt/mmc/bin/ruby/

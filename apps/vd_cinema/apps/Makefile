@@ -7,7 +7,6 @@ DIR		:=
 # Build options
 
 # Multi Media Libraries
-DIR += sap_marriage
 DIR += sap_slink_client
 
 ######################################################################

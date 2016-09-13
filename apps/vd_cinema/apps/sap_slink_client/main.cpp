@@ -30,6 +30,7 @@
 #include <Board_Port.h>
 #include <CNX_BaseClass.h>
 
+#include <NX_GDCServer.h>
 
 #define NX_DTAG "[S.AP Client]"
 #include <NX_DbgMsg.h>
@@ -284,12 +285,50 @@ int32_t  SlinkClient::AddCommand( int32_t cmd )
 //	Main Application Part
 //
 
+#define SERVER_PRIV_FILE	"/mnt/mmc/bin/ruby/leaf.key"
+#define SERVER_CERT_FILE	"/mnt/mmc/bin/ruby/leaf.signed.pem"
+
+#define TCP_PORT			43684
+
 SlinkClient *gstSlinkClient = NULL;
 SapGpio *gstSapGpio = NULL;
 
 void GpioCallbackFunction( void *pPrivate, uint32_t gpioPort, uint32_t value )
 {
 	NxDbgMsg( NX_DBG_DEBUG, "gpioPort = %d, value = %d\n", gpioPort, value);
+}
+
+int32_t MarriageCallbackFunction( void *pObj, int32_t iEventCode, void *pData, int32_t iSize )
+{
+	switch( iEventCode )
+	{
+		case EVENT_RECEIVE_CERTIFICATE:
+			printf("MSG1 Success.\n");
+			break;
+		case EVENT_ACK_CERTIFICATE:
+			printf("RSP1 Success.\n");
+			break;
+		case EVENT_RECEIVE_PLANE_DATA:
+			printf("MSG2 Success.\n");
+			break;
+		case EVENT_ACK_SIGN_PLANE_TEXT:
+			printf("RSP2 Success.\n");
+			break;
+		case EVENT_RECEIVE_MARRIAGE_OK:
+			printf("MSG3 Success.\n");
+			break;
+		case EVENT_ACK_MARRIAGE_OK:
+			printf("RSP3 Sucess.\n");
+			break;
+		case ERROR_MAKE_PACKET:
+		case ERROR_SIGN_PLANE_TEXT:
+			printf("Error, Marriage.\n");
+			break;
+		default:
+			break;
+	}
+
+	return 0;
 }
 
 int32_t main( int32_t argc, char *argv[] )
@@ -304,6 +343,10 @@ int32_t main( int32_t argc, char *argv[] )
 	gstSapGpio->StartMonitor();
 
 	gstSlinkClient->AddCommand( CMD_BOOT_DONE );
+
+	// Start Marriage Server
+	NX_MarraigeEventCallback( MarriageCallbackFunction, NULL );
+	NX_MarriageServerStart( TCP_PORT, SERVER_CERT_FILE, SERVER_PRIV_FILE );
 
 	while( 1 )
 	{

@@ -15,7 +15,7 @@ LIBRARY	+= -lstdc++ -lpthread
 COBJS	:=
 CPPOBJS	:= main.o
 
-TARGET	:= sap_marriage
+TARGET	:= test_marriage
 
 ################################################################################
 # Build

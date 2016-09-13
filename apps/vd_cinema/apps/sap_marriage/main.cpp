@@ -30,6 +30,8 @@
 #include <NX_GDCServer.h>
 #include <NX_GDCClient.h>
 
+#include <NX_Utils.h>
+
 #define SERVER_IP_ADDR		"127.0.0.1"
 
 #define SERVER_PRIV_FILE	"./ruby/leaf.key"
@@ -70,8 +72,67 @@ static void register_signal( void )
 }
 
 //------------------------------------------------------------------------------
+static int32_t cbEventCallback( void *pObj, int32_t iEventCode, void *pData, int32_t iSize )
+{
+	switch( iEventCode )
+	{
+	case EVENT_RECEIVE_CERTIFICATE :
+		printf("======================================================================\n");
+		printf(">> Receive Ceriticate.\n");
+		printf("======================================================================\n");
+		printf("%s", (char*)pData);
+		printf("======================================================================\n");
+		break;
+	case EVENT_RECEIVE_PLANE_DATA :
+		printf("======================================================================\n");
+		printf(">> Receive Plane Data.\n");
+		printf("======================================================================\n");
+		HexDump( pData, iSize );
+		printf("======================================================================\n");
+		break;
+	case EVENT_RECEIVE_MARRIAGE_OK :
+		printf("======================================================================\n");
+		printf(">> Receive Marriage OK.\n");
+		printf("======================================================================\n");
+		break;
+	case EVENT_ACK_CERTIFICATE :
+		printf("======================================================================\n");
+		printf(">> Transfer Ceriticate.\n");
+		printf("======================================================================\n");
+		HexDump( pData, iSize );
+		printf("======================================================================\n");
+		break;
+	case EVENT_ACK_SIGN_PLANE_TEXT :
+		printf("======================================================================\n");
+		printf(">> Transfer Sign Data.\n");
+		printf("======================================================================\n");
+		HexDump( pData, iSize );
+		printf("======================================================================\n");
+		break;
+	case EVENT_ACK_MARRIAGE_OK :
+		printf("======================================================================\n");
+		printf(">> Transfer Marriage OK.\n");
+		printf("======================================================================\n");
+		HexDump( pData, iSize );
+		printf("======================================================================\n");
+		break;
+	case ERROR_MAKE_PACKET :
+		printf("Error, Make Packet.\n");
+		break;
+	case ERROR_SIGN_PLANE_TEXT :
+		printf("Error, Sign Data.\n");
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+//------------------------------------------------------------------------------
 int32_t server_main( void )
 {
+	NX_MarraigeEventCallback( cbEventCallback, NULL );
 	NX_MarriageServerStart( TCP_PORT, SERVER_CERT_FILE, SERVER_PRIV_FILE );
 
 	while(1)
@@ -85,7 +146,7 @@ int32_t server_main( void )
 //------------------------------------------------------------------------------
 int32_t client_main( void )
 {
-	NX_MarriageVerify( SERVER_IP_ADDR, TCP_PORT, CLIENT_CERT_FILE, CLIENT_PRIV_FILE, (uint8_t*)"TEST");
+	NX_MarriageVerify( SERVER_IP_ADDR, TCP_PORT, CLIENT_CERT_FILE, CLIENT_PRIV_FILE, (uint8_t*)"TEST" );
 	return 0;
 }
 

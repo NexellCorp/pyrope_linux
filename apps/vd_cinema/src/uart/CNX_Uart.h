@@ -22,6 +22,7 @@
 
 #include <termios.h>
 
+//#define DEFAULT_UART_SPEED	B230400
 #define DEFAULT_UART_SPEED	B115200
 //#define DEFAULT_UART_SPEED	B38400
 //#define DEFAULT_UART_SPEED	B9600

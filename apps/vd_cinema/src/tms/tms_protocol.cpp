@@ -43,7 +43,7 @@ int32_t TMS_MakePacket (
 		return -1;
 	}
 
-	length = 4 /* Command */ + payloadSize /* payload */;
+	length = 2 /* Command */ + payloadSize /* payload */;
 
 	//	Write Key Code
 	*pBuf++ = (( key >> 24) & 0xFF);
@@ -52,15 +52,11 @@ int32_t TMS_MakePacket (
 	*pBuf++ = (( key      ) & 0xFF);
 
 	//	Write Length
-	*pBuf++ = (( length >> 24) & 0xFF);
-	*pBuf++ = (( length >> 16) & 0xFF);
 	*pBuf++ = (( length >>  8) & 0xFF);
 	*pBuf++ = (( length      ) & 0xFF);
 
 	//	Write Command
 	pCrcStart = pBuf;
-	*pBuf++ = (( cmd >> 24) & 0xFF);
-	*pBuf++ = (( cmd >> 16) & 0xFF);
 	*pBuf++ = (( cmd >>  8) & 0xFF);
 	*pBuf++ = (( cmd      ) & 0xFF);
 
@@ -71,7 +67,7 @@ int32_t TMS_MakePacket (
 		pBuf += payloadSize;
 	}
 
-	return length + 8;
+	return length + 6;
 }
 
 //
@@ -96,15 +92,15 @@ int32_t TMS_ParsePacket (
 	}
 
 	*key = pBuf[0]<<24 | pBuf[1]<<16 | pBuf[2]<<8 | pBuf[3];	pBuf += 4;
-	len  = pBuf[0]<<24 | pBuf[1]<<16 | pBuf[2]<<8 | pBuf[3];	pBuf += 4;
-	*cmd = pBuf[0]<<24 | pBuf[1]<<16 | pBuf[2]<<8 | pBuf[3];	pBuf += 4;
+	len  = pBuf[0]<<8 | pBuf[1];	pBuf += 2;
+	*cmd = pBuf[0]<<8 | pBuf[1];	pBuf += 2;
 
-	if ( (len+8) != inBufSize )
+	if ( (len+6) != inBufSize )
 	{
 		return -2;
 	}
 
-	*playloadSize = len - 4;
+	*playloadSize = len - 2;
 	*payload = pBuf;
 
 	return 0;

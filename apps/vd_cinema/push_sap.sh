@@ -11,5 +11,5 @@ adb push lib/libnxcinema_linux.so /mnt/mmc/lib/
 adb push apps/sap_slink_client/sap_slink_client /mnt/mmc/bin/
 
 # Ruby Script for Digital Certificate
-adb shell mkdir -p /mnt/mmc/bin/ruby
-adb push script/ruby/ /mnt/mmc/bin/ruby/
+adb shell mkdir -p /mnt/mmc/bin/cert
+adb push script/cert/ /mnt/mmc/bin/cert/

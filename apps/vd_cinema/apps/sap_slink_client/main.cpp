@@ -22,6 +22,9 @@
 #include <string.h>
 #include <unistd.h>	//	usleep
 #include <stdlib.h>	//	atoi
+#include <signal.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include <CNX_Uart.h>
 #include <NX_UartProtocol.h>
@@ -293,12 +296,49 @@ int32_t  SlinkClient::AddCommand( int32_t cmd )
 SlinkClient *gstSlinkClient = NULL;
 SapGpio *gstSapGpio = NULL;
 
-void GpioCallbackFunction( void *pPrivate, uint32_t gpioPort, uint32_t value )
+//------------------------------------------------------------------------------
+static void signal_handler( int32_t signal )
 {
-	NxDbgMsg( NX_DBG_DEBUG, "gpioPort = %d, value = %d\n", gpioPort, value);
+	printf("Aborted by signal %s (%d)..\n", (char*)strsignal(signal), signal);
+
+	switch( signal )
+	{
+		case SIGINT :
+			printf("SIGINT..\n"); 	break;
+		case SIGTERM :
+			printf("SIGTERM..\n");	break;
+		case SIGABRT :
+			printf("SIGABRT..\n");	break;
+		default :
+			break;
+	}
+
+	NX_MarriageServerStop();
+
+	if( gstSlinkClient )
+	{
+		gstSlinkClient->StopService();
+		delete gstSlinkClient;
+	}
+
+	if( gstSapGpio )
+	{
+		delete gstSapGpio;	
+	}
+
+	exit(EXIT_FAILURE);
 }
 
-int32_t MarriageCallbackFunction( void *pObj, int32_t iEventCode, void *pData, int32_t iSize )
+//------------------------------------------------------------------------------
+static void register_signal( void )
+{
+	signal( SIGINT,  signal_handler );
+	signal( SIGTERM, signal_handler );
+	signal( SIGABRT, signal_handler );
+}
+
+//------------------------------------------------------------------------------
+static int32_t MarriageCallbackFunction( void *pObj, int32_t iEventCode, void *pData, int32_t iSize )
 {
 	switch( iEventCode )
 	{
@@ -331,8 +371,17 @@ int32_t MarriageCallbackFunction( void *pObj, int32_t iEventCode, void *pData, i
 	return 0;
 }
 
+//------------------------------------------------------------------------------
+static void GpioCallbackFunction( void *pPrivate, uint32_t gpioPort, uint32_t value )
+{
+	NxDbgMsg( NX_DBG_DEBUG, "gpioPort = %d, value = %d\n", gpioPort, value);
+}
+
+//------------------------------------------------------------------------------
 int32_t main( int32_t argc, char *argv[] )
 {
+	register_signal();
+
 	gstSlinkClient = new SlinkClient();
 	gstSapGpio = new SapGpio();
 
@@ -358,6 +407,7 @@ int32_t main( int32_t argc, char *argv[] )
 	gstSlinkClient->StopService();
 	delete gstSlinkClient;
 	delete gstSapGpio;
+
 	return 0;
 }
 

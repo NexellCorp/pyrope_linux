@@ -288,8 +288,8 @@ int32_t  SlinkClient::AddCommand( int32_t cmd )
 //	Main Application Part
 //
 
-#define SERVER_PRIV_FILE	"/mnt/mmc/bin/ruby/leaf.key"
-#define SERVER_CERT_FILE	"/mnt/mmc/bin/ruby/leaf.signed.pem"
+#define SERVER_PRIV_FILE	"/mnt/mmc/bin/cert/leaf.key"
+#define SERVER_CERT_FILE	"/mnt/mmc/bin/cert/leaf.signed.pem"
 
 #define TCP_PORT			43684
 

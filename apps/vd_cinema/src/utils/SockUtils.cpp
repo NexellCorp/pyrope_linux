@@ -174,3 +174,65 @@ int32_t TCP_Connect( const char *ipAddr, short port )
 		return clntSock;
 	}
 }
+
+
+//////////////////////////////////////////////////////////////////////////////
+//																			//
+//						UDP Open / Connect Function							//
+//																			//
+//////////////////////////////////////////////////////////////////////////////
+
+//
+//	UDP Server Part APIs
+//
+int32_t UDP_Open( short port )
+{
+	int32_t svrSock = -1;
+	int32_t yes=1;
+	struct sockaddr_in svrAddr;
+
+	svrSock  = socket( AF_INET, SOCK_DGRAM, 0 );
+	if( svrSock < 0 )
+	{
+		printf( "Error : server socket \n");
+		goto ErrorExit;
+	}
+
+	memset( &svrAddr, 0, sizeof( svrAddr ) );
+	svrAddr.sin_family = AF_INET;
+	svrAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	svrAddr.sin_port = htons( port );
+
+	if( setsockopt(svrSock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int32_t)) == -1 )
+	{
+		printf( "Error : setsockopt()\n");
+		goto ErrorExit;
+	}
+	if( -1 == bind( svrSock, (struct sockaddr*)&svrAddr, sizeof( svrAddr ) ) )
+	{
+		printf( "Error : bind()\n");
+		goto ErrorExit;
+	}
+	return svrSock;
+
+ErrorExit:
+	if( svrSock > 0 )
+	{
+		close( svrSock );
+	}
+	return -1;
+}
+
+//
+//	Client Part APIs
+//
+int32_t UDP_Connect( const char *ipAddr, short port )
+{
+	int32_t clntSock;
+	clntSock  = socket( AF_INET, SOCK_DGRAM, 0);
+	if( -1 == clntSock)
+	{
+		return -1;
+	}
+	return clntSock;
+}

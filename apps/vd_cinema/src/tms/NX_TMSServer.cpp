@@ -184,31 +184,31 @@ void CNX_TMSServer::ThreadProc()
 
 
 		//	Read Length
-		readSize = ReadData(clientSocket, pBuf, 4);
+		readSize = ReadData(clientSocket, pBuf, 2);
 		if( readSize <= 0 ){
 			NxErrMsg("Error : Read Length\n");
 			goto ERROR;
 		}
-		len = TMS_GET_LENGTH(pBuf[0], pBuf[1], pBuf[2], pBuf[3]);
+		len = TMS_GET_LENGTH(pBuf[0], pBuf[1]);
 
 		//	Size Check
-		if( len+8 > MAX_PAYLOAD_SIZE )
+		if( len+6 > MAX_PAYLOAD_SIZE )
 		{
 			NxErrMsg("Error : Data size\n");
 			goto ERROR;
 		}
 
 		//	Read all data
-		readSize = ReadData ( clientSocket, pBuf+4, len );
+		readSize = ReadData ( clientSocket, pBuf+2, len );
 		if( readSize <=0 )
 		{
 			NxErrMsg("Error : Read Data\n");
 			goto ERROR;
 		}
-		cmd = TMS_GET_COMMAND(pBuf[4], pBuf[5], pBuf[6], pBuf[7]);
+		cmd = TMS_GET_COMMAND(pBuf[2], pBuf[3]);
 
-		pPayload = pBuf + 8;
-		payloadSize = len - 4;
+		pPayload = pBuf + 4;
+		payloadSize = len - 2;
 
 		NxDbgMsg( NX_DBG_VBS, "\n================================================\n");
 		NxDbgMsg( NX_DBG_VBS, "cmd = 0x%08x, readSize = %d\n", cmd, readSize );

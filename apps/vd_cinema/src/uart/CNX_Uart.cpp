@@ -79,7 +79,7 @@ bool CNX_Uart::Init( int32_t port, int32_t speed )
 	//newtio.c_lflag      = ICANON;
 #else
 	//	RAW Data Mode
-	newtio.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
+	newtio.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);	//	Flow Control On
 	newtio.c_oflag &= ~OPOST;
 	newtio.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
 	newtio.c_cflag &= ~(CSIZE | PARENB);

@@ -4,7 +4,6 @@ adb shell mkdir -p /mnt/mmc/lib
 adb push script/run_adb.sh /mnt/mmc/
 
 # Digital Cinema Control Library.
-adb push lib/libnxcinema_linux.so /usr/lib/
 adb push lib/libnxcinema_linux.so /mnt/mmc/lib/
 
 # Secure Link Test Application

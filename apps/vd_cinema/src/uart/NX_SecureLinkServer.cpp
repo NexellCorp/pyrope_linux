@@ -217,7 +217,7 @@ int32_t CNX_SLinkServer::PowerOn(int32_t on)
 {
 	CNX_GpioControl gpio;
 	gpio.Init(ALIVE1);
-	int32_t delayTime = on ? 1100000 : 6000000;
+	int32_t delayTime = on ? 1100000 : 8500000;
 
 	gpio.SetDirection(GPIO_DIRECTION_OUT);
 	gpio.SetValue(0);

@@ -85,8 +85,8 @@ FFFF0000	// 0x04C : Launch Address for 2ndboot.
 0000401B	// 0x09C	/tPZQ:128000us					
 00000618	// 0x0A0	/Refresh Interval:7.8us					
 6836650E	// 0x0A4	/tRFC:260ns(tCK)	/tRRD:7.5ns(tCK)	/tRP:13.75ns(tCK)	/tRCD:13.75ns(tCK)	/tRC:48.75ns(tCK)	/tRAS:35ns(tCK)
-3631880B	// 0x0A8	/tWTR:7.5ns(tCK)	/tWR:15ns(tCK)	/tRTP:7.5ns(tCK)			
-41000526	// 0x0AC	/tFAW:40ns(tCK)	/tXSR:256ns(tCK)	/tXP:6ns(tCK)	/tCKE:5ns(tCK)		
+3631880B	// 0x0A8	/tWTR:7.5ns(tCK)	/tWR:15ns(tCK)		/tRTP:7.5ns(tCK)
+41000A26	// 0x0AC	/tFAW:40ns(tCK)		/tXSR:256ns(tCK)	/tXP:24ns(tCK)		/tCKE:5ns(tCK)
 							
 // DDR3 device - Drive strength value.							
 00030001	// 0x0B0	[23:16] MR1_RTT_Nom - 001: RZQ/4, 010: RZQ/2, 011: RZQ/6, 100: RZQ/12, 101: RZQ/8, [15:0] MR1_ODS - 0: RZQ/6, 1 : RZQ/7, [7:0] MR2_RTT_WR - 0: ODT disable, 1: RZQ/4, 2: RZQ/2					

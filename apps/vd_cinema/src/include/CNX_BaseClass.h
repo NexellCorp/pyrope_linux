@@ -43,4 +43,22 @@ protected:
 	pthread_t	m_hThread;
 };
 
+
+class CNX_AutoLock{
+public:
+	CNX_AutoLock( pthread_mutex_t *pLock ) :m_pLock(pLock)
+	{
+		pthread_mutex_lock( m_pLock );
+	}
+	~CNX_AutoLock()
+	{
+		pthread_mutex_unlock(m_pLock);
+    }
+protected:
+	pthread_mutex_t	*m_pLock;
+private:
+	CNX_AutoLock (const CNX_AutoLock &Ref);
+	CNX_AutoLock &operator=(CNX_AutoLock &Ref);
+};
+
 #endif	// __CNX_BaseClass_h__

@@ -29,6 +29,7 @@
 #include <NX_Utils.h>
 #include <CNX_BaseClass.h>
 #include <CNX_GpioControl.h>
+#include <Board_Port.h>
 
 class CNX_SLinkServer : protected CNX_Thread
 {
@@ -70,6 +71,10 @@ private:
 
 	uint8_t m_RxBuf[MAX_BUFFER_SIZE];
 	uint8_t m_TxBuf[MAX_BUFFER_SIZE];
+
+	//	Mutex
+	pthread_mutex_t	m_hMutexPow;
+
 	//
 	//	for Singleton
 	//
@@ -83,11 +88,13 @@ CNX_SLinkServer::CNX_SLinkServer()
 	: m_hAliveParam (NULL)
 	, m_hEvtParam (NULL)
 {
+	pthread_mutex_init( &m_hMutexPow, NULL );
 	m_hUart = new CNX_Uart();
 }
 
 CNX_SLinkServer::~CNX_SLinkServer()
 {
+	pthread_mutex_destroy( &m_hMutexPow );
 	delete m_hUart;
 	Stop();
 }
@@ -212,9 +219,10 @@ int32_t CNX_SLinkServer::GotoSleep()
 	return 0;
 }
 
-
 int32_t CNX_SLinkServer::PowerOn(int32_t on)
 {
+	CNX_AutoLock lock(&m_hMutexPow);
+#if 0
 	CNX_GpioControl gpio;
 	gpio.Init(ALIVE1);
 	int32_t delayTime = on ? 1100000 : 8500000;
@@ -223,6 +231,26 @@ int32_t CNX_SLinkServer::PowerOn(int32_t on)
 	gpio.SetValue(0);
 	usleep(delayTime);
 	gpio.SetValue(1);
+#else
+	if( on )
+	{
+		CNX_GpioControl gpio;
+		gpio.Init(ALIVE1);
+		gpio.SetDirection(GPIO_DIRECTION_OUT);
+		gpio.SetValue(0);
+		usleep(1100000);
+		gpio.SetValue(1);
+	}
+	else
+	{
+		CNX_GpioControl gpio;
+		gpio.Init(BOOT_OK_0);
+		gpio.SetDirection(GPIO_DIRECTION_OUT);
+		gpio.SetValue(0);
+		usleep(200000);	//	200 msec
+		gpio.SetValue(1);
+	}
+#endif
 	return 0;
 }
 

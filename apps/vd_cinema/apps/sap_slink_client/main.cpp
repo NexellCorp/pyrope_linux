@@ -108,10 +108,10 @@ void SapGpio::StopMonitor()
 void SapGpio::ThreadProc()
 {
 	int32_t value;
-	// Check Every 500 msec
+	// Check Every 100 msec
 	while(1)
 	{
-		usleep(500000);
+		usleep(100000);
 		for( int32_t i=0 ; i<GPIO_MAX_VAL ; i++ )
 		{
 			value = m_hGpio[i]->GetValue();
@@ -375,6 +375,14 @@ static int32_t MarriageCallbackFunction( void *pObj, int32_t iEventCode, void *p
 static void GpioCallbackFunction( void *pPrivate, uint32_t gpioPort, uint32_t value )
 {
 	NxDbgMsg( NX_DBG_DEBUG, "gpioPort = %d, value = %d\n", gpioPort, value);
+	if( 1 == gpioPort )
+	{
+		if ( value == 0 )
+		{
+			system("sync");
+			system("poweroff");
+		}
+	}
 }
 
 //------------------------------------------------------------------------------

@@ -3,11 +3,14 @@
 #include <unistd.h>	// usleep
 #include <stdlib.h>	// exit
 #include <fcntl.h>
+#include <linux/reboot.h>
 
 #include <NX_TMSServer.h>
 #include <NX_SecureLinkServer.h>
 #include <CNX_GpioControl.h>
 #include <Board_Port.h>
+
+#include <cutils/android_reboot.h>
 
 #define NX_DTAG	"[N.AP Server APP]"
 #include <NX_DbgMsg.h>
@@ -144,7 +147,9 @@ int32_t main( void )
 			else if( iBatteryStatus == POWER_UNPLUGED )
 			{
 				NxDbgMsg( NX_DBG_INFO, "Power Failure!!\n");
+				
 				NX_SapPowerOn( 0 );
+				android_reboot( ANDROID_RB_POWEROFF, 0, NULL );
 			}
 			else
 			{

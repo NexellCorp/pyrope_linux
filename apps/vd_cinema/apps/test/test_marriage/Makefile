@@ -1,12 +1,12 @@
 ################################################################################
 # Get Linux Build Enviornment:
-include ../../build.env
+include ../../../build.env
 
 ################################################################################
 # Build options
-INCLUDE += -I./ -I../../src/include
+INCLUDE += -I./ -I../../../src/include
 
-LIBRARY	+= -L../../lib
+LIBRARY	+= -L../../../lib
 LIBRARY += -lnxcinema_linux
 LIBRARY	+= -lstdc++ -lpthread
 

@@ -11,11 +11,15 @@
 		  ((uint32_t)(uint8_t)(C0) << 24) )
 #endif
 
-#define	TMS_KEY_VALUE	MAKE_KEY_VALUE('T','M','S',' ')	// TMS --> SEC Key Value
-#define SEC_KEY_VALUE	MAKE_KEY_VALUE('S','E','C',' ')	// SEC --> TMS Key Value
+#define	TMS_KEY_VALUE	MAKE_KEY_VALUE('G','D','C',' ')	// GDC --> SAM Key Value
+#define SEC_KEY_VALUE	MAKE_KEY_VALUE('S','A','M',' ')	// SAM --> GDC Key Value
 
-#define TMS_GET_LENGTH	MAKE_KEY_VALUE
-#define TMS_GET_COMMAND	MAKE_KEY_VALUE
+#define TMS_GET_LENGTH(C0, C1) \
+		( ((uint32_t)(uint8_t)(C1)      ) |	\
+		  ((uint32_t)(uint8_t)(C0) << 8 ) )
+#define TMS_GET_COMMAND(C0, C1) \
+		( ((uint32_t)(uint8_t)(C1)      ) |	\
+		  ((uint32_t)(uint8_t)(C0) << 8 ) )
 
 //
 //	TMS <--> N.AP Coomunication Packet Format

@@ -153,6 +153,8 @@ if !File.file?(rootca_priv_file) || !File.file?(rootca_cert_file)
 	rootca_dnq = `openssl rsa -outform PEM -pubout -in "#{rootca_priv_file}" | openssl base64 -d | dd bs=1 skip=24 2>/dev/null | openssl sha1 -binary | openssl base64`.chomp
 	rootca_dnq = rootca_dnq.gsub( '/', '\/' )
 	rootca_subject = '/O=CA.SAMSUNG.CO.KR/OU=CA.SAMSUNG.CO.KR/CN=.SERVERS.PRODUCTS.CA.SAMSUNG.CO.KR/dnQualifier=' + rootca_dnq
+	
+	`date "2009-01-01 00:00:00";hwclock -w`
 	`openssl req -new -x509 -sha256 -config "#{rootca_cnf_file}" -days 3650 -set_serial "#{serial_number}" -subj "#{rootca_subject}" -key "#{rootca_priv_file}" -outform PEM -out "#{rootca_cert_file}"`
 end
 
@@ -169,6 +171,8 @@ if !File.file?(inter_priv_file) || !File.file?(inter_cert_file) || !File.file?(i
 	inter_dnq = inter_dnq.gsub( '/', '\/' )
 	inter_subject = "/O=CA.SAMSUNG.CO.KR/OU=CA.SAMSUNG.CO.KR/CN=.DISPLAY.SERVERS.PRODUCTS.CA.SAMSUNG.CO.KR/dnQualifier=" + inter_dnq
 	`openssl req -new -config "#{inter_cnf_file}" -days 3649 -subj "#{inter_subject}" -key "#{inter_priv_file}" -out "#{inter_csr_file}"`
+	
+	`date "2009-01-01 00:00:00";hwclock -w`
 	`openssl x509 -req -sha256 -days 3649 -CA "#{rootca_cert_file}" -CAkey "#{rootca_priv_file}" -set_serial "#{serial_number}" -in "#{inter_csr_file}" -extfile "#{inter_cnf_file}" -extensions v3_ca -out "#{inter_cert_file}"`
 end
 
@@ -185,6 +189,8 @@ if !File.file?(leaf_priv_file) || !File.file?(leaf_cert_file) || !File.file?(lea
 	leaf_dnq = leaf_dnq.gsub( '/', '\/' )
 	leaf_subject = "/O=CA.SAMSUNG.CO.KR/OU=CA.SAMSUNG.CO.KR/CN=PR SPB.DISPLAY.SERVERS.PRODUCTS.CA.SAMSUNG.CO.KR/dnQualifier=" + leaf_dnq
 	`openssl req -new -config "#{leaf_cnf_file}" -days 3648 -subj "#{leaf_subject}" -key "#{leaf_priv_file}" -outform PEM -out "#{leaf_csr_file}"`
+	
+	`date "2009-01-01 00:00:00";hwclock -w`
 	`openssl x509 -req -sha256 -days 3648 -CA "#{inter_cert_file}" -CAkey "#{inter_priv_file}" -set_serial "#{serial_number}" -in "#{leaf_csr_file}" -extfile "#{leaf_cnf_file}" -extensions v3_ca -out "#{leaf_cert_file}"`
 end
 

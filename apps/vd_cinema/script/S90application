@@ -1,0 +1,14 @@
+#!/bin/sh
+
+while true
+do
+	if grep -qs "mmcblk0p1" /proc/mounts; then
+		break
+	fi
+done
+
+cd /mnt/mmc/bin/cert
+ruby make-dc-certificate-chain.rb
+
+#cd /mnt/mmc/bin
+#./sap_slink_client

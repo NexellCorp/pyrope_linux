@@ -7,8 +7,11 @@ do
 	fi
 done
 
+export PATH=$PATH:/mnt/mmc/bin
+export LD_LIBRARY_PATH=/mnt/mmc/lib
+
 cd /mnt/mmc/bin/cert
 ruby make-dc-certificate-chain.rb
 
-#cd /mnt/mmc/bin
-#./sap_slink_client
+cd /mnt/mmc/bin
+./sap_slink_client &

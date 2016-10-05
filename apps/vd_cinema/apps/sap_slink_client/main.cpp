@@ -337,6 +337,7 @@ static void register_signal( void )
 	signal( SIGABRT, signal_handler );
 }
 
+#if 0
 //------------------------------------------------------------------------------
 static int32_t MarriageCallbackFunction( void *pObj, int32_t iEventCode, void *pData, int32_t iSize )
 {
@@ -370,6 +371,65 @@ static int32_t MarriageCallbackFunction( void *pObj, int32_t iEventCode, void *p
 
 	return 0;
 }
+#else
+//------------------------------------------------------------------------------
+static int32_t MarriageCallbackFunction( void *pObj, int32_t iEventCode, void *pData, int32_t iSize )
+{
+	switch( iEventCode )
+	{
+	case EVENT_RECEIVE_CERTIFICATE :
+		printf("======================================================================\n");
+		printf(">> Receive Ceriticate.\n");
+		printf("======================================================================\n");
+		printf("%s", (char*)pData);
+		printf("======================================================================\n");
+		break;
+	case EVENT_RECEIVE_PLANE_DATA :
+		printf("======================================================================\n");
+		printf(">> Receive Plane Data.\n");
+		printf("======================================================================\n");
+		HexDump( pData, iSize );
+		printf("======================================================================\n");
+		break;
+	case EVENT_RECEIVE_MARRIAGE_OK :
+		printf("======================================================================\n");
+		printf(">> Receive Marriage OK.\n");
+		printf("======================================================================\n");
+		break;
+	case EVENT_ACK_CERTIFICATE :
+		printf("======================================================================\n");
+		printf(">> Transfer Ceriticate.\n");
+		printf("======================================================================\n");
+		HexDump( pData, iSize );
+		printf("======================================================================\n");
+		break;
+	case EVENT_ACK_SIGN_PLANE_TEXT :
+		printf("======================================================================\n");
+		printf(">> Transfer Sign Data.\n");
+		printf("======================================================================\n");
+		HexDump( pData, iSize );
+		printf("======================================================================\n");
+		break;
+	case EVENT_ACK_MARRIAGE_OK :
+		printf("======================================================================\n");
+		printf(">> Transfer Marriage OK.\n");
+		printf("======================================================================\n");
+		HexDump( pData, iSize );
+		printf("======================================================================\n");
+		break;
+	case ERROR_MAKE_PACKET :
+		printf("Error, Make Packet.\n");
+		break;
+	case ERROR_SIGN_PLANE_TEXT :
+		printf("Error, Sign Data.\n");
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+#endif
 
 //------------------------------------------------------------------------------
 static void GpioCallbackFunction( void *pPrivate, uint32_t gpioPort, uint32_t value )

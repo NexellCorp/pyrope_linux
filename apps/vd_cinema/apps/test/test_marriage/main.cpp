@@ -71,6 +71,41 @@ static void register_signal( void )
 	signal( SIGABRT, signal_handler );
 }
 
+#if 1
+//------------------------------------------------------------------------------
+static int32_t cbEventCallback( void *pObj, int32_t iEventCode, void *pData, int32_t iSize )
+{
+	switch( iEventCode )
+	{
+		case EVENT_RECEIVE_CERTIFICATE:
+			printf("MSG1 Success.\n");
+			break;
+		case EVENT_ACK_CERTIFICATE:
+			printf("RSP1 Success.\n");
+			break;
+		case EVENT_RECEIVE_PLANE_DATA:
+			printf("MSG2 Success.\n");
+			break;
+		case EVENT_ACK_SIGN_PLANE_TEXT:
+			printf("RSP2 Success.\n");
+			break;
+		case EVENT_RECEIVE_MARRIAGE_OK:
+			printf("MSG3 Success.\n");
+			break;
+		case EVENT_ACK_MARRIAGE_OK:
+			printf("RSP3 Sucess.\n");
+			break;
+		case ERROR_MAKE_PACKET:
+		case ERROR_SIGN_PLANE_TEXT:
+			printf("Error, Marriage.\n");
+			break;
+		default:
+			break;
+	}
+
+	return 0;
+}
+#else
 //------------------------------------------------------------------------------
 static int32_t cbEventCallback( void *pObj, int32_t iEventCode, void *pData, int32_t iSize )
 {
@@ -128,6 +163,7 @@ static int32_t cbEventCallback( void *pObj, int32_t iEventCode, void *pData, int
 
 	return 0;
 }
+#endif
 
 //------------------------------------------------------------------------------
 int32_t server_main( void )

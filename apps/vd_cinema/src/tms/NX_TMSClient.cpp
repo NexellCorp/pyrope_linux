@@ -101,15 +101,13 @@ NX_TMSClient* NX_TMSClient::m_psInstance = NULL;
 //							PFPGA Control APIs								//
 //																			//
 //////////////////////////////////////////////////////////////////////////////
-int32_t NX_TMSClient::PFPGACmdStatus( uint8_t *status, int32_t *size )
+int32_t NX_TMSClient::PFPGACmdStatus( uint8_t *status, int32_t * /*size*/ )
 {
 	int32_t clntSock, sendSize, ret = 0;
 	int32_t recvSize;
 	uint32_t key, cmd;
 	void *payload;
 	int32_t payloadSize;
-
-	(void*) size;
 
 	clntSock = LS_Connect(TMS_SERVER_FILE);
 	if( -1 == clntSock)
@@ -136,10 +134,6 @@ int32_t NX_TMSClient::PFPGACmdStatus( uint8_t *status, int32_t *size )
 int32_t NX_TMSClient::PFPGACmdSetSource( uint8_t index )
 {
 	int32_t clntSock, sendSize, ret=0;
-	int32_t recvSize;
-	uint32_t key, cmd;
-	void *payload;
-	int32_t payloadSize;
 
 	clntSock = LS_Connect(TMS_SERVER_FILE);
 	if( -1 == clntSock)
@@ -238,13 +232,13 @@ int32_t NX_TMSClient::TCONCmdStatus( int32_t id, uint32_t cmd, uint8_t *status, 
 
 	memcpy( status, payload, payloadSize );
 
-ErrorExit:
 	close( clntSock);
 	return ret;
 }
 
 int32_t NX_TMSClient::TCONCmdLedPosition( int32_t id, uint32_t cmd, uint8_t *pInfo, int32_t *size )
 {
+	int32_t ret = 0;
 	int32_t clntSock;
 	int32_t sendSize, recvSize;
 	(void)id;
@@ -257,14 +251,19 @@ int32_t NX_TMSClient::TCONCmdLedPosition( int32_t id, uint32_t cmd, uint8_t *pIn
 	sendSize = TMS_MakePacket( TMS_KEY_VALUE, cmd, pInfo, *size, m_TConSendBuf, sizeof(m_TConSendBuf) );
 	write( clntSock, m_TConSendBuf, sendSize );
 	recvSize = read( clntSock, m_TConReceiveBuf, sizeof(m_TConReceiveBuf) );
+	if( 0 > recvSize )
+	{
+		NxErrMsg( "Fail, read().\n" );
+		ret = -1;
+	}
 
-ErrorExit:
 	close( clntSock);
-	return 0;
+	return ret;
 }
 
 int32_t NX_TMSClient::TCONCmdLedOn( int32_t id, uint32_t cmd, uint8_t onOff )
 {
+	int32_t ret = 0;
 	int32_t clntSock;
 	int32_t sendSize, recvSize;
 	(void)id;
@@ -277,14 +276,19 @@ int32_t NX_TMSClient::TCONCmdLedOn( int32_t id, uint32_t cmd, uint8_t onOff )
 	sendSize = TMS_MakePacket( TMS_KEY_VALUE, cmd, &onOff, 1, m_TConSendBuf, sizeof(m_TConSendBuf) );
 	write( clntSock, m_TConSendBuf, sendSize );
 	recvSize = read( clntSock, m_TConReceiveBuf, sizeof(m_TConReceiveBuf) );
+	if( 0 > recvSize )
+	{
+		NxErrMsg( "Fail, read().\n" );
+		ret = -1;
+	}
 
-ErrorExit:
 	close( clntSock);
-	return 0;
+	return ret;
 }
 
 int32_t NX_TMSClient::TCONCmdBrightnessControl( uint8_t mode, uint8_t evtMode )
 {
+	int32_t ret = 0;
 	int32_t clntSock;
 	int32_t sendSize, recvSize;
 	uint8_t modeBuf[2] = {mode, evtMode};
@@ -297,10 +301,14 @@ int32_t NX_TMSClient::TCONCmdBrightnessControl( uint8_t mode, uint8_t evtMode )
 	sendSize = TMS_MakePacket( TMS_KEY_VALUE, TCON_CMD_BR_CTRL, &modeBuf, 2, m_TConSendBuf, sizeof(m_TConSendBuf) );
 	write( clntSock, m_TConSendBuf, sendSize );
 	recvSize = read( clntSock, m_TConReceiveBuf, sizeof(m_TConReceiveBuf) );
+	if( 0 > recvSize )
+	{
+		NxErrMsg( "Fail, read().\n" );
+		ret = -1;
+	}
 
-ErrorExit:
 	close( clntSock);
-	return 0;
+	return ret;
 }
 
 
@@ -326,6 +334,8 @@ int32_t NX_TMSClient::TCONCmdElapsedTime( uint8_t *pBuf )
 		ret = -1;
 	}
 	memcpy( pBuf, payload, payloadSize );
+	
+	close( clntSock);
 	return ret;
 }
 
@@ -352,14 +362,13 @@ int32_t NX_TMSClient::TCONCmdVersion( uint8_t *pVersion )
 	}
 	memcpy(pVersion, payload, 4);
 
-ErrorExit:
 	close( clntSock);
 	return ret;
 }
 
 int32_t NX_TMSClient::TConCommand( int32_t id, int32_t cmd, uint8_t *pBuf, int32_t *size )
 {
-	bool bAll = ( id == -1 );
+	// bool bAll = ( id == -1 );
 	switch ( cmd&0xFFFF )
 	{
 		case TCON_CMD_STATE:
@@ -412,7 +421,6 @@ int32_t NX_TMSClient::BATCmdState( uint8_t *pBuf, int32_t *size )
 	}
 	memcpy(pBuf, payload, 8);
 
-ErrorExit:
 	close( clntSock);
 	return ret;
 }

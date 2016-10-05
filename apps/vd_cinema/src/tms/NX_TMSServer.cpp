@@ -227,14 +227,14 @@ int32_t CNX_TMSServer::WaitClient()
 	struct sockaddr_un clntAddr;
 	int32_t clntAddrSize;
 
-	int32_t hPoll;
-	struct pollfd	pollEvent;
-
 	if( -1 == listen(m_hSocket, 5) )
 	{
 		NxErrMsg( "Error : listen (err = %d)\n", errno );
 		return -1;
 	}
+
+	// int32_t hPoll;
+	// struct pollfd	pollEvent;
 
 	// do{
 	// 	//	Wait Event form UART
@@ -301,10 +301,9 @@ int32_t CNX_TMSServer::PFPGA_GetState(int32_t fd)
 	return 0;
 }
 
-int32_t CNX_TMSServer::PFPGA_SetSource( int32_t fd, uint8_t *index )
+int32_t CNX_TMSServer::PFPGA_SetSource( int32_t fd, uint8_t * /*index*/ )
 {
 	int32_t sendSize, sent;
-	(void*)index;
 	FUNC_IN();
 
 	//

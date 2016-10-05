@@ -53,7 +53,6 @@ CNX_Uart::~CNX_Uart()
 bool CNX_Uart::Init( int32_t port, int32_t speed )
 {
 	struct termios	newtio, oldtio;
-	struct pollfd	pollEvent;
 	char devName[32];
 
 	sprintf( devName, "%s%d", UART_DEV_PREFIX, port );

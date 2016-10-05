@@ -34,8 +34,8 @@ int32_t TMS_MakePacket (
 	void *pOutBuf, int32_t outBufSize )
 {
 	uint8_t *pBuf = (uint8_t *)pOutBuf;
-	uint32_t length, crc32;
-	uint8_t *pCrcStart;
+	uint32_t length;
+	// uint8_t *pCrcStart;
 
 	//	Check pointer & buffer size
 	if( !pOutBuf || payloadSize+8 >= outBufSize )
@@ -56,7 +56,7 @@ int32_t TMS_MakePacket (
 	*pBuf++ = (( length      ) & 0xFF);
 
 	//	Write Command
-	pCrcStart = pBuf;
+	// pCrcStart = pBuf;
 	*pBuf++ = (( cmd >>  8) & 0xFF);
 	*pBuf++ = (( cmd      ) & 0xFF);
 

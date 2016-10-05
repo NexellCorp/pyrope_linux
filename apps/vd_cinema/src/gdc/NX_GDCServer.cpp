@@ -288,6 +288,11 @@ int32_t CNX_GDCServer::WaitClient()
 		NxErrMsg( "Error : accept (err = %d)\n", errno );
 		return -1;
 	}
+	else
+	{
+		printf("Connect Success.\n");
+	}
+	
 	return clientSocket;
 }
 

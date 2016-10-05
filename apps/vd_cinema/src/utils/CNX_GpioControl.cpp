@@ -362,7 +362,7 @@ int32_t CNX_GpioControl::SetEdge( int32_t iEdge )
 //------------------------------------------------------------------------------
 int32_t CNX_GpioControl::WaitInterrupt( void )
 {
-	int32_t fd = 0, len = 0;
+	int32_t fd = 0;
 	int32_t hPoll = 0;
 	struct pollfd   pollEvent;
 	int32_t bRun = true;

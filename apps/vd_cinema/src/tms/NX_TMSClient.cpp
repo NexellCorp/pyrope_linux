@@ -399,7 +399,7 @@ int32_t NX_TMSClient::TConCommand( int32_t id, int32_t cmd, uint8_t *pBuf, int32
 //							Battery Control APIs							//
 //																			//
 //////////////////////////////////////////////////////////////////////////////
-int32_t NX_TMSClient::BATCmdState( uint8_t *pBuf, int32_t *size )
+int32_t NX_TMSClient::BATCmdState( uint8_t *pBuf, int32_t * /*size*/ )
 {
 	int32_t clntSock, sendSize, recvSize, payloadSize, ret = 0;
 	uint32_t key, cmd;

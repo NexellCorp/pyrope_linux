@@ -6,6 +6,7 @@ DIR		:=
 ######################################################################
 # Build options
 
+DIR += reboot_update
 DIR += adc_test
 DIR += audio_test
 DIR += cec_test

@@ -98,23 +98,18 @@ int32_t GetBatteryStatus( void )
 	if(fd > 0)
 		close( fd );
 
-	if( !strncmp( "Charg", status, 5 ) )
+	// Charging / Discharging / Full / ...
+	if( !strncmp( "Discharging", status, 5 ) )
 	{
-		return POWER_PLUGED;
+		return POWER_UNPLUGED;
 	}
 
-	return POWER_UNPLUGED;
+	return POWER_PLUGED;
 }
 
 int32_t main( void )
 {
-	// NapBattery napBattery;
-	//	SAP Power On
 	int32_t iBatteryStatus = GetBatteryStatus();
-	if( iBatteryStatus == POWER_PLUGED)
-	{
-		NX_SapPowerOn( 1 );
-	}
 
 	//	Start TMS Server
 	if( 0 != NX_TMSServerStart() )
@@ -139,17 +134,16 @@ int32_t main( void )
 		{
 			iBatteryStatus = newStatus;
 
-			if( iBatteryStatus == POWER_PLUGED )
-			{
-				NxDbgMsg( NX_DBG_INFO, "Power Pluged.\n" );
-				NX_SapPowerOn( 1 );
-			}
-			else if( iBatteryStatus == POWER_UNPLUGED )
+			if( iBatteryStatus == POWER_UNPLUGED )
 			{
 				NxDbgMsg( NX_DBG_INFO, "Power Failure!!\n");
 				
 				NX_SapPowerOn( 0 );
 				android_reboot( ANDROID_RB_POWEROFF, 0, NULL );
+			}
+			else if( iBatteryStatus == POWER_PLUGED )
+			{
+
 			}
 			else
 			{

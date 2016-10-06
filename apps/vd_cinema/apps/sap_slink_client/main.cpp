@@ -25,6 +25,8 @@
 #include <signal.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/reboot.h>
+#include <linux/reboot.h>
 
 #include <CNX_Uart.h>
 #include <NX_UartProtocol.h>
@@ -63,6 +65,7 @@ public:
 	enum { REQUEST, BOOT0, BOOT1, DOOR, GPIO_MAX_VAL };
 
 private:
+	bool m_bThreadRun;
 	void *m_pCbPrivate;
 	void (*m_Callback)( void *, uint32_t , uint32_t );
 	int32_t m_GpioStatus[GPIO_MAX_VAL];
@@ -71,7 +74,8 @@ private:
 
 
 SapGpio::SapGpio()
-	: m_pCbPrivate(NULL)
+	: m_bThreadRun( false )
+	, m_pCbPrivate(NULL)
 	, m_Callback(NULL)
 {
 	m_Request.Init(UART_REQUEST);
@@ -92,29 +96,38 @@ SapGpio::SapGpio()
 
 SapGpio::~SapGpio()
 {
+	Stop();
 }
 
 int32_t SapGpio::StartMonitor()
 {
+	m_bThreadRun = true;
 	Start();
 	return 0;
 }
 
 void SapGpio::StopMonitor()
 {
-	Stop();
+	if( true == m_bThreadRun )
+	{
+		m_bThreadRun = false;
+		Stop();
+	}
 }
 
 void SapGpio::ThreadProc()
 {
 	int32_t value;
 	// Check Every 100 msec
-	while(1)
+	while(m_bThreadRun)
 	{
 		usleep(100000);
+
 		for( int32_t i=0 ; i<GPIO_MAX_VAL ; i++ )
 		{
 			value = m_hGpio[i]->GetValue();
+			if( 0 > value ) continue;
+
 			if( m_GpioStatus[i] != value )
 			{
 				if( value )
@@ -293,8 +306,8 @@ int32_t  SlinkClient::AddCommand( int32_t cmd )
 
 #define TCP_PORT			43684
 
-SlinkClient *gstSlinkClient = NULL;
-SapGpio *gstSapGpio = NULL;
+static SlinkClient *gstSlinkClient = NULL;
+static SapGpio *gstSapGpio = NULL;
 
 //------------------------------------------------------------------------------
 static void signal_handler( int32_t signal )
@@ -315,15 +328,16 @@ static void signal_handler( int32_t signal )
 
 	NX_MarriageServerStop();
 
+	if( gstSapGpio )
+	{
+		gstSapGpio->StopMonitor();
+		delete gstSapGpio;	
+	}
+
 	if( gstSlinkClient )
 	{
 		gstSlinkClient->StopService();
 		delete gstSlinkClient;
-	}
-
-	if( gstSapGpio )
-	{
-		delete gstSapGpio;	
 	}
 
 	exit(EXIT_FAILURE);
@@ -439,8 +453,8 @@ static void GpioCallbackFunction( void *pPrivate, uint32_t gpioPort, uint32_t va
 	{
 		if ( value == 0 )
 		{
-			system("sync");
-			system("poweroff");
+			sync();
+			reboot( LINUX_REBOOT_CMD_POWER_OFF );	
 		}
 	}
 }
@@ -472,8 +486,12 @@ int32_t main( int32_t argc, char *argv[] )
 		usleep( 1000000 );
 	}
 
-	gstSlinkClient->StopService();
+	NX_MarriageServerStop();
+
+	gstSapGpio->StopMonitor();
 	delete gstSlinkClient;
+
+	gstSlinkClient->StopService();
 	delete gstSapGpio;
 
 	return 0;

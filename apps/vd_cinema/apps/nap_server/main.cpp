@@ -76,12 +76,42 @@ public:
 	CNX_GpioControl m_DoorTemper;
 };
 
-#define POWER_PLUGED	1
-#define POWER_UNPLUGED	0
+static void signal_handler( int32_t signal )
+{
+	printf("Aborted by signal %s (%d)..\n", (char*)strsignal(signal), signal);
+
+	switch( signal )
+	{
+		case SIGINT :
+			printf("SIGINT..\n"); 	break;
+		case SIGTERM :
+			printf("SIGTERM..\n");	break;
+		case SIGABRT :
+			printf("SIGABRT..\n");	break;
+		default :
+			break;
+	}
+
+	NX_SLinkServerStop();
+	NX_TMSServerStop();
+
+	exit(EXIT_FAILURE);
+}
+
+static void register_signal( void )
+{
+	signal( SIGINT,  signal_handler );
+	signal( SIGTERM, signal_handler );
+	signal( SIGABRT, signal_handler );
+}
+
+#define POWER_PLUGED	2
+#define POWER_UNPLUGED	1
+#define POWER_UNKNOWN	0
 
 #define BATTERY_STATUS	"/sys/devices/platform/i2c-gpio.3/i2c-3/3-0032/nxe2000-battery/power_supply/battery/status"
 
-int32_t GetBatteryStatus( void )
+static int32_t GetBatteryStatus( void )
 {
 	int32_t fd = -1;
 	char status[32] = {0, };
@@ -109,7 +139,7 @@ int32_t GetBatteryStatus( void )
 
 int32_t main( void )
 {
-	int32_t iBatteryStatus = GetBatteryStatus();
+	register_signal();
 
 	//	Start TMS Server
 	if( 0 != NX_TMSServerStart() )
@@ -127,6 +157,8 @@ int32_t main( void )
 		exit(-1);
 	}
 
+	int32_t iBatteryStatus = POWER_UNKNOWN;
+
 	while( 1 )
 	{
 		int32_t newStatus = GetBatteryStatus();
@@ -138,6 +170,9 @@ int32_t main( void )
 			{
 				NxDbgMsg( NX_DBG_INFO, "Power Failure!!\n");
 				
+				NX_SLinkServerStop();
+				NX_TMSServerStop();
+
 				NX_SapPowerOn( 0 );
 				android_reboot( ANDROID_RB_POWEROFF, 0, NULL );
 			}
@@ -153,6 +188,9 @@ int32_t main( void )
 
 		usleep(100000);
 	}
+
+	NX_SLinkServerStop();
+	NX_TMSServerStop();
 
 	return 0;
 }

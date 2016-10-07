@@ -1,3 +1,5 @@
+#!/bin/sh
+
 # N.AP Start Script
 adb push script/nap_script.sh /system/bin/
 

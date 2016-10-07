@@ -1,10 +1,15 @@
+#!/bin/sh
+
+# Make Directory
 adb shell mkdir -p /mnt/mmc/bin
 adb shell chmod 755 /mnt/mmc/bin
 
 adb shell mkdir -p /mnt/mmc/lib
 adb shell chmod 755 /mnt/mmc/lib
 
-#adb push script/run_adb.sh /mnt/mmc/
+# S.AP Start Script
+adb push script/sap_script.sh /mnt/mmc/
+adb shell chmod 755 /mnt/mmc/sap_script.sh
 
 # Digital Cinema Control Library.
 adb push lib/libnxcinema_linux.so /mnt/mmc/lib/

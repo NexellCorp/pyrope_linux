@@ -24,6 +24,7 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/un.h>
+#include <sys/stat.h>
 #include <errno.h>	//	errno
 
 //
@@ -53,6 +54,8 @@ int32_t LS_Open( const char *pLocalFileName )
 		printf( "Error : bind()\n");
 		goto ErrorExit;
 	}
+
+	chmod( pLocalFileName, 0777 );
 	return svrSock;
 
 ErrorExit:

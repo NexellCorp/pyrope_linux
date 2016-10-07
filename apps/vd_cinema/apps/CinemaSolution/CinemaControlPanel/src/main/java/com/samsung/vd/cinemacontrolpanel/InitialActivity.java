@@ -536,10 +536,13 @@ public class InitialActivity extends AppCompatActivity {
         btnAccept.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if( CheckParameter() ) {
-                    Intent intent = new Intent(v.getContext(), LoginActivity.class);
-                    startActivity(intent);
-                }
+//                if( CheckParameter() ) {
+//                    Intent intent = new Intent(v.getContext(), LoginActivity.class);
+//                    startActivity(intent);
+//                }
+                NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+                ctrl.Send( 0xFF, NxCinemaCtrl.CMD_TCON_STATE );
+
             }
         });
     }

@@ -206,6 +206,9 @@ puts "-  Vertify Certificate                                     -\n"
 puts "-                                                          -\n"
 puts "------------------------------------------------------------\n"
 
+# Force Time Setting
+`date "2016-10-01 00:00:00";hwclock -w`
+
 # Reomve Certificate Chain
 if File.file?(cert_chain_file)
 	File.delete(cert_chain_file)

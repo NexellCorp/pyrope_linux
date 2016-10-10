@@ -96,7 +96,12 @@ SapGpio::SapGpio()
 
 SapGpio::~SapGpio()
 {
-	Stop();
+	StopMonitor();
+
+	m_Request.Deinit();
+	m_BootOk0.Deinit();
+	m_BootOk1.Deinit();
+	m_DoorTemper.Deinit();
 }
 
 int32_t SapGpio::StartMonitor()
@@ -451,7 +456,7 @@ static void GpioCallbackFunction( void *pPrivate, uint32_t gpioPort, uint32_t va
 	NxDbgMsg( NX_DBG_DEBUG, "gpioPort = %d, value = %d\n", gpioPort, value);
 	if( 1 == gpioPort )
 	{
-		if ( value == 0 )
+		if( 0 == value )
 		{
 			sync();
 			reboot( LINUX_REBOOT_CMD_POWER_OFF );	

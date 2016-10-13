@@ -1,9 +1,9 @@
 //------------------------------------------------------------------------------
 //
-//	Copyright (C) 2016 Samsung Co. All Rights Reserved
-//	Samsung Co. Proprietary & Confidential
+//	Copyright (C) 2016 Nexell Co. All Rights Reserved
+//	Nexell Co. Proprietary & Confidential
 //
-//	SAMSUNG INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
+//	NEXELL INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
 //  AND	WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING
 //  BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS
 //  FOR A PARTICULAR PURPOSE.

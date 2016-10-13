@@ -1,77 +1,111 @@
+//------------------------------------------------------------------------------
+//
+//	Copyright (C) 2016 Nexell Co. All Rights Reserved
+//	Nexell Co. Proprietary & Confidential
+//
+//	NEXELL INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
+//  AND	WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING
+//  BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS
+//  FOR A PARTICULAR PURPOSE.
+//
+//	Module		:
+//	File		:
+//	Description	:
+//	Author		:
+//	Export		:
+//	History		:
+//
+//------------------------------------------------------------------------------
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <unistd.h>	// usleep, getopt
+#include <unistd.h>
 
 #include <CNX_I2C.h>
 
-
-static void help( char *appName )
+static void help( void )
 {
-	printf("\nUsage : %s [options]\n", appName );
-	printf("\t-i : i2c port\n");
-	printf("\t-a : address\n");
-	printf("\t-r : register\n");
-	printf("\n");
+	printf(
+		"usage: options\n"
+		"-p	port i2c-n, default i2c-0 \n"
+		"-s	slave id (7bit hex)       \n"
+		"-a	address (16bit hex)       \n"
+		"-w	write (16bit hex)         \n"
+	);
 }
 
 int32_t main( int32_t argc, char *argv[] )
 {
-	CNX_I2C *i2c;
-	int32_t i=0, j=0;
-	int32_t ret;
-#if 0
-	int32_t reg = 0;
-	int32_t port = 1;
+	int32_t iPort = 0;
+	uint8_t iSlave = 0;
 
-	int32_t i, opt;
+	uint16_t iAddr = 0, iWriteData = 0;
+	int32_t bWrite = false;
 
-	while( (opt = getopt(argc, argv, "ha:p:")) != -1 )
+	int32_t iTemp = 0;
+	int32_t opt;
+
+	while (-1 != (opt = getopt(argc, argv, "hp:s:a:w:")))
 	{
-		switch( opt )
+		switch(opt)
 		{
-		case 'h':
-			help(argv[0]);
-			return 0;
 		case 'p':
-			port = atoi(optarg);
+			iPort = strtol(optarg, NULL, 10);
+			break;
+		case 's':
+			sscanf(optarg, "%x", &iTemp);
+			iSlave = iTemp;
 			break;
 		case 'a':
-			reg = atoi(optarg);
+			sscanf(optarg, "%hx", &iAddr);
 			break;
-		case 'p':
+		case 'w':
+			sscanf(optarg, "%hx", &iWriteData);
+			bWrite = true;
 			break;
-		}
-		if( opt == 'h' )
-		{
-			help(argv[0]);
+		case 'h':
+			help();
 			return 0;
+		default:
+			break;
 		}
-		else if
 	}
 
-
-#endif
-
-	i2c = new CNX_I2C( atoi(argv[1]) );
-
-	if( !i2c->Open() )
+	CNX_I2C *pI2CCtrl = new CNX_I2C( iPort );
+	if( 0 > pI2CCtrl->Open() )
 	{
-		printf("Error : Open\n");
+		printf("Fail, Open().\n");
+		delete pI2CCtrl;
 		return -1;
 	}
 
-	for( i=0 ; i<128 ; i++ )
+	if( bWrite )
 	{
-		ret = i2c->ReadNoStop( i , 0x13 );
-
-		if( ret < 0 )
+		if( 0 > pI2CCtrl->Write( iSlave, iAddr, &iWriteData, 1 ) )
 		{
-			continue;
+			printf("Fail, Write().\n");
 		}
-		printf( "Slave ID %d = 0x%04x\n", i, ret );
+	}
+	else
+	{
+		int32_t iReadData = pI2CCtrl->Read( iSlave, iAddr );
+
+		if( 0 > iReadData )
+		{
+			printf("Fail, Read().\n");
+		}
+		else
+		{
+			printf("read data = 0x%04x\n", iReadData );
+		}
 	}
 
-	i2c->Close();
+	if( pI2CCtrl )
+	{
+		pI2CCtrl->Close();
+		delete pI2CCtrl;
+	}
+
 	return 0;
 }

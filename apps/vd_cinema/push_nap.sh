@@ -1,9 +1,12 @@
 #!/bin/sh
 
+# Change adb root permission
+adb -s NAP root
+
 # N.AP Start Script
 adb -s NAP push script/nap_script.sh /system/bin/
 
-# Digital Cinema Control Library.
+# Digital Cinema Control Library
 adb -s NAP push lib/libnxcinema.so /system/lib/
 
 # Test Application

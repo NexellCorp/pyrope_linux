@@ -97,7 +97,15 @@ int32_t CNX_I2C::Write( uint8_t iSlave, uint16_t iAddr, uint16_t *pBuf, int32_t 
 	pRawData[0] = (iAddr >> 8) & 0xFF;
 	pRawData[1] = (iAddr >> 0) & 0xFF;
 
-	memcpy( pRawData + 2, (uint8_t*)pBuf, iRawSize - 2 );
+	for( int32_t i = 0; i < iSize; i++ )
+	{
+		uint8_t *pPtr = pRawData + 2;
+		uint8_t iUpper = (pBuf[i] >> 8) & 0xFF;
+		uint8_t iLower = (pBuf[i] >> 0) & 0xFF;
+
+		pPtr[2 * i + 0] = iUpper;
+		pPtr[2 * i + 1] = iLower;
+	}
 
 	iRet = RawWrite( iSlave, pRawData, iRawSize );
 	if( 0 > iRet )
@@ -133,7 +141,7 @@ int32_t CNX_I2C::Read( uint8_t iSlave, uint16_t iAddr )
 		return iRet;
 	}
 
-	return (data[0] << 8 & 0xFF00) | (data[1] << 0 & 0x00FF);
+	return 0x0000FFFF & ((data[0] << 8 & 0xFF00) | (data[1] << 0 & 0x00FF));
 }
 
 //------------------------------------------------------------------------------

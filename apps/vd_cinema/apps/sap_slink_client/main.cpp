@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //
-//	Copyright (C) 2013 Nexell Co. All Rights Reserved
+//	Copyright (C) 2016 Nexell Co. All Rights Reserved
 //	Nexell Co. Proprietary & Confidential
 //
 //	NEXELL INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
@@ -473,12 +473,11 @@ int32_t main( int32_t argc, char *argv[] )
 	gstSapGpio = new SapGpio();
 
 	gstSlinkClient->StartService();
+	gstSlinkClient->AddCommand( CMD_BOOT_DONE );
 
 	//	GPIO Start & Register Callback
 	gstSapGpio->RegisterGpioCallback(GpioCallbackFunction, gstSapGpio);
 	gstSapGpio->StartMonitor();
-
-	gstSlinkClient->AddCommand( CMD_BOOT_DONE );
 
 	// Start Marriage Server
 	NX_MarraigeEventCallback( MarriageCallbackFunction, NULL );

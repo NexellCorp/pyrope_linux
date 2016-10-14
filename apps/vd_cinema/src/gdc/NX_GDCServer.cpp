@@ -36,7 +36,7 @@
 #define NX_DTAG	"[GDC Server]"
 #include <NX_DbgMsg.h>
 
-#define MAX_TIMEOUT			3000
+#define MAX_TIMEOUT			10000
 #define MAX_PAYLOAD_SIZE	65535
 
 //------------------------------------------------------------------------------

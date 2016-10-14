@@ -34,7 +34,7 @@
 #define NX_DTAG	"[GDC Client]"
 #include <NX_DbgMsg.h>
 
-#define MAX_TIMEOUT			3000
+#define MAX_TIMEOUT			10000
 #define MAX_PAYLOAD_SIZE	65535
 
 class CNX_GDCClient

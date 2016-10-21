@@ -26,6 +26,11 @@ adb -s SAP shell chmod 755 /mnt/mmc/bin/cert
 adb -s SAP shell chmod 644 /mnt/mmc/bin/cert/*.*
 
 # Temperary Digital Certificate
+adb -s SAP shell mkdir -p /mnt/mmc/bin/cert.final
+adb -s SAP push script/cert.final /mnt/mmc/bin/cert.final/
+adb -s SAP shell chmod 755 /mnt/mmc/bin/cert.final
+adb -s SAP shell chmod 644 /mnt/mmc/bin/cert.final/*.*
+
 adb -s SAP shell mkdir -p /mnt/mmc/bin/cert.gdc
 adb -s SAP push script/cert.gdc /mnt/mmc/bin/cert.gdc/
 adb -s SAP shell chmod 755 /mnt/mmc/bin/cert.gdc

@@ -1,7 +1,7 @@
-echo 0 > /sys/class/android_usb/android0/enable
-echo SAP > /sys/class/android_usb/android0/iSerial
-echo 18d1 > /sys/class/android_usb/android0/idVendor
-echo 4EE7 > /sys/class/android_usb/android0/idProduct
-echo adb > /sys/class/android_usb/android0/functions
-echo 1 > /sys/class/android_usb/android0/enable
+echo -n 0 > /sys/class/android_usb/android0/enable
+echo -n SAP > /sys/class/android_usb/android0/iSerial
+echo -n 18d1 > /sys/class/android_usb/android0/idVendor
+echo -n 4EE7 > /sys/class/android_usb/android0/idProduct
+echo -n adb > /sys/class/android_usb/android0/functions
+echo -n 1 > /sys/class/android_usb/android0/enable
 adbd &

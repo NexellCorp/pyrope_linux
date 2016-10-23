@@ -177,6 +177,18 @@ if !File.file?(inter_priv_file) || !File.file?(inter_cert_file) || !File.file?(i
 end
 
 # Make Leaf Certificate
+if File.zero?(leaf_priv_file) || File.zero?(leaf_cert_file) || File.zero?(leaf_csr_file)
+	if File.file?(leaf_priv_file)
+		File.delete( leaf_priv_file )
+	end
+	if File.file?(leaf_cert_file)
+		File.delete( leaf_cert_file )
+	end
+	if File.file?(leaf_csr_file)
+		File.delete( leaf_csr_file )
+	end
+end
+
 if !File.file?(leaf_priv_file) || !File.file?(leaf_cert_file) || !File.file?(leaf_csr_file)
 	puts "------------------------------------------------------------\n"
 	puts "-                                                          -\n"

@@ -110,7 +110,7 @@ int32_t CNX_I2C::Write( uint8_t iSlave, uint16_t iAddr, uint16_t *pBuf, int32_t 
 	iRet = RawWrite( iSlave, pRawData, iRawSize );
 	if( 0 > iRet )
 	{
-		printf("fail, [wr] i2c-%d, slave:0x%02x, addr:0x%02x, size:%d\n", m_iPort, iSlave, iAddr, iSize);
+		printf("fail, [wr] i2c-%d, slave:0x%02x, addr:0x%04x, size:%d\n", m_iPort, iSlave, iAddr, iSize);
 	}
 
 	if( pRawData ) free( pRawData );
@@ -130,14 +130,14 @@ int32_t CNX_I2C::Read( uint8_t iSlave, uint16_t iAddr )
 	iRet = RawWrite( iSlave, addr, 2 );
 	if( 0 > iRet )
 	{
-		printf("fail, [wr] i2c-%d, slave:0x%02x, addr:0x%02x, size:1\n", m_iPort, iSlave, iAddr );
+		printf("fail, [wr] i2c-%d, slave:0x%02x, addr:0x%04x, size:1\n", m_iPort, iSlave, iAddr );
 		return iRet;
 	}
 
 	iRet = RawRead( iSlave, data, sizeof(data) );
 	if( 0 > iRet ) 
 	{
-		printf("fail, [rd] i2c-%d, slave:0x%02x, addr:0x%02x, size:1\n", m_iPort, iSlave, iAddr );
+		printf("fail, [rd] i2c-%d, slave:0x%02x, addr:0x%04x, size:1\n", m_iPort, iSlave, iAddr );
 		return iRet;
 	}
 
@@ -156,14 +156,14 @@ int32_t CNX_I2C::Read( uint8_t iSlave, uint16_t iAddr, uint16_t *pBuf, int32_t i
 	iRet = RawWrite( iSlave, addr, 2 );
 	if( 0 > iRet )
 	{
-		printf("fail, [wr] i2c-%d, slave:0x%02x, addr:0x%02x, size:1\n", m_iPort, iSlave, iAddr );
+		printf("fail, [wr] i2c-%d, slave:0x%02x, addr:0x%04x, size:1\n", m_iPort, iSlave, iAddr );
 		return iRet;
 	}
 
 	iRet = RawRead( iSlave, (uint8_t*)pBuf, iSize * 2 );
 	if( 0 > iRet )
 	{
-		printf("fail, [rd] i2c-%d, slave:0x%02x, addr:0x%02x, size:%d\n", m_iPort, iSlave, iAddr, iSize );
+		printf("fail, [rd] i2c-%d, slave:0x%02x, addr:0x%04x, size:%d\n", m_iPort, iSlave, iAddr, iSize );
 		return iRet;
 	}
 

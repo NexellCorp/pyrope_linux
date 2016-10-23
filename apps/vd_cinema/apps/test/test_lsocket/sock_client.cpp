@@ -30,7 +30,8 @@
 #define  BUFF_SIZE   1024
 #define  FILE_SERVER "/data/local/tmp/tms_server"
 
-int   main( int argc, char **argv )
+//------------------------------------------------------------------------------
+int main( int /*argc*/, char **argv )
 {
 	int   client_socket;
 	char   buff[BUFF_SIZE+5];

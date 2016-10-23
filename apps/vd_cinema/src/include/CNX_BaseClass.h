@@ -1,5 +1,24 @@
-#ifndef __CNX_BaseClass_h__
-#define __CNX_BaseClass_h__
+//------------------------------------------------------------------------------
+//
+//	Copyright (C) 2016 Nexell Co. All Rights Reserved
+//	Nexell Co. Proprietary & Confidential
+//
+//	NEXELL INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
+//  AND	WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING
+//  BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS
+//  FOR A PARTICULAR PURPOSE.
+//
+//	Module		:
+//	File		:
+//	Description	:
+//	Author		: 
+//	Export		:
+//	History		:
+//
+//------------------------------------------------------------------------------
+
+#ifndef __CNX_BASECLASS_H__
+#define __CNX_BASECLASS_H__
 
 #include <stdint.h>
 #include <pthread.h>
@@ -61,4 +80,4 @@ private:
 	CNX_AutoLock &operator=(CNX_AutoLock &Ref);
 };
 
-#endif	// __CNX_BaseClass_h__
+#endif	// __CNX_BASECLASS_H__

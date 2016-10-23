@@ -1,5 +1,24 @@
-#ifndef __tms_protocol_h__
-#define __tms_protocol_h__
+//------------------------------------------------------------------------------
+//
+//	Copyright (C) 2016 Nexell Co. All Rights Reserved
+//	Nexell Co. Proprietary & Confidential
+//
+//	NEXELL INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
+//  AND	WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING
+//  BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS
+//  FOR A PARTICULAR PURPOSE.
+//
+//	Module		:
+//	File		:
+//	Description	:
+//	Author		:
+//	Export		:
+//	History		:
+//
+//------------------------------------------------------------------------------
+
+#ifndef __TMS_PROTOCOL_H__
+#define __TMS_PROTOCOL_H__
 
 #include <NX_Utils.h>
 
@@ -48,4 +67,4 @@ int32_t TMS_ParsePacket (
 //	Debug Functions
 void DumpTmsPacket(void *pData, int32_t dataSize, int32_t protocol);
 
-#endif	// __tms_protocol_h__
+#endif	// __TMS_PROTOCOL_H__

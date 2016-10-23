@@ -1,5 +1,24 @@
-#ifndef __NX_TMSCommand_h__
-#define __NX_TMSCommand_h__
+//------------------------------------------------------------------------------
+//
+//	Copyright (C) 2016 Nexell Co. All Rights Reserved
+//	Nexell Co. Proprietary & Confidential
+//
+//	NEXELL INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
+//  AND	WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING
+//  BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS
+//  FOR A PARTICULAR PURPOSE.
+//
+//	Module		:
+//	File		:
+//	Description	:
+//	Author		:
+//	Export		:
+//	History		:
+//
+//------------------------------------------------------------------------------
+
+#ifndef __NX_TMSCOMMAND_H__
+#define __NX_TMSCOMMAND_H__
 
 enum {
 	BR_MODE_DCI,
@@ -43,4 +62,4 @@ enum {
 //
 #define BAT_CMD_STATE			0x201		//	Battery state command
 
-#endif	// __NX_TMSCommand_h__
+#endif	// __NX_TMSCOMMAND_H__

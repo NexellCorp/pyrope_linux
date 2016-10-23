@@ -1,13 +1,22 @@
 //------------------------------------------------------------------------------
 //
-//	Copyright (C) 2010 Nexell co., Ltd All Rights Reserved
+//	Copyright (C) 2016 Nexell Co. All Rights Reserved
+//	Nexell Co. Proprietary & Confidential
 //
-//	Module     : Queue Module
-//	File       : 
-//	Description:
-//	Author     : RayPark
-//	History    :
+//	NEXELL INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
+//  AND	WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING
+//  BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS
+//  FOR A PARTICULAR PURPOSE.
+//
+//	Module		:
+//	File		:
+//	Description	:
+//	Author		:
+//	Export		:
+//	History		:
+//
 //------------------------------------------------------------------------------
+
 #include <assert.h>
 #include <string.h>		//	string
 #include <pthread.h>

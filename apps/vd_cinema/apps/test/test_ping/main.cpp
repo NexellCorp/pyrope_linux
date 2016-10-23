@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //
-//	Copyright (C) 2013 Nexell Co. All Rights Reserved
+//	Copyright (C) 2016 Nexell Co. All Rights Reserved
 //	Nexell Co. Proprietary & Confidential
 //
 //	NEXELL INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
@@ -19,11 +19,12 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>	//	usleep
-#include <stdlib.h>	//	atoi
+#include <unistd.h>
+#include <stdlib.h>
 
 #include <NX_Utils.h>
 
+//------------------------------------------------------------------------------
 int main( int argc, char *argv[] )
 {
 	if( argc < 2 )

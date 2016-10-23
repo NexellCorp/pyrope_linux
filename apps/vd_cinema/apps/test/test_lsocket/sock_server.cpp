@@ -24,15 +24,15 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/un.h>
-#include <errno.h>	//	errno
+#include <errno.h>
 
 #include "SockUtils.h"
 
 #define  BUFF_SIZE   1024
 #define  FILE_SERVER "/data/local/tmp/local_test_server"
 
-
-int32_t main( int32_t argc, char *argv[] )
+//------------------------------------------------------------------------------
+int32_t main( void )
 {
 	int32_t server_socket;
 	int32_t client_socket;

@@ -1,3 +1,25 @@
+//------------------------------------------------------------------------------
+//
+//	Copyright (C) 2016 Nexell Co. All Rights Reserved
+//	Nexell Co. Proprietary & Confidential
+//
+//	NEXELL INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
+//  AND	WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING
+//  BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS
+//  FOR A PARTICULAR PURPOSE.
+//
+//	Module		:
+//	File		:
+//	Description	:
+//	Author		: 
+//	Export		:
+//	History		:
+//
+//------------------------------------------------------------------------------
+
+#ifndef __BOARD_PORT_H__
+#define __BOARD_PORT_H__
+
 #include <CNX_GpioControl.h>
 #include <NX_Pwm.h>
 
@@ -14,10 +36,10 @@
 //               --> NAP
 #define DOOR_TEMPER		ALIVE2
 
-
-
 //
 //	PWM
 //
 #define PFPGA_FAN_L		1
 #define PFPGA_FAN_R		2
+
+#endif	// __BOARD_PORT_H__

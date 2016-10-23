@@ -1,15 +1,24 @@
 //------------------------------------------------------------------------------
 //
-//	Copyright (C) 2010 Nexell co., Ltd All Rights Reserved
+//	Copyright (C) 2016 Nexell Co. All Rights Reserved
+//	Nexell Co. Proprietary & Confidential
 //
-//	Module      : Queue Module
-//	File        : 
-//	Description : Thread safe Queue moudle
-//	Author      : Seong-O Park (ray@nexell.co.kr)
-//	History     :
+//	NEXELL INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
+//  AND	WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING
+//  BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS
+//  FOR A PARTICULAR PURPOSE.
+//
+//	Module		:
+//	File		:
+//	Description	:
+//	Author		: 
+//	Export		:
+//	History		:
+//
 //------------------------------------------------------------------------------
-#ifndef __NX_Queue_h__
-#define __NX_Queue_h__
+
+#ifndef __NX_QUEUE_H__
+#define __NX_QUEUE_H__
 
 #include <pthread.h>
 
@@ -32,4 +41,4 @@ int NX_GetNextQueuInfo( NX_QUEUE *pQueue, void **pElement );
 unsigned int NX_GetQueueCnt( NX_QUEUE *pQueue );
 void NX_DeinitQueue( NX_QUEUE *pQueue );
 
-#endif	//	__NX_OMXQueue_h__
+#endif	// __NX_QUEUE_H__

@@ -1,3 +1,22 @@
+//------------------------------------------------------------------------------
+//
+//	Copyright (C) 2016 Nexell Co. All Rights Reserved
+//	Nexell Co. Proprietary & Confidential
+//
+//	NEXELL INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
+//  AND	WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING
+//  BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS
+//  FOR A PARTICULAR PURPOSE.
+//
+//	Module		:
+//	File		:
+//	Description	:
+//	Author		:
+//	Export		:
+//	History		:
+//
+//------------------------------------------------------------------------------
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,12 +25,8 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/un.h>
-#include <errno.h>	//	errno
+#include <errno.h>
 
-
-//
-//	Nexell Util
-//
 #include <SockUtils.h>
 #include <tms_protocol.h>
 #include <NX_Utils.h>
@@ -21,7 +36,7 @@
 
 #define PAYLOAD "I am a boy"
 
-int32_t main( int32_t argc, char **argv )
+int32_t main( void )
 {
 	int32_t clntSock;
 	char buff[MAX_PAYLOAD_SIZE+12];

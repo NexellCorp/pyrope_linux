@@ -1,3 +1,22 @@
+//------------------------------------------------------------------------------
+//
+//	Copyright (C) 2016 Nexell Co. All Rights Reserved
+//	Nexell Co. Proprietary & Confidential
+//
+//	NEXELL INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
+//  AND	WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING
+//  BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS
+//  FOR A PARTICULAR PURPOSE.
+//
+//	Module		:
+//	File		:
+//	Description	:
+//	Author		:
+//	Export		:
+//	History		:
+//
+//------------------------------------------------------------------------------
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,12 +25,8 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/un.h>
-#include <errno.h>	//	errno
+#include <errno.h>
 
-
-//
-//	Nexell Util
-//
 #include <SockUtils.h>
 #include <tms_protocol.h>
 #include <NX_Utils.h>
@@ -19,7 +34,7 @@
 #define	TMS_SERVER_FILE "/data/local/tmp/tms_server"
 #define	MAX_PAYLOAD_SIZE	4096
 
-
+//------------------------------------------------------------------------------
 static int32_t ReadData(int32_t fd, uint8_t *pBuf, int32_t size)
 {
 	int32_t readSize, totalSize=0;
@@ -36,7 +51,8 @@ static int32_t ReadData(int32_t fd, uint8_t *pBuf, int32_t size)
 	return totalSize;
 }
 
-int main()
+//------------------------------------------------------------------------------
+int main( void )
 {
 	int32_t svrSock;
 	int32_t readLen;
@@ -95,15 +111,15 @@ int main()
 		}while(1);
 
 		//	Read Length
-		readSize = ReadData(clntSock, pBuf, 4);
+		readSize = ReadData(clntSock, pBuf, 2);
 		if( readSize <= 0 ){
 			printf("Error : Read Length\n");
 			goto ERROR;
 		}
-		len = TMS_GET_LENGTH(pBuf[0], pBuf[1], pBuf[2], pBuf[3]);
+		len = TMS_GET_LENGTH(pBuf[0], pBuf[1]);
 
 		//	Read Data
-		readLen = read ( clntSock, pBuf+4, len );
+		readLen = read ( clntSock, pBuf+2, len );
 		if( readLen <=0 )
 		{
 			printf("Error : Read Data\n");
@@ -111,11 +127,11 @@ int main()
 		}
 
 		// 	Command
-		cmd = TMS_GET_COMMAND(pBuf[4], pBuf[5], pBuf[6], pBuf[7]);
+		cmd = TMS_GET_COMMAND(pBuf[2], pBuf[3]);
 
 		//	Payload
-		payload = pBuf + 8;
-		payloadSize = len - 4;
+		payload = pBuf + 4;
+		payloadSize = len - 2;
 
 		printf( "Receive Data: Length(%d), Command(0x%08x), PayloadSize(%d)\n",
 				len, cmd, payloadSize );

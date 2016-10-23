@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //
-//	Copyright (C) 2013 Nexell Co. All Rights Reserved
+//	Copyright (C) 2016 Nexell Co. All Rights Reserved
 //	Nexell Co. Proprietary & Confidential
 //
 //	NEXELL INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
@@ -28,7 +28,7 @@
 
 #define MAX_BUFFER_SIZE		1024
 
-
+//------------------------------------------------------------------------------
 int32_t ReadData(CNX_Uart *hUart, uint8_t *pBuf, int32_t size)
 {
 	int32_t readSize, totalSize=0;
@@ -46,8 +46,8 @@ int32_t ReadData(CNX_Uart *hUart, uint8_t *pBuf, int32_t size)
 	return totalSize;
 }
 
-
-int main( int argc, char *argv[] )
+//------------------------------------------------------------------------------
+int main( void )
 {
 	CNX_Uart *hUart = new CNX_Uart();
 	uint8_t buf[4096], tmp;

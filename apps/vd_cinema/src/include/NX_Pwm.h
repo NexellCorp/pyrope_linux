@@ -1,3 +1,22 @@
+//------------------------------------------------------------------------------
+//
+//	Copyright (C) 2016 Nexell Co. All Rights Reserved
+//	Nexell Co. Proprietary & Confidential
+//
+//	NEXELL INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
+//  AND	WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING
+//  BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS
+//  FOR A PARTICULAR PURPOSE.
+//
+//	Module		:
+//	File		:
+//	Description	:
+//	Author		: 
+//	Export		:
+//	History		:
+//
+//------------------------------------------------------------------------------
+
 #ifndef __NX_PWM_H__
 #define __NX_PWM_H__
 
@@ -36,4 +55,4 @@ int32_t			NX_PwmGetInfo		( NX_PWM_HANDLE hPwm, uint32_t *freq, uint32_t *duty );
 }
 #endif
 
-#endif	//	__NX_GPIO_H__
+#endif	// __NX_PWM_H__

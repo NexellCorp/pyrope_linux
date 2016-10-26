@@ -31,10 +31,10 @@
 //	PFGA <-> NAP Status 
 #define PFPGA_BOOT_OK	GPIOA14
 
-//	DOOR_TEMPER  --> SAP
+//	DOOR_TAMPER  --> SAP
 //              |
 //               --> NAP
-#define DOOR_TEMPER		ALIVE2
+#define DOOR_TAMPER		ALIVE2
 
 //
 //	PWM

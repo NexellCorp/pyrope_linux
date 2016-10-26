@@ -25,7 +25,6 @@
 
             <TextView
                 android:id="@+id/textAccountGroup"
-                android:background="@drawable/draw_line_right"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceMedium"

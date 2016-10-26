@@ -30,6 +30,6 @@ int32_t TCP_Connect( const char *ipAddr, short port );
 
 //	UD Socket Util
 int32_t UDP_Open( short port );
-int32_t UDP_Connect( const char *ipAddr, short port );
+int32_t UDP_Connect( void );
 
 #endif	//	__SOCKUTIL_H__

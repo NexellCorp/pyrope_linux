@@ -229,7 +229,7 @@ ErrorExit:
 //
 //	Client Part APIs
 //
-int32_t UDP_Connect( const char *ipAddr, short port )
+int32_t UDP_Connect( void )
 {
 	int32_t clntSock;
 	clntSock  = socket( AF_INET, SOCK_DGRAM, 0);

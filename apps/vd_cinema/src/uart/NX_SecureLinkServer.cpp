@@ -17,7 +17,6 @@
 //
 //------------------------------------------------------------------------------
 
-
 #include <pthread.h>
 
 #include <unistd.h>
@@ -206,8 +205,11 @@ void CNX_SLinkServer::ThreadProc()
 			case CMD_ALIVE:
 				NxDbgMsg( NX_DBG_VBS, "CMD_ALIVE\n");
 				break;
-			case CMD_MARRIAGE_STATE:
-				NxDbgMsg( NX_DBG_VBS, "CMD_MARRIAGE_STATE\n");
+			case CMD_MARRIAGE:
+				NxDbgMsg( NX_DBG_VBS, "CMD_MARRIAGE\n");
+				break;
+			case CMD_DIVORCE:
+				NxDbgMsg( NX_DBG_VBS, "CMD_DIVORCE\n");
 				break;
 		}
 

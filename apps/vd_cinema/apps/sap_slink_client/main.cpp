@@ -20,8 +20,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>	//	usleep
-#include <stdlib.h>	//	atoi
+#include <unistd.h>
+#include <stdlib.h>
 #include <signal.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -40,7 +40,7 @@
 #define NX_DTAG "[S.AP Client]"
 #include <NX_DbgMsg.h>
 
-
+//------------------------------------------------------------------------------
 class SapGpio : public CNX_Thread
 {
 public:
@@ -72,7 +72,7 @@ private:
 	CNX_GpioControl *m_hGpio[GPIO_MAX_VAL];
 };
 
-
+//------------------------------------------------------------------------------
 SapGpio::SapGpio()
 	: m_bThreadRun( false )
 	, m_pCbPrivate(NULL)
@@ -81,7 +81,7 @@ SapGpio::SapGpio()
 	m_Request.Init(UART_REQUEST);
 	m_BootOk0.Init(BOOT_OK_0);
 	m_BootOk1.Init(BOOT_OK_1);
-	m_DoorTemper.Init(DOOR_TEMPER);
+	m_DoorTemper.Init(DOOR_TAMPER);
 	m_hGpio[0] = &m_Request;
 	m_hGpio[1] = &m_BootOk0;
 	m_hGpio[2] = &m_BootOk1;
@@ -94,6 +94,7 @@ SapGpio::SapGpio()
 	}
 }
 
+//------------------------------------------------------------------------------
 SapGpio::~SapGpio()
 {
 	StopMonitor();
@@ -104,6 +105,7 @@ SapGpio::~SapGpio()
 	m_DoorTemper.Deinit();
 }
 
+//------------------------------------------------------------------------------
 int32_t SapGpio::StartMonitor()
 {
 	m_bThreadRun = true;
@@ -111,6 +113,7 @@ int32_t SapGpio::StartMonitor()
 	return 0;
 }
 
+//------------------------------------------------------------------------------
 void SapGpio::StopMonitor()
 {
 	if( true == m_bThreadRun )
@@ -120,6 +123,7 @@ void SapGpio::StopMonitor()
 	}
 }
 
+//------------------------------------------------------------------------------
 void SapGpio::ThreadProc()
 {
 	int32_t value;
@@ -137,14 +141,13 @@ void SapGpio::ThreadProc()
 			{
 				if( value )
 				{
-					//	Button Up
-					printf("Button Up\n");
+					printf("Detect Gpio High.\n");
 				}
 				else
 				{
-					//	Button Down
-					printf("Button Down\n");
+					printf("Detect Gpio Low.\n");
 				}
+
 				if( m_Callback )
 				{
 					m_Callback( m_pCbPrivate, i, value );
@@ -156,14 +159,14 @@ void SapGpio::ThreadProc()
 	}
 }
 
-
+//------------------------------------------------------------------------------
 void SapGpio::RegisterGpioCallback( void (*callback)( void *, uint32_t , uint32_t ), void *pCbPrivate )
 {
 	m_pCbPrivate = pCbPrivate;
 	m_Callback = callback;
 }
 
-
+//------------------------------------------------------------------------------
 class SlinkClient : public CNX_Thread
 {
 public:
@@ -195,7 +198,7 @@ private:
 	uint32_t m_FrameCounter;
 };
 
-
+//------------------------------------------------------------------------------
 SlinkClient::SlinkClient()
 	: m_hUart(NULL)
 	, m_bUartInit(false)
@@ -206,13 +209,13 @@ SlinkClient::SlinkClient()
 	NX_InitQueue( &m_CmdQ, 128 );
 }
 
-
+//------------------------------------------------------------------------------
 SlinkClient::~SlinkClient()
 {
 	delete m_hUart;
 }
 
-
+//------------------------------------------------------------------------------
 void SlinkClient::ThreadProc()
 {
 	uint32_t cmd;
@@ -245,6 +248,7 @@ void SlinkClient::ThreadProc()
 				NxDbgMsg( NX_DBG_VBS, "CMD_BOOT_DONE\n" );
 				break;
 			}
+			
 			case CMD_ALIVE:
 			{
 				NX_InitPacket( &pkt );
@@ -258,27 +262,41 @@ void SlinkClient::ThreadProc()
 				NxDbgMsg( NX_DBG_VBS, "CMD_ALIVE\n" );
 				break;
 			}
-			case CMD_MARRIAGE_STATE:
+
+			case CMD_MARRIAGE:
 			{
-				uint32_t state = m_FrameCounter;
 				NX_InitPacket( &pkt );
-				pkt.command = CMD_MARRIAGE_STATE;
-				pkt.payload = &state;
-				pkt.payloadSize = sizeof(state);
+				pkt.command = CMD_MARRIAGE;
+				pkt.payload = NULL;
+				pkt.payloadSize = 0;
 				sendBufSize = NX_GetSendBufferSize( &pkt );
 				pkt.frameNumber = m_FrameCounter++;
 				sendSize = NX_MakeUartPacket(&pkt, m_SendBuf, sendBufSize );
 				written = m_hUart->Write(m_SendBuf, sendSize);
-				NxDbgMsg( NX_DBG_VBS, "CMD_MARRIAGE_STATE\n" );
+				NxDbgMsg( NX_DBG_VBS, "CMD_MARRIAGE\n" );
 				break;
 			}
+
+			case CMD_DIVORCE:
+			{
+				NX_InitPacket( &pkt );
+				pkt.command = CMD_DIVORCE;
+				pkt.payload = NULL;
+				pkt.payloadSize = 0;
+				sendBufSize = NX_GetSendBufferSize( &pkt );
+				pkt.frameNumber = m_FrameCounter++;
+				sendSize = NX_MakeUartPacket(&pkt, m_SendBuf, sendBufSize );
+				written = m_hUart->Write(m_SendBuf, sendSize);
+				NxDbgMsg( NX_DBG_VBS, "CMD_DIVORCE\n" );
+			}
+
 			default:
 				break;
 		}
 	}
 }
 
-
+//------------------------------------------------------------------------------
 int32_t SlinkClient::StartService()
 {
 	m_ExitLoop = false;
@@ -286,20 +304,18 @@ int32_t SlinkClient::StartService()
 	return 0;
 }
 
-
+//------------------------------------------------------------------------------
 void SlinkClient::StopService()
 {
 	m_ExitLoop = true;
 	Stop();
 }
 
-int32_t  SlinkClient::AddCommand( int32_t cmd )
+//------------------------------------------------------------------------------
+int32_t SlinkClient::AddCommand( int32_t cmd )
 {
-	//	 Push Command
 	return NX_PushQueue( &m_CmdQ, (void*)cmd );
 }
-
-
 
 
 //
@@ -356,44 +372,39 @@ static void register_signal( void )
 	signal( SIGABRT, signal_handler );
 }
 
-#if 0
 //------------------------------------------------------------------------------
-static int32_t MarriageCallbackFunction( void *pObj, int32_t iEventCode, void *pData, int32_t iSize )
+static int32_t MarriageSimpleCallbackFunction( void *pObj, int32_t iEventCode, void *pData, int32_t iSize )
 {
+	int32_t *bMarriaged = (int32_t*)pObj;
+
+	*bMarriaged = false;
+
 	switch( iEventCode )
 	{
-		case EVENT_RECEIVE_CERTIFICATE:
-			printf("MSG1 Success.\n");
-			break;
-		case EVENT_ACK_CERTIFICATE:
-			printf("RSP1 Success.\n");
-			break;
-		case EVENT_RECEIVE_PLANE_DATA:
-			printf("MSG2 Success.\n");
-			break;
-		case EVENT_ACK_SIGN_PLANE_TEXT:
-			printf("RSP2 Success.\n");
-			break;
-		case EVENT_RECEIVE_MARRIAGE_OK:
-			printf("MSG3 Success.\n");
-			break;
 		case EVENT_ACK_MARRIAGE_OK:
-			printf("RSP3 Sucess.\n");
+			printf("Marriage Success.\n");
+			*bMarriaged = true;
 			break;
+
 		case ERROR_MAKE_PACKET:
 		case ERROR_SIGN_PLANE_TEXT:
-			printf("Error, Marriage.\n");
+			printf("Fail, Marriage.\n");
 			break;
+
 		default:
 			break;
 	}
 
 	return 0;
 }
-#else
+
 //------------------------------------------------------------------------------
-static int32_t MarriageCallbackFunction( void *pObj, int32_t iEventCode, void *pData, int32_t iSize )
+static int32_t MarriageVerboseCallbackFunction( void *pObj, int32_t iEventCode, void *pData, int32_t iSize )
 {
+	int32_t *bMarriaged = (int32_t*)pObj;
+
+	*bMarriaged= false;
+
 	switch( iEventCode )
 	{
 	case EVENT_RECEIVE_CERTIFICATE :
@@ -403,6 +414,7 @@ static int32_t MarriageCallbackFunction( void *pObj, int32_t iEventCode, void *p
 		printf("%s", (char*)pData);
 		printf("======================================================================\n");
 		break;
+	
 	case EVENT_RECEIVE_PLANE_DATA :
 		printf("======================================================================\n");
 		printf(">> Receive Plane Data.\n");
@@ -410,11 +422,13 @@ static int32_t MarriageCallbackFunction( void *pObj, int32_t iEventCode, void *p
 		HexDump( pData, iSize );
 		printf("======================================================================\n");
 		break;
+	
 	case EVENT_RECEIVE_MARRIAGE_OK :
 		printf("======================================================================\n");
 		printf(">> Receive Marriage OK.\n");
 		printf("======================================================================\n");
 		break;
+	
 	case EVENT_ACK_CERTIFICATE :
 		printf("======================================================================\n");
 		printf(">> Transfer Ceriticate.\n");
@@ -422,6 +436,7 @@ static int32_t MarriageCallbackFunction( void *pObj, int32_t iEventCode, void *p
 		HexDump( pData, iSize );
 		printf("======================================================================\n");
 		break;
+	
 	case EVENT_ACK_SIGN_PLANE_TEXT :
 		printf("======================================================================\n");
 		printf(">> Transfer Sign Data.\n");
@@ -429,26 +444,30 @@ static int32_t MarriageCallbackFunction( void *pObj, int32_t iEventCode, void *p
 		HexDump( pData, iSize );
 		printf("======================================================================\n");
 		break;
+	
 	case EVENT_ACK_MARRIAGE_OK :
 		printf("======================================================================\n");
 		printf(">> Transfer Marriage OK.\n");
 		printf("======================================================================\n");
 		HexDump( pData, iSize );
 		printf("======================================================================\n");
+		*bMarriaged = true;
 		break;
+	
 	case ERROR_MAKE_PACKET :
 		printf("Error, Make Packet.\n");
 		break;
+	
 	case ERROR_SIGN_PLANE_TEXT :
 		printf("Error, Sign Data.\n");
 		break;
+	
 	default:
 		break;
 	}
 
 	return 0;
 }
-#endif
 
 //------------------------------------------------------------------------------
 static void GpioCallbackFunction( void *pPrivate, uint32_t gpioPort, uint32_t value )
@@ -467,6 +486,22 @@ static void GpioCallbackFunction( void *pPrivate, uint32_t gpioPort, uint32_t va
 //------------------------------------------------------------------------------
 int32_t main( int32_t argc, char *argv[] )
 {
+	int32_t opt;
+	int32_t bVerbose = false;
+	int32_t bMarriaged = false;
+
+	while( -1 != (opt=getopt(argc, argv, "v")))
+	{
+		switch( opt )
+		{
+		case 'v' :
+			bVerbose = true;
+			break;
+		default :
+			break;
+		}
+	}
+
 	register_signal();
 
 	gstSlinkClient = new SlinkClient();
@@ -480,13 +515,17 @@ int32_t main( int32_t argc, char *argv[] )
 	gstSapGpio->StartMonitor();
 
 	// Start Marriage Server
-	NX_MarraigeEventCallback( MarriageCallbackFunction, NULL );
+	if( !bVerbose )	NX_MarraigeEventCallback( MarriageSimpleCallbackFunction, &bMarriaged );
+	else			NX_MarraigeEventCallback( MarriageVerboseCallbackFunction, &bMarriaged );
+
 	NX_MarriageServerStart( TCP_PORT, SERVER_CERT_FILE, SERVER_PRIV_FILE );
 
 	while( 1 )
 	{
-		gstSlinkClient->AddCommand( CMD_MARRIAGE_STATE );
-		gstSlinkClient->AddCommand( CMD_ALIVE );		//	Alive Command
+		if( !bMarriaged )	gstSlinkClient->AddCommand( CMD_DIVORCE );
+		else				gstSlinkClient->AddCommand( CMD_MARRIAGE );
+		
+		gstSlinkClient->AddCommand( CMD_ALIVE );
 		usleep( 1000000 );
 	}
 

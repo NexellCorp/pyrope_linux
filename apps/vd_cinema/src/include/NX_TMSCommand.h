@@ -56,7 +56,6 @@ enum {
 #define PFPGA_CMD_SOURCE		0x102
 #define PFPGA_CMD_VERSION		0x170
 
-
 //
 //	Battery Command
 //

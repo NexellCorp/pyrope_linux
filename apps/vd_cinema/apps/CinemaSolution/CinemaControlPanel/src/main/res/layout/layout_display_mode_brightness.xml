@@ -23,7 +23,7 @@
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.4" />
+            android:layout_weight="0.3" />
 
         <TextView
             android:background="@drawable/draw_line_border"
@@ -35,7 +35,7 @@
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.6" />
+            android:layout_weight="0.7" />
     </LinearLayout>
 
     <LinearLayout
@@ -48,7 +48,6 @@
         android:weightSum="1">
 
         <TextView
-            android:background="@drawable/draw_line_right"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
@@ -56,15 +55,16 @@
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.4"/>
+            android:layout_weight="0.3"/>
 
         <RadioGroup
+            android:background="@drawable/draw_line_left_right"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center"
-            android:paddingTop="10dp"
-            android:paddingBottom="10dp"
+            android:paddingTop="11dp"
+            android:paddingBottom="12dp"
             android:layout_weight="0.6">
 
             <RadioButton
@@ -83,6 +83,14 @@
                 android:layout_marginEnd="25dp"
                 android:text="Off"/>
         </RadioGroup>
+
+        <Button
+            android:id="@+id/btnHdrEnableApply"
+            android:text="Apply"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_weight="0.1" />
     </LinearLayout>
 
     <LinearLayout
@@ -95,7 +103,6 @@
         android:weightSum="1">
 
         <TextView
-            android:background="@drawable/draw_line_right"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
@@ -103,13 +110,24 @@
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.4"/>
+            android:layout_weight="0.3"/>
 
         <SeekBar
+            android:background="@drawable/draw_line_left_right"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:id="@+id/seekBarMastering"
+            android:paddingTop="10dp"
+            android:paddingBottom="11dp"
             android:layout_weight="0.6" />
+
+        <Button
+            android:id="@+id/btnMasteringApply"
+            android:text="Apply"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_weight="0.1" />
     </LinearLayout>
 
     <LinearLayout
@@ -122,7 +140,6 @@
         android:weightSum="1">
 
         <TextView
-            android:background="@drawable/draw_line_right"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
@@ -130,13 +147,24 @@
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.4"/>
+            android:layout_weight="0.3"/>
 
         <SeekBar
+            android:background="@drawable/draw_line_left_right"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:id="@+id/seekBarPq"
+            android:paddingTop="10dp"
+            android:paddingBottom="11dp"
             android:layout_weight="0.6" />
+
+        <Button
+            android:id="@+id/btnPqCurveApply"
+            android:text="Apply"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_weight="0.1" />
     </LinearLayout>
 
     <LinearLayout
@@ -149,7 +177,6 @@
         android:weightSum="1">
 
         <TextView
-            android:background="@drawable/draw_line_right"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
@@ -157,13 +184,24 @@
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.4"/>
+            android:layout_weight="0.3"/>
 
         <SeekBar
+            android:background="@drawable/draw_line_left_right"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:id="@+id/seekBarGamma"
+            android:paddingTop="10dp"
+            android:paddingBottom="11dp"
             android:layout_weight="0.6" />
+
+        <Button
+            android:id="@+id/btnGammaApply"
+            android:text="Apply"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_weight="0.1" />
     </LinearLayout>
 
 </LinearLayout>

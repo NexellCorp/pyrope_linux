@@ -24,7 +24,7 @@
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.4" />
+            android:layout_weight="0.3" />
 
         <TextView
             android:background="@drawable/draw_line_border"
@@ -36,7 +36,7 @@
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.6" />
+            android:layout_weight="0.7" />
     </LinearLayout>
 
     <LinearLayout
@@ -49,18 +49,17 @@
         android:weightSum="1">
 
         <TextView
-            android:background="@drawable/draw_line_right"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="HDR Enable"
+            android:text="Input Source Enable"
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.4"/>
+            android:layout_weight="0.3"/>
 
         <RadioGroup
-            android:background="@drawable/draw_line_border"
+            android:background="@drawable/draw_line_left_right"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
@@ -85,9 +84,18 @@
                 android:layout_marginEnd="25dp"
                 android:text="Off"/>
         </RadioGroup>
+
+        <Button
+            android:id="@+id/btnInputSourceEnableApply"
+            android:text="Apply"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_weight="0.1" />
     </LinearLayout>
 
     <LinearLayout
+        android:background="@drawable/draw_line_border"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginLeft="5dp"
@@ -96,33 +104,40 @@
         android:weightSum="1">
 
         <TextView
-            android:background="@drawable/draw_line_border"
             android:layout_width="0px"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
             android:text="Input Source Selection"
-            android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.4" />
+            android:gravity="center"
+            android:layout_weight="0.3" />
 
         <LinearLayout
-            android:background="@drawable/draw_line_border"
+            android:background="@drawable/draw_line_left_right"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:gravity="center"
             android:paddingTop="4dp"
             android:paddingBottom="3dp"
+            android:paddingLeft="200dp"
+            android:paddingRight="200dp"
             android:layout_weight="0.6">
 
             <Spinner
                 android:id="@+id/spinnerInputSource"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_marginLeft="200dp"
-                android:layout_marginRight="200dp"
                 android:gravity="center"/>
         </LinearLayout>
+
+        <Button
+            android:id="@+id/btnInputSourceSelectApply"
+            android:text="Apply"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_weight="0.1" />
     </LinearLayout>
 
 </LinearLayout>

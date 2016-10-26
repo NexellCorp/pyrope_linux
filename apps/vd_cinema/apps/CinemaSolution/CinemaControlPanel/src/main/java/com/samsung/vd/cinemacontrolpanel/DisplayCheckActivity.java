@@ -1,9 +1,14 @@
 package com.samsung.vd.cinemacontrolpanel;
 
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -28,6 +33,8 @@ public class DisplayCheckActivity extends AppCompatActivity {
     private StatusSimpleAdapter mAdapterCabinetDisplay;
     private Spinner mSpinnerTestPattern;
 
+    private Toast mToast;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -45,7 +52,7 @@ public class DisplayCheckActivity extends AppCompatActivity {
         });
 
         // Configuration StatusBar
-        VdStatusBar statusBar = new VdStatusBar( getApplicationContext(), (LinearLayout)findViewById( R.id.statusBarLayoutDisplayCheck) );
+        new VdStatusBar( getApplicationContext(), (LinearLayout)findViewById( R.id.statusBarLayoutDisplayCheck) );
 
         AddTabs();
 
@@ -65,10 +72,7 @@ public class DisplayCheckActivity extends AppCompatActivity {
         ((Button)findViewById(R.id.btnPlayTestPattern)).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(getApplicationContext(), "Run Test Pattern.", Toast.LENGTH_SHORT).show();
-                //
-                //
-                //
+                ShowMessage("Run Test Pattern.");
             }
         });
     }
@@ -108,4 +112,58 @@ public class DisplayCheckActivity extends AppCompatActivity {
             Log.i(VD_DTAG, "Tab ID : " + tabId);
         }
     };
+
+    private void ShowMessage( String strMsg ) {
+        if( mToast == null )
+            mToast = Toast.makeText(getApplicationContext(), null, Toast.LENGTH_SHORT);
+
+        mToast.setText(strMsg);
+        mToast.show();
+    }
+
+    //
+    //  For ScreenSaver
+    //
+    private ScreenSaverService mService = null;
+    private boolean mServiceRun = false;
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        Intent intent = new Intent(this, ScreenSaverService.class);
+        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        if( mServiceRun ) {
+            unbindService(mConnection);
+            mServiceRun = false;
+        }
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        mService.RefreshScreenSaver();
+
+        return super.dispatchTouchEvent(ev);
+    }
+
+    private ServiceConnection mConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            ScreenSaverService.LocalBinder binder = (ScreenSaverService.LocalBinder)service;
+            mService = binder.GetService();
+            mServiceRun = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            mServiceRun = false;
+        }
+    };
+
 }

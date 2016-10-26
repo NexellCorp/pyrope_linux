@@ -65,8 +65,8 @@
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:text="LCD Display Screen"
                     android:gravity="center"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
                     android:layout_weight="0.4" />
 
                 <RadioGroup
@@ -75,8 +75,8 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
+                    android:paddingTop="11dp"
+                    android:paddingBottom="12dp"
                     android:layout_weight="0.6">
 
                     <RadioButton
@@ -115,8 +115,8 @@
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:text="Cinema Screen"
                     android:gravity="center"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
                     android:layout_weight="0.4" />
 
                 <TextView
@@ -126,8 +126,8 @@
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:text="Resolution"
                     android:gravity="center"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
                     android:layout_weight="0.2" />
 
                 <TextView
@@ -137,8 +137,8 @@
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:text="Frame Rate"
                     android:gravity="center"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
                     android:layout_weight="0.2" />
 
                 <TextView
@@ -148,8 +148,8 @@
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:text="Aspect Ratio"
                     android:gravity="center"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
                     android:layout_weight="0.2" />
             </LinearLayout>
 
@@ -167,10 +167,10 @@
                     android:layout_width="0px"
                     android:layout_height="wrap_content"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:text="Input source Selection"
+                    android:text="Input Source Selection"
                     android:gravity="center"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
                     android:layout_weight="0.4"/>
 
                 <RadioGroup
@@ -179,8 +179,8 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
+                    android:paddingTop="11dp"
+                    android:paddingBottom="12dp"
                     android:layout_weight="0.6">
 
                     <RadioButton
@@ -237,8 +237,8 @@
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:text="Brightness"
                     android:gravity="center"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
                     android:layout_weight="0.4" />
 
                 <RadioGroup
@@ -247,8 +247,8 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
+                    android:paddingTop="11dp"
+                    android:paddingBottom="12dp"
                     android:layout_weight="0.6">
 
                     <RadioButton
@@ -296,8 +296,8 @@
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:text="Color Gamut"
                     android:gravity="center"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
                     android:layout_weight="0.4" />
 
                 <RadioGroup
@@ -306,8 +306,8 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
+                    android:paddingTop="11dp"
+                    android:paddingBottom="12dp"
                     android:layout_weight="0.6">
 
                     <RadioButton
@@ -355,8 +355,8 @@
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:text="HDR"
                     android:gravity="center"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
                     android:layout_weight="0.4"/>
 
                 <RadioGroup
@@ -365,8 +365,8 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
+                    android:paddingTop="11dp"
+                    android:paddingBottom="12dp"
                     android:layout_weight="0.6">
 
                     <RadioButton
@@ -405,8 +405,8 @@
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:text="System Status"
                     android:gravity="center"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
                     android:layout_weight="0.4"/>
 
                 <RadioGroup
@@ -415,8 +415,8 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
+                    android:paddingTop="11dp"
+                    android:paddingBottom="12dp"
                     android:layout_weight="0.6">
 
                     <RadioButton

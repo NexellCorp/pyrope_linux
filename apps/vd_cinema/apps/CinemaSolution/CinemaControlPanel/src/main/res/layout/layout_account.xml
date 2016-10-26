@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:background="@drawable/draw_line_border"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:gravity="center"
+        android:weightSum="1">
+
+        <LinearLayout
+            android:background="@drawable/draw_line_right"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:paddingTop="10dp"
+            android:paddingBottom="11dp"
+            android:gravity="center"
+            android:layout_weight="0.15">
+
+            <TextView
+                android:id="@+id/textAccountGroup"
+                android:background="@drawable/draw_line_right"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:gravity="center"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:background="@drawable/draw_line_right"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_weight="0.24">
+
+            <EditText
+                android:id="@+id/editAccountId"
+                android:nextFocusDown="@+id/editAccountPw"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:ems="10"
+                android:gravity="center"
+                android:enabled="false" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:background="@drawable/draw_line_right"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_weight="0.24">
+
+            <EditText
+                android:id="@+id/editAccountPw"
+                android:nextFocusDown="@+id/editAccountConfirm"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:inputType="textPassword"
+                android:ems="10"
+                android:gravity="center"
+                android:enabled="false" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:background="@drawable/draw_line_right"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_weight="0.24">
+
+            <EditText
+                android:id="@+id/editAccountConfirm"
+                android:imeOptions="actionDone"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:inputType="textPassword"
+                android:ems="10"
+                android:gravity="center"
+                android:enabled="false" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:background="@drawable/draw_line_right"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_weight="0.13">
+
+            <Button
+                android:id="@+id/btnAccountModify"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Modify" />
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>

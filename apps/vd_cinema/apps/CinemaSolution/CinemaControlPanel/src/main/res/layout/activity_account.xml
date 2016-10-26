@@ -13,74 +13,87 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="vertical"
+        android:layout_marginTop="10dp"
         android:layout_below="@+id/titleBarLayoutAccount"
-        android:layout_above="@+id/statusBarLayoutAccount"
-        android:layout_alignParentStart="true">
+        android:layout_above="@+id/statusBarLayoutAccount" >
 
         <LinearLayout
             android:background="#FFE0E0E0"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp"
             android:gravity="center"
             android:weightSum="1">
-
-            <TextView
-                android:background="@drawable/draw_line_left_top_bottom"
-                android:layout_width="0px"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="@string/txt_account"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:paddingTop="10dp"
-                android:paddingBottom="11dp"
-                android:layout_weight="0.25" />
-
-            <TextView
-                android:background="@drawable/draw_line_left_top_bottom"
-                android:layout_width="0px"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="@string/txt_id_number"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:paddingTop="10dp"
-                android:paddingBottom="11dp"
-                android:layout_weight="0.3" />
-
-            <TextView
-                android:background="@drawable/draw_line_left_top_bottom"
-                android:layout_width="0px"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="@string/txt_password"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:paddingTop="10dp"
-                android:paddingBottom="11dp"
-                android:layout_weight="0.3" />
 
             <TextView
                 android:background="@drawable/draw_line_border"
                 android:layout_width="0px"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="@string/txt_modify"
+                android:text="Account"
                 android:textStyle="bold"
                 android:gravity="center"
-                android:paddingTop="10dp"
-                android:paddingBottom="11dp"
+                android:paddingTop="15dp"
+                android:paddingBottom="15dp"
                 android:layout_weight="0.15" />
-        </LinearLayout>
 
-        <!--listview-->
-        <ListView
-            android:id="@+id/listview_account"
+            <TextView
+                android:background="@drawable/draw_line_border"
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="Identify Number"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:paddingTop="15dp"
+                android:paddingBottom="15dp"
+                android:layout_weight="0.24" />
+
+            <TextView
+                android:background="@drawable/draw_line_border"
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="Password"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:paddingTop="15dp"
+                android:paddingBottom="15dp"
+                android:layout_weight="0.24" />
+
+            <TextView
+                android:background="@drawable/draw_line_border"
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="Confirm"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:paddingTop="15dp"
+                android:paddingBottom="15dp"
+                android:layout_weight="0.24" />
+
+            <TextView
+                android:background="@drawable/draw_line_border"
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="Modify"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:paddingTop="15dp"
+                android:paddingBottom="15dp"
+                android:layout_weight="0.13" />
+        </LinearLayout>
+        
+        <LinearLayout
+            android:id="@+id/layoutAccount"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:orientation="vertical"
+            android:layout_height="wrap_content" />
     </LinearLayout>
 
     <LinearLayout

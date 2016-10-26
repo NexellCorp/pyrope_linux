@@ -8,6 +8,7 @@
     <string name="txt_account">Account</string>
     <string name="txt_id_number">Identify Number</string>
     <string name="txt_password">Password</string>
+    <string name="txt_confirm">Confirm</string>
     <string name="txt_root_password">Root Password</string>
     <string name="txt_root_password_confirm">Confirm Root Password</string>
     <string name="txt_cabinet_number">Cabinet Number</string>

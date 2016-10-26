@@ -1,11 +1,15 @@
 package com.samsung.vd.cinemacontrolpanel;
 
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -155,6 +159,51 @@ public class DiagnosticsActivity extends AppCompatActivity {
         @Override
         public void onTabChanged(String tabId) {
             Log.i(VD_DTAG, "Tab ID : " + tabId);
+        }
+    };
+
+    //
+    //  For ScreenSaver
+    //
+    private ScreenSaverService mService = null;
+    private boolean mServiceRun = false;
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        Intent intent = new Intent(this, ScreenSaverService.class);
+        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        if( mServiceRun ) {
+            unbindService(mConnection);
+            mServiceRun = false;
+        }
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        mService.RefreshScreenSaver();
+
+        return super.dispatchTouchEvent(ev);
+    }
+
+    private ServiceConnection mConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            ScreenSaverService.LocalBinder binder = (ScreenSaverService.LocalBinder)service;
+            mService = binder.GetService();
+            mServiceRun = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            mServiceRun = false;
         }
     };
 

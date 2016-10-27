@@ -31,6 +31,35 @@ include $(BUILD_EXECUTABLE)
 
 
 #
+#	Build I2C Finder Application for Samsung Protocol
+#
+include $(CLEAR_VARS)
+
+LOCAL_MODULE_TAGS := optional
+
+LOCAL_SRC_FILES:= \
+	finder.cpp
+
+LOCAL_C_INCLUDES += \
+	$(VD_TOP)/src/i2c \
+	$(VD_TOP)/src/include
+
+LOCAL_SHARED_LIBRARIES := \
+	libcutils	\
+	libutils
+
+LOCAL_STATIC_LIBRARIES +=
+
+LOCAL_LDFLAGS += \
+	-L$(VD_TOP)/lib -lnxcinema
+
+LOCAL_MODULE:= nx_i2c_finder
+LOCAL_MODULE_PATH := $(VD_TOP)/bin
+
+include $(BUILD_EXECUTABLE)
+
+
+#
 #	Build I2C Validation Application for Samsung Protocol
 #
 include $(CLEAR_VARS)

@@ -182,7 +182,7 @@ void CNX_SLinkServer::ThreadProc()
 		if( 0 != NX_CheckUartPacket( buf+4, length ) )
 		{
 			NxErrMsg("~~~~~~~~~~~~~~ Packet Error !!!!!\n");
-			HexDump( buf, length+4 );
+			NX_HexDump( buf, length+4 );
 		}
 
 		//	Parsing Uart Command

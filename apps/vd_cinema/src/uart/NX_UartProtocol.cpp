@@ -177,6 +177,6 @@ void DumpUartPacket(NX_UART_PACKET *pPacket)
 	printf("frameNumber = %d\n", pPacket->frameNumber );
 	printf("crc32       = 0x%08x\n", pPacket->crc32 );
 	printf("payload : \n");
-	HexDump( pPacket->payload, pPacket->payloadSize );
+	NX_HexDump( pPacket->payload, pPacket->payloadSize );
 	printf("===================================================\n");
 }

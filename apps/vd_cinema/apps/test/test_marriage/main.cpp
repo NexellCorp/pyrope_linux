@@ -122,7 +122,7 @@ static int32_t cbEventCallback( void *pObj, int32_t iEventCode, void *pData, int
 		printf("======================================================================\n");
 		printf(">> Receive Plane Data.\n");
 		printf("======================================================================\n");
-		HexDump( pData, iSize );
+		NX_HexDump( pData, iSize );
 		printf("======================================================================\n");
 		break;
 	case EVENT_RECEIVE_MARRIAGE_OK :
@@ -134,21 +134,21 @@ static int32_t cbEventCallback( void *pObj, int32_t iEventCode, void *pData, int
 		printf("======================================================================\n");
 		printf(">> Transfer Ceriticate.\n");
 		printf("======================================================================\n");
-		HexDump( pData, iSize );
+		NX_HexDump( pData, iSize );
 		printf("======================================================================\n");
 		break;
 	case EVENT_ACK_SIGN_PLANE_TEXT :
 		printf("======================================================================\n");
 		printf(">> Transfer Sign Data.\n");
 		printf("======================================================================\n");
-		HexDump( pData, iSize );
+		NX_HexDump( pData, iSize );
 		printf("======================================================================\n");
 		break;
 	case EVENT_ACK_MARRIAGE_OK :
 		printf("======================================================================\n");
 		printf(">> Transfer Marriage OK.\n");
 		printf("======================================================================\n");
-		HexDump( pData, iSize );
+		NX_HexDump( pData, iSize );
 		printf("======================================================================\n");
 		break;
 	case ERROR_MAKE_PACKET :

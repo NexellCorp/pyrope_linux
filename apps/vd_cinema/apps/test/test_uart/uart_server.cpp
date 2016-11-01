@@ -122,9 +122,9 @@ int main( void )
 		{
 			printf("~~~~~~~~~~~~~~ Packet Error !!!!!\n");
 			//DumpUartPacket(&rcvPacket);
-			HexDump( buf, length+4 );
+			NX_HexDump( buf, length+4 );
 		}
-		HexDump( buf, length+4 );
+		NX_HexDump( buf, length+4 );
 
 		//	Parsing Uart Command
 		if( 0 != NX_ParseUartPacket( buf, length +4, &rcvPacket ) )

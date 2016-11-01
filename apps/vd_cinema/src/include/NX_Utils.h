@@ -25,13 +25,14 @@
 #define	NX_SHELL_MAX_ARG		1024
 #define	NX_SHELL_MAX_STR		64
 
-void dumpdata( void *data, int32_t len, const char *msg );
-void HexDump( const void *data, int32_t size );
-uint64_t NX_GetTickCount( void );
+uint64_t	NX_GetTickCount( void );
+int32_t		NX_GetRandomValue( int32_t iStartNum, int32_t iEndNum );
 
-int32_t ping( const char *target );
+void		NX_HexDump( const void *data, int32_t size, const char *msg );
+void		NX_HexDump( const void *data, int32_t size );
 
-//	Shell Util
-int32_t NX_SHELL_GetArgument (char *pSrc, char arg[][NX_SHELL_MAX_STR] );
+int32_t		ping( const char *target );
+
+int32_t		NX_SHELL_GetArgument (char *pSrc, char arg[][NX_SHELL_MAX_STR] );
 
 #endif	// __NX_UTILS_H__

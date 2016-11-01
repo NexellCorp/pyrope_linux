@@ -296,7 +296,7 @@ int32_t CNX_TMSServer::PFPGA_GetState(int32_t fd)
 	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, PFPGA_CMD_STATE, state, 1, m_SendBuf, sizeof(m_SendBuf) );
 	sent = write( fd, m_SendBuf, sendSize );
 	NxDbgMsg(NX_DBG_VBS, "Write Reply = %d/%d\n", sent, sendSize);
-	HexDump( m_SendBuf, sent );
+	NX_HexDump( m_SendBuf, sent );
 	FUNC_OUT();
 	return 0;
 }
@@ -313,7 +313,7 @@ int32_t CNX_TMSServer::PFPGA_SetSource( int32_t fd, uint8_t * /*index*/ )
 	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, PFPGA_CMD_SOURCE, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
 	sent = write( fd, m_SendBuf, sendSize );
 	NxDbgMsg(NX_DBG_VBS, "Write Reply = %d/%d\n", sent, sendSize);
-	HexDump( m_SendBuf, sent );
+	NX_HexDump( m_SendBuf, sent );
 	FUNC_OUT();
 	return 0;
 }
@@ -331,7 +331,7 @@ int32_t CNX_TMSServer::PFPGA_GetVersion(int32_t fd)
 	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, PFPGA_CMD_VERSION, version, sizeof(version), m_SendBuf, sizeof(m_SendBuf) );
 	sent = write( fd, m_SendBuf, sendSize );
 	NxDbgMsg(NX_DBG_VBS, "Write Reply = %d/%d\n", sent, sendSize);
-	HexDump( m_SendBuf, sent );
+	NX_HexDump( m_SendBuf, sent );
 	FUNC_OUT();
 	return 0;
 }
@@ -363,7 +363,7 @@ int32_t CNX_TMSServer::TCON_Status( int32_t fd, uint32_t cmd, uint8_t index )
 	}
 
 	sent = write( fd, m_SendBuf, sendSize );
-	HexDump( m_SendBuf, sent );
+	NX_HexDump( m_SendBuf, sent );
 	FUNC_OUT();
 	return 0;
 }
@@ -391,7 +391,7 @@ int32_t CNX_TMSServer::TCON_LedPosition( int32_t fd, uint32_t cmd, uint8_t index
 
 	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, state, failNumber * 3, m_SendBuf, sizeof(m_SendBuf) );
 	sent = write( fd, m_SendBuf, sendSize );
-	HexDump( m_SendBuf, sent );
+	NX_HexDump( m_SendBuf, sent );
 	FUNC_OUT();
 	return 0;
 }
@@ -408,7 +408,7 @@ int32_t CNX_TMSServer::TCON_LedOn( int32_t fd, uint8_t onOff )
 
 	sendSize = TMS_MakePacket( SEC_KEY_VALUE, TCON_CMD_ON, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
 	sent = write( fd, m_SendBuf, sendSize );
-	HexDump( m_SendBuf, sent );
+	NX_HexDump( m_SendBuf, sent );
 	FUNC_OUT();
 	return 0;
 }
@@ -426,7 +426,7 @@ int32_t CNX_TMSServer::TCON_BrightnessMode( int32_t fd, uint8_t mode, uint8_t ev
 
 	sendSize = TMS_MakePacket( SEC_KEY_VALUE, TCON_CMD_BR_CTRL, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
 	sent = write( fd, m_SendBuf, sendSize );
-	HexDump( m_SendBuf, sent );
+	NX_HexDump( m_SendBuf, sent );
 	FUNC_OUT();
 	return 0;
 }
@@ -442,7 +442,7 @@ int32_t CNX_TMSServer::TCON_ElapsedTime( int32_t fd )
 
 	sendSize = TMS_MakePacket( SEC_KEY_VALUE, TCON_CMD_BR_CTRL, &time, sizeof(time), m_SendBuf, sizeof(m_SendBuf) );
 	sent = write( fd, m_SendBuf, sendSize );
-	HexDump( m_SendBuf, sent );
+	NX_HexDump( m_SendBuf, sent );
 	FUNC_OUT();
 	return 0;
 }
@@ -459,7 +459,7 @@ int32_t CNX_TMSServer::TCON_Version( int32_t fd )
 
 	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, TCON_CMD_VERSION, version, sizeof(version), m_SendBuf, sizeof(m_SendBuf) );
 	sent = write( fd, m_SendBuf, sendSize );
-	HexDump( m_SendBuf, sent );
+	NX_HexDump( m_SendBuf, sent );
 	FUNC_OUT();
 	return 0;
 }
@@ -480,7 +480,7 @@ int32_t CNX_TMSServer::BAT_GetState(int32_t fd)
 
 	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, BAT_CMD_STATE, data, sizeof(data), m_SendBuf, sizeof(m_SendBuf) );
 	sent = write( fd, m_SendBuf, sendSize );
-	HexDump( m_SendBuf, sent );
+	NX_HexDump( m_SendBuf, sent );
 	FUNC_OUT();
 	return 0;
 }

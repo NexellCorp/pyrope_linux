@@ -20,7 +20,10 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <ctype.h>
+#include <time.h>
 #include <sys/time.h>
 
 #ifdef ANDROID
@@ -29,31 +32,45 @@
 
 #include <NX_Utils.h>
 
+//------------------------------------------------------------------------------
 uint64_t NX_GetTickCount( void )
 {
-	uint64_t ret;
 	struct timeval	tv;
 	struct timezone	zv;
 	gettimeofday( &tv, &zv );
-	ret = ((uint64_t)tv.tv_sec)*1000 + tv.tv_usec/1000;
-	return ret;
+	return ((uint64_t)tv.tv_sec)*1000 + tv.tv_usec/1000;
 }
 
-void dumpdata( void *data, int32_t len, const char *msg )
+//------------------------------------------------------------------------------
+int32_t NX_GetRandomValue( int32_t iStartNum, int32_t iEndNum )
 {
-	int32_t i=0;
-	uint8_t *byte = (uint8_t *)data;
-	printf("Dump Data : %s", msg);
-	for( i=0 ; i<len ; i ++ )
-	{
-		if( i!=0 && i%16 == 0 )	printf("\n\t");
-		printf("%.2x", byte[i] );
-		if( i%4 == 3 ) printf(" ");
-	}
-	printf("\n");
+	if( iStartNum >= iEndNum )
+		return -1;
+
+	srand( (uint32_t)NX_GetTickCount() );
+	return rand() % (iEndNum - iStartNum + 1) + iStartNum;
 }
 
-void HexDump( const void *data, int32_t size )
+//------------------------------------------------------------------------------
+void NX_HexDump( const void *data, int32_t size, const char *msg )
+{
+	const uint8_t *byte = (const uint8_t *)data;
+	
+	printf("%s ( %d bytes ):", msg, size);
+
+	for( int32_t i = 0; i < size; ++i)
+	{
+		if ((i % 16) == 0)
+		{
+			printf("\n%04x", i);
+		}
+
+		printf(" %02x", byte[i]);
+	}
+}
+
+//------------------------------------------------------------------------------
+void NX_HexDump( const void *data, int32_t size )
 {
 	int32_t i=0, offset = 0;
 	char tmp[32];
@@ -108,9 +125,28 @@ void HexDump( const void *data, int32_t size )
 	}
 }
 
-//
-// NX_SHELL_GetArgument
-//
+//------------------------------------------------------------------------------
+int32_t NX_CompareData( uint8_t *pData1, int32_t iSize1, uint8_t *pData2, int32_t iSize2 )
+{
+	if( iSize1 != iSize2 )
+	{
+		// NxDbgMsg(NX_DBG_DEBUG, "Fail, Mismatch Size.\n");
+		return -1;
+	}
+
+	for( int32_t i = 0; i < iSize1; i++ )
+	{
+		if(  pData1[i] != pData2[i] )
+		{
+			// NxDbgMsg(NX_DBG_DEBUG, "Fail, Mismatch Data.\n");
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+//------------------------------------------------------------------------------
 int32_t NX_SHELL_GetArgument (char *pSrc, char arg[][NX_SHELL_MAX_STR] )
 {
 	int32_t	i, j;

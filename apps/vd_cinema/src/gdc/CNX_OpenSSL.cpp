@@ -208,45 +208,6 @@ int32_t CNX_OpenSSL::GetCertificate( uint8_t **ppBuf )
 }
 
 //------------------------------------------------------------------------------
-void CNX_OpenSSL::DumpHex( const char *pMsg, const uint8_t *pData, int32_t iSize )
-{
-	printf("%s ( %d bytes ):", pMsg, iSize);
-
-	for( int32_t i = 0; i < iSize; ++i)
-	{
-		if ((i % 16) == 0)
-		{
-			printf("\n%04x", i);
-		}
-
-		printf(" %02x", pData[i]);
-	}
-
-	printf("\n");
-}
-
-//------------------------------------------------------------------------------
-int32_t CNX_OpenSSL::CompareData( uint8_t *pData1, int32_t iSize1, uint8_t *pData2, int32_t iSize2 )
-{
-	if( iSize1 != iSize2 )
-	{
-		NxDbgMsg(NX_DBG_DEBUG, "Fail, Mismatch Size.\n");
-		return -1;
-	}
-
-	for( int32_t i = 0; i < iSize1; i++ )
-	{
-		if(  pData2[i] != pData2[i] )
-		{
-			NxDbgMsg(NX_DBG_DEBUG, "Fail, Mismatch Data.\n");
-			return -1;
-		}
-	}
-
-	return 0;
-}
-
-//------------------------------------------------------------------------------
 int32_t CNX_OpenSSL::GetEncryptSize( void )
 {
 	return (m_pPubKey != NULL) ? RSA_size(m_pPubKey) : 0;

@@ -419,7 +419,7 @@ static int32_t MarriageVerboseCallbackFunction( void *pObj, int32_t iEventCode, 
 		printf("======================================================================\n");
 		printf(">> Receive Plane Data.\n");
 		printf("======================================================================\n");
-		HexDump( pData, iSize );
+		NX_HexDump( pData, iSize );
 		printf("======================================================================\n");
 		break;
 	
@@ -433,7 +433,7 @@ static int32_t MarriageVerboseCallbackFunction( void *pObj, int32_t iEventCode, 
 		printf("======================================================================\n");
 		printf(">> Transfer Ceriticate.\n");
 		printf("======================================================================\n");
-		HexDump( pData, iSize );
+		NX_HexDump( pData, iSize );
 		printf("======================================================================\n");
 		break;
 	
@@ -441,7 +441,7 @@ static int32_t MarriageVerboseCallbackFunction( void *pObj, int32_t iEventCode, 
 		printf("======================================================================\n");
 		printf(">> Transfer Sign Data.\n");
 		printf("======================================================================\n");
-		HexDump( pData, iSize );
+		NX_HexDump( pData, iSize );
 		printf("======================================================================\n");
 		break;
 	
@@ -449,7 +449,7 @@ static int32_t MarriageVerboseCallbackFunction( void *pObj, int32_t iEventCode, 
 		printf("======================================================================\n");
 		printf(">> Transfer Marriage OK.\n");
 		printf("======================================================================\n");
-		HexDump( pData, iSize );
+		NX_HexDump( pData, iSize );
 		printf("======================================================================\n");
 		*bMarriaged = true;
 		break;

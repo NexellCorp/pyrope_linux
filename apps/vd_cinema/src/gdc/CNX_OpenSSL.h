@@ -50,10 +50,6 @@ public:
 	int32_t Sign( uint8_t *pPlaneData, int32_t iPlaneSize, uint8_t **pSignData, int32_t *iSignSize );
 	int32_t Verify( uint8_t *pPlaneData, int32_t iPlaneSize, uint8_t *pSignData, int32_t iSignSize );
 
-	// For Debugging
-	void	DumpHex( const char *pMsg, const uint8_t *pData, int32_t iSize );
-	int32_t	CompareData( uint8_t *pData1, int32_t iSize1, uint8_t *pData2, int32_t iSize2 );
-
 private:
 	RSA			*m_pPrivKey;
 	RSA			*m_pPubKey;

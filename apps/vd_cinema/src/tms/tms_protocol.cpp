@@ -127,11 +127,11 @@ void DumpTmsPacket(void *pData, int32_t dataSize, int32_t protocol)
 		printf("cmd = 0x%08x\n", cmd);
 		printf("payloadSize = %d\n", payloadSize);
 		printf("payload : \n");
-		HexDump( payload, payloadSize );
+		NX_HexDump( payload, payloadSize );
 		printf("==================================================\n");
 	}
 	else
 	{
-		HexDump( pData, dataSize );
+		NX_HexDump( pData, dataSize );
 	}
 }

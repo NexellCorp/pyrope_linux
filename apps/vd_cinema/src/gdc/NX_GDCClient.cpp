@@ -30,6 +30,7 @@
 #include <CNX_OpenSSL.h>
 #include <gdc_protocol.h>
 #include <SockUtils.h>
+#include <NX_Utils.h>
 
 #define NX_DTAG	"[GDC Client]"
 #include <NX_DbgMsg.h>
@@ -237,7 +238,7 @@ int32_t CNX_GDCClient::Verify( const char *pIpAddr, int32_t iPort, const char *p
 		{
 			printf("======================================================================\n");
 			printf("> Receive Signed Data.\n");
-			clientSSL.DumpHex("payload(hex):", pPayload, iPayloadSize);
+			NX_HexDump( pPayload, iPayloadSize, "payload(hex):" );
 			printf("======================================================================\n");
 
 			if( 0 > clientSSL.Verify( pPlaneText, strlen((char*)pPlaneText), pPayload, iPayloadSize ) )

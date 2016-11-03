@@ -1350,7 +1350,7 @@ int32_t main( int32_t argc, char *argv[] )
 
 	printf("=============================================\n");
 	printf("  Input File  : %s\n", appData->inFileName);
-	printf("  Output File : %s\n", appData->inFileName);
+	printf("  Output File : %s\n", appData->outFileName);
 	printf("  Resolution  : %dx%d\n", appData->encWidth, appData->encHeight);
 	printf("=============================================\n");
 

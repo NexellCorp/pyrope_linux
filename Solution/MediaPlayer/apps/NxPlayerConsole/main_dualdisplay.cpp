@@ -527,8 +527,8 @@ int32_t main( int32_t argc, char *argv[] )
 	printf("############################## Example ##############################\n");
 	printf(" Default   ==>  ./NxPlayerConsole -f test_file.mp4\n");
     printf(" Set Audio Path\n");
-	printf("  - I2S Audio  ==>  ./NxPlayerConsole -f test_file.mp4 -s 0\n");
-    printf("  - HDMI Audio ==>  ./NxPlayerConsole -f test_file.mp4 -s 1\n");
+	printf("  - I2S Audio  ==>  ./NxPlayerConsole -f test_file.mp4 -a 0\n");
+    printf("  - HDMI Audio ==>  ./NxPlayerConsole -f test_file.mp4 -a 1\n");
 	printf("######################################################################\n");
 	memset( &AppData, 0x00, sizeof(AppDataStruct) );
 

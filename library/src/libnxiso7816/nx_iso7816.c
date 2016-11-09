@@ -131,10 +131,10 @@ static ISO7816_HANDLE _OpenISO7816( int port )
 		*tieoff |= 0xe0000000;
 #elif(HW_UART_PORT == 4)
 		tieoff = (uint32_t*)( virAddr + (TIEOFFREG05 - ISO7816_TIEOFF_REG_PHY) );
-		*tieoff |= 0x38;
+		*tieoff |= 0x7;
 #elif(HW_UART_PORT == 5)
 		tieoff = (uint32_t*)( virAddr + (TIEOFFREG05 - ISO7816_TIEOFF_REG_PHY) );
-		*tieoff |= 0x7;
+		*tieoff |= 0x38;
 #endif
 		iomem_free( virAddr, ISO7816_TIEOFF_REG_SIZE );
 	}

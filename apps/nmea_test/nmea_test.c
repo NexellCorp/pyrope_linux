@@ -27,10 +27,10 @@
 #include <nx_nmea_parser.h>
 #include "gps_data.h"
 
-#define GPS_DEV_NAME		"/dev/ttyAMA1"
+#define GPS_DEV_NAME		"/dev/ttyAMA0"
 #define MAX_BUFFER_SIZE		1024
 
-#define GPS_DATA_SAMPLE
+//#define GPS_DATA_SAMPLE
 
 int parser_gprmc(int hParser, char *pBuf, struct nmea_gprmc *pGprmc)
 {

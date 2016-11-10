@@ -26,7 +26,7 @@ static int32_t TconState(int32_t argc, char *argv[])
 
 	int32_t id = atoi(argv[1]);
 	int32_t size = sizeof(buf);
-	if( 0 != NX_TConCommand( id, TCON_CMD_STATE, buf, &size ) )
+	if( 0 != NX_TCONCommand( id, TCON_CMD_STATUS, buf, &size ) )
 	{
 		printf("[ERROR CMD]\n");
 		return -1;
@@ -46,7 +46,7 @@ static int32_t TconOpenState(int32_t argc, char *argv[])
 
 	int32_t id = atoi(argv[1]);
 	int32_t size = sizeof(buf);
-	if( 0 != NX_TConCommand( id, TCON_CMD_OPEN, buf, &size ) )
+	if( 0 != NX_TCONCommand( id, TCON_CMD_OPEN, buf, &size ) )
 	{
 		printf("[ERROR CMD]\n");
 		return -1;
@@ -66,7 +66,7 @@ static int32_t TconOpenPos(int32_t argc, char *argv[])
 
 	int32_t id = atoi(argv[1]);
 	int32_t size = sizeof(buf);
-	NX_TConCommand( id, TCON_CMD_OPEN_POS, buf, &size );
+	NX_TCONCommand( id, TCON_CMD_OPEN_POS, buf, &size );
 	return 0;
 }
 
@@ -81,7 +81,7 @@ static int32_t TconShortState(int32_t argc, char *argv[])
 
 	int32_t id = atoi(argv[1]);
 	int32_t size = sizeof(buf);
-	if( 0 != NX_TConCommand( id, TCON_CMD_SHORT, buf, &size ) )
+	if( 0 != NX_TCONCommand( id, TCON_CMD_SHORT, buf, &size ) )
 	{
 		printf("[ERROR CMD]\n");
 		return -1;
@@ -101,7 +101,7 @@ static int32_t TconShortPos(int32_t argc, char *argv[])
 
 	int32_t id = atoi(argv[1]);
 	int32_t size = sizeof(buf);
-	NX_TConCommand( id, TCON_CMD_SHORT_POS, buf, &size );
+	NX_TCONCommand( id, TCON_CMD_SHORT_POS, buf, &size );
 	return 0;
 }
 
@@ -116,7 +116,7 @@ static int32_t TconDoorState(int32_t argc, char *argv[])
 
 	int32_t id = atoi(argv[1]);
 	int32_t size = sizeof(buf);
-	if( 0 != NX_TConCommand( id, TCON_CMD_DOOR, buf, &size ) )
+	if( 0 != NX_TCONCommand( id, TCON_CMD_DOOR_STATUS, buf, &size ) )
 	{
 		printf("[ERROR CMD]\n");
 		return -1;
@@ -136,7 +136,7 @@ static int32_t TconOn(int32_t argc, char *argv[])
 
 	buf = atoi(argv[1]);
 	int32_t size = sizeof(buf);
-	if( 0 != NX_TConCommand( 0, TCON_CMD_ON, &buf, &size ) )
+	if( 0 != NX_TCONCommand( 0, TCON_CMD_ON, &buf, &size ) )
 	{
 		printf("[ERROR CMD]\n");
 		return -1;
@@ -158,7 +158,7 @@ static int32_t TconBRMode (int32_t argc, char *argv[])
 	mode[0] = atoi(argv[1]);
 	mode[1] = atoi(argv[2]);
 	int32_t size = sizeof(mode);
-	if( 0 != NX_TConCommand( 0, TCON_CMD_BR_CTRL, mode, &size ) )
+	if( 0 != NX_TCONCommand( 0, TCON_CMD_BR_CTRL, mode, &size ) )
 	{
 		printf("[ERROR CMD]\n");
 		return -1;
@@ -173,7 +173,7 @@ static int32_t TconElapsedTime( int32_t argc, char *argv[] )
 	int32_t size = sizeof(time);
 	(void) argc;
 	(void*) argv;
-	if( 0 != NX_TConCommand( 0, TCON_CMD_ELAPSED_TIME, (uint8_t*)&time, &size ) )
+	if( 0 != NX_TCONCommand( 0, TCON_CMD_ELAPSED_TIME, (uint8_t*)&time, &size ) )
 	{
 		printf("[ERROR CMD]\n");
 		return -1;
@@ -188,7 +188,7 @@ static int32_t TconVersion(int32_t argc, char *argv[])
 	int32_t size = sizeof(version);
 	(void) argc;
 	(void*) argv;
-	if( 0 != NX_TConCommand( 0, TCON_CMD_VERSION, version, &size ) )
+	if( 0 != NX_TCONCommand( 0, TCON_CMD_VERSION, version, &size ) )
 	{
 		printf("[ERROR CMD]\n");
 		return -1;

@@ -32,6 +32,7 @@ public:
 	void Close();
 
 	int32_t Write( uint8_t iSlave );
+	int32_t Write( uint8_t iSalve, uint16_t iAddr, uint16_t iBuf );
 	int32_t Write( uint8_t iSlave, uint16_t iAddr, uint16_t *pBuf, int32_t iSize );
 
 	int32_t Read( uint8_t iSlave, uint16_t iAddr );

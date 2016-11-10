@@ -22,7 +22,7 @@
 
 #include <stdint.h>
 
-#define	TMS_SERVER_FILE "/data/local/tmp/tms_server"
+#define	TMS_SERVER_FILE		"/data/local/tmp/tms_server"
 #define	MAX_PAYLOAD_SIZE	(128*1024)
 
 int32_t NX_TMSServerStart();

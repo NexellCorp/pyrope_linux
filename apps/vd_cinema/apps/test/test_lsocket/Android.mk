@@ -20,7 +20,7 @@ LOCAL_STATIC_LIBRARIES +=
 LOCAL_LDFLAGS += \
 	-L$(VD_TOP)/lib -lnxcinema
 
-LOCAL_MODULE:= nx_lsock_server
+LOCAL_MODULE:= nx_lsock_client
 LOCAL_MODULE_PATH := $(VD_TOP)/bin
 
 include $(BUILD_EXECUTABLE)
@@ -46,7 +46,7 @@ LOCAL_STATIC_LIBRARIES +=
 LOCAL_LDFLAGS += \
 	-L$(VD_TOP)/lib -lnxcinema
 
-LOCAL_MODULE:= nx_lsock_client
+LOCAL_MODULE:= nx_lsock_server
 LOCAL_MODULE_PATH := $(VD_TOP)/bin
 
 include $(BUILD_EXECUTABLE)

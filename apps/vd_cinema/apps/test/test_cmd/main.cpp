@@ -17,54 +17,82 @@
 //
 //------------------------------------------------------------------------------
 
-#include <unistd.h>	//usleep
 #include <stdio.h>
+#include <stdint.h>
+#include <unistd.h>
 
 #include <NX_TMSServer.h>
 #include <NX_TMSClient.h>
 #include <NX_TMSCommand.h>
 
+//------------------------------------------------------------------------------
+#define TCON_ADDRESS_FROM		0x36
+#define TCON_ADDRESS_TO			0x37
 
-int32_t main()
+//------------------------------------------------------------------------------
+static void TconStatus( int32_t iFrom, int32_t iTo )
 {
-	uint8_t buf[1024] = {0};
+	uint8_t buf = 0x00;
 	int32_t size = sizeof(buf);
 
-#if 0
-	if( 0 == NX_PFPGACommand( PFPGA_CMD_STATE, buf, size ) )
+	for( int32_t i = iFrom; i <= iTo; i++ )
 	{
-		printf( "PFPGA_CMD_STATE ok : status = %d\n", buf[0] );
-	}
+		NX_TCONCommand( i, TCON_CMD_STATUS, &buf, &size );
 
-	if( 0 == NX_PFPGACommand( PFPGA_CMD_SOURCE, buf, size ) )
+		printf( "[0x%02X] TCon Status : %s\n", i, 
+			(buf == 1) ? "OK" : "NOK" );
+	}
+}
+
+//------------------------------------------------------------------------------
+static void TconDoorTamper( int32_t iFrom, int32_t iTo )
+{
+	uint8_t buf = 0x00;
+	int32_t size = sizeof(buf);
+
+	for( int32_t i = iFrom; i <= iTo; i++ )
 	{
-		printf( "PFPGA_CMD_SOURCE ok\n");
+		NX_TCONCommand( i, TCON_CMD_DOOR_STATUS, &buf, &size );
+		
+		printf( "[0x%02X] Door Status : %s\n", i, 
+			buf == 0 ? "CLOSE" :
+			buf == 1 ? "OPEN" : 
+			buf == 2 ? "OPEN -> CLOSE" : "UNKNOWN" );
 	}
+}
 
-	if( 0 == NX_PFPGACommand( PFPGA_CMD_VERSION, buf, size ) )
+//------------------------------------------------------------------------------
+static void TconLedStatus( int32_t iFrom, int32_t iTo )
+{
+	uint8_t buf = 0x00;
+	int32_t size = sizeof(buf);
+
+	for( int32_t i = iFrom; i <= iTo; i++ )
 	{
-		printf( "PFPGA_CMD_SOURCE ok : version = %d.%d.%d.%d\n",
-			buf[0], buf[1], buf[2], buf[3] );
-	}
-#endif
+		NX_TCONCommand( i, TCON_CMD_OPEN_POS, &buf, &size );
+	}	
+}
+
+//------------------------------------------------------------------------------
+int32_t main( void )
+{
+
+	// TconStatus( TCON_ADDRESS_FROM, TCON_ADDRESS_TO );
+	// TconDoorTamper( TCON_ADDRESS_FROM, TCON_ADDRESS_TO );
+	// TconLedStatus( TCON_ADDRESS_FROM, TCON_ADDRESS_TO );
+	uint8_t buf[2] = {0, 0};
+	int32_t size = sizeof(buf);
+
+	NX_TCONCommand( 0x09, TCON_CMD_PATTERN, buf, &size );
+
+	// NX_TCONCommand( 1, TCON_CMD_OPEN, buf, size );
+	// NX_TCONCommand( 1, TCON_CMD_OPEN_POS, buf, size );
+	// NX_TCONCommand( 1, TCON_CMD_SHORT, buf, size );
+	// NX_TCONCommand( 1, TCON_CMD_SHORT_POS, buf, size );
+	// NX_TCONCommand( 1, TCON_CMD_DOOR_STATUS_STATUS, buf, size );
+	// NX_TCONCommand( 1, TCON_CMD_ON, buf, size );
+	// NX_TCONCommand( 1, TCON_CMD_VERSION, buf, size );
 
 
-#if 0
-	buf[0] = 0xff;
-	NX_TConCommand( 1, TCON_CMD_STATE, buf, size );
-#endif
-
-	// buf[0] = 0x1;
-	// NX_TConCommand( 1, TCON_CMD_STATE, buf, size );
-	// NX_TConCommand( 1, TCON_CMD_OPEN, buf, size );
-	// NX_TConCommand( 1, TCON_CMD_OPEN_POS, buf, size );
-	// NX_TConCommand( 1, TCON_CMD_SHORT, buf, size );
-	// NX_TConCommand( 1, TCON_CMD_SHORT_POS, buf, size );
-	// NX_TConCommand( 1, TCON_CMD_DOOR_STATUS, buf, size );
-	// NX_TConCommand( 1, TCON_CMD_ON, buf, size );
-	// NX_TConCommand( 1, TCON_CMD_VERSION, buf, size );
-
-
-	NX_TConCommand( 1, TCON_CMD_BR_CTRL, buf, &size );
 	return 0;
 }

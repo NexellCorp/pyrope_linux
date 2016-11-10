@@ -22,7 +22,6 @@ LOCAL_LDFLAGS += \
 	-L$(VD_TOP)/lib -lnxcinema
 
 LOCAL_MODULE:= test_cmd
-#LOCAL_MODULE:= test_vd_cimena_demon
 LOCAL_MODULE_PATH := $(VD_TOP)/bin
 
 include $(BUILD_EXECUTABLE)

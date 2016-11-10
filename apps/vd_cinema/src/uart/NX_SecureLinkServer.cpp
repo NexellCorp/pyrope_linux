@@ -246,7 +246,7 @@ int32_t CNX_SLinkServer::PowerOn(int32_t on)
 	else
 	{
 		CNX_GpioControl gpio;
-		gpio.Init(BOOT_OK_0);
+		gpio.Init(GPIO_BOOT_OK_0);
 		gpio.SetDirection(GPIO_DIRECTION_OUT);
 		gpio.SetValue(0);
 		usleep(200000);	//	200 msec

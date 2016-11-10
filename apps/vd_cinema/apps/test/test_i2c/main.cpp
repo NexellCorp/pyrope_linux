@@ -24,17 +24,19 @@
 
 #include <CNX_I2C.h>
 
+//------------------------------------------------------------------------------
 static void help( void )
 {
 	printf(
 		"usage: options\n"
 		"-p	port i2c-n, default i2c-0 \n"
 		"-s	slave id (7bit hex)       \n"
-		"-a	address (16bit hex)       \n"
+		"-r	address (16bit hex)       \n"
 		"-w	write (16bit hex)         \n"
 	);
 }
 
+//------------------------------------------------------------------------------
 int32_t main( int32_t argc, char *argv[] )
 {
 	int32_t iPort = 0;
@@ -45,8 +47,9 @@ int32_t main( int32_t argc, char *argv[] )
 
 	int32_t iTemp = 0;
 	int32_t opt;
+	int32_t iReadData = 0;
 
-	while (-1 != (opt = getopt(argc, argv, "hp:s:a:w:")))
+	while (-1 != (opt = getopt(argc, argv, "hp:s:r:w:")))
 	{
 		switch(opt)
 		{
@@ -57,7 +60,7 @@ int32_t main( int32_t argc, char *argv[] )
 			sscanf(optarg, "%x", &iTemp);
 			iSlave = iTemp;
 			break;
-		case 'a':
+		case 'r':
 			sscanf(optarg, "%hx", &iAddr);
 			break;
 		case 'w':
@@ -82,14 +85,18 @@ int32_t main( int32_t argc, char *argv[] )
 
 	if( bWrite )
 	{
-		if( 0 > pI2CCtrl->Write( iSlave, iAddr, &iWriteData, 1 ) )
+		if( 0 > pI2CCtrl->Write( iSlave, iAddr, iWriteData) )
 		{
 			printf("Fail, Write().\n");
+		}
+		else
+		{
+			printf("[wr] i2c-%d, slave: 0x%02x, addr: 0x%04x, data: 0x%04x\n", iPort, iSlave, iAddr, iWriteData );
 		}
 	}
 	else
 	{
-		int32_t iReadData = pI2CCtrl->Read( iSlave, iAddr );
+		iReadData = pI2CCtrl->Read( iSlave, iAddr );
 
 		if( 0 > iReadData )
 		{
@@ -97,7 +104,7 @@ int32_t main( int32_t argc, char *argv[] )
 		}
 		else
 		{
-			printf("read data = 0x%04x\n", iReadData );
+			printf("[rd] i2c-%d, slave: 0x%02x, addr: 0x%04x, data: 0x%04x\n", iPort, iSlave, iAddr, iReadData );
 		}
 	}
 

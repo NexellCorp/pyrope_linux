@@ -44,176 +44,137 @@
 class SapGpio : public CNX_Thread
 {
 public:
-	SapGpio();
-	virtual ~SapGpio();
+	SapGpio()
+		: m_bThreadRun( false )
+		, m_pCbPrivate(NULL)
+		, m_Callback(NULL)
+	{
+		m_hGpio[BOOT_OK_0] = new CNX_GpioControl();
+		m_hGpio[BOOT_OK_0]->Init(GPIO_BOOT_OK_0);
+
+		m_hGpio[BOOT_OK_1] = new CNX_GpioControl();
+		m_hGpio[BOOT_OK_1]->Init(GPIO_BOOT_OK_1);
+
+		for( int32_t i = 0 ;i < GPIO_MAX_VAL; i++ )
+		{
+			m_hGpio[i]->SetDirection( GPIO_DIRECTION_IN );
+			m_GpioStatus[i] = 1;
+		}
+	}
+	virtual ~SapGpio()
+	{
+		StopMonitor();
+
+		for( int32_t i = 0; i < GPIO_MAX_VAL; i++ )
+		{
+			m_hGpio[i]->Deinit();
+			delete m_hGpio[i];
+		}
+	}
 
 	//	Implement Pure Virtual Function
-	virtual void ThreadProc();
-
-	int32_t StartMonitor();
-	void StopMonitor();
-
-	void RegisterGpioCallback( void (*callback)( void *, uint32_t , uint32_t ), void * );
-
-public:
-	CNX_GpioControl m_Request;
-	CNX_GpioControl m_BootOk0;
-	CNX_GpioControl m_BootOk1;
-
-	CNX_GpioControl m_DoorTemper;	//	Temper
-
-	enum { REQUEST, BOOT0, BOOT1, DOOR, GPIO_MAX_VAL };
-
-private:
-	bool m_bThreadRun;
-	void *m_pCbPrivate;
-	void (*m_Callback)( void *, uint32_t , uint32_t );
-	int32_t m_GpioStatus[GPIO_MAX_VAL];
-	CNX_GpioControl *m_hGpio[GPIO_MAX_VAL];
-};
-
-//------------------------------------------------------------------------------
-SapGpio::SapGpio()
-	: m_bThreadRun( false )
-	, m_pCbPrivate(NULL)
-	, m_Callback(NULL)
-{
-	m_Request.Init(UART_REQUEST);
-	m_BootOk0.Init(BOOT_OK_0);
-	m_BootOk1.Init(BOOT_OK_1);
-	m_DoorTemper.Init(DOOR_TAMPER);
-	m_hGpio[0] = &m_Request;
-	m_hGpio[1] = &m_BootOk0;
-	m_hGpio[2] = &m_BootOk1;
-	m_hGpio[3] = &m_DoorTemper;
-
-	for( int32_t i=0 ; i<GPIO_MAX_VAL ; i++ )
+	virtual void ThreadProc()
 	{
-		m_hGpio[i]->SetDirection(GPIO_DIRECTION_IN);
-		m_GpioStatus[i] = 1;	//	 Init All 1
-	}
-}
-
-//------------------------------------------------------------------------------
-SapGpio::~SapGpio()
-{
-	StopMonitor();
-
-	m_Request.Deinit();
-	m_BootOk0.Deinit();
-	m_BootOk1.Deinit();
-	m_DoorTemper.Deinit();
-}
-
-//------------------------------------------------------------------------------
-int32_t SapGpio::StartMonitor()
-{
-	m_bThreadRun = true;
-	Start();
-	return 0;
-}
-
-//------------------------------------------------------------------------------
-void SapGpio::StopMonitor()
-{
-	if( true == m_bThreadRun )
-	{
-		m_bThreadRun = false;
-		Stop();
-	}
-}
-
-//------------------------------------------------------------------------------
-void SapGpio::ThreadProc()
-{
-	int32_t value;
-	// Check Every 100 msec
-	while(m_bThreadRun)
-	{
-		usleep(100000);
-
-		for( int32_t i=0 ; i<GPIO_MAX_VAL ; i++ )
+		while(m_bThreadRun)
 		{
-			value = m_hGpio[i]->GetValue();
-			if( 0 > value ) continue;
-
-			if( m_GpioStatus[i] != value )
+			usleep(100000);
+			for( int32_t i=0 ; i<GPIO_MAX_VAL ; i++ )
 			{
-				if( value )
-				{
-					printf("Detect Gpio High.\n");
-				}
-				else
-				{
-					printf("Detect Gpio Low.\n");
-				}
+				int32_t value = m_hGpio[i]->GetValue();
+				if( 0 > value ) continue;
 
-				if( m_Callback )
+				if( m_GpioStatus[i] != value )
 				{
-					m_Callback( m_pCbPrivate, i, value );
-				}
+					printf( "Detect Gpio %s.\n", value ? "High" : "Low" );
 
-				m_GpioStatus[i] = value;
+					if( m_Callback ) m_Callback( m_pCbPrivate, i, value );
+					m_GpioStatus[i] = value;
+				}
 			}
 		}
 	}
-}
 
-//------------------------------------------------------------------------------
-void SapGpio::RegisterGpioCallback( void (*callback)( void *, uint32_t , uint32_t ), void *pCbPrivate )
-{
-	m_pCbPrivate = pCbPrivate;
-	m_Callback = callback;
-}
+	int32_t StartMonitor()
+	{
+		m_bThreadRun = true;
+		Start();
+		return 0;
+	}
+
+	void StopMonitor()
+	{
+		if( true == m_bThreadRun )
+		{
+			m_bThreadRun = false;
+			Stop();
+		}
+	}
+
+	void RegisterGpioCallback( void (*callback)( void *, uint32_t , uint32_t ), void *pCbPrivate )
+	{
+		m_pCbPrivate = pCbPrivate;
+		m_Callback = callback;
+	}
+
+private:
+	enum { BOOT_OK_0, BOOT_OK_1, GPIO_MAX_VAL };
+
+	bool m_bThreadRun;
+	void *m_pCbPrivate;
+	void (*m_Callback)( void *, uint32_t , uint32_t );
+
+	CNX_GpioControl *m_hGpio[GPIO_MAX_VAL];
+	int32_t m_GpioStatus[GPIO_MAX_VAL];
+};
 
 //------------------------------------------------------------------------------
 class SlinkClient : public CNX_Thread
 {
 public:
-	SlinkClient();
-	virtual ~SlinkClient();
+	SlinkClient()
+		: m_FrameCounter(0)
+	{
+		m_hUart = new CNX_Uart();
+		m_hUart->Init( 0 );
+		NX_InitQueue( &m_CmdQ, 128 );
+	}
 
-	int32_t StartService();
-	void StopService();
-	int32_t  AddCommand( int32_t cmd );
+	virtual ~SlinkClient()
+	{
+		delete m_hUart;
+	}
 
+public:
+	int32_t StartService()
+	{
+		m_ExitLoop = false;
+		Start();
+		return 0;		
+	}
+	
+	void StopService()
+	{
+		m_ExitLoop = true;
+		Stop();
+	}
 
-	//
+	int32_t AddCommand( int32_t cmd )
+	{
+		return NX_PushQueue( &m_CmdQ, (void*)cmd );
+	}
+
 	//	Implementation Pure Virtual Function
-	//
 	virtual void ThreadProc();
 
 private:
 	CNX_Uart *m_hUart;
-	bool m_bUartInit;
 	bool m_ExitLoop;
 
-	//
 	NX_QUEUE m_CmdQ;
 
-	//
 	uint8_t m_SendBuf[4096];
-
-	//	Frame Counter
-	uint32_t m_FrameCounter;
+	uint32_t m_FrameCounter;	// Frame counter
 };
-
-//------------------------------------------------------------------------------
-SlinkClient::SlinkClient()
-	: m_hUart(NULL)
-	, m_bUartInit(false)
-	, m_FrameCounter(0)
-{
-	m_hUart = new CNX_Uart();
-	m_bUartInit = m_hUart->Init( 0 );
-	NX_InitQueue( &m_CmdQ, 128 );
-}
-
-//------------------------------------------------------------------------------
-SlinkClient::~SlinkClient()
-{
-	delete m_hUart;
-}
 
 //------------------------------------------------------------------------------
 void SlinkClient::ThreadProc()
@@ -245,6 +206,9 @@ void SlinkClient::ThreadProc()
 				pkt.frameNumber = m_FrameCounter++;
 				sendSize = NX_MakeUartPacket(&pkt, m_SendBuf, sendBufSize );
 				written = m_hUart->Write(m_SendBuf, sendSize);
+				if( 0 >= written) {
+					NxDbgMsg( NX_DBG_VBS, "Fail, write().\n" );
+				}
 				NxDbgMsg( NX_DBG_VBS, "CMD_BOOT_DONE\n" );
 				break;
 			}
@@ -259,6 +223,9 @@ void SlinkClient::ThreadProc()
 				pkt.frameNumber = m_FrameCounter++;
 				sendSize = NX_MakeUartPacket(&pkt, m_SendBuf, sendBufSize );
 				written = m_hUart->Write(m_SendBuf, sendSize);
+				if( 0 >= written) {
+					NxDbgMsg( NX_DBG_VBS, "Fail, write().\n" );
+				}
 				NxDbgMsg( NX_DBG_VBS, "CMD_ALIVE\n" );
 				break;
 			}
@@ -273,6 +240,9 @@ void SlinkClient::ThreadProc()
 				pkt.frameNumber = m_FrameCounter++;
 				sendSize = NX_MakeUartPacket(&pkt, m_SendBuf, sendBufSize );
 				written = m_hUart->Write(m_SendBuf, sendSize);
+				if( 0 >= written) {
+					NxDbgMsg( NX_DBG_VBS, "Fail, write().\n" );
+				}
 				NxDbgMsg( NX_DBG_VBS, "CMD_MARRIAGE\n" );
 				break;
 			}
@@ -287,6 +257,9 @@ void SlinkClient::ThreadProc()
 				pkt.frameNumber = m_FrameCounter++;
 				sendSize = NX_MakeUartPacket(&pkt, m_SendBuf, sendBufSize );
 				written = m_hUart->Write(m_SendBuf, sendSize);
+				if( 0 >= written) {
+					NxDbgMsg( NX_DBG_VBS, "Fail, write().\n" );
+				}
 				NxDbgMsg( NX_DBG_VBS, "CMD_DIVORCE\n" );
 			}
 
@@ -294,27 +267,6 @@ void SlinkClient::ThreadProc()
 				break;
 		}
 	}
-}
-
-//------------------------------------------------------------------------------
-int32_t SlinkClient::StartService()
-{
-	m_ExitLoop = false;
-	Start();
-	return 0;
-}
-
-//------------------------------------------------------------------------------
-void SlinkClient::StopService()
-{
-	m_ExitLoop = true;
-	Stop();
-}
-
-//------------------------------------------------------------------------------
-int32_t SlinkClient::AddCommand( int32_t cmd )
-{
-	return NX_PushQueue( &m_CmdQ, (void*)cmd );
 }
 
 

@@ -22,11 +22,18 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/un.h>
 #include <linux/reboot.h>
+
+#include <CNX_BaseClass.h>
+#include <CNX_GpioControl.h>
 
 #include <NX_TMSServer.h>
 #include <NX_SecureLinkServer.h>
-#include <CNX_GpioControl.h>
+#include <NX_Pwm.h>
+
 #include <Board_Port.h>
 
 #include <cutils/android_reboot.h>
@@ -36,54 +43,84 @@
 
 //------------------------------------------------------------------------------
 //
-//	UART_REQUEST / BOOT OK 0,1 / Door Temper / PFPGA OK
+//	Tamper Checker : Door Tamper / Marriage Tamper
 //
-class NapGpio
+
+//------------------------------------------------------------------------------
+class NapTamperChecker
+	: public CNX_Thread
 {
 public:
-	NapGpio()
+	NapTamperChecker()
+		: m_bThreadRun( false )
+		, m_pCbPrivate( NULL )
+		, m_pCallback( NULL )
 	{
-		m_UartReq.Init( UART_REQUEST );
-		m_UartReq.SetDirection( GPIO_DIRECTION_OUT );
+		m_hGpio[DOOR_TAMPER] = new CNX_GpioControl();
+		m_hGpio[DOOR_TAMPER]->Init( GPIO_TAMPER_DOOR );
 
-		m_BootOk0.Init( BOOT_OK_0 );
-		m_BootOk0.SetDirection( GPIO_DIRECTION_OUT );
+		for( int32_t i = 0; i < MAX_TAMPER_NUM; i++ )
+		{
+			m_hGpio[i]->SetDirection( GPIO_DIRECTION_IN );
+			m_GpioValue[i] = 1;
+		}
 
-		m_BootOk1.Init( BOOT_OK_1);
-		m_BootOk1.SetDirection( GPIO_DIRECTION_OUT );
-
-		m_PFPGAOk.Init( PFPGA_BOOT_OK );
-		m_PFPGAOk.SetDirection( GPIO_DIRECTION_IN );
-
-		m_DoorTemper.Init( DOOR_TAMPER );
-		m_DoorTemper.SetDirection( GPIO_DIRECTION_IN );
+		m_bThreadRun = true;
+		Start();
 	}
 
-	virtual ~NapGpio()
+	virtual ~NapTamperChecker()
 	{
+		if( true == m_bThreadRun )
+		{
+			m_bThreadRun = false;
+			Stop();
+		}
+
+		for( int32_t i = 0; i < MAX_TAMPER_NUM; i++ )
+		{
+			m_hGpio[i]->Deinit();
+			delete m_hGpio[i];
+		}
 	}
 
-public:
-	void RequestMarriage()
+	//	Implement Pure Virtual Function
+	virtual void ThreadProc()
 	{
-		m_UartReq.SetValue( 0 );
-		usleep( 1000000 );
-		m_UartReq.SetValue( 1 );
+		printf("Run!\n");
+		while(m_bThreadRun)
+		{
+			usleep(100000);
+			for( int32_t i = 0; i < MAX_TAMPER_NUM; i++ )
+			{
+				int32_t iValue = m_hGpio[i]->GetValue();
+				if( 0 > iValue ) continue;
+				if( m_GpioValue[i] != iValue )
+				{
+					printf("Detect Gpio %s.\n", (iValue == 1) ? "High" : "Low");
+
+					if( m_pCallback ) m_pCallback( m_pCbPrivate, i, iValue );
+					m_GpioValue[i] = iValue;
+				}
+			}
+		}
 	}
 
-	void RequestReboot()
+	void RegisterCallback( void (*callback)( void *, uint32_t , uint32_t ), void *pCbPrivate )
 	{
-		m_BootOk1.SetValue( 0 );
-		usleep( 1000000 );
-		m_BootOk1.SetValue( 1 );
+		m_pCbPrivate = pCbPrivate;
+		m_pCallback  = callback;
 	}
 
 private:
-	CNX_GpioControl m_UartReq;
-	CNX_GpioControl m_BootOk0;
-	CNX_GpioControl m_BootOk1;
-	CNX_GpioControl m_PFPGAOk;
-	CNX_GpioControl m_DoorTemper;
+	enum { DOOR_TAMPER, MAX_TAMPER_NUM };
+
+	bool m_bThreadRun;
+	void *m_pCbPrivate;
+	void (*m_pCallback)( void *, uint32_t , uint32_t );
+
+	CNX_GpioControl *m_hGpio[MAX_TAMPER_NUM];
+	int32_t m_GpioValue[MAX_TAMPER_NUM];
 };
 
 //------------------------------------------------------------------------------
@@ -117,6 +154,85 @@ private:
 };
 
 //------------------------------------------------------------------------------
+class NapNetwork
+	: public CNX_Thread
+{
+public:
+	NapNetwork()
+	{
+		m_bThreadRun = true;
+		Start();
+	}
+
+	virtual ~NapNetwork()
+	{
+		if( true == m_bThreadRun )
+		{
+			m_bThreadRun = false;
+			Stop();
+		}
+	}
+
+	//	Implement Pure Virtual Function
+	virtual void ThreadProc()
+	{
+		const char *pSockName = "cinema.network";
+
+		int32_t sock, len, clnSock;
+		struct sockaddr_un addr;
+
+		if( 0 > (sock = socket(AF_UNIX, SOCK_STREAM, 0)) )
+		{
+			printf("Fail, socket().\n");
+			return ;
+		}
+
+		addr.sun_family  = AF_UNIX;
+		addr.sun_path[0] = '\0';	// for abstract namespace
+		strcpy( addr.sun_path + 1, pSockName );
+
+		len = 1 + strlen(pSockName) + offsetof(struct sockaddr_un, sun_path);
+
+		if( 0 > bind(sock, (struct sockaddr *)&addr, len) )
+		{
+			printf("Fail, bind().\n");
+			return ;
+		}
+
+		if( 0 > listen(sock, 5) )
+		{
+			printf("Fail, listen().\n");
+			return ;
+		}
+
+		char readBuf[1024];
+
+		while(m_bThreadRun)
+		{
+			clnSock = accept( sock, (struct sockaddr*)&addr, (socklen_t*)&len );
+
+			memset( readBuf, 0x00, sizeof(readBuf) );
+			read( clnSock, readBuf, sizeof(readBuf) );
+
+			FILE *pFile = fopen("/system/bin/nap_network", "w");
+			fprintf(pFile, "%s\n", readBuf );
+			fclose(pFile);
+			sync();
+		
+			system("/system/bin/nap_network.sh restart");
+			close(clnSock);
+		}
+	}
+
+private:
+	bool m_bThreadRun;
+};
+
+//------------------------------------------------------------------------------
+static NapTamperChecker	*gstTamper = NULL;
+static NapNetwork *gstNetwork = NULL;
+
+//------------------------------------------------------------------------------
 static void signal_handler( int32_t signal )
 {
 	printf("Aborted by signal %s (%d)..\n", (char*)strsignal(signal), signal);
@@ -132,6 +248,9 @@ static void signal_handler( int32_t signal )
 		default :
 			break;
 	}
+
+	if( NULL != gstTamper) delete gstTamper;
+	if( NULL != gstNetwork ) delete gstNetwork;
 
 	NX_SLinkServerStop();
 	NX_TMSServerStop();
@@ -192,6 +311,59 @@ static int32_t SecurelinkeEventCallback( void *pParam, int32_t eventCode, void *
 }
 
 //------------------------------------------------------------------------------
+static int32_t SendRemote( const char *pMsg )
+{
+	const char *pSockName = "cinema.event";
+
+	int32_t sock, len;
+	struct sockaddr_un addr;
+
+	if( 0 > (sock = socket(AF_UNIX, SOCK_STREAM, 0)) )
+	{
+		printf("Fail, socket().\n");
+		return -1;
+	}
+
+	addr.sun_family  = AF_UNIX;
+	addr.sun_path[0] = '\0';	// for abstract namespace
+	strcpy( addr.sun_path + 1, pSockName );
+	
+	len = 1 + strlen(pSockName) + offsetof(struct sockaddr_un, sun_path);
+
+	if( 0 > connect(sock, (struct sockaddr *) &addr, len))
+	{
+		printf("Fail, connect().\n");
+		close( sock );
+		return -1;
+	}
+
+	if( 0 > write(sock, pMsg, strlen(pMsg)) )
+	{
+		printf("Fail, write().\n");
+		close( sock );
+		return -1;
+	}
+
+	close( sock );
+	return 0;  
+}
+
+//------------------------------------------------------------------------------
+static int32_t TamperCheckerCallback( void * /*pPrivate*/, uint32_t iTamperIndex, uint32_t iTamperValue )
+{
+	const char *pTamperIndex[2] = {	"DoorTamper", "MarriageTamper" };
+
+	if( iTamperValue == 0 )
+	{
+		char msg[1024];
+		sprintf( msg, "Error %s", pTamperIndex[iTamperIndex] );
+		SendRemote( msg );
+	}
+
+	return 0;
+}
+
+//------------------------------------------------------------------------------
 int32_t main( void )
 {
 	register_signal();
@@ -213,6 +385,12 @@ int32_t main( void )
 	}
 
 	int32_t iBatteryStatus = POWER_UNKNOWN;
+
+	//
+	//
+	//
+	gstTamper = new NapTamperChecker();
+	gstNetwork = new NapNetwork();
 
 	while( 1 )
 	{

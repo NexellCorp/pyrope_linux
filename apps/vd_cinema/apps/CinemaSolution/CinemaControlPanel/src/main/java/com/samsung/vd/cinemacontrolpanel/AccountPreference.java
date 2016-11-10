@@ -5,6 +5,8 @@ import android.util.Log;
 
 import com.samsung.vd.baseutils.VdPreference;
 
+import java.util.Locale;
+
 /**
  * Created by doriya on 10/24/16.
  */
@@ -34,84 +36,57 @@ public class AccountPreference {
 
         String keyPw = "pw." + group;
 
-        if (null == mPreference.GetValue(keyPw)) {
-            mPreference.SetValue(keyPw, pw);
-            return true;
-        }
+        mPreference.SetValue(keyPw, pw);
 
-        Log.i(VD_DTAG, "Fail, Add Account.");
-        return false;
+        Log.i(VD_DTAG, String.format( Locale.US, "-----> [%s] password( %s )", group, pw) );
+        return true;
     }
 
     //
-    //  For Normal User & Not Consider Slot
+    //  For Normal User
     //
-    public boolean Add(String group, String id, String pw) {
+    public boolean Add(String group, int idx, String id, String pw) {
         if (group == null || id == null || pw == null)
             return false;
 
-        for (int i = 0; i < MAX_ACCOUNT_NUM; i++) {
-            String keyId = "id." + group + String.valueOf(i);
-            String keyPw = "pw." + group + String.valueOf(i);
-
-            if (null == mPreference.GetValue(keyId) && null == mPreference.GetValue(keyPw)) {
-                mPreference.SetValue(keyId, id);
-                mPreference.SetValue(keyPw, pw);
-
-                return true;
-            }
-        }
-
-        Log.i(VD_DTAG, "Fail, Add Account.");
-        return false;
-    }
-
-    //
-    //  For Normal User & Consider Slot
-    //
-    public boolean Add(String group, int index, String id, String pw) {
-        if (group == null || id == null || pw == null)
+        if (idx < 0 || idx >= MAX_ACCOUNT_NUM)
             return false;
 
-        if (index < 0 || index >= MAX_ACCOUNT_NUM)
-            return false;
+        String keyId = "id." + group + String.valueOf(idx);
+        String keyPw = "pw." + group + String.valueOf(idx);
 
-        String keyId = "id." + group + String.valueOf(index);
-        String keyPw = "pw." + group + String.valueOf(index);
+        mPreference.SetValue(keyId, id);
+        mPreference.SetValue(keyPw, pw);
 
-        if (null == mPreference.GetValue(keyId) && null == mPreference.GetValue(keyPw)) {
-            mPreference.SetValue(keyId, id);
-            mPreference.SetValue(keyPw, pw);
-
-            return true;
-        }
-
-        Log.i(VD_DTAG, "Fail, Add Account.");
-        return false;
+        Log.i(VD_DTAG, String.format( Locale.US, "-----> [%s-%d] id( %s ), password( %s )", group, idx, id, pw) );
+        return true;
     }
 
     //
     //  Read Account Information
     //
-    public String ReadId(String group, int index ) {
+    public String ReadId(String group, int idx ) {
         if (group == null )
-            return null;
+            return "";
 
-        if (index < 0 || index >= MAX_ACCOUNT_NUM)
-            return null;
+        if ( group.equals(GROUP_ROOT) )
+            return "";
 
-        String keyId = "id." + group + String.valueOf(index);
+        if (idx < 0 || idx >= MAX_ACCOUNT_NUM)
+            return "";
+
+        String keyId = "id." + group + String.valueOf(idx);
         return mPreference.GetValue(keyId);
     }
 
-    public String ReadPw(String group, int index ) {
+    public String ReadPw(String group, int idx ) {
         if (group == null )
-            return null;
+            return "";
 
-        if( index < 0 || index >= MAX_ACCOUNT_NUM)
-            return null;
+        if( idx < 0 || idx >= MAX_ACCOUNT_NUM)
+            return "";
 
-        String keyPw = "pw." + group + String.valueOf(index);
+        String keyPw = "pw." + group + String.valueOf(idx);
         return mPreference.GetValue(keyPw);
     }
 
@@ -126,9 +101,9 @@ public class AccountPreference {
     //
     //  For Normal User
     //
-    public void Remove(String group, int index) {
-        String keyId = "id." + group + String.valueOf(index);
-        String keyPw = "pw." + group + String.valueOf(index);
+    public void Remove(String group, int idx) {
+        String keyId = "id." + group + String.valueOf(idx);
+        String keyPw = "pw." + group + String.valueOf(idx);
 
         mPreference.Remove(keyId);
         mPreference.Remove(keyPw);
@@ -137,18 +112,18 @@ public class AccountPreference {
     //
     //  Confirm Login
     //
-    public boolean Confirm(String group, String pw) {
+    public int Confirm(String group, String pw) {
         if( group.equals(GROUP_ROOT) ) {
             String keyPw = "pw." + group;
 
             String strTemp = mPreference.GetValue( keyPw );
             if( null != strTemp && strTemp.equals(pw) ) {
                 Log.i( VD_DTAG, "Success, Login." );
-                return true;
+                return 0;
             }
 
             Log.i( VD_DTAG, "Fail, Login." );
-            return false;
+            return -1;
         }
         else {
             for( int i = 0; i < MAX_ACCOUNT_NUM; i++ )
@@ -158,12 +133,12 @@ public class AccountPreference {
                 String strTemp = mPreference.GetValue( keyPw );
                 if( null != strTemp && strTemp.equals(pw) ) {
                     Log.i( VD_DTAG, "Success, Login." );
-                    return true;
+                    return i;
                 }
             }
         }
 
         Log.i( VD_DTAG, "Fail, Login." );
-        return false;
+        return -1;
     }
 }

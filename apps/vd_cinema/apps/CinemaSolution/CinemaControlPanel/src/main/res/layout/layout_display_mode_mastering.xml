@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
     <LinearLayout
         android:background="#FFE0E0E0"
@@ -24,19 +23,19 @@
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.4" />
+            android:layout_weight="0.25" />
 
         <TextView
             android:background="@drawable/draw_line_border"
             android:layout_width="0px"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="Version Info."
+            android:text="Control"
             android:textStyle="bold"
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.6" />
+            android:layout_weight="0.75" />
     </LinearLayout>
 
     <LinearLayout
@@ -48,27 +47,52 @@
         android:weightSum="1">
 
         <TextView
+            android:id="@+id/textViewMasteringMode"
             android:background="@drawable/draw_line_border"
             android:layout_width="0px"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="TCON Version"
+            android:text="Mode Selection"
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.4" />
+            android:layout_weight="0.25" />
 
-        <TextView
-            android:id="@+id/textViewTconVersion"
+        <LinearLayout
             android:background="@drawable/draw_line_border"
-            android:layout_width="0px"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="xx.xx.xx"
             android:gravity="center"
-            android:paddingTop="15dp"
-            android:paddingBottom="15dp"
-            android:layout_weight="0.6" />
+            android:paddingTop="2dp"
+            android:paddingBottom="5dp"
+            android:layout_weight="0.65">
+
+            <Spinner
+                android:id="@+id/spinnerMasteringMode"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="230dp"
+                android:layout_marginRight="230dp"
+                android:gravity="center"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:background="@drawable/draw_line_border"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:paddingTop="4dp"
+            android:paddingBottom="3dp"
+            android:layout_weight="0.1">
+
+            <Button
+                android:id="@+id/btnMasteringMode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Apply"
+                android:gravity="center"/>
+        </LinearLayout>
+
     </LinearLayout>
 
     <LinearLayout
@@ -80,27 +104,37 @@
         android:weightSum="1">
 
         <TextView
+            android:id="@+id/textViewMasteringModeMaster"
             android:background="@drawable/draw_line_border"
             android:layout_width="0px"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="TCON LED Version"
+            android:text="Master Mode"
             android:gravity="center"
-            android:paddingTop="15dp"
-            android:paddingBottom="15dp"
-            android:layout_weight="0.4" />
+            android:layout_weight="0.25" />
 
-        <TextView
-            android:id="@+id/textViewLedVersion"
+        <ScrollView
             android:background="@drawable/draw_line_border"
-            android:layout_width="0px"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="xx.xx.xx"
             android:gravity="center"
-            android:paddingTop="15dp"
-            android:paddingBottom="15dp"
-            android:layout_weight="0.6" />
+            android:orientation="vertical"
+            android:layout_weight="0.75">
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="0dp"
+                android:paddingEnd="5dp" >
+
+                <LinearLayout
+                    android:id="@+id/layoutMastering"
+                    android:layout_width="match_parent"
+                    android:orientation="vertical"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+        </ScrollView>
     </LinearLayout>
 
 </LinearLayout>

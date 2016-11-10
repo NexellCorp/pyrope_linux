@@ -8,22 +8,15 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.RadioButton;
 import android.widget.TabHost;
 import android.widget.TextView;
 
-import com.samsung.vd.baseutils.VdLoginDatabase;
 import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTitleBar;
-
-import java.util.ArrayList;
 
 /**
  * Created by doriya on 8/16/16.
@@ -31,10 +24,7 @@ import java.util.ArrayList;
 public class DiagnosticsActivity extends AppCompatActivity {
     private final String VD_DTAG = "DiagnosticsActivity";
 
-    private ListView mListViewTcon;
-    private ListView mListViewLedOpen;
-    private ListView mListViewLedShort;
-    private ListView mListViewCabinetDoor;
+    private TabHost mTabHost;
 
     private StatusSimpleAdapter mAdapterTcon;
     private StatusDetailAdapter mAdapterLedOpen;
@@ -46,42 +36,48 @@ public class DiagnosticsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_diagnostics);
 
+        //
         // Configuration TitleBar
+        //
         VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.titleBarLayoutDiagnostics ));
-        titleBar.SetTitle( "Cinema LED Display System Diagnostics" );
+        titleBar.SetTitle( "Cinema LED Display System - Diagnostics" );
         titleBar.SetListener(VdTitleBar.BTN_BACK, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(v.getContext(), TopActivity.class);
-                startActivity(intent);
+                startActivity( new Intent(v.getContext(), TopActivity.class) );
+                overridePendingTransition(0, 0);
+                finish();
             }
         });
 
+        //
         // Configuration StatusBar
-        VdStatusBar statusBar = new VdStatusBar( getApplicationContext(), (LinearLayout)findViewById( R.id.statusBarLayoutDiagnostics) );
-
-        AddTabs();
+        //
+        new VdStatusBar( getApplicationContext(), (LinearLayout)findViewById( R.id.statusBarLayoutDiagnostics) );
 
         //
-        //  TCON
+        //  TCON STATUS
         //
-        mListViewTcon  = (ListView)findViewById(R.id.listView_tcon);
+        int cabinetNum = Integer.parseInt(((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_CABINET_NUM));
+
+        ListView listViewTcon = (ListView)findViewById(R.id.listView_tcon);
         mAdapterTcon = new StatusSimpleAdapter(this, R.layout.listview_row_status_simple);
-        mListViewTcon.setAdapter( mAdapterTcon);
+        listViewTcon.setAdapter( mAdapterTcon );
 
-        for(int i = 0; i < 69; i++ )
+        for(int i = 0; i < cabinetNum; i++ )
         {
-            mAdapterTcon.add( "Cabinet " + String.valueOf(i + 1) );
+            mAdapterTcon.add( new StatusSimpleInfo("Cabinet " + String.valueOf(i + 1)) );
+            mAdapterTcon.notifyDataSetChanged();
         }
 
         //
         //  LED OPEN
         //
-        mListViewLedOpen = (ListView)findViewById(R.id.listview_led_open);
+        ListView listViewLedOpen = (ListView)findViewById(R.id.listview_led_open);
         mAdapterLedOpen = new StatusDetailAdapter(this, R.layout.listview_row_status_detail);
-        mListViewLedOpen.setAdapter( mAdapterLedOpen );
+        listViewLedOpen.setAdapter( mAdapterLedOpen );
 
-        for(int i = 0; i < 69; i++ )
+        for(int i = 0; i < cabinetNum; i++ )
         {
             mAdapterLedOpen.add( "Cabinet " + String.valueOf(i + 1) );
         }
@@ -89,11 +85,11 @@ public class DiagnosticsActivity extends AppCompatActivity {
         //
         //  LED SHORT
         //
-        mListViewLedShort = (ListView)findViewById(R.id.listview_led_short);
+        ListView listViewLedShort = (ListView)findViewById(R.id.listview_led_short);
         mAdapterLedShort = new StatusDetailAdapter(this, R.layout.listview_row_status_detail);
-        mListViewLedShort.setAdapter( mAdapterLedShort );
+        listViewLedShort.setAdapter( mAdapterLedShort );
 
-        for(int i = 0; i < 69; i++ )
+        for(int i = 0; i < cabinetNum; i++ )
         {
             mAdapterLedShort.add( "Cabinet " + String.valueOf(i + 1) );
         }
@@ -101,78 +97,151 @@ public class DiagnosticsActivity extends AppCompatActivity {
         //
         //  CABINET DOOR
         //
-        mListViewCabinetDoor = (ListView)findViewById(R.id.listView_cabinet_door);
+        ListView listViewCabinetDoor = (ListView)findViewById(R.id.listView_cabinet_door);
         mAdapterCabinetDoor = new StatusSimpleAdapter(this, R.layout.listview_row_status_simple);
-        mListViewCabinetDoor.setAdapter( mAdapterCabinetDoor );
+        listViewCabinetDoor.setAdapter( mAdapterCabinetDoor );
 
-        for(int i = 0; i < 69; i++ )
+        for(int i = 0; i < cabinetNum; i++ )
         {
-            mAdapterCabinetDoor.add( "Cabinet " + String.valueOf(i + 1) );
+            mAdapterCabinetDoor.add( new StatusSimpleInfo("Cabinet " + String.valueOf(i + 1)) );
+            mAdapterCabinetDoor.notifyDataSetChanged();
+        }
+
+        //
+        //  Initialize Tab
+        //
+        AddTabs();
+        UpdateTconStatus();
+
+        mTabHost.getTabWidget().getChildTabViewAt(2).setEnabled(false);
+        ((TextView)mTabHost.getTabWidget().getChildAt(2).findViewById(android.R.id.title)).setTextColor(0xFFDCDCDC);
+
+        mTabHost.getTabWidget().getChildTabViewAt(4).setEnabled(false);
+        ((TextView)mTabHost.getTabWidget().getChildAt(4).findViewById(android.R.id.title)).setTextColor(0xFFDCDCDC);
+
+        //
+        //  Set System Information
+        //
+        CinemaInfo info = ((CinemaInfo)getApplicationContext());
+        Log.i(VD_DTAG, "--> Login Group : " + info.GetUserGroup());
+
+        if( info.GetUserGroup().equals(AccountPreference.GROUP_CALIBRATOR) ) {
+            mTabHost.getTabWidget().getChildTabViewAt(0).setEnabled(false);
+            ((TextView)mTabHost.getTabWidget().getChildAt(0).findViewById(android.R.id.title)).setTextColor(0xFFDCDCDC);
+
+            mTabHost.getTabWidget().getChildTabViewAt(1).setEnabled(false);
+            ((TextView)mTabHost.getTabWidget().getChildAt(1).findViewById(android.R.id.title)).setTextColor(0xFFDCDCDC);
+
+            mTabHost.getTabWidget().getChildTabViewAt(3).setEnabled(false);
+            ((TextView)mTabHost.getTabWidget().getChildAt(3).findViewById(android.R.id.title)).setTextColor(0xFFDCDCDC);
         }
     }
 
     private void AddTabs() {
-        TabHost tabHost = (TabHost)findViewById( R.id.tabHost );
-        tabHost.setup();
+        mTabHost = (TabHost)findViewById( R.id.tabHost );
+        mTabHost.setup();
 
-        TabHost.TabSpec tabSpec1 = tabHost.newTabSpec( "TAB1" );
-        tabSpec1.setIndicator("TCON");
-        tabSpec1.setContent(R.id.tab_diagnostics_tcon);
+        TabHost.TabSpec tabSpec0 = mTabHost.newTabSpec( "TAB0" );
+        tabSpec0.setIndicator("TCON");
+        tabSpec0.setContent(R.id.tab_diagnostics_tcon);
 
-        TabHost.TabSpec tabSpec2 = tabHost.newTabSpec( "TAB2" );
-        tabSpec2.setIndicator("LED OPEN");
-        tabSpec2.setContent(R.id.tab_diagnostics_led_open);
+        TabHost.TabSpec tabSpec1 = mTabHost.newTabSpec( "TAB1" );
+        tabSpec1.setIndicator("LED OPEN");
+        tabSpec1.setContent(R.id.tab_diagnostics_led_open);
 
-        TabHost.TabSpec tabSpec3 = tabHost.newTabSpec( "TAB3" );
-        tabSpec3.setIndicator("LED SHORT");
-        tabSpec3.setContent(R.id.tab_diagnostics_led_short);
+        TabHost.TabSpec tabSpec2 = mTabHost.newTabSpec( "TAB2" );
+        tabSpec2.setIndicator("LED SHORT");
+        tabSpec2.setContent(R.id.tab_diagnostics_led_short);
 
-        TabHost.TabSpec tabSpec4 = tabHost.newTabSpec( "TAB4" );
-        tabSpec4.setIndicator("CABINET DOOR");
-        tabSpec4.setContent(R.id.tab_diagnostics_cabinet_door);
+        TabHost.TabSpec tabSpec3 = mTabHost.newTabSpec( "TAB3" );
+        tabSpec3.setIndicator("CABINET DOOR");
+        tabSpec3.setContent(R.id.tab_diagnostics_cabinet_door);
 
-        TabHost.TabSpec tabSpec5 = tabHost.newTabSpec( "TAB5" );
-        tabSpec5.setIndicator("BATTERY");
-        tabSpec5.setContent(R.id.tab_diagnostics_battery);
+        TabHost.TabSpec tabSpec4 = mTabHost.newTabSpec( "TAB4" );
+        tabSpec4.setIndicator("BATTERY");
+        tabSpec4.setContent(R.id.tab_diagnostics_battery);
 
-        TabHost.TabSpec tabSpec6 = tabHost.newTabSpec( "TAB6" );
-        tabSpec6.setIndicator("PERIPHERAL");
-        tabSpec6.setContent(R.id.tab_diagnostics_peripheral);
+        TabHost.TabSpec tabSpec5 = mTabHost.newTabSpec( "TAB5" );
+        tabSpec5.setIndicator("PERIPHERAL");
+        tabSpec5.setContent(R.id.tab_diagnostics_peripheral);
 
-        TabHost.TabSpec tabSpec7 = tabHost.newTabSpec( "TAB7" );
-        tabSpec7.setIndicator("VERSION");
-        tabSpec7.setContent(R.id.tab_diagnostics_version);
+        TabHost.TabSpec tabSpec6 = mTabHost.newTabSpec( "TAB6" );
+        tabSpec6.setIndicator("VERSION");
+        tabSpec6.setContent(R.id.tab_diagnostics_version);
 
-        tabHost.addTab(tabSpec1);
-        tabHost.addTab(tabSpec2);
-        tabHost.addTab(tabSpec3);
-        tabHost.addTab(tabSpec4);
-        tabHost.addTab(tabSpec5);
-        tabHost.addTab(tabSpec6);
-        tabHost.addTab(tabSpec7);
+        mTabHost.addTab(tabSpec0);
+        mTabHost.addTab(tabSpec1);
+        mTabHost.addTab(tabSpec2);
+        mTabHost.addTab(tabSpec3);
+        mTabHost.addTab(tabSpec4);
+        mTabHost.addTab(tabSpec5);
+        mTabHost.addTab(tabSpec6);
 
-        tabHost.setOnTabChangedListener(mDiagnosticsTabChange);
-        tabHost.setCurrentTab(0);
+        mTabHost.setOnTabChangedListener(mDiagnosticsTabChange);
+        mTabHost.setCurrentTab(0);
     }
 
     private TabHost.OnTabChangeListener mDiagnosticsTabChange = new TabHost.OnTabChangeListener() {
         @Override
         public void onTabChanged(String tabId) {
-            Log.i(VD_DTAG, "Tab ID : " + tabId);
+            if( tabId.equals("TAB0") ) UpdateTconStatus();
+            if( tabId.equals("TAB1") ) UpdateLedOpen();
+            if( tabId.equals("TAB2") ) UpdateLedShort();
+            if( tabId.equals("TAB3") ) UpdateCabinetDoor();
+            if( tabId.equals("TAB4") ) UpdateBattery();
+            if( tabId.equals("TAB5") ) UpdatePeripheral();
+            if( tabId.equals("TAB6") ) UpdateVersion();
         }
     };
+
+    private void UpdateTconStatus() {
+        for( int i = 0; i < mAdapterTcon.getCount(); i++ ) {
+            StatusSimpleInfo info = mAdapterTcon.getItem(i);
+
+            byte[] result = NxCinemaCtrl.GetInstance().Send( 32 + i, NxCinemaCtrl.CMD_TCON_STATUS, null );
+            if(result == null || result.length == 0)
+                continue;
+
+            info.SetStatus( (int)result[0] );
+            mAdapterTcon.notifyDataSetChanged();
+        }
+    }
+
+    private void UpdateLedOpen() {
+
+    }
+
+    private void UpdateLedShort() {
+
+    }
+
+    private void UpdateCabinetDoor() {
+
+    }
+
+    private void UpdateBattery() {
+
+    }
+
+    private void UpdatePeripheral() {
+
+    }
+
+    private void UpdateVersion() {
+
+    }
 
     //
     //  For ScreenSaver
     //
-    private ScreenSaverService mService = null;
+    private CinemaService mService = null;
     private boolean mServiceRun = false;
 
     @Override
     protected void onStart() {
         super.onStart();
 
-        Intent intent = new Intent(this, ScreenSaverService.class);
+        Intent intent = new Intent(this, CinemaService.class);
         bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
     }
 
@@ -188,15 +257,16 @@ public class DiagnosticsActivity extends AppCompatActivity {
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
+        boolean isOn = mService.IsOn();
         mService.RefreshScreenSaver();
 
-        return super.dispatchTouchEvent(ev);
+        return !isOn || super.dispatchTouchEvent(ev);
     }
 
     private ServiceConnection mConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            ScreenSaverService.LocalBinder binder = (ScreenSaverService.LocalBinder)service;
+            CinemaService.LocalBinder binder = (CinemaService.LocalBinder)service;
             mService = binder.GetService();
             mServiceRun = true;
         }

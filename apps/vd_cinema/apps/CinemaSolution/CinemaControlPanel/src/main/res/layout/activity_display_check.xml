@@ -35,17 +35,6 @@
                 android:layout_height="match_parent">
 
                 <RelativeLayout
-                    android:id="@+id/tab_display_check_calibration"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical">
-                    <include
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        layout="@layout/layout_display_check_calibration" />
-                </RelativeLayout>
-
-                <RelativeLayout
                     android:id="@+id/tab_display_check_test"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
@@ -54,18 +43,6 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         layout="@layout/layout_display_check_test" />
-                </RelativeLayout>
-
-                <RelativeLayout
-                    android:id="@+id/tab_display_check_cabinet"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical">
-
-                    <include
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        layout="@layout/layout_display_check_cabinet" />
                 </RelativeLayout>
 
                 <RelativeLayout

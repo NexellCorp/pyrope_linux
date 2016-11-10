@@ -4,10 +4,8 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -32,36 +30,44 @@ import com.samsung.vd.baseutils.VdTitleBar;
 public class InitialActivity extends AppCompatActivity {
     private static final String VD_DTAG = "InitialActivity";
 
-    private final String[] SCREEN_SAVING = {
-        "Disable", "1 min", "3 min", "5 min", "10 min", "20 min", "30 min",
-    };
-
     private VdTimeZone mTimeZone;
-
+    private AccountPreference mAccountPref;
     private EditText mEditPassword;
     private EditText mEditConfirm;
     private EditText mEditCabinet;
-
-    private static Toast mToast;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_initial);
 
+        mAccountPref = new AccountPreference( getApplicationContext() );
+
+        //
+        //  For Test..
+        //
+//        ((CinemaInfo)getApplicationContext()).Remove(CinemaInfo.KEY_INITIALIZE);
+
         if( CheckInitialize() ) {
-            Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
-            startActivity(intent);
+            //
+            //  Test Code : Move forcibly activity.
+            //
+//            startActivity( new Intent(getApplicationContext(), TopActivity.class) );
+//            overridePendingTransition(0, 0);
+//            finish();
+
+            startActivity( new Intent(getApplicationContext(), LoginActivity.class) );
+            overridePendingTransition(0, 0);
+            finish();
             return;
         }
-        else {
-//            Intent intent = getApplicationContext().getPackageManager().getLaunchIntentForPackage("touchscreen.calibration");
-//            startActivity(intent);
-        }
+//        else {
+//            startActivity( getApplicationContext().getPackageManager().getLaunchIntentForPackage("touchscreen.calibration") );
+//        }
 
         // Configuration Title Bar
         VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.title_bar_initial));
-        titleBar.SetTitle( "Cinema LED Display System Initialize" );
+        titleBar.SetTitle( "Cinema LED Display System - Initialize" );
         titleBar.SetVisibility(VdTitleBar.BTN_BACK, View.GONE);
         titleBar.SetVisibility(VdTitleBar.BTN_EXIT, View.GONE);
 
@@ -91,8 +97,12 @@ public class InitialActivity extends AppCompatActivity {
         //
         //  Spinner for Screen Saving
         //
-        ArrayAdapter<String> adapterSpinScreenSaving = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, SCREEN_SAVING);
-        Spinner spinnerScreenSaving = (Spinner)findViewById(R.id.spinnerScreenSaving);
+        String[] strScreenSaverInfo = {
+            "Disable", "1 min", "3 min", "5 min", "10 min", "20 min", "30 min"
+        };
+
+        ArrayAdapter<String> adapterSpinScreenSaving = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, strScreenSaverInfo);
+        final Spinner spinnerScreenSaving = (Spinner)findViewById(R.id.spinnerScreenSaving);
         spinnerScreenSaving.setAdapter(adapterSpinScreenSaving);
 
         Button btnAccept = (Button)findViewById(R.id.btnInitAccept);
@@ -100,16 +110,24 @@ public class InitialActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if( CheckParameter() ) {
-                    Intent intent = new Intent(v.getContext(), LoginActivity.class);
-                    startActivity(intent);
-                }
+                    mAccountPref.Add(AccountPreference.GROUP_ROOT, mEditPassword.getText().toString());
 
-//                NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-//                ctrl.Send( 0xFF, NxCinemaCtrl.CMD_TCON_STATE );
+                    ((CinemaInfo)getApplicationContext()).SetUserGroup(AccountPreference.GROUP_ROOT);
+                    ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_SCREEN_SAVING, CinemaService.OFF_TIME[spinnerScreenSaving.getSelectedItemPosition()]);
+                    ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_CABINET_NUM, mEditCabinet.getText().toString());
+                    ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_INITIALIZE, "true");
+
+                    mService.RefreshScreenSaver();
+                    startActivity( new Intent(v.getContext(), LoginActivity.class) );
+                    overridePendingTransition(0, 0);
+                    finish();
+                }
             }
         });
 
-
+        //
+        //  IMM Handler
+        //
         mEditPassword = (EditText)findViewById(R.id.editPassword);
         mEditConfirm = (EditText)findViewById(R.id.editConfirm);
         mEditCabinet = (EditText)findViewById(R.id.editCabinet);
@@ -124,56 +142,35 @@ public class InitialActivity extends AppCompatActivity {
                 imm.hideSoftInputFromWindow(mEditCabinet.getWindowToken(), 0);
             }
         });
-
-
-        //
-        //  Test Code : Move forcibly activity.
-        //
-//        Intent intent = new Intent(getApplicationContext(), AccountActivity.class);
-//        startActivity(intent);
-
-
-        //
-        //  Test Code : Read LCD Brightness
-        //
-//        try {
-//            int brightness = Settings.System.getInt( getContentResolver(), "screen_brightness");
-//            Log.i( VD_DTAG, ">>>>>>>>>> " + String.valueOf(brightness) );
-//        } catch (Settings.SettingNotFoundException e) {
-//            e.printStackTrace();
-//        }
-
-        //
-        //  Test Code : Write Brightness
-        //
-//        Settings.System.putInt( getContentResolver(), "screen_brightness", 255 );
     }
 
     private boolean CheckInitialize() {
-        //
-        //  Check Initialized
-        //
-
-        return false;
+        String strTemp = ((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_INITIALIZE);
+        return (null != strTemp) && (strTemp.equals( "true" ));
     }
 
     private boolean CheckParameter() {
-//        String strPassword = mEditPassword.getText().toString();
-//        String strConfirm = mEditConfirm.getText().toString();
-//        String strCabinet = mEditCabinet.getText().toString();
-//
-//        if( !strPassword.equals(strConfirm) || strPassword.equals("") || strConfirm.equals("") ) {
-//            ShowMessage("Please check password.");
-//            return false;
-//        }
-//
-//        if( strCabinet.equals("") || Integer.parseInt(strCabinet) <= 0 ) {
-//            ShowMessage("Please check cabinet number.");
-//            return false;
-//        }
+        String strPassword = mEditPassword.getText().toString();
+        String strConfirm = mEditConfirm.getText().toString();
+        String strCabinet = mEditCabinet.getText().toString();
+
+        if( !strPassword.equals(strConfirm) || strPassword.equals("") || strConfirm.equals("") ) {
+            ShowMessage("Please check password.");
+            return false;
+        }
+
+        if( strCabinet.equals("") || Integer.parseInt(strCabinet) <= 0 ) {
+            ShowMessage("Please check cabinet number.");
+            return false;
+        }
 
         return true;
     }
+
+    //
+    //  For Internal Toast Message
+    //
+    private static Toast mToast;
 
     private void ShowMessage( String strMsg ) {
         if( mToast == null )
@@ -186,15 +183,14 @@ public class InitialActivity extends AppCompatActivity {
     //
     //  For ScreenSaver
     //
-    private ScreenSaverService mService = null;
+    private CinemaService mService = null;
     private boolean mServiceRun = false;
 
     @Override
     protected void onStart() {
         super.onStart();
 
-        Intent intent = new Intent(this, ScreenSaverService.class);
-        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+        bindService(new Intent(this, CinemaService.class), mConnection, Context.BIND_AUTO_CREATE);
     }
 
     @Override
@@ -209,14 +205,16 @@ public class InitialActivity extends AppCompatActivity {
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
+        boolean isOn = mService.IsOn();
         mService.RefreshScreenSaver();
-        return super.dispatchTouchEvent(ev);
+
+        return !isOn || super.dispatchTouchEvent(ev);
     }
 
     private ServiceConnection mConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            ScreenSaverService.LocalBinder binder = (ScreenSaverService.LocalBinder)service;
+            CinemaService.LocalBinder binder = (CinemaService.LocalBinder)service;
             mService = binder.GetService();
             mServiceRun = true;
         }

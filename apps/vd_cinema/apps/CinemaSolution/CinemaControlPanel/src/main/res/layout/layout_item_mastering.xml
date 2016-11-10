@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_gravity="center"
+    android:orientation="vertical" >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:weightSum="0.75" >
+
+        <LinearLayout
+            android:id="@+id/layoutTextMastering0"
+            android:background="@drawable/draw_line_right"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:paddingTop="15dp"
+            android:paddingBottom="15dp"
+            android:layout_weight="0.10">
+
+            <TextView
+                android:id="@+id/textMastering0"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textAppearance="?android:attr/textAppearanceListItemSmall"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:background="@drawable/draw_line_top"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:paddingTop="15dp"
+            android:paddingBottom="15dp"
+            android:layout_weight="0.13">
+
+            <TextView
+                android:id="@+id/textMastering1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textAppearance="?android:attr/textAppearanceListItemSmall"/>
+        </LinearLayout>
+
+        <SeekBar
+            android:background="@drawable/draw_line_top"
+            android:id="@+id/seekMastering"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:gravity="center"
+            android:layout_weight="0.36"/>
+
+        <LinearLayout
+            android:background="@drawable/draw_line_top"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:paddingTop="15dp"
+            android:paddingBottom="15dp"
+            android:layout_weight="0.08">
+
+            <TextView
+                android:id="@+id/textMastering2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textAppearance="?android:attr/textAppearanceListItemSmall"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:background="@drawable/draw_line_top"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:paddingTop="4dp"
+            android:layout_weight="0.08">
+
+            <Button
+                android:id="@+id/btnMastering"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="SET" />
+
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

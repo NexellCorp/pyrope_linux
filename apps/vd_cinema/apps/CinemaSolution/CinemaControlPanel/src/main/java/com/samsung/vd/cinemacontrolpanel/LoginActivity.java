@@ -19,15 +19,11 @@ import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-import com.samsung.vd.baseutils.VdLoginDatabase;
 import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTitleBar;
 
 public class LoginActivity extends AppCompatActivity {
     private static final String VD_DTAG = "LoginActivity";
-    private static final String[] ACCOUNT = {
-        "root", "service", "calibrator", "operator",
-    };
 
     private Spinner mSpinnerAccount;
 
@@ -38,33 +34,55 @@ public class LoginActivity extends AppCompatActivity {
 
     private boolean mRescueMode = false;
 
-    private static Toast mToast;
+    private AccountPreference mAccountPreference;
+    private String[] mStrAccount;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
+        //
         // Configuration Title Bar
+        //
         VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.title_bar_login ));
-        titleBar.SetTitle( "Cinema LED Display System Login" );
-        titleBar.SetVisibility(VdTitleBar.BTN_EXIT, View.GONE);
+        titleBar.SetTitle( "Cinema LED Display System - Login" );
 
         // For Debugging
-        //titleBar.SetVisibility(VdTitleBar.BTN_BACK, View.GONE);
+        titleBar.SetVisibility(VdTitleBar.BTN_BACK, View.GONE);
         titleBar.SetListener(VdTitleBar.BTN_BACK, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(v.getContext(), InitialActivity.class);
-                startActivity(intent);
+//                startActivity( new Intent(v.getContext(), InitialActivity.class) );
+//                overridePendingTransition(0, 0);
+//                finish();
             }
         });
 
-        // Configuration Status Bar
-        VdStatusBar statusBar = new VdStatusBar( getApplicationContext(), (LinearLayout)findViewById( R.id.status_bar_login) );
+        titleBar.SetListener(VdTitleBar.BTN_EXIT, new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mService.TurnOff();
+            }
+        });
+
+        //
+        //  Configuration Status Bar
+        //
+        new VdStatusBar( getApplicationContext(), (LinearLayout)findViewById( R.id.status_bar_login) );
+
+        //
+        //
+        //
+        mAccountPreference = new AccountPreference(getApplicationContext());
+        mStrAccount = new String[] {
+            AccountPreference.GROUP_ROOT,
+            AccountPreference.GROUP_SERVICE,
+            AccountPreference.GROUP_CALIBRATOR,
+            AccountPreference.GROUP_OPERATOR };
 
         mSpinnerAccount = (Spinner)findViewById(R.id.spinnerAccount);
-        ArrayAdapter<String> adapterAccount = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, ACCOUNT );
+        ArrayAdapter<String> adapterAccount = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, mStrAccount );
         mSpinnerAccount.setAdapter(adapterAccount);
         mSpinnerAccount.setSelection( 3 );
 
@@ -75,11 +93,11 @@ public class LoginActivity extends AppCompatActivity {
                 findViewById(R.id.layoutLoginRescue).setVisibility(View.GONE);
                 findViewById(R.id.layoutLoginNormal).setVisibility(View.VISIBLE);
 
-                mEditPassword1.setText(null);
-                mEditPassword2.setText(null);
-                mEditPassword3.setText(null);
+                mEditPassword1.setText("");
+                mEditPassword2.setText("");
+                mEditPassword3.setText("");
 
-                mRescueMode = true;
+                mRescueMode = false;
             }
         });
 
@@ -90,9 +108,9 @@ public class LoginActivity extends AppCompatActivity {
                 findViewById(R.id.layoutLoginNormal).setVisibility(View.GONE);
                 findViewById(R.id.layoutLoginRescue).setVisibility(View.VISIBLE);
 
-                mEditPassword.setText(null);
+                mEditPassword.setText("");
 
-                mRescueMode = false;
+                mRescueMode = true;
             }
         });
 
@@ -101,8 +119,9 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if( CheckAccount() ) {
-                    Intent intent = new Intent(v.getContext(), TopActivity.class);
-                    startActivity(intent);
+                    startActivity( new Intent(v.getContext(), TopActivity.class) );
+                    overridePendingTransition(0, 0);
+                    finish();
                 }
             }
         });
@@ -112,16 +131,20 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if( CheckAccount() ) {
-                    Intent intent = new Intent(v.getContext(), TopActivity.class);
-                    startActivity(intent);
+                    startActivity( new Intent(v.getContext(), TopActivity.class) );
+                    overridePendingTransition(0, 0);
+                    finish();
                 }
             }
         });
 
-        mEditPassword = (EditText)findViewById(R.id.editTextLoginPw);
-        mEditPassword1 = (EditText)findViewById(R.id.editTextLoginPw1);
-        mEditPassword2 = (EditText)findViewById(R.id.editTextLoginPw2);
-        mEditPassword3 = (EditText)findViewById(R.id.editTextLoginPw3);
+        //
+        //  IMM Handler
+        //
+        mEditPassword = (EditText)findViewById(R.id.editLoginPw);
+        mEditPassword1 = (EditText)findViewById(R.id.editLoginPw1);
+        mEditPassword2 = (EditText)findViewById(R.id.editLoginPw2);
+        mEditPassword3 = (EditText)findViewById(R.id.editLoginPw3);
 
         RelativeLayout parent = (RelativeLayout)findViewById(R.id.layoutParentLogin);
         parent.setOnClickListener(new View.OnClickListener() {
@@ -137,31 +160,69 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private boolean CheckAccount() {
-//        if( !mRescueMode ) {
-//            //  Normal Login Mode
-//            String strPassword = mEditPassword.getText().toString();
-//
-//            if( strPassword.equals("") ) {
-//                ShowMessage("Please check password.");
-//                return false;
-//            }
-//        }
-//        else {
-//            //  Rescue Login Mode
-//            String strPassword1 = mEditPassword1.getText().toString();
-//            String strPassword2 = mEditPassword2.getText().toString();
-//            String strPassword3 = mEditPassword3.getText().toString();
-//
-//            if( strPassword1.equals("") ||
-//                strPassword2.equals("") ||
-//                strPassword3.equals("") ) {
-//                ShowMessage("Please check password.");
-//                return false;
-//            }
-//        }
+        if( !mRescueMode ) {
+            //  Normal Login Mode
+            Log.i(VD_DTAG, "Normal Mode.");
+            String strGroup = mSpinnerAccount.getSelectedItem().toString();
+            String strPassword = mEditPassword.getText().toString();
+
+            if( strPassword.equals("") ) {
+                ShowMessage("Please check password.");
+                return false;
+            }
+
+            int index = mAccountPreference.Confirm(strGroup, strPassword);
+            if( 0 > index ) {
+                ShowMessage("Please check password.");
+
+                mEditPassword.setText("");
+
+                return false;
+            }
+
+            CinemaInfo info = ((CinemaInfo)getApplicationContext());
+            info.SetUserGroup(strGroup);
+            info.SetUserId(( mAccountPreference.ReadId(strGroup, index) ));
+            info.InsertLog( "Login." );
+        }
+        else {
+            Log.i(VD_DTAG, "Rescue Mode.");
+            //  Rescue Login Mode
+            String strPassword1 = mEditPassword1.getText().toString();
+            String strPassword2 = mEditPassword2.getText().toString();
+            String strPassword3 = mEditPassword3.getText().toString();
+
+            if( strPassword1.equals("") ||
+                strPassword2.equals("") ||
+                strPassword3.equals("") ) {
+                ShowMessage("Please check password.");
+                return false;
+            }
+
+            if( 0 > mAccountPreference.Confirm(AccountPreference.GROUP_OPERATOR, strPassword1) ||
+                0 > mAccountPreference.Confirm(AccountPreference.GROUP_OPERATOR, strPassword2) ||
+                0 > mAccountPreference.Confirm(AccountPreference.GROUP_OPERATOR, strPassword3) ) {
+                ShowMessage("Please check password.");
+
+                mEditPassword1.setText(null);
+                mEditPassword2.setText(null);
+                mEditPassword3.setText(null);
+
+                return false;
+            }
+
+            CinemaInfo info = ((CinemaInfo)getApplicationContext());
+            info.SetUserGroup(AccountPreference.GROUP_ROOT);
+            info.InsertLog( "Login." );
+        }
 
         return true;
     }
+    
+    //
+    //  For Internal Toast Message
+    //
+    private static Toast mToast;
 
     private void ShowMessage( String strMsg ) {
         if( mToast == null )
@@ -174,14 +235,14 @@ public class LoginActivity extends AppCompatActivity {
     //
     //  For ScreenSaver
     //
-    private ScreenSaverService mService = null;
+    private CinemaService mService = null;
     private boolean mServiceRun = false;
 
     @Override
     protected void onStart() {
         super.onStart();
 
-        Intent intent = new Intent(this, ScreenSaverService.class);
+        Intent intent = new Intent(this, CinemaService.class);
         bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
     }
 
@@ -197,15 +258,16 @@ public class LoginActivity extends AppCompatActivity {
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
+        boolean isOn = mService.IsOn();
         mService.RefreshScreenSaver();
 
-        return super.dispatchTouchEvent(ev);
+        return !isOn || super.dispatchTouchEvent(ev);
     }
 
     private ServiceConnection mConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            ScreenSaverService.LocalBinder binder = (ScreenSaverService.LocalBinder)service;
+            CinemaService.LocalBinder binder = (CinemaService.LocalBinder)service;
             mService = binder.GetService();
             mServiceRun = true;
         }

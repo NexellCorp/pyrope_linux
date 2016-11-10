@@ -7,6 +7,7 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -27,7 +28,7 @@ public class AccountActivity extends AppCompatActivity {
 
     private static final int MAX_ACCOUNT_GROUP_NUM = 3;
 
-    private LayoutInflater mInflater ;
+    private LayoutInflater mInflater;
     private LinearLayout mParentLayout;
 
     private LinearLayout[] mAccountServiceLayout;
@@ -36,28 +37,25 @@ public class AccountActivity extends AppCompatActivity {
 
     private AccountPreference mAccountPreference;
 
-    private Toast mToast;
-
     @Override
     protected void onResume() {
         super.onResume();
 
         mAccountServiceLayout = new LinearLayout[MAX_ACCOUNT_GROUP_NUM];
         for( int i = 0; i < mAccountServiceLayout.length; i++ ) {
-            mAccountServiceLayout[i] = (LinearLayout) mInflater.inflate(R.layout.layout_account, mParentLayout, false );
+            mAccountServiceLayout[i] = (LinearLayout) mInflater.inflate(R.layout.layout_item_account, mParentLayout, false );
             AddViewAccount( mAccountServiceLayout[i], AccountPreference.GROUP_SERVICE, i );
         }
 
         mAccountCalibratorLayout = new LinearLayout[MAX_ACCOUNT_GROUP_NUM];
         for( int i = 0; i < mAccountCalibratorLayout.length; i++ ) {
-            mAccountCalibratorLayout[i] = (LinearLayout) mInflater.inflate(R.layout.layout_account, mParentLayout, false );
+            mAccountCalibratorLayout[i] = (LinearLayout) mInflater.inflate(R.layout.layout_item_account, mParentLayout, false );
             AddViewAccount( mAccountCalibratorLayout[i], AccountPreference.GROUP_CALIBRATOR, i );
         }
 
-
         mAccountOperatorLayout = new LinearLayout[MAX_ACCOUNT_GROUP_NUM];
         for( int i = 0; i < mAccountOperatorLayout.length; i++ ) {
-            mAccountOperatorLayout[i] = (LinearLayout) mInflater.inflate(R.layout.layout_account, mParentLayout, false );
+            mAccountOperatorLayout[i] = (LinearLayout) mInflater.inflate(R.layout.layout_item_account, mParentLayout, false );
             AddViewAccount( mAccountOperatorLayout[i], AccountPreference.GROUP_OPERATOR, i );
         }
     }
@@ -85,21 +83,23 @@ public class AccountActivity extends AppCompatActivity {
         //  Set TitleBar
         //
         VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.titleBarLayoutAccount ));
-        titleBar.SetTitle( "Cinema LED Display System Account" );
+        titleBar.SetTitle( "Cinema LED Display System - Account" );
 
         titleBar.SetListener(VdTitleBar.BTN_BACK, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(v.getContext(), TopActivity.class);
-                startActivity(intent);
+                startActivity( new Intent(v.getContext(), TopActivity.class) );
+                overridePendingTransition(0, 0);
+                finish();
             }
         });
 
         titleBar.SetListener(VdTitleBar.BTN_EXIT, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(v.getContext(), LoginActivity.class);
-                startActivity(intent);
+                startActivity( new Intent(v.getContext(), LoginActivity.class) );
+                overridePendingTransition(0, 0);
+                finish();
             }
         });
 
@@ -120,23 +120,21 @@ public class AccountActivity extends AppCompatActivity {
     private void AddViewAccount( View childView, String strGroup, int index ) {
         mParentLayout.addView(childView);
 
-        TextView textGroup = (TextView)childView.findViewById(R.id.textAccountGroup);
-        textGroup.setText( strGroup );
+        final int accountIndex = index;
+        final String accountGroup = strGroup;
+
+        final TextView textGroup = (TextView)childView.findViewById(R.id.textAccountGroup);
+        textGroup.setText( accountGroup );
 
         final EditText editId = (EditText)childView.findViewById(R.id.editAccountId);
         final EditText editPw = (EditText)childView.findViewById(R.id.editAccountPw);
         final EditText editConfirm = (EditText)childView.findViewById(R.id.editAccountConfirm);
 
-        String strId = mAccountPreference.ReadId(strGroup, index);
-        String strPw = mAccountPreference.ReadPw(strGroup, index);
+        String strId = mAccountPreference.ReadId(strGroup, accountIndex);
+        String strPw = mAccountPreference.ReadPw(strGroup, accountIndex);
 
-        if ( null != strId ) {
-            editId.setText(strId);
-        }
-        if ( null != strPw ) {
-            editPw.setText(strPw);
-            editConfirm.setText(strPw);
-        }
+        editId.setText(strId);
+        editPw.setText(strPw);
 
         Button btnTemp = (Button)childView.findViewById(R.id.btnAccountModify);
         btnTemp.setOnClickListener(new View.OnClickListener() {
@@ -154,12 +152,26 @@ public class AccountActivity extends AppCompatActivity {
                     EnableEditText(editPw, false);
                     EnableEditText(editConfirm, false);
 
-                    if( !ConfirmPassword( editPw.getText().toString(), editConfirm.getText().toString() ) ) {
+                    if( editPw.getText().toString().equals("") ||
+                        !editPw.getText().toString().equals( editConfirm.getText().toString() ) ) {
                         ShowMessage( "Please check password." );
+
+                        String strId = mAccountPreference.ReadId(accountGroup, accountIndex);
+                        String strPw = mAccountPreference.ReadPw(accountGroup, accountIndex);
+
+                        editId.setText(strId);
+                        editPw.setText(strPw);
                     }
                     else {
                         ShowMessage( "Update password." );
+                        mAccountPreference.Add( accountGroup, accountIndex, editId.getText().toString(), editPw.getText().toString() );
+
+                        String strId = mAccountPreference.ReadId(accountGroup, accountIndex);
+                        String strLog = String.format("Update account. ( %s, %s )", accountGroup, strId );
+                        ((CinemaInfo)getApplicationContext()).InsertLog( strLog );
                     }
+
+                    editConfirm.setText("");
                 }
             }
         });
@@ -182,6 +194,11 @@ public class AccountActivity extends AppCompatActivity {
                 && strPw.equals(strConfirm);
     }
 
+    //
+    //  For Internal Toast Message
+    //
+    private static Toast mToast;
+
     private void ShowMessage( String strMsg ) {
         if( mToast == null )
             mToast = Toast.makeText(getApplicationContext(), null, Toast.LENGTH_SHORT);
@@ -193,14 +210,14 @@ public class AccountActivity extends AppCompatActivity {
     //
     //  For ScreenSaver
     //
-    private ScreenSaverService mService = null;
+    private CinemaService mService = null;
     private boolean mServiceRun = false;
 
     @Override
     protected void onStart() {
         super.onStart();
 
-        Intent intent = new Intent(this, ScreenSaverService.class);
+        Intent intent = new Intent(this, CinemaService.class);
         bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
     }
 
@@ -216,15 +233,16 @@ public class AccountActivity extends AppCompatActivity {
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
+        boolean isOn = mService.IsOn();
         mService.RefreshScreenSaver();
 
-        return super.dispatchTouchEvent(ev);
+        return !isOn || super.dispatchTouchEvent(ev);
     }
 
     private ServiceConnection mConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            ScreenSaverService.LocalBinder binder = (ScreenSaverService.LocalBinder)service;
+            CinemaService.LocalBinder binder = (CinemaService.LocalBinder)service;
             mService = binder.GetService();
             mServiceRun = true;
         }

@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/layoutParentSystem"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" >
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center">
 
     <LinearLayout
-        android:id="@+id/titleBarLayoutDisplayMode"
+        android:id="@+id/titleBarLayoutSystem"
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="50dp"
@@ -15,8 +19,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:id="@+id/tabHost"
-        android:layout_below="@+id/titleBarLayoutDisplayMode"
-        android:layout_above="@+id/statusBarLayoutDisplayMode"
+        android:layout_below="@+id/titleBarLayoutSystem"
+        android:layout_above="@+id/statusBarLayoutSystem"
         android:layout_alignParentStart="true">
 
         <LinearLayout
@@ -35,44 +39,32 @@
                 android:layout_height="match_parent">
 
                 <RelativeLayout
-                    android:id="@+id/tab_display_mode_brightness"
+                    android:id="@+id/tab_system_ip"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:orientation="vertical">
                     <include
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        layout="@layout/layout_display_mode_mastering" />
+                        layout="@layout/layout_system_ip" />
                 </RelativeLayout>
 
                 <RelativeLayout
-                    android:id="@+id/tab_display_mode_input"
+                    android:id="@+id/tab_system_log"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:orientation="vertical">
                     <include
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        layout="@layout/layout_display_mode_input" />
-                </RelativeLayout>
-
-                <RelativeLayout
-                    android:id="@+id/tab_display_mode_setup"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical">
-
-                    <include
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        layout="@layout/layout_display_mode_setup" />
+                        layout="@layout/layout_system_log" />
                 </RelativeLayout>
             </FrameLayout>
         </LinearLayout>
     </TabHost>
 
     <LinearLayout
-        android:id="@+id/statusBarLayoutDisplayMode"
+        android:id="@+id/statusBarLayoutSystem"
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="50dp"

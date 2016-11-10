@@ -61,7 +61,7 @@
                 android:layout_weight="0.3"/>
 
             <EditText
-                android:id="@+id/editTextLoginPw"
+                android:id="@+id/editLoginPw"
                 android:layout_width="0px"
                 android:layout_height="wrap_content"
                 android:inputType="textPassword"
@@ -147,7 +147,7 @@
                 android:layout_weight="0.3" />
 
             <EditText
-                android:id="@+id/editTextLoginPw1"
+                android:id="@+id/editLoginPw1"
                 android:layout_width="0px"
                 android:layout_height="wrap_content"
                 android:inputType="textPassword"
@@ -171,7 +171,7 @@
                 android:layout_weight="0.3" />
 
             <EditText
-                android:id="@+id/editTextLoginPw2"
+                android:id="@+id/editLoginPw2"
                 android:layout_width="0px"
                 android:layout_height="wrap_content"
                 android:inputType="textPassword"
@@ -195,7 +195,7 @@
                 android:layout_weight="0.3" />
 
             <EditText
-                android:id="@+id/editTextLoginPw3"
+                android:id="@+id/editLoginPw3"
                 android:layout_width="0px"
                 android:layout_height="wrap_content"
                 android:inputType="textPassword"

@@ -9,20 +9,10 @@ import android.content.SharedPreferences;
 public class VdPreference {
     private final String VD_DTAG = "VdPreference";
 
-    //
-    //  Cinema Preference Part
-    //
-    public static final String CINEMA_PREFERENCE = "cinema.preference";
-
-    public static final String KEY_TS_CALIBRATION = "touch.calibration";
-    public static final String KEY_CABINET_NUM   = "cabinet.num";
-    public static final String KEY_SCREEN_SAVING = "screen.saving";
-    public static final String KEY_INPUT_SOURCE  = "input.source";
-    
     private SharedPreferences mPreference = null;
 
-    public VdPreference(Context context, String strPrefrence ) {
-        mPreference = context.getSharedPreferences( strPrefrence, Context.MODE_PRIVATE );
+    public VdPreference(Context context, String strPreference ) {
+        mPreference = context.getSharedPreferences( strPreference, Context.MODE_PRIVATE );
     }
 
     public String GetValue( String key ) {

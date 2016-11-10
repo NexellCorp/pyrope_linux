@@ -15,30 +15,39 @@
             android:background="@drawable/draw_line_left_top_bottom"
             android:layout_width="0px"
             android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="Cabinet ID"
+            android:text="Date"
             android:textStyle="bold"
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.4"/>
+            android:layout_weight="0.20"/>
+
+        <TextView
+            android:background="@drawable/draw_line_left_top_bottom"
+            android:layout_width="0px"
+            android:layout_height="wrap_content"
+            android:text="Account"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:paddingTop="15dp"
+            android:paddingBottom="15dp"
+            android:layout_weight="0.25"/>
 
         <TextView
             android:background="@drawable/draw_line_border"
             android:layout_width="0px"
             android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="Status"
+            android:text="Describe"
             android:textStyle="bold"
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.6"/>
+            android:layout_weight="0.55"/>
     </LinearLayout>
 
     <ListView
-        android:id="@+id/listView_cabinet_id"
+        android:id="@+id/listview_system_log"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
-
+        android:layout_height="wrap_content"
+        android:footerDividersEnabled="true" />
 </LinearLayout>

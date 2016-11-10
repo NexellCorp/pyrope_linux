@@ -31,6 +31,8 @@
 //
 //  Debug Tools
 //
+#define ENABLE_HEX_DUMP     1
+
 #define NX_DBG_VBS          2   // ANDROID_LOG_VERBOSE
 #define NX_DBG_DEBUG        3   // ANDROID_LOG_DEBUG
 #define NX_DBG_INFO         4   // ANDROID_LOG_INFO
@@ -38,7 +40,7 @@
 #define NX_DBG_ERR          6   // ANDROID_LOG_ERROR
 #define NX_DBG_DISABLE      9
 
-int gNxFilterDebugLevel     = NX_DBG_VBS;
+int gNxFilterDebugLevel     = NX_DBG_ERR;
 
 #define DBG_PRINT           __android_log_print
 #define NxDbgMsg(A, ...)    do {                                        \
@@ -50,7 +52,8 @@ int gNxFilterDebugLevel     = NX_DBG_VBS;
 #define MAX_BUF_SIZE        128
 
 //------------------------------------------------------------------------------
-void HexDump( const void *data, int32_t size )
+#if ENABLE_HEX_DUMP
+void NX_HexDump( const void *data, int32_t size )
 {
 	int32_t i=0, offset = 0;
 	char tmp[32];
@@ -96,108 +99,140 @@ void HexDump( const void *data, int32_t size )
 		}
 
 		strcat(lineBuf, "\n");
-		__android_log_print(ANDROID_LOG_DEBUG, "", "%s", lineBuf );
+		__android_log_print(ANDROID_LOG_DEBUG, NX_DTAG, "%s", lineBuf );
 
 		offset += 16;
 	}
 }
+#else
+void NX_HexDump( const void * /*data*/, int32_t /*size*/ )
+{
+}
+#endif
 
 //------------------------------------------------------------------------------
-JNIEXPORT jcharArray JNICALL NX_CinemaCtrlTCON( JNIEnv *env, jclass obj, jint id, jint cmd )
+JNIEXPORT jbyteArray JNICALL NX_CinemaCtrlTCON( JNIEnv *env, jclass obj, jint id, jint cmd, jbyteArray inArray )
 {
     NxDbgMsg( NX_DBG_VBS, "%s()++", __FUNCTION__ );
 
-    char buf[MAX_BUF_SIZE] = { 0x00, };
-    int size = sizeof(buf);
+    uint8_t tmpBuf[MAX_BUF_SIZE] = { 0x00, };
+    int32_t tmpSize = sizeof(tmpBuf);
 
-	if( 0 > NX_TConCommand( id, cmd, (uint8_t*)buf, &size ) )
+    if( NULL != inArray )
+    {
+        jbyte* pData = env->GetByteArrayElements( inArray, NULL );
+        jint dataSize = env->GetArrayLength( inArray );
+
+        memcpy( tmpBuf, (uint8_t*)pData, dataSize );
+        env->ReleaseByteArrayElements( inArray, pData, 0 );
+    }
+
+	if( 0 > NX_TCONCommand( id, cmd, (uint8_t*)tmpBuf, &tmpSize ) )
 	{
-	    NxDbgMsg( NX_DBG_ERR, "Fail, NX_TConCommand().\n" );
+	    NxDbgMsg( NX_DBG_ERR, "Fail, NX_TCONCommand().\n" );
 	    NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
 	    return NULL;
 	}
 
-    jcharArray charArray = env->NewCharArray( size );
-    if( NULL == charArray )
+    jbyteArray outArray = env->NewByteArray( tmpSize );
+    if( NULL == outArray )
     {
         NxDbgMsg( NX_DBG_ERR, "Fail, NewCharArray().\n" );
         NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
         return NULL;
     }
 
-    env->SetCharArrayRegion( charArray, 0, size, (jchar*)buf );
-
-    NxDbgMsg( NX_DBG_INFO, "size ( %d )\n", size );
-    HexDump( buf, size );
+    env->SetByteArrayRegion( outArray, 0, tmpSize, (jbyte*)tmpBuf );
+    NX_HexDump( tmpBuf, tmpSize );
 
     NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
-    return charArray;
+    return outArray;
 }
 
 //------------------------------------------------------------------------------
-JNIEXPORT jcharArray JNICALL NX_CinemaCtrlPFPGA( JNIEnv *env, jclass obj, jint cmd )
+JNIEXPORT jbyteArray JNICALL NX_CinemaCtrlPFPGA( JNIEnv *env, jclass obj, jint cmd, jbyteArray inArray )
 {
     NxDbgMsg( NX_DBG_VBS, "%s()++", __FUNCTION__ );
 
-    char buf[MAX_BUF_SIZE] = { 0x00, };
-    int size = sizeof(buf);
+    uint8_t tmpBuf[MAX_BUF_SIZE] = { 0x00, };
+    int32_t tmpSize = sizeof(tmpBuf);
 
-	if( 0 > NX_PFPGACommand( cmd, (uint8_t*)buf, &size ) )
+    if( NULL != inArray )
+    {
+        jbyte* pData = env->GetByteArrayElements( inArray, NULL );
+        jint dataSize = env->GetArrayLength( inArray );
+
+        memcpy( tmpBuf, (uint8_t*)pData, dataSize );
+        env->ReleaseByteArrayElements( inArray, pData, 0 );
+    }
+
+	if( 0 > NX_PFPGACommand( cmd, (uint8_t*)tmpBuf, &tmpSize ) )
 	{
 	    NxDbgMsg( NX_DBG_ERR, "Fail, NX_PFPGACommand().\n" );
 	    NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
 	    return NULL;
 	}
 
-    jcharArray charArray = env->NewCharArray( size );
-    if( NULL == charArray )
+    jbyteArray outArray = env->NewByteArray( tmpSize );
+    if( NULL == outArray )
     {
         NxDbgMsg( NX_DBG_ERR, "Fail, NewCharArray().\n" );
         NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
         return NULL;
     }
 
-    env->SetCharArrayRegion( charArray, 0, size, (jchar*)buf );
+    env->SetByteArrayRegion( outArray, 0, tmpSize, (jbyte*)tmpBuf );
+    NX_HexDump( tmpBuf, tmpSize );
 
     NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
-    return charArray;
+    return outArray;
 }
 
 //------------------------------------------------------------------------------
-JNIEXPORT jcharArray JNICALL NX_CinemaCtrlBAT( JNIEnv *env, jclass obj, jint cmd )
+JNIEXPORT jbyteArray JNICALL NX_CinemaCtrlBAT( JNIEnv *env, jclass obj, jint cmd, jbyteArray inArray )
 {
     NxDbgMsg( NX_DBG_VBS, "%s()++", __FUNCTION__ );
 
-    char buf[MAX_BUF_SIZE] = { 0x00, };
-    int size = sizeof(buf);
+    uint8_t tmpBuf[MAX_BUF_SIZE] = { 0x00, };
+    int32_t tmpSize = sizeof(tmpBuf);
 
-	if( 0 > NX_BATCommand( cmd, (uint8_t*)buf, &size ) )
+    if( NULL != inArray )
+    {
+        jbyte* pData = env->GetByteArrayElements( inArray, NULL );
+        jint dataSize = env->GetArrayLength( inArray );
+
+        memcpy( tmpBuf, (uint8_t*)pData, dataSize );
+        env->ReleaseByteArrayElements( inArray, pData, 0 );
+    }
+
+	if( 0 > NX_BATCommand( cmd, (uint8_t*)tmpBuf, &tmpSize ) )
 	{
 	    NxDbgMsg( NX_DBG_ERR, "Fail, NX_PFPGACommand().\n" );
 	    NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
 	    return NULL;
 	}
 
-    jcharArray charArray = env->NewCharArray( size );
-    if( NULL == charArray )
+    jbyteArray outArray = env->NewByteArray( tmpSize );
+    if( NULL == outArray )
     {
         NxDbgMsg( NX_DBG_ERR, "Fail, NewCharArray().\n" );
         NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
         return NULL;
     }
 
-    env->SetCharArrayRegion( charArray, 0, size, (jchar*)buf );
+    env->SetByteArrayRegion( outArray, 0, tmpSize, (jbyte*)tmpBuf );
+    NX_HexDump( tmpBuf, tmpSize );
 
     NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
-    return charArray;
+    return outArray;
 }
 
 //------------------------------------------------------------------------------
 static JNINativeMethod sMethods[] = {
     //  Native Function Name,           Sigunature,                         C++ Function Name
-    { "NX_CinemaCtrlTCON",              "(II)[C",                           (void*)NX_CinemaCtrlTCON    },
-    { "NX_CinemaCtrlPFPGA",             "(I)[C",                            (void*)NX_CinemaCtrlPFPGA   },
-    { "NX_CinemaCtrlBAT",               "(I)[C",                            (void*)NX_CinemaCtrlBAT     },
+    { "NX_CinemaCtrlTCON",              "(II[B)[B",                         (void*)NX_CinemaCtrlTCON    },
+    { "NX_CinemaCtrlPFPGA",             "(I[B)[B",                          (void*)NX_CinemaCtrlPFPGA   },
+    { "NX_CinemaCtrlBAT",               "(I[B)[B",                          (void*)NX_CinemaCtrlBAT     },
 };
 
 //------------------------------------------------------------------------------

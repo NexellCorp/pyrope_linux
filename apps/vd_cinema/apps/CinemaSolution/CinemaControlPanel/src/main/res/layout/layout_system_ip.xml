@@ -24,19 +24,19 @@
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.25" />
+            android:layout_weight="0.4" />
 
         <TextView
             android:background="@drawable/draw_line_border"
             android:layout_width="0px"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="Control"
+            android:text="Value"
             android:textStyle="bold"
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.75" />
+            android:layout_weight="0.6" />
     </LinearLayout>
 
     <LinearLayout
@@ -49,89 +49,34 @@
 
         <TextView
             android:background="@drawable/draw_line_border"
-            android:layout_width="0dp"
+            android:layout_width="0px"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="Current Time"
+            android:text="IP Address"
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.25"/>
-
-        <LinearLayout
-            android:background="@drawable/draw_line_border"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:paddingTop="2dp"
-            android:paddingBottom="5dp"
-            android:gravity="center"
-            android:layout_weight="0.65">
-
-            <Spinner
-                android:layout_width="70dp"
-                android:layout_height="wrap_content"
-                android:id="@+id/spinnerDay" />
-
-            <TextView
-                android:layout_width="30dp"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="   /   " />
-
-            <Spinner
-                android:layout_width="70dp"
-                android:layout_height="wrap_content"
-                android:id="@+id/spinnerMonth" />
-
-            <TextView
-                android:layout_width="30dp"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="   /   " />
-
-            <Spinner
-                android:layout_width="70dp"
-                android:layout_height="wrap_content"
-                android:id="@+id/spinnerYear" />
-
-            <TextView
-                android:layout_width="30dp"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="   ,    " />
-
-            <Spinner
-                android:layout_width="70dp"
-                android:layout_height="wrap_content"
-                android:id="@+id/spinnerHour" />
-
-            <TextView
-                android:layout_width="30dp"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="   :   " />
-
-            <Spinner
-                android:layout_width="70dp"
-                android:layout_height="wrap_content"
-                android:id="@+id/spinnerMinute" />
-
-        </LinearLayout>
+            android:layout_weight="0.4" />
 
         <LinearLayout
             android:background="@drawable/draw_line_border"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:paddingTop="4dp"
-            android:paddingBottom="3dp"
-            android:layout_weight="0.1">
-            <Button
-                android:id="@+id/btnTimeApply"
-                android:text="Apply"
+            android:layout_weight="0.6">
+
+            <EditText
+                android:id="@+id/editIpAddress"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:gravity="center" />
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:gravity="center"
+                android:inputType="number"
+                android:digits="1234567890."
+                android:imeOptions="actionNext"
+                android:ems="15"
+                android:paddingTop="15dp"
+                android:paddingBottom="15dp" />
         </LinearLayout>
     </LinearLayout>
 
@@ -145,68 +90,34 @@
 
         <TextView
             android:background="@drawable/draw_line_border"
-            android:layout_width="0dp"
+            android:layout_width="0px"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="Cabinet Number"
+            android:text="Subnet Mask"
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.25"/>
-
-        <LinearLayout
-            android:background="@drawable/draw_line_border"
-            android:paddingTop="2dp"
-            android:paddingBottom="5dp"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:layout_weight="0.65">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="vertical : "/>
-
-            <Spinner
-                android:layout_width="70dp"
-                android:layout_height="wrap_content"
-                android:id="@+id/spinnerCabinetVertical" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="     /     "/>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="horizontal : "/>
-
-            <Spinner
-                android:layout_width="70dp"
-                android:layout_height="wrap_content"
-                android:id="@+id/spinnerCabinetHorizontal" />
-
-        </LinearLayout>
+            android:layout_weight="0.4" />
 
         <LinearLayout
             android:background="@drawable/draw_line_border"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:paddingTop="4dp"
-            android:paddingBottom="3dp"
-            android:layout_weight="0.1">
-            <Button
-                android:id="@+id/btnCabinetNumApply"
-                android:text="Apply"
+            android:layout_weight="0.6">
+
+            <EditText
+                android:id="@+id/editSubnetMask"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:gravity="center" />
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:gravity="center"
+                android:inputType="number"
+                android:digits="1234567890."
+                android:imeOptions="actionNext"
+                android:ems="15"
+                android:paddingTop="15dp"
+                android:paddingBottom="15dp" />
         </LinearLayout>
     </LinearLayout>
 
@@ -220,44 +131,145 @@
 
         <TextView
             android:background="@drawable/draw_line_border"
-            android:layout_width="0dp"
+            android:layout_width="0px"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="Suspend Time"
+            android:text="Default Gateway"
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.25"/>
-
-        <LinearLayout
-            android:background="@drawable/draw_line_border"
-            android:paddingTop="2dp"
-            android:paddingBottom="5dp"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:layout_weight="0.65">
-
-            <Spinner
-                android:layout_width="100dp"
-                android:layout_height="wrap_content"
-                android:id="@+id/spinnerSuspendTime" />
-        </LinearLayout>
+            android:layout_weight="0.4" />
 
         <LinearLayout
             android:background="@drawable/draw_line_border"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:paddingTop="4dp"
-            android:paddingBottom="3dp"
-            android:layout_weight="0.1">
+            android:layout_weight="0.6">
 
-            <Button
-                android:id="@+id/btnSuspendTimeApply"
-                android:text="Apply"
+            <EditText
+                android:id="@+id/editDefaultGateway"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:gravity="center"
+                android:inputType="number"
+                android:digits="1234567890."
+                android:imeOptions="actionDone"
+                android:ems="15"
+                android:paddingTop="15dp"
+                android:paddingBottom="15dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:gravity="center"
+        android:weightSum="1">
+
+        <TextView
+            android:background="@drawable/draw_line_border"
+            android:layout_width="0px"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="DNS1"
+            android:gravity="center"
+            android:paddingTop="15dp"
+            android:paddingBottom="15dp"
+            android:layout_weight="0.4" />
+
+        <LinearLayout
+            android:background="@drawable/draw_line_border"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_weight="0.6">
+
+            <EditText
+                android:id="@+id/editDns1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:gravity="center"
+                android:inputType="number"
+                android:digits="1234567890."
+                android:imeOptions="actionDone"
+                android:ems="15"
+                android:paddingTop="15dp"
+                android:paddingBottom="15dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:gravity="center"
+        android:weightSum="1">
+
+        <TextView
+            android:background="@drawable/draw_line_border"
+            android:layout_width="0px"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="DNS2"
+            android:gravity="center"
+            android:paddingTop="15dp"
+            android:paddingBottom="15dp"
+            android:layout_weight="0.4" />
+
+        <LinearLayout
+            android:background="@drawable/draw_line_border"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_weight="0.6">
+
+            <EditText
+                android:id="@+id/editDns2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:gravity="center"
+                android:inputType="number"
+                android:digits="1234567890."
+                android:imeOptions="actionDone"
+                android:ems="15"
+                android:paddingTop="15dp"
+                android:paddingBottom="15dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:gravity="center"
+        android:weightSum="1">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_weight="0.9" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_marginTop="10dp"
+            android:layout_weight="0.1" >
+
+            <Button
+                android:id="@+id/btnIpApply"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Apply"
                 android:gravity="center" />
         </LinearLayout>
     </LinearLayout>

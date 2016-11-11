@@ -23,27 +23,31 @@
 #
 # Definition
 #
-rootca_prefix    = "ca"
-inter_prefix     = "intermediate"
-leaf_prefix      = "leaf"
+rootca_prefix     = "ca"
+inter_prefix      = "intermediate"
+leaf_prefix       = "leaf"
 
-cert_chain_file  = "dc-certificate-chain"
+cert_chain_file   = "dc-certificate-chain"
 
-rootca_cnf_file  = rootca_prefix + ".cnf"
-rootca_priv_file = rootca_prefix + ".key"
-rootca_cert_file = rootca_prefix + ".self-signed.pem"
+rootca_cnf_file   = rootca_prefix + ".cnf"
+rootca_priv_file  = rootca_prefix + ".key"
+rootca_cert_file  = rootca_prefix + ".self-signed.pem"
 
-inter_cnf_file   = inter_prefix + ".cnf"
-inter_csr_file   = inter_prefix + ".csr"
-inter_priv_file  = inter_prefix + ".key"
-inter_cert_file  = inter_prefix + ".signed.pem"
+inter_cnf_file    = inter_prefix + ".cnf"
+inter_csr_file    = inter_prefix + ".csr"
+inter_priv_file   = inter_prefix + ".key"
+inter_cert_file   = inter_prefix + ".signed.pem"
 
-leaf_cnf_file    = leaf_prefix + ".cnf"
-leaf_csr_file    = leaf_prefix + ".csr"
-leaf_priv_file   = leaf_prefix + ".key"
-leaf_cert_file   = leaf_prefix + ".signed.pem"
+leaf_cnf_file     = leaf_prefix + ".cnf"
+leaf_csr_file     = leaf_prefix + ".csr"
+leaf_priv_file    = leaf_prefix + ".key"
+leaf_cert_file    = leaf_prefix + ".signed.pem"
 
-bit_of_key       = 2048
+bit_of_key        = 2048
+
+product_info_file = "/mnt/mmc/product_info.txt"
+product_date      = "2016-11-01 00:00:00"
+expire_date       = 3650
 
 rootca_cnf = "\
 [ req ]
@@ -109,16 +113,36 @@ CN = Entity and dnQualifier
 
 
 #
+# Product Information
+#
+product_name = ''
+serial_product = ''
+
+if File.file?(product_info_file)
+	File.open( product_info_file ).each do |line|
+		product_info = line.split(/=*/);
+
+		case product_info[0]
+		when "PRODUCT_NAME"
+			product_name = "." + product_info[1].chomp
+		when "SERIAL_NUMBER"
+			serial_product = "." + product_info[1].chomp
+		end
+	end
+end
+
+
+#
 # Make Serial Number
 #
 if File.file?("/sys/devices/platform/cpu/uuid")
-	serial_number = `cat /sys/devices/platform/cpu/uuid`.chomp
-	serial_number = serial_number.gsub( ':', '' )
-	serial_number = '0x' + serial_number
+	serial_cert = `cat /sys/devices/platform/cpu/uuid`.chomp
+	serial_cert = serial_cert.gsub( ':', '' )
+	serial_cert = '0x' + serial_cert[0..15].upcase
 else
 	require 'securerandom'
-	serial_number = SecureRandom.hex(8)
-	serial_number = '0x' + serial_number
+	serial_cert = SecureRandom.hex(8)
+	serial_cert = '0x' + serial_cert
 end	
 
 
@@ -152,11 +176,11 @@ if !File.file?(rootca_priv_file) || !File.file?(rootca_cert_file)
 	`openssl genrsa -out "#{rootca_priv_file}" "#{bit_of_key}"`
 	rootca_dnq = `openssl rsa -outform PEM -pubout -in "#{rootca_priv_file}" | openssl base64 -d | dd bs=1 skip=24 2>/dev/null | openssl sha1 -binary | openssl base64`.chomp
 	rootca_dnq = rootca_dnq.gsub( '/', '\/' )
-	rootca_subject = '/O=CA.SAMSUNG.COM/OU=CA.SAMSUNG.COM/CN=.SERVERS.PRODUCTS.CA.SAMSUNG.COM/dnQualifier=' + rootca_dnq
+	rootca_subject = '/O=CA.SAMSUNG.COM/OU=CA.SAMSUNG.COM/CN=.PRODUCT.CA.SAMSUNG.COM/dnQualifier=' + rootca_dnq
 	
-	`date "2016-10-01 00:00:00";hwclock -w`
+	`date "#{product_date}";hwclock -w`
 	cur_date = `date +"%Y%m%d"`.chomp
-	`openssl req -new -x509 -sha256 -config "#{rootca_cnf_file}" -days 3652 -set_serial "#{cur_date}" -subj "#{rootca_subject}" -key "#{rootca_priv_file}" -outform PEM -out "#{rootca_cert_file}"`
+	`openssl req -new -x509 -sha256 -config "#{rootca_cnf_file}" -days "#{expire_date}" -set_serial "#{cur_date}" -subj "#{rootca_subject}" -key "#{rootca_priv_file}" -outform PEM -out "#{rootca_cert_file}"`
 end
 
 # Make Intermediate Certificate
@@ -170,12 +194,12 @@ if !File.file?(inter_priv_file) || !File.file?(inter_cert_file) || !File.file?(i
 	`openssl genrsa -out "#{inter_priv_file}" "#{bit_of_key}"`
 	inter_dnq = `openssl rsa -outform PEM -pubout -in "#{inter_priv_file}" | openssl base64 -d | dd bs=1 skip=24 2>/dev/null | openssl sha1 -binary | openssl base64`.chomp
 	inter_dnq = inter_dnq.gsub( '/', '\/' )
-	inter_subject = "/O=CA.SAMSUNG.COM/OU=CA.SAMSUNG.COM/CN=.DISPLAY.SERVERS.PRODUCTS.CA.SAMSUNG.COM/dnQualifier=" + inter_dnq
-	`openssl req -new -config "#{inter_cnf_file}" -days 3652 -subj "#{inter_subject}" -key "#{inter_priv_file}" -out "#{inter_csr_file}"`
+	inter_subject = "/O=CA.SAMSUNG.COM/OU=CA.SAMSUNG.COM/CN=.LED.PRODUCT.CA.SAMSUNG.COM/dnQualifier=" + inter_dnq
+	`openssl req -new -config "#{inter_cnf_file}" -days "#{expire_date}" -subj "#{inter_subject}" -key "#{inter_priv_file}" -out "#{inter_csr_file}"`
 	
-	`date "2016-10-01 00:00:00";hwclock -w`
+	`date "#{product_date}";hwclock -w`
 	cur_date = `date +"%Y%m%d"`.chomp
-	`openssl x509 -req -sha256 -days 3652 -CA "#{rootca_cert_file}" -CAkey "#{rootca_priv_file}" -set_serial "#{cur_date}" -in "#{inter_csr_file}" -extfile "#{inter_cnf_file}" -extensions v3_ca -out "#{inter_cert_file}"`
+	`openssl x509 -req -sha256 -days "#{expire_date}" -CA "#{rootca_cert_file}" -CAkey "#{rootca_priv_file}" -set_serial "#{cur_date}" -in "#{inter_csr_file}" -extfile "#{inter_cnf_file}" -extensions v3_ca -out "#{inter_cert_file}"`
 end
 
 # Make Leaf Certificate
@@ -201,11 +225,11 @@ if !File.file?(leaf_priv_file) || !File.file?(leaf_cert_file) || !File.file?(lea
 	`openssl genrsa -out "#{leaf_priv_file}" "#{bit_of_key}"`
 	leaf_dnq = `openssl rsa -outform PEM -pubout -in "#{leaf_priv_file}" | openssl base64 -d | dd bs=1 skip=24 2>/dev/null | openssl sha1 -binary | openssl base64`.chomp
 	leaf_dnq = leaf_dnq.gsub( '/', '\/' )
-	leaf_subject = "/O=CA.SAMSUNG.COM/OU=CA.SAMSUNG.COM/CN=PR SPB.DISPLAY.SERVERS.PRODUCTS.CA.SAMSUNG.COM/dnQualifier=" + leaf_dnq
-	`openssl req -new -config "#{leaf_cnf_file}" -days 3652 -subj "#{leaf_subject}" -key "#{leaf_priv_file}" -outform PEM -out "#{leaf_csr_file}"`
+	leaf_subject = "/O=CA.SAMSUNG.COM/OU=CA.SAMSUNG.COM/CN=PR SPB" + serial_product + product_name + ".LED.PRODUCT.CA.SAMSUNG.COM/dnQualifier=" + leaf_dnq
+	`openssl req -new -config "#{leaf_cnf_file}" -days "#{expire_date}" -subj "#{leaf_subject}" -key "#{leaf_priv_file}" -outform PEM -out "#{leaf_csr_file}"`
 	
-	`date "2016-10-01 00:00:00";hwclock -w`
-	`openssl x509 -req -sha256 -days 3652 -CA "#{inter_cert_file}" -CAkey "#{inter_priv_file}" -set_serial "#{serial_number}" -in "#{leaf_csr_file}" -extfile "#{leaf_cnf_file}" -extensions v3_ca -out "#{leaf_cert_file}"`
+	`date "#{product_date}";hwclock -w`
+	`openssl x509 -req -sha256 -days "#{expire_date}" -CA "#{inter_cert_file}" -CAkey "#{inter_priv_file}" -set_serial "#{serial_cert}" -in "#{leaf_csr_file}" -extfile "#{leaf_cnf_file}" -extensions v3_ca -out "#{leaf_cert_file}"`
 end
 
 
@@ -219,7 +243,7 @@ puts "-                                                          -\n"
 puts "------------------------------------------------------------\n"
 
 # Force Time Setting
-`date "2016-10-01 00:00:00";hwclock -w`
+`date "#{product_date}";hwclock -w`
 
 # Reomve Certificate Chain
 if File.file?(cert_chain_file)

@@ -22,15 +22,20 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/un.h>
 #include <linux/reboot.h>
+#include <sys/ioctl.h>
+#include <errno.h>
+#include <netinet/in.h>
+#include <net/if.h>
 
 #include <CNX_BaseClass.h>
 #include <CNX_GpioControl.h>
 
-#include <NX_TMSServer.h>
+#include <NX_IPCServer.h>
 #include <NX_SecureLinkServer.h>
 #include <NX_Pwm.h>
 
@@ -176,7 +181,14 @@ public:
 	//	Implement Pure Virtual Function
 	virtual void ThreadProc()
 	{
-		const char *pSockName = "cinema.network";
+		const char *pSockName	= "cinema.network";
+		
+		const char *pReqConfig	= "config";
+		const char *pReqLink	= "link";
+
+		const char *pResult[2] = {
+			"false", "true",
+		};
 
 		int32_t sock, len, clnSock;
 		struct sockaddr_un addr;
@@ -214,14 +226,50 @@ public:
 			memset( readBuf, 0x00, sizeof(readBuf) );
 			read( clnSock, readBuf, sizeof(readBuf) );
 
-			FILE *pFile = fopen("/system/bin/nap_network", "w");
-			fprintf(pFile, "%s\n", readBuf );
-			fclose(pFile);
-			sync();
-		
-			system("/system/bin/nap_network.sh restart");
+			if( !strncmp( readBuf, pReqConfig, strlen(pReqConfig)) )
+			{
+				FILE *pFile = fopen("/system/bin/nap_network", "w");
+				fprintf(pFile, "%s\n", readBuf + strlen(pReqConfig));
+				fclose(pFile);
+				sync();
+			
+				system("/system/bin/nap_network.sh restart");
+			}
+
+			if( !strncmp( readBuf, pReqLink, strlen(pReqLink)) ) {
+				if( 0 < CheckEthLink("eth0") )
+				{
+					write( clnSock, pResult[1], strlen(pResult[1]) );
+				}
+				else
+				{
+					write( clnSock, pResult[0], strlen(pResult[0]) );
+				}
+			}
+
 			close(clnSock);
 		}
+	}
+
+private:
+	int32_t CheckEthLink( const char *pIfName )
+	{
+		int32_t sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
+		if( 0 > sock ) {
+			printf("Fail, socket().\n");
+			return -1;
+		}
+
+		struct ifreq if_req;
+		(void)strncpy( if_req.ifr_name, pIfName, sizeof(if_req.ifr_name) );
+		int32_t ret = ioctl( sock, SIOCGIFFLAGS, &if_req );
+		close( sock );
+		if( 0 > ret ) {
+			printf("Fail, ioctl().\n");
+			return -1;
+		}
+
+		return (if_req.ifr_flags & IFF_UP) && (if_req.ifr_flags & IFF_RUNNING);
 	}
 
 private:
@@ -253,7 +301,7 @@ static void signal_handler( int32_t signal )
 	if( NULL != gstNetwork ) delete gstNetwork;
 
 	NX_SLinkServerStop();
-	NX_TMSServerStop();
+	NX_IPCServerStop();
 
 	exit(EXIT_FAILURE);
 }
@@ -301,20 +349,8 @@ static int32_t GetBatteryStatus( void )
 }
 
 //------------------------------------------------------------------------------
-static int32_t SecurelinkeEventCallback( void *pParam, int32_t eventCode, void *pEvtData, int32_t dataSize )
+static int32_t SendRemote( const char *pSockName, const char *pMsg )
 {
-	(void*)pParam;
-	(void*)pEvtData;
-	NxDbgMsg(NX_DBG_VBS, "Receive Event Message (0x%08x, %d)\n", eventCode, dataSize);
-
-	return 0;
-}
-
-//------------------------------------------------------------------------------
-static int32_t SendRemote( const char *pMsg )
-{
-	const char *pSockName = "cinema.event";
-
 	int32_t sock, len;
 	struct sockaddr_un addr;
 
@@ -345,7 +381,22 @@ static int32_t SendRemote( const char *pMsg )
 	}
 
 	close( sock );
-	return 0;  
+	return 0;
+}
+
+//------------------------------------------------------------------------------
+static int32_t SecurelinkeEventCallback( void * /*pParam*/, int32_t eventCode, void * /*pEvtData*/, int32_t /*dataSize*/ )
+{
+	NxDbgMsg(NX_DBG_VBS, "Receive Event Message ( 0x%08x )\n", eventCode);
+
+	const char *pResult[4] = { "BootDone", "Alive", "Marriage", "Divorce" };
+	
+	if( eventCode == 0x00000001 ) SendRemote( "cinema.secure", pResult[0] );	// CMD_BOOT_DONE
+	if( eventCode == 0x00000002 ) SendRemote( "cinema.secure", pResult[1] );	// CMD_ALIVE
+	if( eventCode == 0x00000101 ) SendRemote( "cinema.secure", pResult[2] );	// CMD_MARRIAGE
+	if( eventCode == 0x00000102 ) SendRemote( "cinema.secure", pResult[3] );	// CMD_DIVORCE
+
+	return 0;
 }
 
 //------------------------------------------------------------------------------
@@ -357,7 +408,7 @@ static int32_t TamperCheckerCallback( void * /*pPrivate*/, uint32_t iTamperIndex
 	{
 		char msg[1024];
 		sprintf( msg, "Error %s", pTamperIndex[iTamperIndex] );
-		SendRemote( msg );
+		SendRemote( "cinema.tamper", msg );
 	}
 
 	return 0;
@@ -369,7 +420,7 @@ int32_t main( void )
 	register_signal();
 
 	//	Start TMS Server
-	if( 0 != NX_TMSServerStart() )
+	if( 0 != NX_IPCServerStart() )
 	{
 		NxErrMsg("TMS service demon start failed!!!\n");
 		exit(-1);
@@ -404,7 +455,7 @@ int32_t main( void )
 				NxDbgMsg( NX_DBG_INFO, "Power Failure!!\n");
 				
 				NX_SLinkServerStop();
-				NX_TMSServerStop();
+				NX_IPCServerStop();
 
 				NX_SapPowerOn( 0 );
 				android_reboot( ANDROID_RB_POWEROFF, 0, NULL );
@@ -423,7 +474,7 @@ int32_t main( void )
 	}
 
 	NX_SLinkServerStop();
-	NX_TMSServerStop();
+	NX_IPCServerStop();
 
 	return 0;
 }

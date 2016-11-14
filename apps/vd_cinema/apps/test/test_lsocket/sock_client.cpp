@@ -28,7 +28,7 @@
 #include "SockUtils.h"
 
 #define  BUFF_SIZE   1024
-#define  FILE_SERVER "/data/local/tmp/tms_server"
+#define  FILE_SERVER "/data/local/tmp/ipc_server"
 
 //------------------------------------------------------------------------------
 int main( int /*argc*/, char **argv )

@@ -5,15 +5,15 @@ if [ $? -ne 0 ]; then
     cp -av ./lib/libnxcinema.so ./apps/CinemaSolution/CinemaControlPanel/src/main/jni/lib/libnxcinema.so
 fi
 
-cmp -s ./src/include/NX_TMSClient.h ./apps/CinemaSolution/CinemaControlPanel/src/main/jni/include/NX_TMSClient.h
+cmp -s ./src/include/NX_IPCClient.h ./apps/CinemaSolution/CinemaControlPanel/src/main/jni/include/NX_IPCClient.h
 if [ $? -ne 0 ]; then
-    echo ">>> Update NX_TMSClient.h"
-    cp -av ./src/include/NX_TMSClient.h ./apps/CinemaSolution/CinemaControlPanel/src/main/jni/include/NX_TMSClient.h
+    echo ">>> Update NX_IPCClient.h"
+    cp -av ./src/include/NX_IPCClient.h ./apps/CinemaSolution/CinemaControlPanel/src/main/jni/include/NX_IPCClient.h
 fi
 
-cmp -s ./src/include/NX_TMSCommand.h ./apps/CinemaSolution/CinemaControlPanel/src/main/jni/include/NX_TMSCommand.h
+cmp -s ./src/include/NX_IPCCommand.h ./apps/CinemaSolution/CinemaControlPanel/src/main/jni/include/NX_IPCCommand.h
 if [ $? -ne 0 ]; then
-    echo ">>> Update NX_TMSCommand.h"
-    cp -av ./src/include/NX_TMSCommand.h ./apps/CinemaSolution/CinemaControlPanel/src/main/jni/include/NX_TMSCommand.h
+    echo ">>> Update NX_IPCCommand.h"
+    cp -av ./src/include/NX_IPCCommand.h ./apps/CinemaSolution/CinemaControlPanel/src/main/jni/include/NX_IPCCommand.h
 fi
 

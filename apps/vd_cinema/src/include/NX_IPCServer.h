@@ -11,19 +11,21 @@
 //	Module		:
 //	File		:
 //	Description	:
-//	Author		:
+//	Author		: 
 //	Export		:
 //	History		:
 //
 //------------------------------------------------------------------------------
 
-#ifndef __NX_TMSSERVER_H__
-#define __NX_TMSSERVER_H__
+#ifndef __NX_IPCSERVER_H__
+#define __NX_IPCSERVER_H__
 
 #include <stdint.h>
 
-int32_t NX_TMSServerStart( int32_t iPort );
-void	NX_TMSServerStop();
-void	NX_TMSRegisterCallback( int32_t (*callback)( void *, int32_t , void *, int32_t ), void *pParam );
+#define	IPC_SERVER_FILE		"/data/local/tmp/ipc_server"
+#define	MAX_PAYLOAD_SIZE	(128*1024)
 
-#endif	// __NX_TMSSERVER_H__
+int32_t NX_IPCServerStart();
+void	NX_IPCServerStop();
+
+#endif	// __NX_IPCSERVER_H__

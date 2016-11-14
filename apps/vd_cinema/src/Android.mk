@@ -7,6 +7,8 @@ LOCAL_MODULE_TAGS := optional
 # Add TMS Server
 LOCAL_SRC_FILES += \
 	tms/tms_protocol.cpp \
+	tms/NX_IPCClient.cpp \
+	tms/NX_IPCServer.cpp \
 	tms/NX_TMSClient.cpp \
 	tms/NX_TMSServer.cpp
 

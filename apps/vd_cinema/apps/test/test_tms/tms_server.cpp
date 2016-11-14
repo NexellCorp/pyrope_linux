@@ -31,7 +31,7 @@
 #include <tms_protocol.h>
 #include <NX_Utils.h>
 
-#define	TMS_SERVER_FILE "/data/local/tmp/tms_server"
+#define	TMS_SERVER_FILE "/data/local/tmp/ipc_server"
 #define	MAX_PAYLOAD_SIZE	4096
 
 //------------------------------------------------------------------------------

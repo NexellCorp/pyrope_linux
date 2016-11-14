@@ -21,9 +21,9 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#include <NX_TMSServer.h>
-#include <NX_TMSClient.h>
-#include <NX_TMSCommand.h>
+#include <NX_IPCServer.h>
+#include <NX_IPCClient.h>
+#include <NX_IPCCommand.h>
 
 //------------------------------------------------------------------------------
 #define TCON_ADDRESS_FROM		0x36

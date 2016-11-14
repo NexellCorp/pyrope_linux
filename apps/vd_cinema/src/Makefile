@@ -29,6 +29,8 @@ CPPOBJS	:=
 
 CPPOBJS +=	\
 	tms/tms_protocol.o \
+	tms/NX_IPCClient.o \
+	tms/NX_IPCServer.o \
 	tms/NX_TMSClient.o \
 	tms/NX_TMSServer.o
 

@@ -17,13 +17,14 @@
 //
 //------------------------------------------------------------------------------
 
-#ifndef __NX_TMSSERVER_H__
-#define __NX_TMSSERVER_H__
+#ifndef __NX_IPCCLIENT_H__
+#define __NX_IPCCLIENT_H__
 
-#include <stdint.h>
+#include <NX_IPCCommand.h>
 
-int32_t NX_TMSServerStart( int32_t iPort );
-void	NX_TMSServerStop();
-void	NX_TMSRegisterCallback( int32_t (*callback)( void *, int32_t , void *, int32_t ), void *pParam );
+int32_t NX_TCONCommand( int32_t id, int32_t cmd, uint8_t *pBuf, int32_t *size );
+int32_t NX_PFPGACommand( int32_t cmd, uint8_t *pBuf, int32_t *size );
+int32_t NX_BATCommand( int32_t cmd, uint8_t *pBuf, int32_t *size );
+int32_t NX_IMBCommand( int32_t cmd, uint8_t *pBuf, int32_t *size );
 
-#endif	// __NX_TMSSERVER_H__
+#endif	// __NX_IPCCLIENT_H__

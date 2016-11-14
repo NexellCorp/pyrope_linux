@@ -17,8 +17,8 @@
 //
 //------------------------------------------------------------------------------
 
-#ifndef __NX_TMSCOMMAND_H__
-#define __NX_TMSCOMMAND_H__
+#ifndef __NX_IPCCOMMAND_H__
+#define __NX_IPCCOMMAND_H__
 
 //
 //	TCON Command
@@ -64,4 +64,4 @@
 #define IMB_CMD_STATUS				0x0301	//	IMB Status
 #define IMB_CMD_VERSION				0x0302	//	IMB Version
 
-#endif	// __NX_TMSCOMMAND_H__
+#endif	// __NX_IPCCOMMAND_H__

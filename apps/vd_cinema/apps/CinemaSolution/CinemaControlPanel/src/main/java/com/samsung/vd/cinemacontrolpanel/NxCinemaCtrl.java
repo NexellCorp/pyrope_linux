@@ -3,6 +3,7 @@ package com.samsung.vd.cinemacontrolpanel;
 import android.util.Log;
 
 import java.nio.ByteBuffer;
+import java.util.Locale;
 import java.util.Random;
 
 /**
@@ -73,6 +74,12 @@ public class NxCinemaCtrl {
     public static final int FORMAT_INT32    = 4;
     public static final int FORMAT_INT64    = 8;
 
+    public static final int FORMAT_INT16_MSB= 0;
+    public static final int FORMAT_INT16_LSB= 2;
+
+    public static final int FORMAT_INT32_MSB= 0;
+    public static final int FORMAT_INT43_LSB= 4;
+
     public byte[] IntToByteArray( int value, int format ) {
         byte[] result = new byte[format];
 
@@ -94,6 +101,36 @@ public class NxCinemaCtrl {
         return result;
     }
 
+    public int ByteArrayToInt16( byte[] value, int format ) {
+        if( value.length != FORMAT_INT16 * 2 ) {
+            Log.i(NX_DTAG, "Invalid ByteArray Size.");
+            return -1;
+        }
+
+        int result = 0;
+        for( int i = 0; i < FORMAT_INT16; i++ ) {
+            int offset = (FORMAT_INT16*2 - format - 1 - i) * 8;
+            result += (value[i + format] & 0x000000FF ) << offset;
+        }
+
+        return result;
+    }
+
+    public int ByteArrayToInt32( byte[] value, int format ) {
+        if( value.length != FORMAT_INT32 * 2 ) {
+            Log.i(NX_DTAG, "Invalid ByteArray Size.");
+            return -1;
+        }
+
+        int result = 0;
+        for( int i = 0; i < FORMAT_INT32; i++ ) {
+            int offset = (FORMAT_INT32*2 - format - 1 - i) * 8;
+            result += (value[i + format] & 0x000000FF ) << offset;
+        }
+
+        return result;
+    }
+
     public byte[] AppendByteArray( byte[] inData1, byte[] inData2 ) {
         byte[] result = new byte[ inData1.length + inData2.length ];
 
@@ -103,23 +140,24 @@ public class NxCinemaCtrl {
         return result;
     }
 
-    public String byteArrayToHex( byte[] inData ) {
+    public void PrintByteArrayToHex( byte[] inData ) {
         StringBuilder sb = new StringBuilder();
 
-        for( final byte b: inData ) {
-            sb.append(String.format("%02x ", b&0xff));
+        sb.append( String.format(Locale.US, "data( %d ) : ", inData.length) );
+        for( final byte data: inData ) {
+            sb.append( String.format("%02x ", data & 0xFF) );
         }
 
-        return sb.toString();
+        Log.i(NX_DTAG, sb.toString() );
     }
 
-//    private int GetRandomValue( int startNum, int endNum ) {
-//        if( startNum >= endNum ) {
-//            return -1;
-//        }
-//
-//        return new Random().nextInt( endNum - startNum ) + startNum;
-//    }
+    public int GetRandomValue( int startNum, int endNum ) {
+        if( startNum >= endNum ) {
+            return -1;
+        }
+
+        return new Random().nextInt( endNum - startNum ) + startNum;
+    }
 
     static {
         Log.i( NX_DTAG, "Load JNI Library.");

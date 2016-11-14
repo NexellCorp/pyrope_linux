@@ -27,6 +27,10 @@ public class CinemaInfo extends Application {
     private String mUserGroup = "";
     private String mUserId = "";
 
+    private String mSecureMarriage  = "false";
+    private String mSecureBootDone  = "false";
+    private String mSecureAlive     = "false";
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -35,6 +39,9 @@ public class CinemaInfo extends Application {
         mLog = new CinemaLog( getApplicationContext() );
     }
 
+    //
+    //  Account Information
+    //
     public String GetUserGroup() {
         return mUserGroup;
     }
@@ -51,6 +58,36 @@ public class CinemaInfo extends Application {
         mUserId = userId;
     }
 
+    //
+    //  SecureLink Information
+    //
+    public String GetSecureMarriage() {
+        return mSecureMarriage;
+    }
+
+    public void SetSecureMarriage( String secureMarriage ) {
+        mSecureMarriage = secureMarriage;
+    }
+
+    public String GetSecureBootDone() {
+        return mSecureBootDone;
+    }
+
+    public void SetSecureBootDone( String secureBootDone ) {
+        mSecureBootDone = secureBootDone;
+    }
+
+    public String GetSecureAlive() {
+        return mSecureAlive;
+    }
+
+    public void SetSecureAlive( String secureAlive ) {
+        mSecureAlive = secureAlive;
+    }
+
+    //
+    //  System Log
+    //
     public void InsertLog( String msg ) {
         String strAccount;
         if( mUserGroup.equals("") || mUserGroup.equals("root") ) {
@@ -80,5 +117,4 @@ public class CinemaInfo extends Application {
     public void Remove( String key ) {
         mPrefConfig.Remove(key);
     }
-
 }

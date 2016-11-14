@@ -23,7 +23,8 @@ import java.io.InputStreamReader;
 public class CinemaService extends Service {
     private static final String VD_DTAG = "CinemaService";
     private final IBinder mBinder = new LocalBinder();
-    private final EventReceiver  mEventReceiver = new EventReceiver();
+    private final TamperEventReceiver mTamperEventReceiver = new TamperEventReceiver();
+    private final SecureEventReceiver mSecureEventReceiver = new SecureEventReceiver();
 
     public class LocalBinder extends Binder {
         CinemaService GetService() {
@@ -34,14 +35,16 @@ public class CinemaService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         RefreshScreenSaver();
-        mEventReceiver.Start();
+        mTamperEventReceiver.Start();
+        mSecureEventReceiver.Start();
 
         return mBinder;
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
-        mEventReceiver.Stop();
+        mTamperEventReceiver.Stop();
+        mSecureEventReceiver.Stop();
 
         return super.onUnbind(intent);
     }
@@ -131,13 +134,13 @@ public class CinemaService extends Service {
     }
 
     //
-    //  For Event Receiver
+    //  For Tamper Event Receiver
     //
-    private class EventReceiver extends Thread {
-        private String SOCKET_NAME = "cinema.event";
+    private class TamperEventReceiver extends Thread {
+        private String SOCKET_NAME = "cinema.tamper";
         private boolean mRun = false;
 
-        public EventReceiver() {
+        public TamperEventReceiver() {
         }
 
         @Override
@@ -222,4 +225,94 @@ public class CinemaService extends Service {
             Log.i( VD_DTAG, ">>>>> " + new LocalSocketAddress(SOCKET_NAME).getName());
         }
     }
+
+    //
+    //  For Secure Event Receiver
+    //
+    private class SecureEventReceiver extends Thread {
+        private String SOCKET_NAME = "cinema.secure";
+        private boolean mRun = false;
+
+        public SecureEventReceiver() {
+        }
+
+        @Override
+        public void run() {
+            try {
+                LocalServerSocket lServer = new LocalServerSocket(SOCKET_NAME);
+
+                while( mRun )
+                {
+                    LocalSocket lSocket = lServer.accept();
+                    if( null != lSocket ) {
+                        String strEvent = Read(lSocket.getInputStream());
+                        String strAlive = ((CinemaInfo)getApplicationContext()).GetSecureAlive();
+
+                        if( strEvent.equals("Alive") && strAlive.equals("false") ) {
+                            ((CinemaInfo)getApplicationContext()).SetSecureAlive("true");
+                            Log.i(VD_DTAG, "ALIVE!");
+                        }
+
+                        lSocket.close();
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        public synchronized void Start() {
+            if( !mRun ) {
+                mRun = true;
+                start();
+            }
+        }
+
+        public synchronized void Stop() {
+            if( mRun ) {
+                mRun = false;
+                try {
+                    Write("");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        private String Read(InputStream inStream) {
+            InputStreamReader inStreamReader = new InputStreamReader(inStream);
+            BufferedReader bufferedReader = new BufferedReader(inStreamReader);
+            StringBuilder strBuilder = new StringBuilder();
+
+            String inLine;
+            try {
+                while (((inLine = bufferedReader.readLine()) != null)) {
+                    strBuilder.append(inLine);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            String strResult = strBuilder.toString();
+
+            try {
+                bufferedReader.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            return strResult;
+        }
+
+        private void Write(String message) throws IOException {
+            LocalSocket sender = new LocalSocket();
+            sender.connect(new LocalSocketAddress(SOCKET_NAME));
+            sender.getOutputStream().write(message.getBytes());
+            sender.getOutputStream().close();
+            sender.close();
+
+            Log.i( VD_DTAG, ">>>>> " + new LocalSocketAddress(SOCKET_NAME).getName());
+        }
+    }
+
 }

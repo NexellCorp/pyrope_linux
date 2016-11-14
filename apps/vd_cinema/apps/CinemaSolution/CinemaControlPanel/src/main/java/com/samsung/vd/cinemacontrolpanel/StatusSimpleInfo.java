@@ -4,24 +4,24 @@ package com.samsung.vd.cinemacontrolpanel;
  * Created by doriya on 10/31/16.
  */
 public class StatusSimpleInfo {
-    private String   mId;
-    private int      mStatus = -1;      // -1: unknown, 0: fail, 1: pass
+    private String  mTitle;
+    private int     mStatus = -1;      // -1: unknown, 0: fail, 1: pass
 
-    public StatusSimpleInfo( String id ) {
-        mId = id;
+    public StatusSimpleInfo( String title ) {
+        mTitle = title;
     }
 
-    public StatusSimpleInfo( String id, int status ) {
-        mId = id;
+    public StatusSimpleInfo( String title, int status ) {
+        mTitle  = title;
         mStatus = status;
     }
 
-    public String GetId() {
-        return mId;
+    public String GetTitle() {
+        return mTitle;
     }
 
-    public void SetId( String id ) {
-        mId = id;
+    public void SetTitle( String title ) {
+        mTitle = title;
     }
 
     public int GetStatus() {

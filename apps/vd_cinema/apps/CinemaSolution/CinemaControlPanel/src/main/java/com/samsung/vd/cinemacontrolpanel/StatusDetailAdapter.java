@@ -14,14 +14,16 @@ import java.util.ArrayList;
 /**
  * Created by doriya on 8/19/16.
  */
-public class StatusDetailAdapter extends ArrayAdapter<String> {
-    private ArrayList<String> mData;
+public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
+    private ArrayList<StatusDetailInfo> mData;
     private int mResource;
+    private int mType;
 
-    public StatusDetailAdapter (Context context, int resource) {
+    public StatusDetailAdapter (Context context, int resource, int type) {
         super(context, resource);
         mData = new ArrayList<>();
         mResource = resource;
+        mType = type;
     }
 
     @Override
@@ -30,34 +32,34 @@ public class StatusDetailAdapter extends ArrayAdapter<String> {
     }
 
     @Override
-    public String getItem(int position) {
+    public StatusDetailInfo getItem(int position) {
         return mData.get(position);
     }
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         final Context context = parent.getContext();
+        final int pos = position;
 
-        TextView mText;
+        TextView mTitle;
         RadioButton mRadio1;
         RadioButton mRadio2;
         TextView mDescribe;
         Button mButton;
-
-        Holder mHolder = null;
+        Holder mHolder;
 
         if( convertView == null ) {
             LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             convertView = inflater.inflate(mResource, parent, false);
 
-            mText = (TextView) convertView.findViewById(R.id.listview_row_status_detail_text);
+            mTitle = (TextView) convertView.findViewById(R.id.listview_row_status_detail_title);
             mRadio1 = (RadioButton) convertView.findViewById(R.id.listview_row_status_detail_radio1);
             mRadio2 = (RadioButton) convertView.findViewById(R.id.listview_row_status_detail_radio2);
-            mDescribe = (TextView)convertView.findViewById(R.id.listview_row_status_detail_describe);
+            mDescribe = (TextView)convertView.findViewById(R.id.listview_row_status_detail_text);
             mButton = (Button)convertView.findViewById(R.id.listview_row_status_detail_button);
 
             mHolder = new Holder();
-            mHolder.mText = mText;
+            mHolder.mTitle = mTitle;
             mHolder.mRadio1 = mRadio1;
             mHolder.mRadio2 = mRadio2;
             mHolder.mDescribe = mDescribe;
@@ -68,19 +70,29 @@ public class StatusDetailAdapter extends ArrayAdapter<String> {
         else {
             mHolder = (Holder)convertView.getTag();
 
-            mText = mHolder.mText;
+            mTitle = mHolder.mTitle;
             mRadio1 = mHolder.mRadio1;
             mRadio2 = mHolder.mRadio2;
             mDescribe = mHolder.mDescribe;
             mButton = mHolder.mButton;
         }
 
-        mText.setText( mData.get(position) );
+        mTitle.setText( mData.get(position).GetTitle() );
+        mDescribe.setText( mData.get(position).GetDescription() );
+
+        if( mData.get(position).GetStatus() == 1 ) {
+            mRadio1.setChecked( true );
+            mRadio2.setChecked( false );
+        }
+        else {
+            mRadio1.setChecked( false );
+            mRadio2.setChecked( true );
+        }
 
         mButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                new DialogInfoLed(context).show();
+                new LedPosDialog(context, mType, pos ).show();
             }
         });
 
@@ -88,22 +100,22 @@ public class StatusDetailAdapter extends ArrayAdapter<String> {
     }
 
     @Override
-    public void add(String object) {
+    public void add(StatusDetailInfo object) {
         mData.add(object);
         super.add(object);
     }
 
     @Override
-    public void remove(String object) {
+    public void remove(StatusDetailInfo object) {
         mData.remove(object);
         super.remove(object);
     }
 
     private class Holder {
-        TextView mText;
+        TextView    mTitle;
         RadioButton mRadio1;
         RadioButton mRadio2;
-        TextView mDescribe;
-        Button mButton;
+        TextView    mDescribe;
+        Button      mButton;
     }
 }

@@ -17,14 +17,14 @@
 //
 //------------------------------------------------------------------------------
 
-#ifndef __NX_TMSCLIENT_H__
-#define __NX_TMSCLIENT_H__
+#ifndef __NX_IPCCLIENT_H__
+#define __NX_IPCCLIENT_H__
 
-#include <NX_TMSCommand.h>
+#include <NX_IPCCommand.h>
 
 int32_t NX_TCONCommand( int32_t id, int32_t cmd, uint8_t *pBuf, int32_t *size );
 int32_t NX_PFPGACommand( int32_t cmd, uint8_t *pBuf, int32_t *size );
 int32_t NX_BATCommand( int32_t cmd, uint8_t *pBuf, int32_t *size );
 int32_t NX_IMBCommand( int32_t cmd, uint8_t *pBuf, int32_t *size );
 
-#endif	// __NX_TMSCLIENT_H__
+#endif	// __NX_IPCCLIENT_H__

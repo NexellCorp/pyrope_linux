@@ -7,7 +7,7 @@
     android:weightSum="1">
 
     <TextView
-        android:id="@+id/listview_row_status_detail_text"
+        android:id="@+id/listview_row_status_detail_title"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceMedium"
@@ -46,7 +46,7 @@
     </RadioGroup>
 
     <TextView
-        android:id="@+id/listview_row_status_detail_describe"
+        android:id="@+id/listview_row_status_detail_text"
         android:background="@drawable/draw_line_left_right"
         android:layout_width="0dp"
         android:layout_height="wrap_content"

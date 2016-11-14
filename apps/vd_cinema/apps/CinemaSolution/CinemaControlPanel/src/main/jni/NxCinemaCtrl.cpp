@@ -24,14 +24,14 @@
 
 #include <android/log.h>
 
-#include <NX_TMSClient.h>
+#include <NX_IPCClient.h>
 
 #define NX_DTAG     "libnxcinemacontrol"
 
 //
 //  Debug Tools
 //
-#define ENABLE_HEX_DUMP     1
+#define ENABLE_HEX_DUMP     0
 
 #define NX_DBG_VBS          2   // ANDROID_LOG_VERBOSE
 #define NX_DBG_DEBUG        3   // ANDROID_LOG_DEBUG

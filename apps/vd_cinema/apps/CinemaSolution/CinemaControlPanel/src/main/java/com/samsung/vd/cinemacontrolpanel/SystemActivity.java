@@ -241,88 +241,13 @@ public class SystemActivity extends AppCompatActivity {
             return ;
         }
 
-        String strCidr = GetCidr( strIp, strNetmask );
-        try {
-            LocalSocket sender = new LocalSocket();
-            sender.connect(new LocalSocketAddress("cinema.network"));
-            sender.getOutputStream().write(String.format("%s\n%s\n%s\n%s\n%s\n%s\n", strIp, strNetmask, strGateway, strCidr, strDns1, strDns2).getBytes());
-            sender.getOutputStream().close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        NetworkTools tools = new NetworkTools();
+        tools.SetConfig( strIp, strNetmask, strGateway, strDns1, strDns2 );
 
-        if( Ping( strGateway ) ) ShowMessage( "Valid IP Address.");
+        if( tools.Ping( strGateway ) ) ShowMessage( "Valid IP Address.");
         else ShowMessage("Please Check IP Address. ( Invalid IP Address )");
 
         ((CinemaInfo)getApplicationContext()).InsertLog("Change IP Address.");
-    }
-
-    private String GetCidr( String ip, String mask ) {
-        String[] strIp = ip.split("\\.");
-        String[] strMask = mask.split("\\.");
-        int subnet = 0;
-
-        byte[] byteMask = new byte[4];
-        int[] intCidr = new int[4];
-
-        for(int i = 0; i < 4; i++) {
-            byteMask[i] = (byte)Integer.parseInt(strMask[i]);
-            intCidr[i] = Integer.parseInt(strIp[i]) & Integer.parseInt(strMask[i]);
-        }
-
-        for(int i = 0; i < 4; i++)
-        {
-            int tmp = 0;
-            for( int j = 0; j < 8; j++ ) {
-                tmp = (byteMask[i] >> ( 7 - j) & 0x01);
-                if( 0 == tmp ) break;
-                subnet++;
-            }
-            if( 0 == tmp ) break;
-        }
-
-        return String.format(Locale.US, "%d.%d.%d.%d/%d", intCidr[0], intCidr[1], intCidr[2], intCidr[3], subnet);
-    }
-
-    //
-    //  Network Tools
-    //
-    public boolean Ping(String host) {
-        NetworkChecker checker = new NetworkChecker(host);
-        checker.start();
-        return checker.GetResult();
-    }
-
-    private class NetworkChecker extends Thread {
-        private String mHost;
-        private boolean mResult = false;
-
-        public NetworkChecker( String host ) {
-            mHost = host;
-        }
-
-        @Override
-        public void run() {
-            try {
-                InetAddress inetAddr = InetAddress.getByName(mHost);
-                try {
-                    mResult = inetAddr.isReachable(0);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
-            }
-        }
-
-        public boolean GetResult() {
-            try {
-                join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            return mResult;
-        }
     }
 
     //

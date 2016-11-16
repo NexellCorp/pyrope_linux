@@ -28,6 +28,9 @@
 
 #include "NX_CCmdQueue.h"
 
+#define HDMI_X_RES	1920
+#define HDMI_Y_RES	1080
+
 typedef struct AppDataStruct {
 	MP_HANDLE 		hPlayer;
 	MP_MEDIA_INFO	MediaInfo;
@@ -189,8 +192,8 @@ static void GetVideoPosition( int32_t dspPort, int32_t trackNum, int32_t *x, int
 	}
 	else
 	{
-		scrWidth	= 1920;
-		scrHeight	= 1080;
+		scrWidth	= HDMI_X_RES;
+		scrHeight	= HDMI_Y_RES;
 	}
 
 	xRatio = (double)scrWidth / (double)vidWidth;

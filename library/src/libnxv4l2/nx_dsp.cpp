@@ -131,10 +131,12 @@ DISPLAY_HANDLE NX_DspInit( DISPLAY_INFO *pDspInfo )
 		}
 #if 1
 		result = v4l2_set_preset( hPrivate, nxp_v4l2_hdmi, V4L2_DV_1080P60 );
+#else
+		result = v4l2_set_preset( hPrivate, nxp_v4l2_hdmi, V4L2_DV_720P60 );
+#endif
 		if( result < 0 ) {
 			printf("%s(): v4l2_set_preset() failed!\n", __FUNCTION__);
 		}
-#endif
 	}
 	else if( pDspInfo->port == DISPLAY_PORT_TVOUT )
 #endif	//	DISABLE_PORT_CONFIG

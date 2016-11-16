@@ -18,21 +18,30 @@ LIBRARY	+= -lstdc++ -lpthread -lasound
 ######################################################################
 # Target
 TARGET	:= NxPlayerConsole
+TARGET2 := NxPlayerDualDisplay
 
 COBJS	:= 
 CPPOBJS	:= main.o NX_CSemaphore.o NX_CQueue.o NX_CCmdQueue.o
 
+COBJS2      :=
+CPPOBJS2    := NX_CSemaphore.o NX_CQueue.o NX_CCmdQueue.o main_dualdisplay.o
+
 ######################################################################
 # Build
 OBJS	:= $(COBJS) $(CPPOBJS)
+OBJS2   := $(COBJS2) $(CPPOBJS2)
 
-all: $(TARGET) 
+all: $(TARGET) $(TARGET2)
 
 clean:
-	rm -f $(TARGET) *.o .depend
+	rm -f $(TARGET) $(TARGET2) *.o .depend
 
 $(TARGET): depend $(OBJS)
 	$(CC) $(CPPFLAGS) $(OBJS) -o $(TARGET) $(LIBRARY) -g
+	@echo "done"
+
+$(TARGET2): depend $(OBJS2)
+	$(CC) $(CPPFLAGS) $(OBJS2) -o $(TARGET2) $(LIBRARY) -g
 	@echo "done"
 
 #########################################################################

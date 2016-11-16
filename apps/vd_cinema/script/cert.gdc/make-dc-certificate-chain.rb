@@ -23,29 +23,30 @@
 #
 # Definition
 #
-rootca_prefix    = "ca"
-inter_prefix     = "intermediate"
-leaf_prefix      = "leaf"
+rootca_prefix     = "ca"
+inter_prefix      = "intermediate"
+leaf_prefix       = "leaf"
 
-cert_chain_file  = "dc-certificate-chain"
+cert_chain_file   = "dc-certificate-chain"
 
-rootca_cnf_file  = rootca_prefix + ".cnf"
-rootca_priv_file = rootca_prefix + ".key"
-rootca_cert_file = rootca_prefix + ".self-signed.pem"
+rootca_cnf_file   = rootca_prefix + ".cnf"
+rootca_priv_file  = rootca_prefix + ".key"
+rootca_cert_file  = rootca_prefix + ".self-signed.pem"
 
-inter_cnf_file   = inter_prefix + ".cnf"
-inter_csr_file   = inter_prefix + ".csr"
-inter_priv_file  = inter_prefix + ".key"
-inter_cert_file  = inter_prefix + ".signed.pem"
+inter_cnf_file    = inter_prefix + ".cnf"
+inter_csr_file    = inter_prefix + ".csr"
+inter_priv_file   = inter_prefix + ".key"
+inter_cert_file   = inter_prefix + ".signed.pem"
 
-leaf_cnf_file    = leaf_prefix + ".cnf"
-leaf_csr_file    = leaf_prefix + ".csr"
-leaf_priv_file   = leaf_prefix + ".key"
-leaf_cert_file   = leaf_prefix + ".signed.pem"
+leaf_cnf_file     = leaf_prefix + ".cnf"
+leaf_csr_file     = leaf_prefix + ".csr"
+leaf_priv_file    = leaf_prefix + ".key"
+leaf_cert_file    = leaf_prefix + ".signed.pem"
 
-bit_of_key       = 2048
+bit_of_key        = 2048
 
-product_date     = "2009-01-01 00:00:00"
+product_info_file = "/mnt/mmc/product_info.txt"
+product_date      = "2009-01-01 00:00:00"
 
 rootca_cnf = "\
 [ req ]
@@ -113,8 +114,21 @@ CN = Entity and dnQualifier
 #
 # Product Information
 #
-product_name = '.RAK0116ZZ-F7PG'
-serial_product = '.1R6XH3DHA00001F'
+product_name = ''
+serial_product = ''
+
+if File.file?(product_info_file)
+	File.open( product_info_file ).each do |line|
+		product_info = line.split(/=*/);
+
+		case product_info[0]
+		when "PRODUCT_NAME"
+			product_name = "." + product_info[1].chomp
+		when "SERIAL_NUMBER"
+			serial_product = "." + product_info[1].chomp
+		end
+	end
+end
 
 
 #

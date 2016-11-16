@@ -79,7 +79,7 @@ clean:
 	rm -f $(TARGET) $(OBJS) .depend
 
 install:
-	cp $(TARGET) ../lib
+	cp $(TARGET) ../lib/
 
 distclean: clean
 	rm ../lib/$(TARGET)

@@ -11,7 +11,6 @@ INCLUDE += \
 	-I$(VD_CINEMA_TOP)/src/utils \
 	-I$(VD_CINEMA_TOP)/src/uart
 
-
 LIBRARY	+= -L$(VD_CINEMA_TOP)/lib
 LIBRARY += -lnxcinema_linux
 LIBRARY	+= -lstdc++ -lpthread
@@ -27,15 +26,19 @@ TARGET	:= sap_slink_client
 # Build
 OBJS	:= $(COBJS) $(CPPOBJS)
 
-all: $(TARGET) $(TARGET2)
+all: $(TARGET)
 
 $(TARGET): depend $(OBJS)
 	$(CC) $(CPPFLAGS) $(OBJS) -o $(TARGET) $(LIBRARY) -g
 
 clean:
-	rm -f $(TARGET) $(TARGET2) *.o .depend
+	rm -f $(TARGET) *.o .depend
 
 install:
+	cp -a $(TARGET) ../../bin/
+
+distclean:
+	rm -f $(TARGET) ../../bin/$(TARGET)
 
 ################################################################################
 # Dependency

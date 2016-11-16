@@ -115,17 +115,17 @@ CN = Entity and dnQualifier
 # Product Information
 #
 product_name = ''
-serial_product = ''
+product_serial = ''
 
 if File.file?(product_info_file)
 	File.open( product_info_file ).each do |line|
-		product_info = line.split(/=*/);
+		product_info = line.split(/= */);
 
 		case product_info[0]
 		when "PRODUCT_NAME"
 			product_name = "." + product_info[1].chomp
-		when "SERIAL_NUMBER"
-			serial_product = "." + product_info[1].chomp
+		when "PRODUCT_SERIAL"
+			product_serial = "." + product_info[1].chomp
 		end
 	end
 end
@@ -135,13 +135,13 @@ end
 # Make Serial Number
 #
 if File.file?("/sys/devices/platform/cpu/uuid")
-	serial_cert = `cat /sys/devices/platform/cpu/uuid`.chomp
-	serial_cert = serial_cert.gsub( ':', '' )
-	serial_cert = '0x' + serial_cert[0..15].upcase
+	cert_serial = `cat /sys/devices/platform/cpu/uuid`.chomp
+	cert_serial = cert_serial.gsub( ':', '' )
+	cert_serial = '0x' + cert_serial[0..15].upcase
 else
 	require 'securerandom'
-	serial_cert = SecureRandom.hex(8)
-	serial_cert = '0x' + serial_cert
+	cert_serial = SecureRandom.hex(8)
+	cert_serial = '0x' + cert_serial
 end	
 
 
@@ -178,7 +178,7 @@ if !File.file?(rootca_priv_file) || !File.file?(rootca_cert_file)
 	rootca_subject = '/O=CA.SAMSUNG.CO.KR/OU=CA.SAMSUNG.CO.KR/CN=.SERVERS.PRODUCTS.CA.SAMSUNG.CO.KR/dnQualifier=' + rootca_dnq
 	
 	`date "#{product_date}";hwclock -w`
-	`openssl req -new -x509 -sha256 -config "#{rootca_cnf_file}" -days 3650 -set_serial "#{serial_cert}" -subj "#{rootca_subject}" -key "#{rootca_priv_file}" -outform PEM -out "#{rootca_cert_file}"`
+	`openssl req -new -x509 -sha256 -config "#{rootca_cnf_file}" -days 3650 -set_serial "#{cert_serial}" -subj "#{rootca_subject}" -key "#{rootca_priv_file}" -outform PEM -out "#{rootca_cert_file}"`
 end
 
 # Make Intermediate Certificate
@@ -196,7 +196,7 @@ if !File.file?(inter_priv_file) || !File.file?(inter_cert_file) || !File.file?(i
 	`openssl req -new -config "#{inter_cnf_file}" -days 3649 -subj "#{inter_subject}" -key "#{inter_priv_file}" -out "#{inter_csr_file}"`
 	
 	`date "#{product_date}";hwclock -w`
-	`openssl x509 -req -sha256 -days 3649 -CA "#{rootca_cert_file}" -CAkey "#{rootca_priv_file}" -set_serial "#{serial_cert}" -in "#{inter_csr_file}" -extfile "#{inter_cnf_file}" -extensions v3_ca -out "#{inter_cert_file}"`
+	`openssl x509 -req -sha256 -days 3649 -CA "#{rootca_cert_file}" -CAkey "#{rootca_priv_file}" -set_serial "#{cert_serial}" -in "#{inter_csr_file}" -extfile "#{inter_cnf_file}" -extensions v3_ca -out "#{inter_cert_file}"`
 end
 
 # Make Leaf Certificate
@@ -222,11 +222,11 @@ if !File.file?(leaf_priv_file) || !File.file?(leaf_cert_file) || !File.file?(lea
 	`openssl genrsa -out "#{leaf_priv_file}" "#{bit_of_key}"`
 	leaf_dnq = `openssl rsa -outform PEM -pubout -in "#{leaf_priv_file}" | openssl base64 -d | dd bs=1 skip=24 2>/dev/null | openssl sha1 -binary | openssl base64`.chomp
 	leaf_dnq = leaf_dnq.gsub( '/', '\/' )
-	leaf_subject = "/O=CA.SAMSUNG.CO.KR/OU=CA.SAMSUNG.CO.KR/CN=PR SPB" + serial_product + product_name + ".LED.PRODUCT.CA.SAMSUNG.COM/dnQualifier=" + leaf_dnq
+	leaf_subject = "/O=CA.SAMSUNG.CO.KR/OU=CA.SAMSUNG.CO.KR/CN=PR SPB" + product_serial + product_name + ".LED.PRODUCT.CA.SAMSUNG.COM/dnQualifier=" + leaf_dnq
 	`openssl req -new -config "#{leaf_cnf_file}" -days 3648 -subj "#{leaf_subject}" -key "#{leaf_priv_file}" -outform PEM -out "#{leaf_csr_file}"`
 	
 	`date "#{product_date}";hwclock -w`
-	`openssl x509 -req -sha256 -days 3648 -CA "#{inter_cert_file}" -CAkey "#{inter_priv_file}" -set_serial "#{serial_cert}" -in "#{leaf_csr_file}" -extfile "#{leaf_cnf_file}" -extensions v3_ca -out "#{leaf_cert_file}"`
+	`openssl x509 -req -sha256 -days 3648 -CA "#{inter_cert_file}" -CAkey "#{inter_priv_file}" -set_serial "#{cert_serial}" -in "#{leaf_csr_file}" -extfile "#{leaf_cnf_file}" -extensions v3_ca -out "#{leaf_cert_file}"`
 end
 
 

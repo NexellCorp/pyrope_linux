@@ -9,7 +9,7 @@ INCLUDE += -I../../library/include -I../../library/include/theoraparser
 INCLUDE += -I./ffmpeg/include/
 
 LIBRARY	+= -L../../library/lib -L../../library/lib/ratecontrol
-LIBRARY += -lnxvpu -lnxdsp -lnxvip -lnxv4l2 -lnxvmem -lnxvidrc -lnxdeinterlace -lnxgraphictools
+LIBRARY += -lnxvpu -lnxdsp -lnxvip -lnxv4l2 -lnxvmem -lnxvidrc -lnxdeinterlace -lnxgraphictools -lnxscaler
 #LIBRARY += -lnxvpu -lnxdsp -lnxvip -lnxv4l2 -lnxvmem -lnxvidrc -lhevcdec -lnxdeinterlace -lnxgraphictools
 LIBRARY += -ltheoraparser
 LIBRARY	+= -lstdc++ -lm

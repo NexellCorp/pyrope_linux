@@ -66,8 +66,8 @@ int32_t main( int32_t argc, char *argv[] )
 	int32_t mode = DECODER_MODE;
 	CODEC_APP_DATA appData;
 	memset( &appData, 0, sizeof(CODEC_APP_DATA) );
-	appData.dspWidth = 1024;
-	appData.dspHeight = 600;
+	appData.dspWidth = 1280;
+	appData.dspHeight = 720;
 
     if (argc == 1) {
         print_usage(argv[0]);

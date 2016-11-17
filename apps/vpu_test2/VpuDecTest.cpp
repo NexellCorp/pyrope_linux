@@ -2,6 +2,7 @@
 //#define _DUMP_ES_
 //#define DEINTERLACE_ENABLE
 //#define _THUMBNAIL_TEST_
+#define USE_FSCALER
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,6 +15,8 @@
 #include "MediaExtractor.h"
 #include "CodecInfo.h"
 #include "Util.h"
+
+#include <libnxscaler.h>
 
 #ifdef ANDROID
 #include "NX_AndroidRenderer.h"
@@ -29,8 +32,8 @@
 #endif
 
 //	Display Window Screen Size
-#define	WINDOW_WIDTH			1024
-#define	WINDOW_HEIGHT			600
+#define	WINDOW_WIDTH			1280
+#define	WINDOW_HEIGHT			720
 #define	NUMBER_OF_BUFFER		12
 
 
@@ -98,17 +101,29 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 	//	Linux
 	DISPLAY_HANDLE hDsp;
 	DISPLAY_INFO dspInfo;
-	dspInfo.port = 0;
-	dspInfo.module = 0;
-	dspInfo.width = imgWidth;
-	dspInfo.height = imgHeight;
+	dspInfo.port = DISPLAY_PORT_HDMI;
+	dspInfo.module = DISPLAY_MODULE_MLC1;
+#ifdef USE_FSCALER
+	dspInfo.width = pAppData->dspWidth;
+	dspInfo.height = pAppData->dspHeight;
+#else
+    dspInfo.width = imgWidth;
+    dspInfo.height = imgHeight;
+#endif
 	dspInfo.numPlane = 1;
 	dspInfo.dspSrcRect.left = 0;
 	dspInfo.dspSrcRect.top = 0;
-	dspInfo.dspSrcRect.right = imgWidth;
-	dspInfo.dspSrcRect.bottom = imgHeight;
-	dspInfo.dspDstRect.left = pAppData->dspX;
-	dspInfo.dspDstRect.top = pAppData->dspY;
+#ifdef USE_FSCALER
+	dspInfo.dspSrcRect.right = pAppData->dspWidth;
+	dspInfo.dspSrcRect.bottom = pAppData->dspHeight;
+	dspInfo.dspDstRect.left = 0;
+	dspInfo.dspDstRect.top = 0;
+#else
+    dspInfo.dspSrcRect.right = imgWidth;
+    dspInfo.dspSrcRect.bottom = imgHeight;
+    dspInfo.dspDstRect.left = pAppData->dspX;
+    dspInfo.dspDstRect.top = pAppData->dspY;
+#endif
 	dspInfo.dspDstRect.right = pAppData->dspX + pAppData->dspWidth;
 	dspInfo.dspDstRect.bottom = pAppData->dspY + pAppData->dspHeight;
 	hDsp = NX_DspInit( &dspInfo );
@@ -118,6 +133,15 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 		printf("Display Failed!!!\n");
 		exit(-1);
 	}
+#endif
+
+#ifdef USE_FSCALER
+    int scaler_idx = 0;
+    NX_SCALER_HANDLE hScaler;
+    NX_VID_MEMORY_HANDLE hDstMem[2];
+    hScaler = NX_SCLOpen();
+    hDstMem[0] = NX_VideoAllocateMemory( 4096, pAppData->dspWidth, pAppData->dspHeight, NX_MEM_MAP_LINEAR, FOURCC_MVS0 );
+    hDstMem[1] = NX_VideoAllocateMemory( 4096, pAppData->dspWidth, pAppData->dspHeight, NX_MEM_MAP_LINEAR, FOURCC_MVS0 );
 #endif
 
 	pMediaReader->GetCodecTagId( AVMEDIA_TYPE_VIDEO, &codecTag, &codecId  );
@@ -405,11 +429,21 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 				pAndRender->DspDequeueBuffer(NULL, NULL);
 			}
 #else
+#ifdef USE_FSCALER
+            NX_SCLScaleImage( hScaler, hDispBuff, hDstMem[scaler_idx] );
+            NX_DspQueueBuffer( hDsp, hDstMem[scaler_idx] );
+            if( outCount != 0 )
+            {
+                NX_DspDequeueBuffer( hDsp );
+            }
+            scaler_idx = (scaler_idx + 1) % 2 ;
+#else
 			NX_DspQueueBuffer( hDsp, hDispBuff );
 			if( outCount != 0 )
 			{
 				NX_DspDequeueBuffer( hDsp );
 			}
+#endif
 #endif
 
 			if ( fpOut )
@@ -513,6 +547,13 @@ int32_t VpuDecMain( CODEC_APP_DATA *pAppData )
 		else if ( pAppData->deinterlaceMode == 10 )
 			NX_GTDeintClose( (NX_GT_DEINT_HANDLE)hDeinterlace );
 	}
+#endif
+
+#ifdef USE_FSCALER
+    NX_FreeVideoMemory( hDstMem[0] );
+    NX_FreeVideoMemory( hDstMem[1] );
+
+    NX_SCLClose( hScaler );
 #endif
 
 	return 0;

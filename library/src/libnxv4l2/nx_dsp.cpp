@@ -129,7 +129,7 @@ DISPLAY_HANDLE NX_DspInit( DISPLAY_INFO *pDspInfo )
 			printf("%s(): v4l2_link() failed.\n", __FUNCTION__);
 			return NULL;
 		}
-#if 1
+#if 0
 		result = v4l2_set_preset( hPrivate, nxp_v4l2_hdmi, V4L2_DV_1080P60 );
 #else
 		result = v4l2_set_preset( hPrivate, nxp_v4l2_hdmi, V4L2_DV_720P60 );

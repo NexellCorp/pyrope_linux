@@ -28,8 +28,8 @@
 
 #include "NX_CCmdQueue.h"
 
-#define HDMI_X_RES	1920
-#define HDMI_Y_RES	1080
+#define HDMI_X_RES	1280
+#define HDMI_Y_RES	720
 
 typedef struct AppDataStruct {
 	MP_HANDLE 		hPlayer;

@@ -60,7 +60,7 @@ public class SystemActivity extends AppCompatActivity {
         //
         //  Configuration TitleBar
         //
-        VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.titleBarLayoutSystem ));
+        VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.layoutTitleBar ));
         titleBar.SetTitle( "Cinema LED Display System - System" );
         titleBar.SetListener(VdTitleBar.BTN_BACK, new View.OnClickListener() {
             @Override
@@ -74,7 +74,7 @@ public class SystemActivity extends AppCompatActivity {
         //
         //  Configuration StatusBar
         //
-        new VdStatusBar( getApplicationContext(), (LinearLayout)findViewById( R.id.statusBarLayoutSystem ) );
+        new VdStatusBar( getApplicationContext(), (LinearLayout)findViewById( R.id.layoutStatusBar ) );
 
         //
         //  System Log
@@ -113,7 +113,7 @@ public class SystemActivity extends AppCompatActivity {
         mEditSubnetMask = (EditText)findViewById(R.id.editSubnetMask);
         mEditDefaulGateway = (EditText)findViewById(R.id.editDefaultGateway);
 
-        RelativeLayout parent = (RelativeLayout)findViewById(R.id.layoutParentSystem);
+        RelativeLayout parent = (RelativeLayout)findViewById(R.id.layoutParent);
         parent.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

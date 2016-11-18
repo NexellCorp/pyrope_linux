@@ -11,13 +11,11 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.ListAdapter;
-import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TabHost;
@@ -82,7 +80,7 @@ public class DisplayModeActivity extends AppCompatActivity {
         setContentView(R.layout.activity_display_mode);
 
         // Configuration TitleBar
-        VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.titleBarLayoutDisplayMode ));
+        VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.layoutTitleBar ));
         titleBar.SetTitle( "Cinema LED Display System - Display Mode" );
         titleBar.SetListener(VdTitleBar.BTN_BACK, new View.OnClickListener() {
             @Override
@@ -94,7 +92,7 @@ public class DisplayModeActivity extends AppCompatActivity {
         });
 
         // Configuration StatusBar
-        new VdStatusBar( getApplicationContext(), (LinearLayout)findViewById( R.id.statusBarLayoutDisplayMode) );
+        new VdStatusBar( getApplicationContext(), (LinearLayout)findViewById( R.id.layoutStatusBar) );
 
         AddTabs();
 
@@ -203,23 +201,24 @@ public class DisplayModeActivity extends AppCompatActivity {
         //
         //  Spinner Cabinet Number
         //
-        String[] strVertical = new String[100];
-        String[] strHorizontal = new String[100];
+        String curCabinetNum = ((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_CABINET_NUM);
 
-        for( int i = 0; i < strVertical.length; i++ )   strVertical[i] = String.valueOf(i + 1);
-        for( int i = 0; i < strHorizontal.length; i++ ) strHorizontal[i] = String.valueOf(i + 1);
-
-        final Spinner spinnerVertical = (Spinner)findViewById(R.id.spinnerCabinetVertical);
-        final Spinner spinnerHorizontal = (Spinner)findViewById(R.id.spinnerCabinetHorizontal);
-
-        spinnerVertical.setAdapter( new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, strVertical) );
-        spinnerHorizontal.setAdapter( new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, strHorizontal) );
+        final EditText editCabinetNum = (EditText)findViewById(R.id.editCabinet);
+        editCabinetNum.setText(curCabinetNum);
 
         Button btnCabinetNum = (Button)findViewById(R.id.btnCabinetNumApply);
         btnCabinetNum.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                CinemaInfo info = (CinemaInfo)getApplicationContext();
+                String prevCabinetNum   = info.GetValue(CinemaInfo.KEY_CABINET_NUM);
+                String curCabinetNum    = editCabinetNum.getText().toString();
 
+                info.SetValue(CinemaInfo.KEY_CABINET_NUM, curCabinetNum);
+
+                String strLog = String.format( "Change cabinet number. ( %s -> %s)", prevCabinetNum, curCabinetNum );
+                info.InsertLog(strLog);
+                Log.i(VD_DTAG, strLog);
             }
         });
 
@@ -243,6 +242,17 @@ public class DisplayModeActivity extends AppCompatActivity {
             }
         });
 
+        //
+        //  IMM Handler
+        //
+        LinearLayout parent = (LinearLayout)findViewById(R.id.layoutParent);
+        parent.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(editCabinetNum.getWindowToken(), 0);
+            }
+        });
     }
 
     private void AddTabs() {
@@ -251,15 +261,15 @@ public class DisplayModeActivity extends AppCompatActivity {
 
         TabHost.TabSpec tabSpec1 = tabHost.newTabSpec("TAB1");
         tabSpec1.setIndicator("Mastering Mode");
-        tabSpec1.setContent(R.id.tab_display_mode_brightness);
+        tabSpec1.setContent(R.id.tabMasteringMode);
 
         TabHost.TabSpec tabSpec2 = tabHost.newTabSpec("TAB2");
         tabSpec2.setIndicator("Input Source");
-        tabSpec2.setContent(R.id.tab_display_mode_input);
+        tabSpec2.setContent(R.id.tabInputSource);
 
         TabHost.TabSpec tabSpec3 = tabHost.newTabSpec("TAB3");
         tabSpec3.setIndicator("Set up");
-        tabSpec3.setContent(R.id.tab_display_mode_setup);
+        tabSpec3.setContent(R.id.tabSetup);
 
         tabHost.addTab(tabSpec1);
         tabHost.addTab(tabSpec2);

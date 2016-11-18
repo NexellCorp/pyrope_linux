@@ -48,7 +48,7 @@ public class LedPosDialog extends Dialog {
         getWindow().setAttributes(lpWindow);
         setContentView(R.layout.dialog_info_led);
 
-        VdTitleBar titleBar = new VdTitleBar( mContext.getApplicationContext(), (LinearLayout)findViewById( R.id.titleBarLayoutDialog ));
+        VdTitleBar titleBar = new VdTitleBar( mContext.getApplicationContext(), (LinearLayout)findViewById( R.id.layoutTitleBar ));
         titleBar.SetTitle( "Led Detail Information" );
         titleBar.SetVisibility(VdTitleBar.BTN_BACK, View.GONE);
         titleBar.SetListener(VdTitleBar.BTN_EXIT, new View.OnClickListener() {

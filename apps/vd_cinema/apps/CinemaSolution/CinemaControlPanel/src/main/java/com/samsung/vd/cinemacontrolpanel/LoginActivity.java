@@ -45,7 +45,7 @@ public class LoginActivity extends AppCompatActivity {
         //
         // Configuration Title Bar
         //
-        VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.title_bar_login ));
+        VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.layoutTitleBar ));
         titleBar.SetTitle( "Cinema LED Display System - Login" );
 
         // For Debugging
@@ -69,7 +69,7 @@ public class LoginActivity extends AppCompatActivity {
         //
         //  Configuration Status Bar
         //
-        new VdStatusBar( getApplicationContext(), (LinearLayout)findViewById( R.id.status_bar_login) );
+        new VdStatusBar( getApplicationContext(), (LinearLayout)findViewById( R.id.layoutStatusBar) );
 
         //
         //
@@ -146,7 +146,7 @@ public class LoginActivity extends AppCompatActivity {
         mEditPassword2 = (EditText)findViewById(R.id.editLoginPw2);
         mEditPassword3 = (EditText)findViewById(R.id.editLoginPw3);
 
-        RelativeLayout parent = (RelativeLayout)findViewById(R.id.layoutParentLogin);
+        RelativeLayout parent = (RelativeLayout)findViewById(R.id.layoutParent);
         parent.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

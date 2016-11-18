@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:layout_width="match_parent"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <LinearLayout
@@ -17,7 +19,7 @@
             android:layout_width="0px"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="Function"
+            android:text="@string/txt_function"
             android:textStyle="bold"
             android:gravity="center"
             android:paddingTop="15dp"
@@ -29,7 +31,7 @@
             android:layout_width="0px"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="Pattern"
+            android:text="@string/txt_pattern"
             android:textStyle="bold"
             android:gravity="center"
             android:paddingTop="15dp"
@@ -41,7 +43,7 @@
             android:layout_width="0px"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="Run"
+            android:text="@string/txt_run"
             android:textStyle="bold"
             android:gravity="center"
             android:paddingTop="15dp"

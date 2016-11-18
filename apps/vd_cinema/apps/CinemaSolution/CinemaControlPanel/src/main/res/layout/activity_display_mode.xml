@@ -4,7 +4,7 @@
     android:layout_height="match_parent" >
 
     <LinearLayout
-        android:id="@+id/titleBarLayoutDisplayMode"
+        android:id="@+id/layoutTitleBar"
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="50dp"
@@ -15,8 +15,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:id="@+id/tabHost"
-        android:layout_below="@+id/titleBarLayoutDisplayMode"
-        android:layout_above="@+id/statusBarLayoutDisplayMode"
+        android:layout_below="@+id/layoutTitleBar"
+        android:layout_above="@+id/layoutStatusBar"
         android:layout_alignParentStart="true">
 
         <LinearLayout
@@ -35,7 +35,7 @@
                 android:layout_height="match_parent">
 
                 <RelativeLayout
-                    android:id="@+id/tab_display_mode_brightness"
+                    android:id="@+id/tabMasteringMode"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:orientation="vertical">
@@ -46,7 +46,7 @@
                 </RelativeLayout>
 
                 <RelativeLayout
-                    android:id="@+id/tab_display_mode_input"
+                    android:id="@+id/tabInputSource"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:orientation="vertical">
@@ -57,7 +57,7 @@
                 </RelativeLayout>
 
                 <RelativeLayout
-                    android:id="@+id/tab_display_mode_setup"
+                    android:id="@+id/tabSetup"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:orientation="vertical">
@@ -72,7 +72,7 @@
     </TabHost>
 
     <LinearLayout
-        android:id="@+id/statusBarLayoutDisplayMode"
+        android:id="@+id/layoutStatusBar"
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="50dp"

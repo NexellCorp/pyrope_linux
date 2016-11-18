@@ -3,7 +3,8 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:id="@+id/layoutParent" >
 
     <LinearLayout
         android:background="#FFE0E0E0"
@@ -19,7 +20,7 @@
             android:layout_width="0px"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="Item"
+            android:text="@string/txt_item"
             android:textStyle="bold"
             android:gravity="center"
             android:paddingTop="15dp"
@@ -31,7 +32,7 @@
             android:layout_width="0px"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="Control"
+            android:text="@string/txt_control"
             android:textStyle="bold"
             android:gravity="center"
             android:paddingTop="15dp"
@@ -156,41 +157,20 @@
 
         <LinearLayout
             android:background="@drawable/draw_line_border"
-            android:paddingTop="2dp"
-            android:paddingBottom="5dp"
+            android:paddingTop="3dp"
+            android:paddingBottom="6dp"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:gravity="center"
             android:layout_weight="0.65">
 
-            <TextView
+            <EditText
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="vertical : "/>
-
-            <Spinner
-                android:layout_width="70dp"
-                android:layout_height="wrap_content"
-                android:id="@+id/spinnerCabinetVertical" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="     /     "/>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="horizontal : "/>
-
-            <Spinner
-                android:layout_width="70dp"
-                android:layout_height="wrap_content"
-                android:id="@+id/spinnerCabinetHorizontal" />
-
+                android:ems="10"
+                android:gravity="center"
+                android:id="@+id/editCabinet"
+                android:inputType="number"/>
         </LinearLayout>
 
         <LinearLayout

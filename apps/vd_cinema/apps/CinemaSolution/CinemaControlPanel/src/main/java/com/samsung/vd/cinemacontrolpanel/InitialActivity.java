@@ -66,13 +66,13 @@ public class InitialActivity extends AppCompatActivity {
 //        }
 
         // Configuration Title Bar
-        VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.title_bar_initial));
+        VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.layoutTitleBar));
         titleBar.SetTitle( "Cinema LED Display System - Initialize" );
         titleBar.SetVisibility(VdTitleBar.BTN_BACK, View.GONE);
         titleBar.SetVisibility(VdTitleBar.BTN_EXIT, View.GONE);
 
         // Configuration Status Bar
-        new VdStatusBar( getApplicationContext(), (LinearLayout)findViewById( R.id.status_bar_initial) );
+        new VdStatusBar( getApplicationContext(), (LinearLayout)findViewById( R.id.layoutStatusBar) );
 
         //
         //  Spinner for TimeZone
@@ -105,7 +105,7 @@ public class InitialActivity extends AppCompatActivity {
         final Spinner spinnerScreenSaving = (Spinner)findViewById(R.id.spinnerScreenSaving);
         spinnerScreenSaving.setAdapter(adapterSpinScreenSaving);
 
-        Button btnAccept = (Button)findViewById(R.id.btnInitAccept);
+        Button btnAccept = (Button)findViewById(R.id.btnAccept);
         btnAccept.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -132,7 +132,7 @@ public class InitialActivity extends AppCompatActivity {
         mEditConfirm = (EditText)findViewById(R.id.editConfirm);
         mEditCabinet = (EditText)findViewById(R.id.editCabinet);
 
-        RelativeLayout parent = (RelativeLayout)findViewById(R.id.layoutParentInitial);
+        RelativeLayout parent = (RelativeLayout)findViewById(R.id.layoutParent);
         parent.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

@@ -82,7 +82,7 @@ public class AccountActivity extends AppCompatActivity {
         //
         //  Set TitleBar
         //
-        VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.titleBarLayoutAccount ));
+        VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.layoutTitleBar ));
         titleBar.SetTitle( "Cinema LED Display System - Account" );
 
         titleBar.SetListener(VdTitleBar.BTN_BACK, new View.OnClickListener() {
@@ -106,7 +106,7 @@ public class AccountActivity extends AppCompatActivity {
         //
         //  Set StatusBar
         //
-        new VdStatusBar( getApplicationContext(), (LinearLayout)findViewById( R.id.statusBarLayoutAccount) );
+        new VdStatusBar( getApplicationContext(), (LinearLayout)findViewById( R.id.layoutStatusBar) );
 
         //
         //

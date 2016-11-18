@@ -1,25 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/layoutParentInitial"
+    android:id="@+id/layoutParent"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center">
 
     <LinearLayout
-        android:id="@+id/title_bar_initial"
+        android:id="@+id/layoutTitleBar"
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="50dp"
         android:layout_alignParentTop="true" />
 
     <LinearLayout
-        android:id="@+id/layoutLoginNormal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/title_bar_initial"
-        android:layout_above="@+id/status_bar_initial"
+        android:layout_below="@+id/layoutTitleBar"
+        android:layout_above="@+id/layoutStatusBar"
         android:orientation="vertical"
         android:gravity="center"
         android:weightSum="1">
@@ -30,8 +29,7 @@
             android:layout_marginLeft="20dp"
             android:layout_marginRight="20dp"
             android:padding="15dp"
-            android:weightSum="1"
-            android:id="@+id/linearLayout2">
+            android:weightSum="1">
 
             <TextView
                 android:layout_width="0px"
@@ -57,8 +55,7 @@
             android:layout_marginLeft="20dp"
             android:layout_marginRight="20dp"
             android:padding="15dp"
-            android:weightSum="1"
-            android:id="@+id/linearLayout3">
+            android:weightSum="1">
 
             <TextView
                 android:layout_width="0px"
@@ -85,8 +82,7 @@
             android:layout_marginLeft="20dp"
             android:layout_marginRight="20dp"
             android:padding="15dp"
-            android:weightSum="1"
-            android:id="@+id/linearLayout4" >
+            android:weightSum="1" >
 
             <TextView
                 android:layout_width="0px"
@@ -112,8 +108,7 @@
             android:layout_marginLeft="20dp"
             android:layout_marginRight="20dp"
             android:padding="15dp"
-            android:weightSum="1"
-            android:id="@+id/linearLayout5" >
+            android:weightSum="1" >
 
             <TextView
                 android:layout_width="0px"
@@ -136,8 +131,7 @@
             android:layout_marginLeft="20dp"
             android:layout_marginRight="20dp"
             android:padding="15dp"
-            android:weightSum="1"
-            android:id="@+id/linearLayout6" >
+            android:weightSum="1" >
 
             <TextView
                 android:layout_width="0px"
@@ -172,7 +166,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:text="@string/txt_accept"
-                android:id="@+id/btnInitAccept"
+                android:id="@+id/btnAccept"
                 android:layout_weight="0.2" />
 
             <LinearLayout
@@ -183,7 +177,7 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/status_bar_initial"
+        android:id="@+id/layoutStatusBar"
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="50dp"

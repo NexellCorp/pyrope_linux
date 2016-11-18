@@ -5,7 +5,7 @@
     android:layout_height="match_parent" >
 
     <LinearLayout
-        android:id="@+id/titleBarLayoutDisplayCheck"
+        android:id="@+id/layoutTitleBar"
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="50dp"
@@ -16,7 +16,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:id="@+id/tabHost"
-        android:layout_below="@+id/titleBarLayoutDisplayCheck"
+        android:layout_below="@+id/layoutTitleBar"
         android:layout_alignParentStart="true">
 
         <LinearLayout
@@ -35,7 +35,7 @@
                 android:layout_height="match_parent">
 
                 <RelativeLayout
-                    android:id="@+id/tab_display_check_test"
+                    android:id="@+id/tabTestPattern"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:orientation="vertical">
@@ -46,7 +46,7 @@
                 </RelativeLayout>
 
                 <RelativeLayout
-                    android:id="@+id/tab_display_check_led"
+                    android:id="@+id/tabLedAccumulation"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:orientation="vertical">
@@ -61,7 +61,7 @@
     </TabHost>
 
     <LinearLayout
-        android:id="@+id/statusBarLayoutDisplayCheck"
+        android:id="@+id/layoutStatusBar"
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="50dp"

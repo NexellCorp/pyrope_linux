@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/layoutParentSystem"
+    android:id="@+id/layoutParent"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center">
 
     <LinearLayout
-        android:id="@+id/titleBarLayoutSystem"
+        android:id="@+id/layoutTitleBar"
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="50dp"
@@ -19,8 +19,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:id="@+id/tabHost"
-        android:layout_below="@+id/titleBarLayoutSystem"
-        android:layout_above="@+id/statusBarLayoutSystem"
+        android:layout_below="@+id/layoutTitleBar"
+        android:layout_above="@+id/layoutStatusBar"
         android:layout_alignParentStart="true">
 
         <LinearLayout
@@ -64,7 +64,7 @@
     </TabHost>
 
     <LinearLayout
-        android:id="@+id/statusBarLayoutSystem"
+        android:id="@+id/layoutStatusBar"
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="50dp"

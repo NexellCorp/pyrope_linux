@@ -3,10 +3,9 @@
 
     <string name="txt_pass">Pass</string>
     <string name="txt_fail">Fail</string>
-    <string name="txt_detail">Detail Info.</string>
-
+    <string name="txt_detail">Detail</string>
     <string name="txt_account">Account</string>
-    <string name="txt_id_number">Identify Number</string>
+    <string name="txt_identify_num">Identify Number</string>
     <string name="txt_password">Password</string>
     <string name="txt_confirm">Confirm</string>
     <string name="txt_root_password">Root Password</string>
@@ -16,4 +15,18 @@
     <string name="txt_accept">Accept</string>
     <string name="txt_modify">Modify</string>
     <string name="txt_done">Done</string>
+    <string name="txt_version">Version</string>
+    <string name="txt_item">Item</string>
+    <string name="txt_pattern">Pattern</string>
+    <string name="txt_function">Function</string>
+    <string name="txt_run">Run</string>
+    <string name="txt_control">Control</string>
+    <string name="txt_accumulation_time">Accumulation Time</string>
+    <string name="txt_elapsed_time">Elapsed Time</string>
+    <string name="txt_total_Accumulation_time">Total Accumulation Time</string>
+    <string name="txt_status">Status</string>
+    <string name="txt_describe">Describe</string>
+    <string name="txt_cabinet_id">Cabinet ID</string>
+    <string name="txt_peripheral">Peripheral</string>
+    <string name="txt_apply">Apply</string>
 </resources>

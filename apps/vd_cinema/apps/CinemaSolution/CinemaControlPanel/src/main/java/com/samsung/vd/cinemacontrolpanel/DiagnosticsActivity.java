@@ -57,7 +57,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
         //
         // Configuration TitleBar
         //
-        VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.titleBarLayoutDiagnostics ));
+        VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.layoutTitleBar ));
         titleBar.SetTitle( "Cinema LED Display System - Diagnostics" );
         titleBar.SetListener(VdTitleBar.BTN_BACK, new View.OnClickListener() {
             @Override
@@ -71,7 +71,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
         //
         // Configuration StatusBar
         //
-        new VdStatusBar( getApplicationContext(), (LinearLayout)findViewById( R.id.statusBarLayoutDiagnostics) );
+        new VdStatusBar( getApplicationContext(), (LinearLayout)findViewById( R.id.layoutStatusBar) );
 
         //
         //  Cinema System Information
@@ -214,31 +214,31 @@ public class DiagnosticsActivity extends AppCompatActivity {
 
         TabHost.TabSpec tabSpec0 = mTabHost.newTabSpec( "TAB0" );
         tabSpec0.setIndicator("TCON");
-        tabSpec0.setContent(R.id.tab_diagnostics_tcon);
+        tabSpec0.setContent(R.id.tabTcon);
 
         TabHost.TabSpec tabSpec1 = mTabHost.newTabSpec( "TAB1" );
         tabSpec1.setIndicator("LED OPEN");
-        tabSpec1.setContent(R.id.tab_diagnostics_led_open);
+        tabSpec1.setContent(R.id.tabLedOpen);
 
         TabHost.TabSpec tabSpec2 = mTabHost.newTabSpec( "TAB2" );
         tabSpec2.setIndicator("LED SHORT");
-        tabSpec2.setContent(R.id.tab_diagnostics_led_short);
+        tabSpec2.setContent(R.id.tabLedShort);
 
         TabHost.TabSpec tabSpec3 = mTabHost.newTabSpec( "TAB3" );
         tabSpec3.setIndicator("CABINET DOOR");
-        tabSpec3.setContent(R.id.tab_diagnostics_cabinet_door);
+        tabSpec3.setContent(R.id.tabCabinetDoor);
 
         TabHost.TabSpec tabSpec4 = mTabHost.newTabSpec( "TAB4" );
         tabSpec4.setIndicator("BATTERY");
-        tabSpec4.setContent(R.id.tab_diagnostics_battery);
+        tabSpec4.setContent(R.id.tabBattery);
 
         TabHost.TabSpec tabSpec5 = mTabHost.newTabSpec( "TAB5" );
         tabSpec5.setIndicator("PERIPHERAL");
-        tabSpec5.setContent(R.id.tab_diagnostics_peripheral);
+        tabSpec5.setContent(R.id.tabPeripheral);
 
         TabHost.TabSpec tabSpec6 = mTabHost.newTabSpec( "TAB6" );
         tabSpec6.setIndicator("VERSION");
-        tabSpec6.setContent(R.id.tab_diagnostics_version);
+        tabSpec6.setContent(R.id.tabVersion);
 
         mTabHost.addTab(tabSpec0);
         mTabHost.addTab(tabSpec1);
@@ -369,14 +369,16 @@ public class DiagnosticsActivity extends AppCompatActivity {
                 if (result == null || result.length == 0)
                     continue;
 
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
                 StatusDetailInfo info = mAdapter.getItem(i);
-                info.SetDescription("LED OPEN TEST OK!!!");
+                int value = ctrl.ByteArrayToInt16(result, NxCinemaCtrl.FORMAT_INT16);
+                Log.i(VD_DTAG, ">>>>> " + String.valueOf(value) );
+
+                if( value == 0xFFFF ) {
+                    info.SetDescription( "-" );
+                }
+                else {
+                    info.SetDescription(String.valueOf( String.valueOf(value) ) );
+                }
 
                 publishProgress();
             }
@@ -550,8 +552,10 @@ public class DiagnosticsActivity extends AppCompatActivity {
             mAsyncTaskStatus.cancel( true );
         }
 
-        if( mAsyncTaskLedOpenNum != null && mAsyncTaskLedOpenNum.getStatus() == AsyncTask.Status.RUNNING ) {
-            mAsyncTaskLedOpenNum.cancel( true );
+        if( mAsyncTaskLedOpenNum != null ) {
+            if( mAsyncTaskLedOpenNum.getStatus() == AsyncTask.Status.RUNNING ) {
+                mAsyncTaskLedOpenNum.cancel(true);
+            }
 
             byte[] result = NxCinemaCtrl.GetInstance().Send(0x09, NxCinemaCtrl.CMD_TCON_MODE_NORMAL, null);
             if( result == null || result.length == 0 || (int)result[0] == 0xFF) {
@@ -570,6 +574,13 @@ public class DiagnosticsActivity extends AppCompatActivity {
         if( mAsyncTaskVersion != null && mAsyncTaskVersion.getStatus() == AsyncTask.Status.RUNNING ) {
             mAsyncTaskVersion.cancel( true );
         }
+
+        mAsyncTaskStatus = null;
+        mAsyncTaskLedOpenNum = null;
+        mAsyncTaskCabinetDoor = null;
+        mAsyncTaskPeripheral = null;
+        mAsyncTaskVersion = null;
+
     }
 
     //

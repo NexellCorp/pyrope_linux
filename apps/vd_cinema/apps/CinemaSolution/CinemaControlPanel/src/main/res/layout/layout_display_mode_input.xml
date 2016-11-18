@@ -19,7 +19,7 @@
             android:layout_width="0px"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="Item"
+            android:text="@string/txt_item"
             android:textStyle="bold"
             android:gravity="center"
             android:paddingTop="15dp"
@@ -31,7 +31,7 @@
             android:layout_width="0px"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="Control"
+            android:text="@string/txt_control"
             android:textStyle="bold"
             android:gravity="center"
             android:paddingTop="15dp"
@@ -157,7 +157,7 @@
             android:layout_weight="0.1">
             <Button
                 android:id="@+id/btnInputSourceSelectApply"
-                android:text="Apply"
+                android:text="@string/txt_apply"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:gravity="center" />

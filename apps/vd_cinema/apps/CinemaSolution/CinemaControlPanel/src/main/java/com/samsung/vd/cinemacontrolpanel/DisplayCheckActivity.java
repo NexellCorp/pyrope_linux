@@ -99,7 +99,7 @@ public class DisplayCheckActivity extends AppCompatActivity {
         setContentView(R.layout.activity_display_check);
 
         // Configuration TitleBar
-        VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.titleBarLayoutDisplayCheck ));
+        VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.layoutTitleBar ));
         titleBar.SetTitle( "Cinema LED Display System - Display Check" );
         titleBar.SetListener(VdTitleBar.BTN_BACK, new View.OnClickListener() {
             @Override
@@ -111,7 +111,7 @@ public class DisplayCheckActivity extends AppCompatActivity {
         });
 
         // Configuration StatusBar
-        new VdStatusBar( getApplicationContext(), (LinearLayout)findViewById( R.id.statusBarLayoutDisplayCheck) );
+        new VdStatusBar( getApplicationContext(), (LinearLayout)findViewById( R.id.layoutStatusBar) );
 
         AddTabs();
 
@@ -125,11 +125,11 @@ public class DisplayCheckActivity extends AppCompatActivity {
 
         TabHost.TabSpec tabSpec1 = tabHost.newTabSpec("TAB1");
         tabSpec1.setIndicator("Test Pattern");
-        tabSpec1.setContent(R.id.tab_display_check_test);
+        tabSpec1.setContent(R.id.tabTestPattern);
 
         TabHost.TabSpec tabSpec2 = tabHost.newTabSpec("TAB2");
         tabSpec2.setIndicator("Led Accumulation time");
-        tabSpec2.setContent(R.id.tab_display_check_led);
+        tabSpec2.setContent(R.id.tabLedAccumulation);
 
         tabHost.addTab(tabSpec1);
         tabHost.addTab(tabSpec2);

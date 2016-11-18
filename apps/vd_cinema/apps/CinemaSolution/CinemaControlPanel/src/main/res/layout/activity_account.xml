@@ -6,7 +6,7 @@
     android:orientation="vertical">
 
     <LinearLayout
-        android:id="@+id/titleBarLayoutAccount"
+        android:id="@+id/layoutTitleBar"
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="50dp" />
@@ -16,8 +16,8 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_marginTop="10dp"
-        android:layout_below="@+id/titleBarLayoutAccount"
-        android:layout_above="@+id/statusBarLayoutAccount" >
+        android:layout_below="@+id/layoutTitleBar"
+        android:layout_above="@+id/layoutStatusBar" >
 
         <LinearLayout
             android:background="#FFE0E0E0"
@@ -33,7 +33,7 @@
                 android:layout_width="0px"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="Account"
+                android:text="@string/txt_account"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:paddingTop="15dp"
@@ -45,7 +45,7 @@
                 android:layout_width="0px"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="Identify Number"
+                android:text="@string/txt_identify_num"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:paddingTop="15dp"
@@ -57,7 +57,7 @@
                 android:layout_width="0px"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="Password"
+                android:text="@string/txt_password"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:paddingTop="15dp"
@@ -69,7 +69,7 @@
                 android:layout_width="0px"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="Confirm"
+                android:text="@string/txt_confirm"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:paddingTop="15dp"
@@ -81,7 +81,7 @@
                 android:layout_width="0px"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="Modify"
+                android:text="@string/txt_modify"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:paddingTop="15dp"
@@ -97,7 +97,7 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/statusBarLayoutAccount"
+        android:id="@+id/layoutStatusBar"
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="50dp"

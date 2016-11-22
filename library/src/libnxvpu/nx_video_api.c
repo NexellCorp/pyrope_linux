@@ -955,7 +955,7 @@ VID_ERROR_E NX_VidDecClose( NX_VID_DEC_HANDLE hDec )
         if ( IV_SUCCESS != ihevcd_cxa_api_function( hDec->codec_obj, (void *)&s_retrieve_dec_ip, (void *)&s_retrieve_dec_op) )
         {
             NX_ErrMsg( ("Error in Retrieve Memrec\n") );
-            return -1;
+            //return -1;
         }
 
         {
@@ -3450,29 +3450,29 @@ static VID_ERROR_E NX_HevcDecInit (NX_VID_DEC_HANDLE hDec, NX_VID_SEQ_IN *pstSeq
 
 static VID_ERROR_E NX_HevcDecDecodeFrame( NX_VID_DEC_HANDLE hDec, NX_VID_DEC_IN *pstDecIn, NX_VID_DEC_OUT *pstDecOut )
 {
-    ivd_video_decode_ip_t s_video_decode_ip;
-    ivd_video_decode_op_t s_video_decode_op;
+	ivd_video_decode_ip_t s_video_decode_ip;
+	ivd_video_decode_op_t s_video_decode_op;
 	int32_t iIdx=0, i;
 
 	if ( pstDecIn->eos == 1 )
 	{
-        ivd_ctl_flush_ip_t s_ctl_ip;
-        ivd_ctl_flush_op_t s_ctl_op;
+		ivd_ctl_flush_ip_t s_ctl_ip;
+		ivd_ctl_flush_op_t s_ctl_op;
 
 		int ret;
 
-        s_ctl_ip.e_cmd = IVD_CMD_VIDEO_CTL;
-        s_ctl_ip.e_sub_cmd = IVD_CMD_CTL_FLUSH;
-        s_ctl_ip.u4_size = sizeof(ivd_ctl_flush_ip_t);
-        s_ctl_op.u4_size = sizeof(ivd_ctl_flush_op_t);
+		s_ctl_ip.e_cmd = IVD_CMD_VIDEO_CTL;
+		s_ctl_ip.e_sub_cmd = IVD_CMD_CTL_FLUSH;
+		s_ctl_ip.u4_size = sizeof(ivd_ctl_flush_ip_t);
+		s_ctl_op.u4_size = sizeof(ivd_ctl_flush_op_t);
 
-        if ( IV_SUCCESS != ihevcd_cxa_api_function( hDec->codec_obj, (void *)&s_ctl_ip, (void *)&s_ctl_op) )
-        {
-            NX_ErrMsg( ("Error in Setting the decoder in flush mode, error mode = %x \n", s_ctl_op.u4_error_code ) );
+		if ( IV_SUCCESS != ihevcd_cxa_api_function( hDec->codec_obj, (void *)&s_ctl_ip, (void *)&s_ctl_op) )
+		{
+			NX_ErrMsg( ("Error in Setting the decoder in flush mode, error mode = %x \n", s_ctl_op.u4_error_code ) );
 			pstDecOut->outImgIdx = -1;
 			pstDecOut->outDecIdx = -1;
 			return VID_ERR_NO_DEC_FRAME;
-        }
+		}
 	}
 
 	for ( i=1 ; i<hDec->numFrameBuffers ; i++ )
@@ -3487,26 +3487,26 @@ static VID_ERROR_E NX_HevcDecDecodeFrame( NX_VID_DEC_HANDLE hDec, NX_VID_DEC_IN 
 		return VID_ERR_FAIL;
 	}
 
-    s_video_decode_ip.e_cmd = IVD_CMD_VIDEO_DECODE;
-    s_video_decode_ip.u4_ts = pstDecIn->timeStamp;
-    s_video_decode_ip.pv_stream_buffer = pstDecIn->strmBuf;
-    s_video_decode_ip.u4_num_Bytes = pstDecIn->strmSize;
-    s_video_decode_ip.u4_size = sizeof(ivd_video_decode_ip_t);
+	s_video_decode_ip.e_cmd = IVD_CMD_VIDEO_DECODE;
+	s_video_decode_ip.u4_ts = pstDecIn->timeStamp;
+	s_video_decode_ip.pv_stream_buffer = pstDecIn->strmBuf;
+	s_video_decode_ip.u4_num_Bytes = pstDecIn->strmSize;
+	s_video_decode_ip.u4_size = sizeof(ivd_video_decode_ip_t);
 
-    s_video_decode_ip.s_out_buffer.u4_min_out_buf_size[0] = hDec->hFrameBuffer[iIdx]->luStride * hDec->hFrameBuffer[iIdx]->imgHeight;
-    s_video_decode_ip.s_out_buffer.u4_min_out_buf_size[1] = hDec->hFrameBuffer[iIdx]->cbStride * hDec->hFrameBuffer[iIdx]->imgHeight/2;
-    s_video_decode_ip.s_out_buffer.u4_min_out_buf_size[2] = hDec->hFrameBuffer[iIdx]->crStride * hDec->hFrameBuffer[iIdx]->imgHeight/2;
-    s_video_decode_ip.s_out_buffer.pu1_bufs[0] = (uint8_t *)hDec->hFrameBuffer[iIdx]->luVirAddr;
-    s_video_decode_ip.s_out_buffer.pu1_bufs[1] = (uint8_t *)hDec->hFrameBuffer[iIdx]->cbVirAddr;
-    s_video_decode_ip.s_out_buffer.pu1_bufs[2] = (uint8_t *)hDec->hFrameBuffer[iIdx]->crVirAddr;
-    s_video_decode_ip.s_out_buffer.u4_num_bufs = 3;
+	s_video_decode_ip.s_out_buffer.u4_min_out_buf_size[0] = hDec->hFrameBuffer[iIdx]->luStride * hDec->hFrameBuffer[iIdx]->imgHeight;
+	s_video_decode_ip.s_out_buffer.u4_min_out_buf_size[1] = hDec->hFrameBuffer[iIdx]->cbStride * hDec->hFrameBuffer[iIdx]->imgHeight/2;
+	s_video_decode_ip.s_out_buffer.u4_min_out_buf_size[2] = hDec->hFrameBuffer[iIdx]->crStride * hDec->hFrameBuffer[iIdx]->imgHeight/2;
+	s_video_decode_ip.s_out_buffer.pu1_bufs[0] = (uint8_t *)hDec->hFrameBuffer[iIdx]->luVirAddr;
+	s_video_decode_ip.s_out_buffer.pu1_bufs[1] = (uint8_t *)hDec->hFrameBuffer[iIdx]->cbVirAddr;
+	s_video_decode_ip.s_out_buffer.pu1_bufs[2] = (uint8_t *)hDec->hFrameBuffer[iIdx]->crVirAddr;
+	s_video_decode_ip.s_out_buffer.u4_num_bufs = 3;
 
-    s_video_decode_op.u4_size = sizeof(ivd_video_decode_op_t);
+	s_video_decode_op.u4_size = sizeof(ivd_video_decode_op_t);
 
-    if ( IV_SUCCESS != ihevcd_cxa_api_function( hDec->codec_obj, (void *)&s_video_decode_ip, (void *)&s_video_decode_op) )
-    {
-        NX_ErrMsg( ("Error in video Frame decode : Error %x\n", s_video_decode_op.u4_error_code) );
-    }
+	if ( IV_SUCCESS != ihevcd_cxa_api_function( hDec->codec_obj, (void *)&s_video_decode_ip, (void *)&s_video_decode_op) )
+	{
+		NX_ErrMsg( ("Error in video Frame decode : Error %x\n", s_video_decode_op.u4_error_code) );
+	}
 
 	switch( s_video_decode_op.e_pic_type )
 	{

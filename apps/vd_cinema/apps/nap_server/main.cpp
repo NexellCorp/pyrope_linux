@@ -67,7 +67,7 @@ public:
 		for( int32_t i = 0; i < MAX_TAMPER_NUM; i++ )
 		{
 			m_hGpio[i]->SetDirection( GPIO_DIRECTION_IN );
-			m_GpioValue[i] = 1;
+			m_GpioValue[i] = 0;
 		}
 
 		m_bThreadRun = true;
@@ -111,7 +111,7 @@ public:
 		}
 	}
 
-	void RegisterCallback( void (*callback)( void *, uint32_t , uint32_t ), void *pCbPrivate )
+	void RegisterCallback( int32_t (*callback)( void *, uint32_t , uint32_t ), void *pCbPrivate )
 	{
 		m_pCbPrivate = pCbPrivate;
 		m_pCallback  = callback;
@@ -122,7 +122,7 @@ private:
 
 	bool m_bThreadRun;
 	void *m_pCbPrivate;
-	void (*m_pCallback)( void *, uint32_t , uint32_t );
+	int32_t (*m_pCallback)( void *, uint32_t , uint32_t );
 
 	CNX_GpioControl *m_hGpio[MAX_TAMPER_NUM];
 	int32_t m_GpioValue[MAX_TAMPER_NUM];
@@ -153,7 +153,7 @@ public:
 
 private:
 	enum { DEF_FREQUENCY = 1000 };
-	
+
 	NX_PWM_HANDLE	m_hFanL;
 	NX_PWM_HANDLE	m_hFanR;
 };
@@ -182,7 +182,7 @@ public:
 	virtual void ThreadProc()
 	{
 		const char *pSockName	= "cinema.network";
-		
+
 		const char *pReqConfig	= "config";
 		const char *pReqLink	= "link";
 
@@ -232,7 +232,7 @@ public:
 				fprintf(pFile, "%s\n", readBuf + strlen(pReqConfig));
 				fclose(pFile);
 				sync();
-			
+
 				system("/system/bin/nap_network.sh restart");
 			}
 
@@ -363,12 +363,12 @@ static int32_t SendRemote( const char *pSockName, const char *pMsg )
 	addr.sun_family  = AF_UNIX;
 	addr.sun_path[0] = '\0';	// for abstract namespace
 	strcpy( addr.sun_path + 1, pSockName );
-	
+
 	len = 1 + strlen(pSockName) + offsetof(struct sockaddr_un, sun_path);
 
 	if( 0 > connect(sock, (struct sockaddr *) &addr, len))
 	{
-		printf("Fail, connect().\n");
+		printf("Fail, connect(). ( node: %s )\n", pSockName);
 		close( sock );
 		return -1;
 	}
@@ -390,7 +390,7 @@ static int32_t SecurelinkeEventCallback( void * /*pParam*/, int32_t eventCode, v
 	NxDbgMsg(NX_DBG_VBS, "Receive Event Message ( 0x%08x )\n", eventCode);
 
 	const char *pResult[4] = { "BootDone", "Alive", "Marriage", "Divorce" };
-	
+
 	if( eventCode == 0x00000001 ) SendRemote( "cinema.secure", pResult[0] );	// CMD_BOOT_DONE
 	if( eventCode == 0x00000002 ) SendRemote( "cinema.secure", pResult[1] );	// CMD_ALIVE
 	if( eventCode == 0x00000101 ) SendRemote( "cinema.secure", pResult[2] );	// CMD_MARRIAGE
@@ -443,6 +443,8 @@ int32_t main( void )
 	gstTamper = new NapTamperChecker();
 	gstNetwork = new NapNetwork();
 
+	gstTamper->RegisterCallback(TamperCheckerCallback, NULL);
+
 	while( 1 )
 	{
 		int32_t newStatus = GetBatteryStatus();
@@ -453,7 +455,7 @@ int32_t main( void )
 			if( iBatteryStatus == POWER_UNPLUGED )
 			{
 				NxDbgMsg( NX_DBG_INFO, "Power Failure!!\n");
-				
+
 				NX_SLinkServerStop();
 				NX_IPCServerStop();
 

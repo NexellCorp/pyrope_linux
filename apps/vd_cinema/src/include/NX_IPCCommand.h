@@ -29,11 +29,12 @@
 #define TCON_CMD_MODE_NORMAL		0x0011	//	TCON Normal Mode
 #define TCON_CMD_MODE_LOD			0x0012	//	TCON LOD Mode for LED Open Check
 #define TCON_CMD_OPEN_NUM			0x0013	//	LED Open Num
-#define TCON_CMD_OPEN_POS			0x0014	//	LED Open Pos (x1, y1, x2, y2, ... )
+#define TCON_CMD_OPEN_POS			0x0014	//	LED Open Pos
 #define TCON_CMD_SHORT_NUM			0x0015	//	LED Short Num
-#define TCON_CMD_SHORT_POS			0x0016	//	LED Short Pos (x1, y1, x2, y2, ... )
+#define TCON_CMD_SHORT_POS			0x0016	//	LED Short Pos
 
-#define TCON_CMD_PATTERN			0x0021	//	TEST Pattern
+#define TCON_CMD_PATTERN_RUN		0x0021	//	Test Pattern Run
+#define TCON_CMD_PATTERN_STOP		0x0022	//	Test Pattern Stop
 
 #define TCON_CMD_MASTERING			0x0031
 
@@ -47,7 +48,7 @@
 //	PFPGA Command
 //
 #define PFPGA_CMD_STATUS			0x0101	//	PFPGA Status
-#define PFPGA_CMD_SOURCE			0x0102	
+#define PFPGA_CMD_SOURCE			0x0102
 
 #define PFPGA_CMD_VERSION			0x0170	//	PFPGA Version
 

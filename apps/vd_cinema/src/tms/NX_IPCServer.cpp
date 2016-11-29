@@ -56,7 +56,7 @@ public:
 public:
 	int32_t StartServer();
 	void StopServer();
-	
+
 protected:
 	//	Implementation CNX_Thread pure virtual function
 	virtual void ThreadProc();
@@ -107,7 +107,7 @@ private:
 	uint8_t		m_PayloadBuf[MAX_PAYLOAD_SIZE];
 	uint8_t		m_SendBuf[MAX_PAYLOAD_SIZE+12];
 
-	int32_t		(*m_pTestPatternFunc[16])( CNX_I2C*, uint8_t, uint8_t );
+	int32_t		(*m_pTestPatternFunc[4])( CNX_I2C*, uint8_t, uint8_t );
 
 private:
 	//	For Singletone
@@ -121,7 +121,6 @@ static int32_t TestPatternFullScreenColor( CNX_I2C *pI2c, uint8_t index, uint8_t
 static int32_t TestPatternGrayScale( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex );
 static int32_t TestPatternDot( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex );
 static int32_t TestPatternDiagonal( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex );
-static int32_t TestPatternCabinetNum( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex );
 
 //------------------------------------------------------------------------------
 CNX_IPCServer::CNX_IPCServer()
@@ -133,7 +132,6 @@ CNX_IPCServer::CNX_IPCServer()
 	m_pTestPatternFunc[1] = &TestPatternGrayScale;
 	m_pTestPatternFunc[2] = &TestPatternDot;
 	m_pTestPatternFunc[3] = &TestPatternDiagonal;
-	m_pTestPatternFunc[4] = &TestPatternCabinetNum;
 }
 
 //------------------------------------------------------------------------------
@@ -327,27 +325,30 @@ int32_t CNX_IPCServer::TCON_Status( int32_t fd, uint32_t cmd, uint8_t index )
 #if FAKE_DATA
 	result = NX_GetRandomValue( 0, 1 );
 #else
-	CNX_I2C i2c(TCON_LEFT_I2C_PORT);
+	int32_t port	= (index & 0x80) >> 7;
+	uint8_t slave	= (index & 0x7F);
+
+	CNX_I2C i2c( port );
 	int32_t iWriteData, iReadData = 0x0000;
 
 	if( 0 > i2c.Open() )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", TCON_LEFT_I2C_PORT);
+		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port );
 		goto ERROR_TCON;
 	}
 
 	iWriteData = (int16_t)NX_GetRandomValue( 0x0000, 0x7FFF );
-	if( 0 > i2c.Write( index, TCON_REG_CHECK_STATUS, (uint16_t*)&iWriteData, 1 ) )
+	if( 0 > i2c.Write( slave, TCON_REG_CHECK_STATUS, (uint16_t*)&iWriteData, 1 ) )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n", 
-			TCON_LEFT_I2C_PORT, index, TCON_REG_CHECK_STATUS, iWriteData );
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_CHECK_STATUS, iWriteData );
 		goto ERROR_TCON;
 	}
 
-	if( 0 > (iReadData = i2c.Read( index, TCON_REG_CHECK_STATUS )) )
+	if( 0 > (iReadData = i2c.Read( slave, TCON_REG_CHECK_STATUS )) )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n", 
-			TCON_LEFT_I2C_PORT, index, TCON_REG_CHECK_STATUS );
+		NxDbgMsg( NX_DBG_VBS, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
+			port, slave, TCON_REG_CHECK_STATUS );
 		goto ERROR_TCON;
 	}
 
@@ -356,10 +357,10 @@ int32_t CNX_IPCServer::TCON_Status( int32_t fd, uint32_t cmd, uint8_t index )
 
 ERROR_TCON:
 	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-	
+
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
-	
+
 	return 0;
 }
 
@@ -372,19 +373,22 @@ int32_t CNX_IPCServer::TCON_DoorStatus( int32_t fd, uint32_t cmd, uint8_t index 
 #if FAKE_DATA
 	result = NX_GetRandomValue( 0, 2 );
 #else
-	CNX_I2C i2c(TCON_LEFT_I2C_PORT);
+	int32_t port	= (index & 0x80) >> 7;
+	uint8_t slave	= (index & 0x7F);
+
+	CNX_I2C i2c( port );
 	int32_t iReadData = 0x0000;
 
 	if( 0 > i2c.Open() )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", TCON_LEFT_I2C_PORT);
+		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port );
 		goto ERROR_TCON;
 	}
 
-	if( 0 > (iReadData = i2c.Read( index, TCON_REG_CHECK_DOOR_READ )) )
+	if( 0 > (iReadData = i2c.Read( slave, TCON_REG_CHECK_DOOR_READ )) )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n", 
-			TCON_LEFT_I2C_PORT, index, TCON_REG_CHECK_DOOR_READ );
+		NxDbgMsg( NX_DBG_VBS, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
+			port, slave, TCON_REG_CHECK_DOOR_READ );
 		goto ERROR_TCON;
 	}
 
@@ -396,8 +400,8 @@ ERROR_TCON:
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
-	
-	return 0;	
+
+	return 0;
 }
 
 //------------------------------------------------------------------------------
@@ -409,26 +413,29 @@ int32_t CNX_IPCServer::TCON_LedModeNormal( int32_t fd, uint32_t cmd, uint8_t ind
 #if FAKE_DATA
 	result = 0;
 #else
-	CNX_I2C i2c(TCON_LEFT_I2C_PORT);
+	int32_t port	= (index & 0x80) >> 7;
+	uint8_t slave	= (index & 0x7F);
+
+	CNX_I2C i2c( port );
 
 	if( 0 > i2c.Open() )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", TCON_LEFT_I2C_PORT);
+		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port );
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( index, TCON_REG_LOD_REMOVAL_EN, 0x0000 ) )
+	if( 0 > i2c.Write( slave, TCON_REG_LIVE_LOD_EN, 0x0000 ) )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n", 
-			TCON_LEFT_I2C_PORT, index, TCON_REG_LOD_REMOVAL_EN, 0x0000 );
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_LIVE_LOD_EN, 0x0000 );
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( index, TCON_REG_LIVE_LOD_EN, 0x0001 ) )
+	if( 0 > i2c.Write( slave, TCON_REG_LOD_REMOVAL_EN, 0x0001 ) )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n", 
-			TCON_LEFT_I2C_PORT, index, TCON_REG_LIVE_LOD_EN, 0x0001 );
-		goto ERROR_TCON;		
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_LOD_REMOVAL_EN, 0x0001 );
+		goto ERROR_TCON;
 	}
 
 	result = 0;
@@ -452,25 +459,29 @@ int32_t CNX_IPCServer::TCON_LedModeLod( int32_t fd, uint32_t cmd, uint8_t index 
 #if FAKE_DATA
 	result = 0;
 #else
-	CNX_I2C i2c(TCON_LEFT_I2C_PORT);
+	int32_t port	= (index & 0x80) >> 7;
+	uint8_t slave	= (index & 0x7F);
+
+	CNX_I2C i2c( port );
 
 	if( 0 > i2c.Open() )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", TCON_LEFT_I2C_PORT);
+		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port );
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( index, TCON_REG_LIVE_LOD_EN, 0x0000 ) )
+	if( 0 > i2c.Write( slave, TCON_REG_LOD_REMOVAL_EN, 0x0000 ) )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n", 
-			TCON_LEFT_I2C_PORT, index, TCON_REG_LIVE_LOD_EN, 0x0000 );
-		goto ERROR_TCON;			
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_LOD_REMOVAL_EN, 0x0000 );
+		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( index, TCON_REG_LOD_REMOVAL_EN, 0x0001 ) )
+	if( 0 > i2c.Write( slave, TCON_REG_LIVE_LOD_EN, 0x0001 ) )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n", 
-			TCON_LEFT_I2C_PORT, index, TCON_REG_LOD_REMOVAL_EN, 0x0001 );
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_LIVE_LOD_EN, 0x0000 );
+
 		goto ERROR_TCON;
 	}
 
@@ -495,49 +506,52 @@ int32_t CNX_IPCServer::TCON_LedOpenNum( int32_t fd, uint32_t cmd, uint8_t index 
 	int32_t iReadData = 0;
 	int32_t iErrorNum = 0;
 
-	CNX_I2C i2c(TCON_LEFT_I2C_PORT);
+	int32_t port	= (index & 0x80) >> 7;
+	uint8_t slave	= (index & 0x7F);
+
+	CNX_I2C i2c( port );
 
 	if( 0 > i2c.Open() )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", TCON_LEFT_I2C_PORT);
+		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port );
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( index, TCON_REG_ERROR_OUT_SEL, 0x0001 ) )
+	if( 0 > i2c.Write( slave, TCON_REG_ERROR_OUT_SEL, 0x0001 ) )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n", 
-			TCON_LEFT_I2C_PORT, index, TCON_REG_ERROR_OUT_SEL, 0x0001 );
-		goto ERROR_TCON;		
-	}
-
-	if( 0 > i2c.Read( index, TCON_REG_LOD_100_CHK_DONE ) )
-	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n", 
-			TCON_LEFT_I2C_PORT, index, TCON_REG_LOD_100_CHK_DONE );		
-		goto ERROR_TCON;
-	}
-	
-	if( 0 > i2c.Read( index, TCON_REG_ERROR_NUM_OVR ) )
-	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n", 
-			TCON_LEFT_I2C_PORT, index, TCON_REG_ERROR_NUM_OVR );		
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_ERROR_OUT_SEL, 0x0001 );
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Read( index, TCON_REG_CURRENT_PERCENT) )
+	if( 0 > i2c.Read( slave, TCON_REG_LOD_100_CHK_DONE ) )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n", 
-			TCON_LEFT_I2C_PORT, index, TCON_REG_CURRENT_PERCENT );		
+		NxDbgMsg( NX_DBG_VBS, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
+			port, slave, TCON_REG_LOD_100_CHK_DONE );
+		goto ERROR_TCON;
+	}
+
+	if( 0 > i2c.Read( slave, TCON_REG_ERROR_NUM_OVR ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
+			port, slave, TCON_REG_ERROR_NUM_OVR );
+		goto ERROR_TCON;
+	}
+
+	if( 0 > i2c.Read( slave, TCON_REG_CURRENT_PERCENT) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
+			port, slave, TCON_REG_CURRENT_PERCENT );
 		goto ERROR_TCON;
 	}
 
 	for( int32_t i = 0; i < MAX_LOD_MODULE; i++ )
 	{
-		iReadData = i2c.Read( index, TCON_REG_ERROR_NUM_M1 + i );
+		iReadData = i2c.Read( slave, TCON_REG_ERROR_NUM_M1 + i );
 		if( 0 > iReadData )
 		{
-			NxDbgMsg( NX_DBG_VBS, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n", 
-				TCON_LEFT_I2C_PORT, index, TCON_REG_ERROR_NUM_M1 + i );
+			NxDbgMsg( NX_DBG_VBS, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
+				port, slave, TCON_REG_ERROR_NUM_M1 + i );
 			goto ERROR_TCON;
 		}
 
@@ -566,21 +580,24 @@ int32_t CNX_IPCServer::TCON_LedOpenPos( int32_t fd, uint32_t cmd, uint8_t index 
 	int32_t iCoordinateX = 0, iCoordinateY = 0;
 	int32_t iErrorOutReady;
 
-	CNX_I2C i2c(TCON_LEFT_I2C_PORT);
+	int32_t port	= (index & 0x80) >> 7;
+	uint8_t slave	= (index & 0x7F);
+
+	CNX_I2C i2c( port );
 
 	if( 0 > i2c.Open() )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", TCON_LEFT_I2C_PORT);
+		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port );
 		goto ERROR_TCON;
 	}
 
 	usleep( 50 );
 
-	iErrorOutReady = i2c.Read( index, TCON_REG_ERROR_OUT_RDY );
+	iErrorOutReady = i2c.Read( slave, TCON_REG_ERROR_OUT_RDY );
 	if( iErrorOutReady )
 	{
-		iCoordinateX = i2c.Read( index, TCON_REG_X_COORDINATE );
-		iCoordinateY = i2c.Read( index, TCON_REG_Y_COORDINATE );
+		iCoordinateX = i2c.Read( slave, TCON_REG_X_COORDINATE );
+		iCoordinateY = i2c.Read( slave, TCON_REG_Y_COORDINATE );
 
 		printf("x( %d ), y( %d )\n", iCoordinateX, iCoordinateY );
 
@@ -590,9 +607,9 @@ int32_t CNX_IPCServer::TCON_LedOpenPos( int32_t fd, uint32_t cmd, uint8_t index 
 		result[3] = (uint8_t)((iCoordinateY >> 0 ) & 0xFF);
 	}
 
-	i2c.Write( index, TCON_REG_ERROR_OUT_CLK, 0x0001 );
+	i2c.Write( slave, TCON_REG_ERROR_OUT_CLK, 0x0001 );
 	usleep( 50000 );
-	i2c.Write( index, TCON_REG_ERROR_OUT_CLK, 0x0000 );
+	i2c.Write( slave, TCON_REG_ERROR_OUT_CLK, 0x0000 );
 
 ERROR_TCON:
 	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
@@ -608,11 +625,14 @@ int32_t CNX_IPCServer::TCON_LedShortNum( int32_t fd, uint32_t cmd, uint8_t index
 {
 	int32_t sendSize;
 
-	CNX_I2C i2c(TCON_LEFT_I2C_PORT);
+	int32_t port	= (index & 0x80) >> 7;
+	uint8_t slave	= (index & 0x7F);
+
+	CNX_I2C i2c( port );
 
 	if( 0 > i2c.Open() )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", TCON_LEFT_I2C_PORT);
+		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port );
 		goto ERROR_TCON;
 	}
 
@@ -620,7 +640,7 @@ int32_t CNX_IPCServer::TCON_LedShortNum( int32_t fd, uint32_t cmd, uint8_t index
 	//
 	//
 	NxDbgMsg( NX_DBG_INFO, "Not Implementaion.\n" );
-	printf("index(%d)\n", index);
+	printf("index(%d)\n", slave);
 
 ERROR_TCON:
 	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
@@ -636,11 +656,14 @@ int32_t CNX_IPCServer::TCON_LedShortPos( int32_t fd, uint32_t cmd, uint8_t index
 {
 	int32_t sendSize;
 
-	CNX_I2C i2c(TCON_LEFT_I2C_PORT);
+	int32_t port	= (index & 0x80) >> 7;
+	uint8_t slave	= (index & 0x7F);
+
+	CNX_I2C i2c( port );
 
 	if( 0 > i2c.Open() )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", TCON_LEFT_I2C_PORT);
+		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port );
 		goto ERROR_TCON;
 	}
 
@@ -648,7 +671,7 @@ int32_t CNX_IPCServer::TCON_LedShortPos( int32_t fd, uint32_t cmd, uint8_t index
 	//
 	//
 	NxDbgMsg( NX_DBG_INFO, "Not Implementaion.\n" );
-	printf("index(%d)\n", index);
+	printf("index(%d)\n", slave);
 
 ERROR_TCON:
 	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
@@ -663,18 +686,58 @@ ERROR_TCON:
 int32_t CNX_IPCServer::TCON_TestPattern( int32_t fd, uint32_t cmd, uint8_t index, uint8_t funcIndex, uint8_t patternIndex )
 {
 	int32_t sendSize;
-	
-	CNX_I2C i2c(TCON_LEFT_I2C_PORT);
+
+	int32_t port	= (index & 0x80) >> 7;
+	uint8_t slave	= (index & 0x7F);
+
+	CNX_I2C i2c( port );
+
 	if( 0 > i2c.Open() )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", TCON_LEFT_I2C_PORT);
+		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port );
 		goto ERROR_TCON;
 	}
 
-	m_pTestPatternFunc[funcIndex](&i2c, index, patternIndex);
+	if( TCON_CMD_PATTERN_RUN == cmd )
+	{
+		if( funcIndex != sizeof(m_pTestPatternFunc)/sizeof(m_pTestPatternFunc[0]) )
+		{
+			m_pTestPatternFunc[funcIndex](&i2c, slave, patternIndex);
+		}
+		else
+		{
+			if( 0 > i2c.Write( slave, TCON_REG_CABINET_ID, 0x0001 ) )
+			{
+				NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+					port, slave, TCON_REG_CABINET_ID, 0x0000 );
+				goto ERROR_TCON;
+			}
+		}
+	}
+	else
+	{
+		if( funcIndex != sizeof(m_pTestPatternFunc)/sizeof(m_pTestPatternFunc[0]) )
+		{
+			if( 0 > i2c.Write( slave, TCON_REG_PATTERN, 0x0000 ) )
+			{
+				NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+					port, slave, TCON_REG_PATTERN, 0x0000 );
+				goto ERROR_TCON;
+			}
+		}
+		else
+		{
+			if( 0 > i2c.Write( slave, TCON_REG_CABINET_ID, 0x0000 ) )
+			{
+				NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+					port, slave, TCON_REG_CABINET_ID, 0x0000 );
+				goto ERROR_TCON;
+			}
+		}
+	}
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, cmd, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -685,31 +748,31 @@ ERROR_TCON:
 //------------------------------------------------------------------------------
 int32_t CNX_IPCServer::TCON_Mastering( int32_t fd, uint32_t cmd, uint8_t index, uint8_t item, uint8_t msb, uint8_t lsb )
 {
-	uint8_t result = 0xFF;
 	int32_t sendSize;
+
+	int32_t port	= (index & 0x80) >> 7;
+	uint8_t slave	= (index & 0x7F);
 
 	int16_t inValue = ((int16_t)(msb << 8) & 0xFF00) + (int16_t)lsb;
 
-	CNX_I2C i2c(TCON_LEFT_I2C_PORT);
+	CNX_I2C i2c( port );
 
 	if( 0 > i2c.Open() )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", TCON_LEFT_I2C_PORT);
+		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port );
 		goto ERROR_TCON;
 	}
-	
-	NxDbgMsg( NX_DBG_INFO, "Not Implementaion.\n" );
-	printf( "index(%d), item(%d), value(%d)\n", index, item, inValue );
 
-	// if( 0 > i2c.Write( index, TCON_REG_LIVE_LOD_EN, 0x0000 ) )
+	NxDbgMsg( NX_DBG_INFO, "Not Implementaion.\n" );
+	printf( "index(%d), item(%d), value(%d)\n", slave, item, inValue );
+
+	// if( 0 > i2c.Write( slave, TCON_REG_LIVE_LOD_EN, 0x0000 ) )
 	// {
-	// 	NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n", 
-	// 		TCON_LEFT_I2C_PORT, index, TCON_REG_LIVE_LOD_EN, 0x0000 );
-	// 	goto ERROR_TCON;			
+	// 	NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+	// 		port, slave, TCON_REG_LIVE_LOD_EN, 0x0000 );
+	// 	goto ERROR_TCON;
 	// }
 
-	result = 0;
-	
 ERROR_TCON:
 	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, cmd, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
 
@@ -724,11 +787,14 @@ int32_t CNX_IPCServer::TCON_ElapsedTime( int32_t fd, uint32_t cmd, uint8_t index
 {
 	int32_t sendSize;
 
-	CNX_I2C i2c(TCON_LEFT_I2C_PORT);
+	int32_t port	= (index & 0x80) >> 7;
+	uint8_t slave	= (index & 0x7F);
+
+	CNX_I2C i2c( port );
 
 	if( 0 > i2c.Open() )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", TCON_LEFT_I2C_PORT);
+		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port );
 		goto ERROR_TCON;
 	}
 
@@ -736,7 +802,7 @@ int32_t CNX_IPCServer::TCON_ElapsedTime( int32_t fd, uint32_t cmd, uint8_t index
 	//
 	//
 	NxDbgMsg( NX_DBG_INFO, "Not Implementaion.\n" );
-	printf("index(%d)\n", index);
+	printf("index(%d)\n", slave);
 
 ERROR_TCON:
 	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
@@ -752,11 +818,14 @@ int32_t CNX_IPCServer::TCON_AccumulateTime( int32_t fd, uint32_t cmd, uint8_t in
 {
 	int32_t sendSize;
 
-	CNX_I2C i2c(TCON_LEFT_I2C_PORT);
+	int32_t port	= (index & 0x80) >> 7;
+	uint8_t slave	= (index & 0x7F);
+
+	CNX_I2C i2c( port );
 
 	if( 0 > i2c.Open() )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", TCON_LEFT_I2C_PORT);
+		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port);
 		goto ERROR_TCON;
 	}
 
@@ -764,7 +833,7 @@ int32_t CNX_IPCServer::TCON_AccumulateTime( int32_t fd, uint32_t cmd, uint8_t in
 	//
 	//
 	NxDbgMsg( NX_DBG_INFO, "Not Implementaion.\n" );
-	printf("index(%d)\n", index);
+	printf("index(%d)\n", slave);
 
 ERROR_TCON:
 	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
@@ -780,11 +849,14 @@ int32_t CNX_IPCServer::TCON_Version( int32_t fd, uint32_t cmd, uint8_t index )
 {
 	int32_t sendSize;
 
-	CNX_I2C i2c(TCON_LEFT_I2C_PORT);
+	int32_t port	= (index & 0x80) >> 7;
+	uint8_t slave	= (index & 0x7F);
+
+	CNX_I2C i2c( port );
 
 	if( 0 > i2c.Open() )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", TCON_LEFT_I2C_PORT);
+		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port );
 		goto ERROR_TCON;
 	}
 
@@ -792,7 +864,7 @@ int32_t CNX_IPCServer::TCON_Version( int32_t fd, uint32_t cmd, uint8_t index )
 	//
 	//
 	NxDbgMsg( NX_DBG_INFO, "Not Implementaion.\n" );
-	printf("index(%d)\n", index);
+	printf("index(%d)\n", slave);
 
 ERROR_TCON:
 	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
@@ -800,7 +872,7 @@ ERROR_TCON:
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
 
-	return 0;	
+	return 0;
 }
 
 
@@ -881,6 +953,7 @@ int32_t CNX_IPCServer::BAT_Status( int32_t fd )
 
 	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, BAT_CMD_STATUS, data, sizeof(data), m_SendBuf, sizeof(m_SendBuf) );
 	sent = write( fd, m_SendBuf, sendSize );
+	NxDbgMsg(NX_DBG_VBS, "Write Reply = %d/%d\n", sent, sendSize);
 	// NX_HexDump( m_SendBuf, sent );
 	return 0;
 }
@@ -934,7 +1007,7 @@ int32_t CNX_IPCServer::ProcessCommand( int32_t fd, uint32_t cmd, void *pPayload,
 	//	TCON Commands
 	case TCON_CMD_STATUS:
 		return TCON_Status( fd, cmd, pData[0] );
-	
+
 	case TCON_CMD_DOOR_STATUS:
 		return TCON_DoorStatus( fd, cmd, pData[0] );
 
@@ -956,7 +1029,8 @@ int32_t CNX_IPCServer::ProcessCommand( int32_t fd, uint32_t cmd, void *pPayload,
 	case TCON_CMD_SHORT_POS:
 		return TCON_LedShortPos( fd, cmd, pData[0] );
 
-	case TCON_CMD_PATTERN:
+	case TCON_CMD_PATTERN_RUN:
+	case TCON_CMD_PATTERN_STOP:
 		return TCON_TestPattern( fd, cmd, pData[0], pData[1], pData[2] );
 
 	case TCON_CMD_MASTERING:
@@ -1005,38 +1079,35 @@ int32_t CNX_IPCServer::ProcessCommand( int32_t fd, uint32_t cmd, void *pPayload,
 //------------------------------------------------------------------------------
 static int32_t TestPatternFullScreenColor( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
 {
-	const uint16_t patternFullScreenColor[][8] = {
-	//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
-		10,		0,		1024,	0,		1080,	4095,	4095,	4095,	//	White	100%
-		10,		0,		1024,	0,		1080,	3685,	3685,	3685,	//	Gray	90%
-		10,		0,		1024,	0,		1080,	3276,	2948,	2948,	//	Gray	80%
-		10,		0,		1024,	0,		1080,	2866,	2866,	2866,	//	Gray	70%
-		10,		0,		1024,	0,		1080,	2457,	2457,	2457,	//	Gray	60%
-		10,		0,		1024,	0,		1080,	2047,	2047,	2047,	//	Gray	50%
-		10,		0,		1024,	0,		1080,	1638,	1638,	1638,	//	Gray	40%
-		10,		0,		1024,	0,		1080,	1228,	1228,	1228,	//	Gray	30%
-		10,		0,		1024,	0,		1080,	819,	819,	819,	//	Gray	20%
-		10,		0,		1024,	0,		1080,	409,	409,	409,	//	Gray	1c0%
-		10,		0,		1024,	0,		1080,	0,		0,		0,		//	Black	0%
-		10,		0,		1024,	0,		1080,	4095,	0,		0,		//	Red		100%
-		10,		0,		1024,	0,		1080,	0,		4095,	0,		//	Green	100%
-		10,		0,		1024,	0,		1080,	0,		0,		4095,	//	Blue	100%
-		10,		0,		1024,	0,		1080,	4095,	0,		4095,	//	Magenta	100%
-		10,		0,		1024,	0,		1080,	0,		4095,	4095,	//	Cyan	100%
-		10,		0,		1024,	0,		1080,	4095,	4095,	0,		//	Yellow 	00%
+	const uint16_t patternData[][8] = {
+		//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
+		{	10,		0,		1024,	0,		1080,	4095,	4095,	4095	},	//	White	100%
+		{	10,		0,		1024,	0,		1080,	3685,	3685,	3685	},	//	Gray	90%
+		{	10,		0,		1024,	0,		1080,	3276,	2948,	2948	},	//	Gray	80%
+		{	10,		0,		1024,	0,		1080,	2866,	2866,	2866	},	//	Gray	70%
+		{	10,		0,		1024,	0,		1080,	2457,	2457,	2457	},	//	Gray	60%
+		{	10,		0,		1024,	0,		1080,	2047,	2047,	2047	},	//	Gray	50%
+		{	10,		0,		1024,	0,		1080,	1638,	1638,	1638	},	//	Gray	40%
+		{	10,		0,		1024,	0,		1080,	1228,	1228,	1228	},	//	Gray	30%
+		{	10,		0,		1024,	0,		1080,	819,	819,	819		},	//	Gray	20%
+		{	10,		0,		1024,	0,		1080,	409,	409,	409		},	//	Gray	1c0%
+		{	10,		0,		1024,	0,		1080,	0,		0,		0		},	//	Black	0%
+		{	10,		0,		1024,	0,		1080,	4095,	0,		0		},	//	Red		100%
+		{	10,		0,		1024,	0,		1080,	0,		4095,	0		},	//	Green	100%
+		{	10,		0,		1024,	0,		1080,	0,		0,		4095	},	//	Blue	100%
+		{	10,		0,		1024,	0,		1080,	4095,	0,		4095	},	//	Magenta	100%
+		{	10,		0,		1024,	0,		1080,	0,		4095,	4095	},	//	Cyan	100%
+		{	10,		0,		1024,	0,		1080,	4095,	4095,	0		},	//	Yellow 	00%
 	};
 
-	const uint16_t *pData = patternFullScreenColor[patternIndex];
+	const uint16_t *pData = patternData[patternIndex];
 
-	for( int32_t i = 0; i < (int32_t)(sizeof(patternFullScreenColor[0]) / sizeof(patternFullScreenColor[0][0])); i++ )
+	for( int32_t i = 0; i < (int32_t)(sizeof(patternData[0]) / sizeof(patternData[0][0])); i++ )
 	{
 		if( 0 > pI2c->Write( index, TCON_REG_PATTERN + i, pData[i] ) )
 		{
 			return -1;
 		}
-
-		printf("[wr] slave(0x%02x), addr(0x%04x), data(0x%04x)\n", 
-			index, TCON_REG_PATTERN + i, pData[i] );
 	}
 
 	return 0;
@@ -1045,31 +1116,28 @@ static int32_t TestPatternFullScreenColor( CNX_I2C *pI2c, uint8_t index, uint8_t
 //------------------------------------------------------------------------------
 static int32_t TestPatternGrayScale( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
 {
-	const uint16_t patternGrayScale[][8] = {
-	//	0x24	0x25	0x26	0x27	0x28
-		2,		0,		1024,	0,		1080,							//	Gray 16-Step
-		3,		0,		1024,	0,		1080,							//	Gray 32-Step
-		4,		0,		1024,	0,		1080,							//	Gray 64-Step
-		5,		0,		1024,	0,		1080,							//	Gray 128-Step
-		6,		0,		1024,	0,		1080,							//	Gray 256-Step
-		7,		0,		1024,	0,		1080,							//	Gray 512-Step
-		9,		7,		1024,	0,		1080,							//	Gray 2048-Step
-		9,		1,		1024,	0,		1080,							//	Red 2048-Step
-		9,		2,		1024,	0,		1080,							//	Green 2048-Step
-		9,		4,		1024,	0,		1080,							//	Blue 2048-Step
+	const uint16_t patternData[][8] = {
+		//	0x24	0x25	0x26	0x27	0x28
+		{	2,		0,		1024,	0,		1080	},							//	Gray 16-Step
+		{	3,		0,		1024,	0,		1080	},							//	Gray 32-Step
+		{	4,		0,		1024,	0,		1080	},							//	Gray 64-Step
+		{	5,		0,		1024,	0,		1080	},							//	Gray 128-Step
+		{	6,		0,		1024,	0,		1080	},							//	Gray 256-Step
+		{	7,		0,		1024,	0,		1080	},							//	Gray 512-Step
+		{	9,		7,		1024,	0,		1080	},							//	Gray 2048-Step
+		{	9,		1,		1024,	0,		1080	},							//	Red 2048-Step
+		{	9,		2,		1024,	0,		1080	},							//	Green 2048-Step
+		{	9,		4,		1024,	0,		1080	},							//	Blue 2048-Step
 	};
 
-	const uint16_t *pData = patternGrayScale[patternIndex];
+	const uint16_t *pData = patternData[patternIndex];
 
-	for( int32_t i = 0; i < (int32_t)(sizeof(patternGrayScale[0]) / sizeof(patternGrayScale[0][0])); i++ )
+	for( int32_t i = 0; i < (int32_t)(sizeof(patternData[0]) / sizeof(patternData[0][0])); i++ )
 	{
 		if( 0 > pI2c->Write( index, TCON_REG_PATTERN + i, pData[i] ) )
 		{
 			return -1;
 		}
-
-		printf("[wr] slave(0x%02x), addr(0x%04x), data(0x%04x)\n", 
-			index, TCON_REG_PATTERN + i, pData[i] );
 	}
 
 	return 0;
@@ -1078,22 +1146,19 @@ static int32_t TestPatternGrayScale( CNX_I2C *pI2c, uint8_t index, uint8_t patte
 //------------------------------------------------------------------------------
 static int32_t TestPatternDot( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
 {
-	const uint16_t patternDot[][8] = {
-	//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
-		17,		0,		1024,	0,		1080,	4095,	4095,	4095,	//	Dot Pattern 1x1
+	const uint16_t patternData[][8] = {
+		//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
+		{	17,		0,		1024,	0,		1080,	4095,	4095,	4095	},	//	Dot Pattern 1x1
 	};
 
-	const uint16_t *pData = patternDot[patternIndex];
+	const uint16_t *pData = patternData[patternIndex];
 
-	for( int32_t i = 0; i < (int32_t)(sizeof(patternDot[0]) / sizeof(patternDot[0][0])); i++ )
+	for( int32_t i = 0; i < (int32_t)(sizeof(patternData[0]) / sizeof(patternData[0][0])); i++ )
 	{
 		if( 0 > pI2c->Write( index, TCON_REG_PATTERN + i, pData[i] ) )
 		{
 			return -1;
 		}
-
-		printf("[wr] slave(0x%02x), addr(0x%04x), data(0x%04x)\n", 
-			index, TCON_REG_PATTERN + i, pData[i] );
 	}
 
 	return 0;
@@ -1102,42 +1167,24 @@ static int32_t TestPatternDot( CNX_I2C *pI2c, uint8_t index, uint8_t patternInde
 //------------------------------------------------------------------------------
 static int32_t TestPatternDiagonal( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
 {
-	const uint16_t patternDiagonal[][8] = {
-	//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
-		104,	0,		1024,	0,		1080,	65535,	65535,	65535,	//	Right-Down
-		105,	0,		1024,	0,		1080,	65535,	65535,	65535,	//	Right-Up
+	const uint16_t patternData[][8] = {
+		//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
+		{	104,	0,		1024,	0,		1080,	65535,	65535,	65535	},	//	Right-Down
+		{	105,	0,		1024,	0,		1080,	65535,	65535,	65535	},	//	Right-Up
 	};
 
-	const uint16_t *pData = patternDiagonal[patternIndex];
+	const uint16_t *pData = patternData[patternIndex];
 
-	for( int32_t i = 0; i < (int32_t)(sizeof(patternDiagonal[0]) / sizeof(patternDiagonal[0][0])); i++ )
+	for( int32_t i = 0; i < (int32_t)(sizeof(patternData[0]) / sizeof(patternData[0][0])); i++ )
 	{
 		if( 0 > pI2c->Write( index, TCON_REG_PATTERN + i, pData[i] ) )
 		{
 			return -1;
 		}
-
-		printf("[wr] slave(0x%02x), addr(0x%04x), data(0x%04x)\n", 
-			index, TCON_REG_PATTERN + i, pData[i] );
 	}
 
 	return 0;
 }
-
-//------------------------------------------------------------------------------
-static int32_t TestPatternCabinetNum( CNX_I2C *pI2c, uint8_t index, uint8_t /*patternIndex*/ )
-{
-	if( 0 > pI2c->Write( index, TCON_REG_CABINET_ID, 0x0001 ) )
-	{
-		return -1;
-	}
-	
-	printf("[wr] slave(0x%02x), addr(0x%04x), data(0x%04x)\n", 
-		index, TCON_REG_CABINET_ID, 0x0001 );
-	
-	return 0;
-}
-
 
 //------------------------------------------------------------------------------
 //

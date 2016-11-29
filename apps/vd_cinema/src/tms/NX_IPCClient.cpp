@@ -149,6 +149,13 @@ int32_t CNX_IPCClient::TCONCmdMode( int32_t id, uint32_t cmd )
 	write( clntSock, m_TConSendBuf, sendSize );
 
 	recvSize = read( clntSock, m_TConReceiveBuf, sizeof(m_TConReceiveBuf) );
+	if( 0 != TMS_ParsePacket( m_TConReceiveBuf, recvSize, &key, &cmd, &payload, &payloadSize ) )
+	{
+		NxErrMsg( "Error : TMS_ParsePacket().\n" );
+		close( clntSock );
+		return -1;
+	}
+
 	if( 0 > recvSize )
 	{
 		NxErrMsg( "Fail, read().\n" );
@@ -286,7 +293,8 @@ int32_t CNX_IPCClient::TCONCommand( int32_t id, int32_t cmd, uint8_t *pBuf, int3
 	case TCON_CMD_VERSION:
 		return TCONCmdInfo( id, cmd & 0xFF, pBuf, size );
 
-	case TCON_CMD_PATTERN:
+	case TCON_CMD_PATTERN_RUN:
+	case TCON_CMD_PATTERN_STOP:
 		return TCONCmdControl( id, cmd & 0xFF, pBuf[0], pBuf[1] );
 
 	case TCON_CMD_MASTERING:

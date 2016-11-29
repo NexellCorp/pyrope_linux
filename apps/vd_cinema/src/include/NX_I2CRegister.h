@@ -20,14 +20,18 @@
 #ifndef __NX_I2CREGISTER_H__
 #define __NX_I2CREGISTER_H__
 
-#define TCON_LEFT_I2C_PORT				0
-#define TCON_RIGHT_I2C_PORT				1
 #define PFPGA_I2C_PORT					2
 
 //
-//	TCON Status Check
+//	TCON Status
 //
 #define TCON_REG_CHECK_STATUS			0x0170
+
+
+//
+//	Cabinet Door
+//
+#define TCON_REG_CHECK_DOOR_READ		0x0171
 
 
 //
@@ -35,11 +39,6 @@
 //
 #define TCON_REG_LOD_REMOVAL_EN			0x00E6
 #define TCON_REG_LIVE_LOD_EN			0x0100
-#define TCON_REG_USE_TDISC				0x0101
-#define TCON_REG_TDISC					0x0102
-#define TCON_REG_CMP_GS_MIN				0x0103
-#define TCON_REG_ERROR_MAX				0x0104
-#define TCON_REG_CURRENT_MDL_ID			0x0105
 #define TCON_REG_ERROR_OUT_SEL			0x0106
 #define TCON_REG_ERROR_OUT_CLK			0x0107
 #define TCON_REG_ERROR_OUT_RDY			0x0108
@@ -61,25 +60,45 @@
 #define TCON_REG_ERROR_NUM_OVR			0x0118
 #define TCON_REG_X_COORDINATE			0x0119
 #define TCON_REG_Y_COORDINATE			0x011A
-#define TCON_REG_LIVE_ACT_SUB			0x011B
-#define TCON_REG_SOUT_VALID_CTRL		0x011C
-#define TCON_REG_LOD_READ_START			0x011D
 
 
 //
 //	LED Short Check
 //
+
 /* Not Support */
 
 
 //
-//	Cabinet Door Check
+//	LED Pattern
 //
-#define TCON_REG_CHECK_DOOR_READ		0x0171
+#define TCON_REG_CABINET_ID				0x0023
+#define TCON_REG_PATTERN				0x0024
+#define TCON_REG_LEFT					0x0025
+#define TCON_REG_RIGHT					0x0026
+#define TCON_REG_TOP					0x0027
+#define TCON_REG_DOWN					0x0028
+#define TCON_REG_BOX_R					0x0029
+#define TCON_REG_BOX_G					0x002A
+#define TCON_REG_BOX_B					0x002B
 
 
 //
-//	Version Check
+//	LED Mastering
+//
+
+/* Not Yet */
+
+
+//
+//	LED Elapsed/Accumulate Time
+//
+
+/* Not Yet */
+
+
+//
+//	Version
 //
 #define TCON_REG_FPGA_MODE_NAME			0x0013
 #define TCON_REG_FLASH_SEL				0x008D
@@ -118,71 +137,5 @@
 #define TCON_REG_F_LED_DATA14_READ		0x0160
 #define TCON_REG_F_LED_DATA15_READ		0x0161
 
-
-//
-//	Test Pattern
-//
-#define TCON_REG_I_V_ACTIVE_SIZE		0x0008
-#define TCON_REG_CABINET_H_ACTIVE_SIZE	0x0009
-#define TCON_REG_CABINET_V_ACTIVE_SIZE	0x000A
-#define TCON_REG_MODULE_H_ACTIVE_SIZE	0x000B
-#define TCON_REG_MODULE_V_ACTIVE_SIZE	0x000C
-#define TCON_REG_H_RAST_SIZE_MIN		0x000F
-#define TCON_REG_H_RAST_SIZE_MAX		0x0010
-#define TCON_REG_V_RAST_SIZE_MIN		0x0011
-#define TCON_REG_V_RAST_SIZE_MAX		0x0012
-#define TCON_REG_FPGA_MODE_NAME			0x0013
-#define TCON_REG_H_RAST_SIZE_READ		0x0014
-#define TCON_REG_V_RAST_SIZE_READ		0x0015
-#define TCON_REG_PRODUCT_MODE			0x0016
-#define TCON_REG_VSYNC_STABLE_CNT		0x0017
-#define TCON_REG_MULTI					0x0018
-#define TCON_REG_CABINET_X_POS			0x0019
-#define TCON_REG_CABINET_Y_POS			0x001A
-#define TCON_REG_CLK_MUX_SEL			0x001B
-#define TCON_REG_BOOTING_STABLE_CNT		0x001C
-#define TCON_REG_SCAN_RATE				0x001D
-#define TCON_REG_PRE_RUN				0x001E
-#define TCON_REG_HZ_MODE				0x0020
-#define TCON_REG_RGB_ORDER				0x0022
-#define TCON_REG_CABINET_ID				0x0023
-#define TCON_REG_PATTERN				0x0024
-#define TCON_REG_LEFT					0x0025
-#define TCON_REG_RIGHT					0x0026
-#define TCON_REG_TOP					0x0027
-#define TCON_REG_DOWN					0x0028
-#define TCON_REG_BOX_R					0x0029
-#define TCON_REG_BOX_G					0x002A
-#define TCON_REG_BOX_B					0x002B
-#define TCON_REG_HBLOCK_SIZE			0x002C
-#define TCON_REG_VBLOCK_SIZE			0x002D
-	
-
-//
-//	Cabinet ID Display
-//
-#define	TCON_REG_CABINET_ID				0x0023
-
-
-//
-//	Input Source Selection
-//
-#define TCON_REG_MUTE					0x0065
-
-
-//
-//	Internal Pattern
-//
-#define TCON_REG_CABINET_ID				0x0023
-#define TCON_REG_PATTERN				0x0024
-#define TCON_REG_LEFT					0x0025
-#define TCON_REG_RIGHT					0x0026
-#define TCON_REG_TOP					0x0027
-#define TCON_REG_DOWN					0x0028
-#define TCON_REG_BOX_R					0x0029
-#define TCON_REG_BOX_G					0x002A
-#define TCON_REG_BOX_B					0x002B
-#define TCON_REG_HBLOCK_SIZE			0x002C
-#define TCON_REG_VBLOCK_SIZE			0x002D
 
 #endif	// __NX_I2CREGISTER_H__

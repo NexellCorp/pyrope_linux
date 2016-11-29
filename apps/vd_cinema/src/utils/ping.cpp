@@ -154,7 +154,7 @@ static int32_t SendPing( int sock, int querytype, const char *hostname )
 //
 //	Receive Ping Reply
 //
-static int32_t ReceivePingReply( int32_t sock, const char *target )
+static int32_t ReceivePingReply( int32_t sock, const char * /*target*/ )
 {
 	char buf[1500];
 	struct ip *ip = (struct ip *)buf;
@@ -165,13 +165,11 @@ static int32_t ReceivePingReply( int32_t sock, const char *target )
 	struct timeval tv;
 	struct tm *tmtime;
 	int recvd = 0;
-	char *hostto;
-	char hostbuf[128], timebuf[128];
+	// char *hostto;
+	char /*hostbuf[128],*/ timebuf[128];
 	unsigned long int icmptime, icmpmask;
 	struct pollfd	pollEvent;
 	int32_t hPoll;
-
-	(void*)target;
 
 	gettimeofday(&tv, NULL);
 
@@ -232,11 +230,11 @@ static int32_t ReceivePingReply( int32_t sock, const char *target )
 int32_t ping( const char *target )
 {
 	int32_t sock;
-	char *hostfrom = NULL;
+	// char *hostfrom = NULL;
 	int32_t on = 1;
 	int32_t querytype = ICMP_ECHO;	//	ICMP_MASKREQ
-	//int32_t querytype = ICMP_TSTAMP;	//	ICMP_MASKREQ
-	//int32_t querytype = ICMP_MASKREQ;	//	ICMP_MASKREQ
+	// int32_t querytype = ICMP_TSTAMP;	//	ICMP_MASKREQ
+	// int32_t querytype = ICMP_MASKREQ;	//	ICMP_MASKREQ
 
 	if ((sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0){
 		return -1;

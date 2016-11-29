@@ -55,84 +55,123 @@ public class DisplayCheckActivity extends AppCompatActivity {
             "Blue 2048-Step",
     };
 
-    private String[] mDotPattern = {
-    };
-
     private String[] mDiagonalPattern = {
             "Right Down ( ↘ )", "Right Up ( ↗ )",
-    };
-
-    private String[] mCabinetId = {
     };
 
     private String[][] mPatternName = {
             mFullScreenColor,
             mGrayScale,
-            mDotPattern,
+            new String[0],
             mDiagonalPattern,
-            mCabinetId,
+            new String[0],
     };
 
-    private LayoutInflater  mInflater;
-    private LinearLayout    mParentLayoutTestPattern;
-    private LinearLayout[]  mLayoutTestPattern;
+    private SelectRunAdapter mAdapterTestPattern;
+    private StatusDescribeAdapter mAdapterAccumulation;
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        mLayoutTestPattern = new LinearLayout[mFuncName.length];
-        for( int i = 0; i < mFuncName.length; i++ ) {
-            mLayoutTestPattern[i] = (LinearLayout)mInflater.inflate(R.layout.layout_item_test_pattern, mParentLayoutTestPattern, false );
-            AddViewTestPattern( i, mLayoutTestPattern, mFuncName, mPatternName[i] );
-        }
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-    }
+    private byte[]  mCabinet;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_display_check);
 
+        //
         // Configuration TitleBar
+        //
         VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.layoutTitleBar ));
         titleBar.SetTitle( "Cinema LED Display System - Display Check" );
         titleBar.SetListener(VdTitleBar.BTN_BACK, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                StopTestPattern();
+
                 startActivity( new Intent(v.getContext(), TopActivity.class) );
                 overridePendingTransition(0, 0);
                 finish();
             }
         });
+        titleBar.SetListener(VdTitleBar.BTN_EXIT, new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                StopTestPattern();
 
+                mService.TurnOff();
+            }
+        });
+
+        //
         // Configuration StatusBar
+        //
         new VdStatusBar( getApplicationContext(), (LinearLayout)findViewById( R.id.layoutStatusBar) );
 
         AddTabs();
 
-        mInflater =  (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        mParentLayoutTestPattern = (LinearLayout)findViewById(R.id.layoutTestPattern);
+        //
+        //
+        //
+        View listViewFooter = ((LayoutInflater)getApplicationContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE)).inflate(R.layout.listview_footer_blank, null, false);
+        mCabinet = ((CinemaInfo)getApplicationContext()).GetCabinet();
+
+        //
+        //  TEST PATTERN
+        //
+        ListView listViewTestPattern = (ListView)findViewById(R.id.listview_test_pattern);
+        listViewTestPattern.addFooterView( listViewFooter );
+
+        mAdapterTestPattern = new SelectRunAdapter(this, R.layout.listview_row_select_run);
+        listViewTestPattern.setAdapter( mAdapterTestPattern );
+
+        //
+        //
+        //
+        for(int i = 0; i < mFuncName.length; i++ ) {
+            boolean isToggle = mFuncName[i].equals("Cabinet ID");
+            mAdapterTestPattern.add( new SelectRunInfo(mFuncName[i], mPatternName[i], isToggle, new SelectRunAdapter.OnClickListener() {
+                @Override
+                public void onClickListener(int index, int spinnerIndex, boolean status ) {
+                    RunTestPattern( index, spinnerIndex, status );
+                }
+            }));
+
+            mAdapterTestPattern.notifyDataSetChanged();
+        }
+
+        //
+        //  ACCUMULATION TIME
+        //
+        ListView listViewAccumulation = (ListView)findViewById(R.id.listview_accumulation);
+        listViewAccumulation.addFooterView( listViewFooter );
+
+        mAdapterAccumulation = new StatusDescribeAdapter(this, R.layout.listview_row_status_describe);
+        listViewAccumulation.setAdapter( mAdapterAccumulation );
+
+        final String[] strAccumulation = {
+                "Elapsed Time",
+                "Total Accumulation Time",
+        };
+
+        for( final String str : strAccumulation ) {
+            mAdapterAccumulation.add( new StatusDescribeInfo( str, "00 hrs 00 min") );
+            mAdapterAccumulation.notifyDataSetChanged();
+        }
     }
 
     private void AddTabs() {
         TabHost tabHost = (TabHost) findViewById(R.id.tabHost);
         tabHost.setup();
 
+        TabHost.TabSpec tabSpec0 = tabHost.newTabSpec("TAB0");
+        tabSpec0.setIndicator("Test Pattern");
+        tabSpec0.setContent(R.id.tabTestPattern);
+
         TabHost.TabSpec tabSpec1 = tabHost.newTabSpec("TAB1");
-        tabSpec1.setIndicator("Test Pattern");
-        tabSpec1.setContent(R.id.tabTestPattern);
+        tabSpec1.setIndicator("Led Accumulation time");
+        tabSpec1.setContent(R.id.tabLedAccumulation);
 
-        TabHost.TabSpec tabSpec2 = tabHost.newTabSpec("TAB2");
-        tabSpec2.setIndicator("Led Accumulation time");
-        tabSpec2.setContent(R.id.tabLedAccumulation);
-
+        tabHost.addTab(tabSpec0);
         tabHost.addTab(tabSpec1);
-        tabHost.addTab(tabSpec2);
 
         tabHost.setOnTabChangedListener(mDiagnosticsTabChange);
         tabHost.setCurrentTab(0);
@@ -141,9 +180,64 @@ public class DisplayCheckActivity extends AppCompatActivity {
     private TabHost.OnTabChangeListener mDiagnosticsTabChange = new TabHost.OnTabChangeListener() {
         @Override
         public void onTabChanged(String tabId) {
-            Log.i(VD_DTAG, "Tab ID : " + tabId);
+            if( tabId.equals("TAB0") ) UpdateTestPattern();
+            if( tabId.equals("TAB1") ) UpdateAccumulation();
         }
     };
+
+    private void UpdateTestPattern() {
+
+    }
+
+    private void UpdateAccumulation() {
+        StopTestPattern();
+    }
+
+    private void RunTestPattern( int funcIndex, int patternIndex, boolean status ) {
+        Log.i(VD_DTAG, String.format( "funcIndex(%d), patternIndex(%d), status(%s)", funcIndex, patternIndex, String.valueOf(status)) );
+
+        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+        byte[] data = { (byte)funcIndex, (byte)patternIndex };
+
+        boolean bValidPort0 = false, bValidPort1 = false;
+        for( byte id : mCabinet ) {
+            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
+            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
+        }
+
+        if( bValidPort0 ) ctrl.Send( 0x09, status ? NxCinemaCtrl.CMD_TCON_PATTERN_RUN : NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data );
+        if( bValidPort1 ) ctrl.Send( 0x89, status ? NxCinemaCtrl.CMD_TCON_PATTERN_RUN : NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data );
+
+        String strLog;
+        if( mPatternName[funcIndex].length == 0 ) {
+            strLog = String.format( "%s pattern test. ( %s )", status ? "Run" : "Stop", mFuncName[funcIndex] );
+        }
+        else {
+            strLog = String.format( "%s pattern test. ( %s / %s )", status ? "Run" : "Stop", mFuncName[funcIndex], mPatternName[funcIndex][patternIndex] );
+        }
+
+        ((CinemaInfo)getApplicationContext()).InsertLog(strLog);
+    }
+
+    private void StopTestPattern() {
+        for( int i = 0; i < mAdapterTestPattern.getCount(); i++ ) {
+            mAdapterTestPattern.reset(i);
+        }
+
+        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+
+        boolean bValidPort0 = false, bValidPort1 = false;
+        for( byte id : mCabinet ) {
+            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
+            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
+        }
+
+        for( int i = 0; i < mFuncName.length; i++ ) {
+            byte[] data = { (byte)i, (byte)0x00 };
+            if( bValidPort0 ) ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data );
+            if( bValidPort1 ) ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data );
+        }
+    }
 
     //
     //  For Internal Toast Message
@@ -156,53 +250,6 @@ public class DisplayCheckActivity extends AppCompatActivity {
 
         mToast.setText(strMsg);
         mToast.show();
-    }
-
-    private void AddViewTestPattern( int index, View[] childView, String[] strName, String[] spinnerItem  ) {
-        mParentLayoutTestPattern.addView(childView[index]);
-
-        final int funcIndex = index;
-        final TextView textViewTestPattern = (TextView)childView[index].findViewById(R.id.textViewTestPattern);
-        final Spinner spinnerTestPattern = (Spinner)childView[index].findViewById(R.id.spinnerTestPattern);
-
-        textViewTestPattern.setText( strName[index] );
-
-        ArrayAdapter<String> arrayAdapter;
-        if(0 == spinnerItem.length) {
-            String[] strDummy = { "" };
-            arrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, strDummy);
-            spinnerTestPattern.setEnabled(false);
-        }
-        else {
-            arrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, spinnerItem);
-        }
-
-        spinnerTestPattern.setAdapter( arrayAdapter );
-
-        Button btnTestPattern = (Button)childView[index].findViewById(R.id.btnTestPattern);
-        btnTestPattern.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                RunTestPattern( funcIndex, spinnerTestPattern.getSelectedItemPosition() );
-            }
-        });
-    }
-
-    private void RunTestPattern( int funcIndex, int patternIndex ) {
-        Log.i(VD_DTAG, String.format( "funcIndex(%d), patternIndex(%d)", funcIndex, patternIndex) );
-
-        byte[] data = { (byte)funcIndex, (byte)patternIndex };
-        NxCinemaCtrl.GetInstance().Send( 0x09, NxCinemaCtrl.CMD_TCON_PATTERN, data );
-
-        String strLog;
-        if( mPatternName[funcIndex].length == 0 ) {
-            strLog = String.format( "Run pattern test. ( %s )", mFuncName[funcIndex] );
-        }
-        else {
-            strLog = String.format( "Run pattern test. ( %s / %s )", mFuncName[funcIndex], mPatternName[funcIndex][patternIndex] );
-        }
-
-        ((CinemaInfo)getApplicationContext()).InsertLog(strLog);
     }
 
     //

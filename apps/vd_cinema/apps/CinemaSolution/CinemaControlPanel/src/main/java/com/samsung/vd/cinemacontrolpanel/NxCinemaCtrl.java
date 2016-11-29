@@ -21,7 +21,8 @@ public class NxCinemaCtrl {
     public static final int CMD_TCON_OPEN_POS       = 0x0014;
     public static final int CMD_TCON_SHORT_NUM      = 0x0015;
     public static final int CMD_TCON_SHORT_POS      = 0x0016;
-    public static final int CMD_TCON_PATTERN        = 0x0021;
+    public static final int CMD_TCON_PATTERN_RUN    = 0x0021;
+    public static final int CMD_TCON_PATTERN_STOP   = 0x0022;
     public static final int CMD_TCON_MASTERING      = 0x0031;
     public static final int CMD_TCON_ELAPSED_TIME   = 0x0041;
     public static final int CMD_TCON_ACCUMULATE_TIME= 0x0042;

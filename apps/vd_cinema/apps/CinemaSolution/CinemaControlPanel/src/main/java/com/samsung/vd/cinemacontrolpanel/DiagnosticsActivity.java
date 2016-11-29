@@ -20,6 +20,7 @@ import android.widget.ListView;
 import android.widget.RadioButton;
 import android.widget.TabHost;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTitleBar;
@@ -49,6 +50,8 @@ public class DiagnosticsActivity extends AppCompatActivity {
     private AsyncTaskPeripheral mAsyncTaskPeripheral;
     private AsyncTaskVersion    mAsyncTaskVersion;
 
+    private byte[]  mCabinet;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -67,6 +70,12 @@ public class DiagnosticsActivity extends AppCompatActivity {
                 finish();
             }
         });
+        titleBar.SetListener(VdTitleBar.BTN_EXIT, new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mService.TurnOff();
+            }
+        });
 
         //
         // Configuration StatusBar
@@ -76,20 +85,21 @@ public class DiagnosticsActivity extends AppCompatActivity {
         //
         //  Cinema System Information
         //
-        int cabinetNum = Integer.parseInt(((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_CABINET_NUM));
-
         View listViewFooter = ((LayoutInflater)getApplicationContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE)).inflate(R.layout.listview_footer_blank, null, false);
+        mCabinet = ((CinemaInfo)getApplicationContext()).GetCabinet();
 
-        //
         //
         //  TCON STATUS
+        //
         ListView listViewTcon = (ListView)findViewById(R.id.listView_tcon);
+        listViewTcon.addFooterView(listViewFooter);
+
         mAdapterTcon = new StatusSimpleAdapter(this, R.layout.listview_row_status_simple);
         listViewTcon.setAdapter( mAdapterTcon );
 
-        for(int i = 0; i < cabinetNum; i++ )
+        for(int i = 0; i < mCabinet.length; i++ )
         {
-            mAdapterTcon.add( new StatusSimpleInfo("Cabinet " + String.valueOf(i + 1)) );
+            mAdapterTcon.add( new StatusSimpleInfo("Cabinet " + String.valueOf(mCabinet[i] - CinemaInfo.OFFSET_TCON)) );
             mAdapterTcon.notifyDataSetChanged();
         }
 
@@ -97,12 +107,14 @@ public class DiagnosticsActivity extends AppCompatActivity {
         //  LED OPEN
         //
         ListView listViewLedOpen = (ListView)findViewById(R.id.listview_led_open);
-        mAdapterLedOpen = new StatusDetailAdapter(this, R.layout.listview_row_status_detail, LedPosDialog.TYPE_LED_OPEN_POS);
+        listViewLedOpen.addFooterView(listViewFooter);
+
+        mAdapterLedOpen = new StatusDetailAdapter(this, R.layout.listview_row_status_detail, NxCinemaCtrl.CMD_TCON_OPEN_NUM);
         listViewLedOpen.setAdapter( mAdapterLedOpen );
 
-        for(int i = 0; i < cabinetNum; i++ )
+        for(int i = 0; i < mCabinet.length; i++ )
         {
-            mAdapterLedOpen.add( new StatusDetailInfo("Cabinet " + String.valueOf(i + 1)) );
+            mAdapterLedOpen.add( new StatusDetailInfo("Cabinet " + String.valueOf(mCabinet[i] - CinemaInfo.OFFSET_TCON)) );
             mAdapterLedOpen.notifyDataSetChanged();
         }
 
@@ -110,12 +122,14 @@ public class DiagnosticsActivity extends AppCompatActivity {
         //  LED SHORT
         //
         ListView listViewLedShort = (ListView)findViewById(R.id.listview_led_short);
-        mAdapterLedShort = new StatusDetailAdapter(this, R.layout.listview_row_status_detail, LedPosDialog.TYPE_LED_SHORT_POS);
+        listViewLedShort.addFooterView(listViewFooter);
+
+        mAdapterLedShort = new StatusDetailAdapter(this, R.layout.listview_row_status_detail, NxCinemaCtrl.CMD_TCON_SHORT_NUM);
         listViewLedShort.setAdapter( mAdapterLedShort );
 
-        for(int i = 0; i < cabinetNum; i++ )
+        for(int i = 0; i < mCabinet.length; i++ )
         {
-            mAdapterLedShort.add( new StatusDetailInfo("Cabinet " + String.valueOf(i + 1)) );
+            mAdapterLedShort.add( new StatusDetailInfo("Cabinet " + String.valueOf(mCabinet[i] - CinemaInfo.OFFSET_TCON)) );
             mAdapterLedShort.notifyDataSetChanged();
         }
 
@@ -123,12 +137,14 @@ public class DiagnosticsActivity extends AppCompatActivity {
         //  CABINET DOOR
         //
         ListView listViewCabinetDoor = (ListView)findViewById(R.id.listView_cabinet_door);
+        listViewCabinetDoor.addFooterView(listViewFooter);
+
         mAdapterCabinetDoor = new StatusSimpleAdapter(this, R.layout.listview_row_status_simple);
         listViewCabinetDoor.setAdapter( mAdapterCabinetDoor );
 
-        for(int i = 0; i < cabinetNum; i++ )
+        for(int i = 0; i < mCabinet.length; i++ )
         {
-            mAdapterCabinetDoor.add( new StatusSimpleInfo("Cabinet " + String.valueOf(i + 1)) );
+            mAdapterCabinetDoor.add( new StatusSimpleInfo("Cabinet " + String.valueOf(mCabinet[i] - CinemaInfo.OFFSET_TCON)) );
             mAdapterCabinetDoor.notifyDataSetChanged();
         }
 
@@ -326,7 +342,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
                     return null;
                 }
 
-                byte[] result = NxCinemaCtrl.GetInstance().Send(32 + i, NxCinemaCtrl.CMD_TCON_STATUS, null);
+                byte[] result = NxCinemaCtrl.GetInstance().Send(mCabinet[i], NxCinemaCtrl.CMD_TCON_STATUS, null);
                 if (result == null || result.length == 0)
                     continue;
 
@@ -355,28 +371,38 @@ public class DiagnosticsActivity extends AppCompatActivity {
         @Override
         protected Void doInBackground(Void... params) {
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-            ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_MODE_LOD, null);
+
+            boolean bValidPort0 = false, bValidPort1 = false;
+            for( byte id : mCabinet ) {
+                if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
+                if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
+            }
+
+            if( bValidPort0 )   ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_MODE_LOD, null);
+            if( bValidPort1 )   ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_MODE_LOD, null);
 
             for( int i = 0; i < mAdapter.getCount(); i++ ) {
                 if( isCancelled() ) {
                     return null;
                 }
 
-                //
-                //  Implementation Led Open Num!!
-                //
-                byte[] result = ctrl.Send(32 + i, NxCinemaCtrl.CMD_TCON_OPEN_NUM, null);
+                byte[] result = ctrl.Send( mCabinet[i], NxCinemaCtrl.CMD_TCON_OPEN_NUM, null);
                 if (result == null || result.length == 0)
                     continue;
 
                 StatusDetailInfo info = mAdapter.getItem(i);
                 int value = ctrl.ByteArrayToInt16(result, NxCinemaCtrl.FORMAT_INT16);
-                Log.i(VD_DTAG, ">>>>> " + String.valueOf(value) );
 
                 if( value == 0xFFFF ) {
+                    info.SetStatus(-1);
                     info.SetDescription( "-" );
                 }
                 else {
+                    if( value == 0 )
+                        info.SetStatus(1);
+                    else
+                        info.SetStatus(0);
+
                     info.SetDescription(String.valueOf( String.valueOf(value) ) );
                 }
 
@@ -409,12 +435,12 @@ public class DiagnosticsActivity extends AppCompatActivity {
                 //
                 //  Implementation Cabinet Door Check!!
                 //
-//                byte[] result = NxCinemaCtrl.GetInstance().Send(32 + i, NxCinemaCtrl.CMD_TCON_STATUS, null);
-//                if (result == null || result.length == 0)
-//                    continue;
-//
-//                StatusSimpleInfo info = mAdapter.getItem(i);
-//                info.SetStatus((int)result[0]);
+                byte[] result = NxCinemaCtrl.GetInstance().Send(mCabinet[i], NxCinemaCtrl.CMD_TCON_DOOR_STATUS, null);
+                if (result == null || result.length == 0)
+                    continue;
+
+                StatusSimpleInfo info = mAdapter.getItem(i);
+                info.SetStatus((int)result[0]);
 
                 publishProgress();
             }
@@ -557,10 +583,15 @@ public class DiagnosticsActivity extends AppCompatActivity {
                 mAsyncTaskLedOpenNum.cancel(true);
             }
 
-            byte[] result = NxCinemaCtrl.GetInstance().Send(0x09, NxCinemaCtrl.CMD_TCON_MODE_NORMAL, null);
-            if( result == null || result.length == 0 || (int)result[0] == 0xFF) {
-                Log.i(VD_DTAG, "Error, CMD_TCON_MODE_NORMAL.");
+            boolean bValidPort0 = false, bValidPort1 = false;
+            for( byte id : mCabinet ) {
+                if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
+                if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
             }
+
+            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+            if( bValidPort0 )   ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_MODE_NORMAL, null);
+            if( bValidPort1 )   ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_MODE_NORMAL, null);
         }
 
         if( mAsyncTaskCabinetDoor != null && mAsyncTaskCabinetDoor.getStatus() == AsyncTask.Status.RUNNING ) {
@@ -581,6 +612,19 @@ public class DiagnosticsActivity extends AppCompatActivity {
         mAsyncTaskPeripheral = null;
         mAsyncTaskVersion = null;
 
+    }
+
+    //
+    //  For Internal Toast Message
+    //
+    private static Toast mToast;
+
+    private void ShowMessage( String strMsg ) {
+        if( mToast == null )
+            mToast = Toast.makeText(getApplicationContext(), null, Toast.LENGTH_SHORT);
+
+        mToast.setText(strMsg);
+        mToast.show();
     }
 
     //

@@ -1,6 +1,7 @@
 package com.samsung.vd.cinemacontrolpanel;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.net.LocalServerSocket;
 import android.net.LocalSocket;
@@ -16,15 +17,18 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.ref.WeakReference;
 
 /**
  * Created by doriya on 11/9/16.
  */
 public class CinemaService extends Service {
     private static final String VD_DTAG = "CinemaService";
+
     private final IBinder mBinder = new LocalBinder();
     private final TamperEventReceiver mTamperEventReceiver = new TamperEventReceiver();
     private final SecureEventReceiver mSecureEventReceiver = new SecureEventReceiver();
+    private final ScreenSaverHandler mHandler = new ScreenSaverHandler(this);
 
     public class LocalBinder extends Binder {
         CinemaService GetService() {
@@ -88,24 +92,38 @@ public class CinemaService extends Service {
         mHandler.sendEmptyMessageDelayed( KEY_SCREEN_TURN_OFF, screenTurnOffTime );
     }
 
-    private Handler mHandler = new Handler() {
+    private static class ScreenSaverHandler extends Handler {
+        private WeakReference<CinemaService> mService;
+
+        public ScreenSaverHandler( CinemaService service ) {
+            mService = new WeakReference<>(service);
+        }
+
         @Override
         public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case KEY_SCREEN_TURN_OFF:
-                    SetBrightness( 0 );
-                    mHandler.sendEmptyMessageDelayed( KEY_SCREEN_LOG_OUT, DEFAULT_LOGOUT_TIME );
-                    break;
-                case KEY_SCREEN_LOG_OUT:
-                    ((CinemaInfo)getApplicationContext()).InsertLog("Logout.");
-
-                    Intent intent = new Intent(CinemaService.this, LoginActivity.class);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(intent);
-                    break;
+            CinemaService service = mService.get();
+            if( service != null ) {
+                service.handleMessage(msg);
             }
         }
-    };
+    }
+
+    private void handleMessage( Message msg ) {
+        switch (msg.what) {
+            case KEY_SCREEN_TURN_OFF:
+                SetBrightness( 0 );
+                mHandler.sendEmptyMessageDelayed( KEY_SCREEN_LOG_OUT, DEFAULT_LOGOUT_TIME );
+                break;
+
+            case KEY_SCREEN_LOG_OUT:
+                ((CinemaInfo)getApplicationContext()).InsertLog("Logout.");
+
+                Intent intent = new Intent(CinemaService.this, LoginActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+                break;
+        }
+    }
 
     public void TurnOff() {
         mHandler.removeMessages(KEY_SCREEN_LOG_OUT);
@@ -140,12 +158,14 @@ public class CinemaService extends Service {
         private String SOCKET_NAME = "cinema.tamper";
         private boolean mRun = false;
 
+        private boolean mDoorTamper = false;
+        private boolean mMarriageTamper = false;
+
         public TamperEventReceiver() {
         }
 
         @Override
         public void run() {
-            Log.i(VD_DTAG, ">>>>> Start Local Socket Server");
             try {
                 LocalServerSocket lServer = new LocalServerSocket(SOCKET_NAME);
 
@@ -159,8 +179,31 @@ public class CinemaService extends Service {
                         String[] strToken = strEvent.split(" ");
                         if( strToken[0].equals("Error") )
                         {
-                            CinemaAlert.Show( getApplicationContext(), "Alert", strToken[1] + " " + strToken[0] );
-                            ((CinemaInfo)getApplicationContext()).InsertLog(strToken[1] + ", " + strToken[0] + ".");
+                            if( !mDoorTamper && strToken[1].equals("DoorTamper") ) {
+                                mDoorTamper = true;
+
+                                CinemaAlert.Show( getApplicationContext(), "Alert", strToken[0] + " " + strToken[1], CinemaAlert.TYPE_DOOR, new CinemaAlert.OnFinishListener() {
+                                    @Override
+                                    public void onFinish() {
+                                        mDoorTamper = false;
+                                    }
+                                });
+
+                                RefreshScreenSaver();
+                            }
+
+                            if( !mMarriageTamper && strToken[1].equals("MarriageTamper") ) {
+                                mMarriageTamper = true;
+
+                                CinemaAlert.Show( getApplicationContext(), "Alert", strToken[0] + " " + strToken[1], CinemaAlert.TYPE_MARRIAGE, new CinemaAlert.OnFinishListener() {
+                                    @Override
+                                    public void onFinish() {
+                                        mMarriageTamper = false;
+                                    }
+                                });
+
+                                RefreshScreenSaver();
+                            }
                         }
 
                         lSocket.close();
@@ -169,8 +212,6 @@ public class CinemaService extends Service {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
-            Log.i(VD_DTAG, ">>>>> Stop Local Socket Server");
         }
 
         public synchronized void Start() {
@@ -250,7 +291,6 @@ public class CinemaService extends Service {
 
                         if( strEvent.equals("Alive") && strAlive.equals("false") ) {
                             ((CinemaInfo)getApplicationContext()).SetSecureAlive("true");
-                            Log.i(VD_DTAG, "ALIVE!");
                         }
 
                         lSocket.close();

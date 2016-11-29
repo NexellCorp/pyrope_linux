@@ -20,6 +20,7 @@
     <string name="txt_pattern">Pattern</string>
     <string name="txt_function">Function</string>
     <string name="txt_run">Run</string>
+    <string name="txt_stop">Stop</string>
     <string name="txt_control">Control</string>
     <string name="txt_accumulation_time">Accumulation Time</string>
     <string name="txt_elapsed_time">Elapsed Time</string>

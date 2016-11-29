@@ -17,6 +17,8 @@ import android.widget.LinearLayout;
 import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTitleBar;
 
+import java.util.Locale;
+
 /**
  * Created by doriya on 8/17/16.
  */
@@ -56,6 +58,16 @@ public class TopActivity extends AppCompatActivity {
         new VdStatusBar( getApplicationContext(), (LinearLayout)findViewById( R.id.statusBarLayoutTop) );
 
         //
+        //  Alert Message
+        //
+        int configCabinetNum = Integer.parseInt(((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_CABINET_NUM));
+        int detectCabientNum = ((CinemaInfo)getApplicationContext()).GetCabinet().length;
+        if( configCabinetNum != detectCabientNum && ((CinemaInfo)getApplicationContext()).IsCheckCabinet() ) {
+            String strMessage = String.format(Locale.US, "Please Check Cabinet Number. ( setting: %d, detect: %d )", configCabinetNum, detectCabientNum);
+            CinemaAlert.Show( TopActivity.this, "Alert",  strMessage );
+        }
+
+        //
         //
         //
         Button btnMenuDiagnostics = (Button)findViewById(R.id.btnMenuDiagonostics);
@@ -88,7 +100,7 @@ public class TopActivity extends AppCompatActivity {
     private View.OnClickListener mClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            switch( ((Button)v).getId() ) {
+            switch( (v).getId() ) {
                 case R.id.btnMenuDiagonostics:
                     startActivity( new Intent(v.getContext(), DiagnosticsActivity.class) );
                     overridePendingTransition(0, 0);

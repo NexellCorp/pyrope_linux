@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.os.AsyncTask;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -18,9 +19,14 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTitleBar;
+
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Locale;
 
 public class LoginActivity extends AppCompatActivity {
     private static final String VD_DTAG = "LoginActivity";
@@ -40,6 +46,12 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if( !((CinemaInfo)getApplicationContext()).IsCheckLogin() ) {
+            new AsyncTaskCheckCabinet().execute();
+            return;
+        }
+
         setContentView(R.layout.activity_login);
 
         //
@@ -119,9 +131,7 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if( CheckAccount() ) {
-                    startActivity( new Intent(v.getContext(), TopActivity.class) );
-                    overridePendingTransition(0, 0);
-                    finish();
+                    new AsyncTaskCheckCabinet().execute();
                 }
             }
         });
@@ -131,9 +141,7 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if( CheckAccount() ) {
-                    startActivity( new Intent(v.getContext(), TopActivity.class) );
-                    overridePendingTransition(0, 0);
-                    finish();
+                    new AsyncTaskCheckCabinet().execute();
                 }
             }
         });
@@ -218,7 +226,54 @@ public class LoginActivity extends AppCompatActivity {
 
         return true;
     }
-    
+
+    //
+    //
+    //
+    private class AsyncTaskCheckCabinet extends AsyncTask<Void, Void, Void> {
+        private CinemaInfo mCinemaInfo = (CinemaInfo)getApplicationContext();
+
+        @Override
+        protected Void doInBackground(Void... params) {
+            for( int i = 0; i < 255; i++ ) {
+                if( (i & 0x7F) < 0x10 )
+                    continue;
+
+                byte[] result = NxCinemaCtrl.GetInstance().Send(i, NxCinemaCtrl.CMD_TCON_STATUS, null);
+                if (result == null || result.length == 0)
+                    continue;
+
+                if( 0 > result[0] )
+                    continue;
+
+                mCinemaInfo.AddCabinet( (byte)i );
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+            CinemaLoading.Show( LoginActivity.this );
+            mCinemaInfo.ClearCabinet();
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+
+            mCinemaInfo.SortCabinet();
+
+            startActivity( new Intent(getApplicationContext(), TopActivity.class) );
+            overridePendingTransition(0, 0);
+
+            CinemaLoading.Hide();
+            finish();
+        }
+    }
+
     //
     //  For Internal Toast Message
     //

@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
@@ -24,6 +25,8 @@ import android.widget.Toast;
 
 import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTitleBar;
+
+import java.util.Locale;
 
 /**
  * Created by doriya on 8/16/16.
@@ -55,6 +58,8 @@ public class DisplayModeActivity extends AppCompatActivity {
     };
 
     private int[] mMasteringValue;
+
+    private EditText mEditCabinet;
 
     @Override
     protected void onResume() {
@@ -88,6 +93,12 @@ public class DisplayModeActivity extends AppCompatActivity {
                 startActivity( new Intent(v.getContext(), TopActivity.class) );
                 overridePendingTransition(0, 0);
                 finish();
+            }
+        });
+        titleBar.SetListener(VdTitleBar.BTN_EXIT, new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mService.TurnOff();
             }
         });
 
@@ -203,22 +214,14 @@ public class DisplayModeActivity extends AppCompatActivity {
         //
         String curCabinetNum = ((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_CABINET_NUM);
 
-        final EditText editCabinetNum = (EditText)findViewById(R.id.editCabinet);
-        editCabinetNum.setText(curCabinetNum);
+        mEditCabinet = (EditText)findViewById(R.id.editCabinet);
+        mEditCabinet.setText(curCabinetNum);
 
         Button btnCabinetNum = (Button)findViewById(R.id.btnCabinetNumApply);
         btnCabinetNum.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                CinemaInfo info = (CinemaInfo)getApplicationContext();
-                String prevCabinetNum   = info.GetValue(CinemaInfo.KEY_CABINET_NUM);
-                String curCabinetNum    = editCabinetNum.getText().toString();
-
-                info.SetValue(CinemaInfo.KEY_CABINET_NUM, curCabinetNum);
-
-                String strLog = String.format( "Change cabinet number. ( %s -> %s)", prevCabinetNum, curCabinetNum );
-                info.InsertLog(strLog);
-                Log.i(VD_DTAG, strLog);
+                new AsyncTaskCheckCabinet().execute();
             }
         });
 
@@ -250,7 +253,7 @@ public class DisplayModeActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.hideSoftInputFromWindow(editCabinetNum.getWindowToken(), 0);
+                imm.hideSoftInputFromWindow(mEditCabinet.getWindowToken(), 0);
             }
         });
     }
@@ -383,6 +386,63 @@ public class DisplayModeActivity extends AppCompatActivity {
         byte[] inData = ctrl.AppendByteArray( new byte[]{(byte)funcIndex}, ctrl.IntToByteArray(value, NxCinemaCtrl.FORMAT_INT16) );
 
         ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_MASTERING, inData );
+    }
+
+    //
+    //
+    //
+    private class AsyncTaskCheckCabinet extends AsyncTask<Void, Void, Void> {
+        @Override
+        protected Void doInBackground(Void... params) {
+            for( int i = 0; i < 255; i++ ) {
+                if( (i & 0x7F) < 0x10 )
+                    continue;
+
+                byte[] result = NxCinemaCtrl.GetInstance().Send(i, NxCinemaCtrl.CMD_TCON_STATUS, null);
+                if (result == null || result.length == 0)
+                    continue;
+
+                if( 0 > result[0] )
+                    continue;
+
+                ((CinemaInfo)getApplicationContext()).AddCabinet( (byte)i );
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+            CinemaLoading.Show( DisplayModeActivity.this );
+            ((CinemaInfo)getApplicationContext()).ClearCabinet();
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+
+            ((CinemaInfo)getApplicationContext()).SortCabinet();
+            CinemaLoading.Hide();
+
+            byte[] cabinet = ((CinemaInfo)getApplicationContext()).GetCabinet();
+            int curCabinetNum = Integer.parseInt( ((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_CABINET_NUM ) );
+
+            if( cabinet.length != curCabinetNum && ((CinemaInfo)getApplicationContext()).IsCheckCabinet() ) {
+                ShowMessage( String.format(Locale.US, "Please check cabinet number. ( value: %d, detect: %d )", curCabinetNum, cabinet.length) );
+            }
+            else {
+                String targetCabinetNum = mEditCabinet.getText().toString();
+
+                CinemaInfo info = (CinemaInfo)getApplicationContext();
+                info.SetValue(CinemaInfo.KEY_CABINET_NUM, targetCabinetNum);
+
+                String strLog = String.format( "Change cabinet number. ( %s -> %s )", curCabinetNum, targetCabinetNum  );
+                info.InsertLog(strLog);
+                Log.i(VD_DTAG, strLog);
+            }
+        }
     }
 
     //

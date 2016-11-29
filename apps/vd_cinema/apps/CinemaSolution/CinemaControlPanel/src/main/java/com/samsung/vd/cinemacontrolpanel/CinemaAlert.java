@@ -2,27 +2,55 @@ package com.samsung.vd.cinemacontrolpanel;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.DatePickerDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.View;
+import android.widget.EditText;
+
+import java.io.Serializable;
 
 /**
  * Created by doriya on 11/3/16.
  */
 public class CinemaAlert extends Activity {
+    public static final int TYPE_DOOR       = 0;
+    public static final int TYPE_MARRIAGE   = 1;
+    public static final int TYPE_MAX        = 2;
+
     private static final String KEY_TITLE    = "title";
     private static final String KEY_MESSAGE  = "message";
 
-    static public void Show(Context context, String title, String message ) {
-        Intent intent;
-        intent = new Intent( context, CinemaAlert.class );
+    private static OnFinishListener[] mFinishLitener = new OnFinishListener[TYPE_MAX];
+
+    public static void Show(Context context, String title, String message) {
+        Intent intent = new Intent( context, CinemaAlert.class );
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
         intent.putExtra( KEY_TITLE, title );
         intent.putExtra( KEY_MESSAGE, message );
 
         context.startActivity(intent);
+    }
+
+    public static void Show(Context context, String title, String message, int type, OnFinishListener listener) {
+        Intent intent = new Intent( context, CinemaAlert.class );
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        intent.putExtra( KEY_TITLE, title );
+        intent.putExtra( KEY_MESSAGE, message );
+
+        mFinishLitener[type] = listener;
+
+        context.startActivity(intent);
+    }
+
+    public interface OnFinishListener {
+        void onFinish();
     }
 
     @Override
@@ -52,6 +80,13 @@ public class CinemaAlert extends Activity {
                         stopService(getIntent());
                         dialog.cancel();
                         finish();
+
+                        for(int i = 0; i < mFinishLitener.length; i++) {
+                            if( mFinishLitener[i] != null ) {
+                                mFinishLitener[i].onFinish();
+                                mFinishLitener[i] = null;
+                            }
+                        }
                     }
                 });
 

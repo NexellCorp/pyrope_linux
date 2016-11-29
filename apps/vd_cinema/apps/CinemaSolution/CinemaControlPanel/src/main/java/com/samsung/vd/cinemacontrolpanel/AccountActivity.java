@@ -84,7 +84,6 @@ public class AccountActivity extends AppCompatActivity {
         //
         VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.layoutTitleBar ));
         titleBar.SetTitle( "Cinema LED Display System - Account" );
-
         titleBar.SetListener(VdTitleBar.BTN_BACK, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -93,13 +92,10 @@ public class AccountActivity extends AppCompatActivity {
                 finish();
             }
         });
-
         titleBar.SetListener(VdTitleBar.BTN_EXIT, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity( new Intent(v.getContext(), LoginActivity.class) );
-                overridePendingTransition(0, 0);
-                finish();
+                mService.TurnOff();
             }
         });
 

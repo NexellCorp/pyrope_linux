@@ -1,6 +1,8 @@
 package com.samsung.vd.cinemacontrolpanel;
 
 import android.content.Context;
+import android.os.AsyncTask;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -83,16 +85,18 @@ public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
         if( mData.get(position).GetStatus() == 1 ) {
             mRadio1.setChecked( true );
             mRadio2.setChecked( false );
+            mButton.setEnabled( false );
         }
         else {
             mRadio1.setChecked( false );
             mRadio2.setChecked( true );
+            mButton.setEnabled( true );
         }
 
         mButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                new LedPosDialog(context, mType, pos ).show();
+                new AsyncTaskLedPos(context, pos, mType).execute();
             }
         });
 
@@ -117,5 +121,72 @@ public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
         RadioButton mRadio2;
         TextView    mDescribe;
         Button      mButton;
+    }
+
+    private class AsyncTaskLedPos extends AsyncTask<Void, Void, Void> {
+        private Context mContext;
+        private LedPosAdapter mAdapter;
+
+        private byte mId;
+        private int mCmd1;
+        private int mCmd2;
+
+        public AsyncTaskLedPos( Context context, int position, int type ) {
+            mContext = context;
+            mAdapter = new LedPosAdapter(mContext.getApplicationContext(), R.layout.listview_row_info_led);
+
+            byte[] cabinet = ((CinemaInfo)(context.getApplicationContext())).GetCabinet();
+            mId = cabinet[position];
+
+            if( mType == NxCinemaCtrl.CMD_TCON_OPEN_NUM || mType == NxCinemaCtrl.CMD_TCON_OPEN_POS ) {
+                mCmd1 = NxCinemaCtrl.CMD_TCON_OPEN_NUM;
+                mCmd2 = NxCinemaCtrl.CMD_TCON_OPEN_POS;
+            }
+
+            if( mType == NxCinemaCtrl.CMD_TCON_SHORT_NUM || mType == NxCinemaCtrl.CMD_TCON_SHORT_POS ) {
+                mCmd1 = NxCinemaCtrl.CMD_TCON_SHORT_NUM;
+                mCmd2 = NxCinemaCtrl.CMD_TCON_SHORT_POS;
+            }
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+            CinemaLoading.Show(mContext);
+        }
+
+        @Override
+        protected Void doInBackground(Void... params) {
+            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+            byte[] resultNum;
+            resultNum = ctrl.Send( mId, mCmd1, null);
+            if (resultNum == null || resultNum.length == 0)
+                return null;
+
+            int numOfValue = ctrl.ByteArrayToInt16(resultNum, NxCinemaCtrl.FORMAT_INT16);
+            for( int i = 0; i < numOfValue; i++ ) {
+                if (isCancelled()) {
+                    return null;
+                }
+
+                byte[] resultPos = ctrl.Send( mId, mCmd2, null );
+                if (resultPos == null || resultPos.length == 0)
+                    continue;
+
+                int posX = ctrl.ByteArrayToInt16( resultPos, NxCinemaCtrl.FORMAT_INT16_MSB);
+                int posY = ctrl.ByteArrayToInt16( resultPos, NxCinemaCtrl.FORMAT_INT16_LSB);
+                mAdapter.add( new LedPosInfo(String.valueOf(i), String.valueOf(posX), String.valueOf(posY)));
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+
+            new LedPosDialog(mContext, mAdapter).show();
+            CinemaLoading.Hide();
+        }
     }
 }

@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
@@ -24,6 +25,8 @@ import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTimeZone;
 import com.samsung.vd.baseutils.VdTitleBar;
 
+import java.util.Locale;
+
 /**
  * Created by doriya on 8/17/16.
  */
@@ -35,6 +38,7 @@ public class InitialActivity extends AppCompatActivity {
     private EditText mEditPassword;
     private EditText mEditConfirm;
     private EditText mEditCabinet;
+    private Spinner mSpinnerScreenSaving;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,25 +106,15 @@ public class InitialActivity extends AppCompatActivity {
         };
 
         ArrayAdapter<String> adapterSpinScreenSaving = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, strScreenSaverInfo);
-        final Spinner spinnerScreenSaving = (Spinner)findViewById(R.id.spinnerScreenSaving);
-        spinnerScreenSaving.setAdapter(adapterSpinScreenSaving);
+        mSpinnerScreenSaving = (Spinner)findViewById(R.id.spinnerScreenSaving);
+        mSpinnerScreenSaving.setAdapter(adapterSpinScreenSaving);
 
         Button btnAccept = (Button)findViewById(R.id.btnAccept);
         btnAccept.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if( CheckParameter() ) {
-                    mAccountPref.Add(AccountPreference.GROUP_ROOT, mEditPassword.getText().toString());
-
-                    ((CinemaInfo)getApplicationContext()).SetUserGroup(AccountPreference.GROUP_ROOT);
-                    ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_SCREEN_SAVING, CinemaService.OFF_TIME[spinnerScreenSaving.getSelectedItemPosition()]);
-                    ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_CABINET_NUM, mEditCabinet.getText().toString());
-                    ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_INITIALIZE, "true");
-
-                    mService.RefreshScreenSaver();
-                    startActivity( new Intent(v.getContext(), LoginActivity.class) );
-                    overridePendingTransition(0, 0);
-                    finish();
+                    new AsyncTaskCheckCabinet().execute();
                 }
             }
         });
@@ -165,6 +159,66 @@ public class InitialActivity extends AppCompatActivity {
         }
 
         return true;
+    }
+
+    //
+    //
+    //
+    private class AsyncTaskCheckCabinet extends AsyncTask<Void, Void, Void> {
+        @Override
+        protected Void doInBackground(Void... params) {
+            for( int i = 0; i < 255; i++ ) {
+                if( (i & 0x7F) < CinemaInfo.OFFSET_TCON )
+                    continue;
+
+                byte[] result = NxCinemaCtrl.GetInstance().Send(i, NxCinemaCtrl.CMD_TCON_STATUS, null);
+                if (result == null || result.length == 0)
+                    continue;
+
+                if( 0 > result[0] )
+                    continue;
+
+                ((CinemaInfo)getApplicationContext()).AddCabinet( (byte)i );
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+            CinemaLoading.Show( InitialActivity.this );
+            ((CinemaInfo)getApplicationContext()).ClearCabinet();
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+
+            ((CinemaInfo)getApplicationContext()).SortCabinet();
+            CinemaLoading.Hide();
+
+            byte[] cabinet = ((CinemaInfo)getApplicationContext()).GetCabinet();
+            int curCabinetNum = Integer.parseInt( mEditCabinet.getText().toString() );
+
+            if( cabinet.length != curCabinetNum && ((CinemaInfo)getApplicationContext()).IsCheckCabinet() ) {
+                ShowMessage( String.format(Locale.US, "Please check cabinet number. ( value: %d, detect: %d )", curCabinetNum, cabinet.length) );
+            }
+            else {
+                mAccountPref.Add(AccountPreference.GROUP_ROOT, mEditPassword.getText().toString());
+
+                ((CinemaInfo)getApplicationContext()).SetUserGroup(AccountPreference.GROUP_ROOT);
+                ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_SCREEN_SAVING, CinemaService.OFF_TIME[mSpinnerScreenSaving.getSelectedItemPosition()]);
+                ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_CABINET_NUM, mEditCabinet.getText().toString());
+                ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_INITIALIZE, "true");
+
+                mService.RefreshScreenSaver();
+                startActivity( new Intent(getApplicationContext(), LoginActivity.class) );
+                overridePendingTransition(0, 0);
+                finish();
+            }
+        }
     }
 
     //

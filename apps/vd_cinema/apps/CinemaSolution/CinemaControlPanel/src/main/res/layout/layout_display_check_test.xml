@@ -1,21 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
     <LinearLayout
         android:background="#FFE0E0E0"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="5dp"
-        android:layout_marginRight="5dp"
-        android:gravity="center"
         android:weightSum="1">
 
         <TextView
-            android:background="@drawable/draw_line_border"
+            android:background="@drawable/draw_line_left_top_bottom"
             android:layout_width="0px"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
@@ -24,10 +21,10 @@
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.4" />
+            android:layout_weight="0.4"/>
 
         <TextView
-            android:background="@drawable/draw_line_border"
+            android:background="@drawable/draw_line_left_top_bottom"
             android:layout_width="0px"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
@@ -36,7 +33,7 @@
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.4" />
+            android:layout_weight="0.4"/>
 
         <TextView
             android:background="@drawable/draw_line_border"
@@ -48,13 +45,13 @@
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.2" />
+            android:layout_weight="0.2"/>
     </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/layoutTestPattern"
+    <ListView
+        android:id="@+id/listview_test_pattern"
         android:layout_width="match_parent"
-        android:orientation="vertical"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:footerDividersEnabled="true" />
 
 </LinearLayout>

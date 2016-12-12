@@ -452,36 +452,36 @@
 
             <Button
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="60dp"
                 android:layout_marginTop="40dp"
                 android:text="Diagnostics"
                 android:id="@+id/btnMenuDiagonostics" />
 
             <Button
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_height="60dp"
+                android:layout_marginTop="10dp"
                 android:text="Display Check"
                 android:id="@+id/btnMenuDisplayCheck"/>
 
             <Button
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_height="60dp"
+                android:layout_marginTop="10dp"
                 android:text="Display Mode"
                 android:id="@+id/btnMenuDisplayMode"/>
 
             <Button
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_height="60dp"
+                android:layout_marginTop="10dp"
                 android:text="System"
                 android:id="@+id/btnMenuSystem" />
 
             <Button
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_height="60dp"
+                android:layout_marginTop="10dp"
                 android:text="Account"
                 android:id="@+id/btnMenuAccount"/>
 

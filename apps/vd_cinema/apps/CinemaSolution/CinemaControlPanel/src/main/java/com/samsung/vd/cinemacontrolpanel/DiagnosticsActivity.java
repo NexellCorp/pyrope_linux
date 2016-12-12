@@ -28,6 +28,7 @@ import com.samsung.vd.baseutils.VdTitleBar;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Array;
+import java.util.Locale;
 
 /**
  * Created by doriya on 8/16/16.
@@ -99,7 +100,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
 
         for(int i = 0; i < mCabinet.length; i++ )
         {
-            mAdapterTcon.add( new StatusSimpleInfo("Cabinet " + String.valueOf(mCabinet[i] - CinemaInfo.OFFSET_TCON)) );
+            mAdapterTcon.add( new StatusSimpleInfo( String.format( Locale.US, "Cabinet %02d", mCabinet[i] - CinemaInfo.OFFSET_TCON ) ));
             mAdapterTcon.notifyDataSetChanged();
         }
 
@@ -114,7 +115,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
 
         for(int i = 0; i < mCabinet.length; i++ )
         {
-            mAdapterLedOpen.add( new StatusDetailInfo("Cabinet " + String.valueOf(mCabinet[i] - CinemaInfo.OFFSET_TCON)) );
+            mAdapterLedOpen.add( new StatusDetailInfo( String.format( Locale.US, "Cabinet %02d", mCabinet[i] - CinemaInfo.OFFSET_TCON ) ));
             mAdapterLedOpen.notifyDataSetChanged();
         }
 
@@ -129,7 +130,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
 
         for(int i = 0; i < mCabinet.length; i++ )
         {
-            mAdapterLedShort.add( new StatusDetailInfo("Cabinet " + String.valueOf(mCabinet[i] - CinemaInfo.OFFSET_TCON)) );
+            mAdapterLedShort.add( new StatusDetailInfo( String.format( Locale.US, "Cabinet %02d", mCabinet[i] - CinemaInfo.OFFSET_TCON ) ));
             mAdapterLedShort.notifyDataSetChanged();
         }
 
@@ -144,7 +145,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
 
         for(int i = 0; i < mCabinet.length; i++ )
         {
-            mAdapterCabinetDoor.add( new StatusSimpleInfo("Cabinet " + String.valueOf(mCabinet[i] - CinemaInfo.OFFSET_TCON)) );
+            mAdapterCabinetDoor.add( new StatusSimpleInfo( String.format( Locale.US, "Cabinet %02d", mCabinet[i] - CinemaInfo.OFFSET_TCON ) ));
             mAdapterCabinetDoor.notifyDataSetChanged();
         }
 
@@ -497,7 +498,24 @@ public class DiagnosticsActivity extends AppCompatActivity {
             if (isCancelled()) return null;
 
             {
+                StatusSimpleInfo info = mAdapter.getItem(1);
+                info.SetStatus(0);
 
+                NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+
+                if (isCancelled()) return null;
+
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                byte[] result = ctrl.Send(NxCinemaCtrl.CMD_PFPGA_STATUS, null);
+                if (result != null || result.length > 0 ) {
+                    info.SetStatus((int)result[0]);
+                    publishProgress();
+                }
             }
 
             //

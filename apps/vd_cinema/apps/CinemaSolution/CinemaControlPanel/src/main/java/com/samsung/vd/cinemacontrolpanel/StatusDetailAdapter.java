@@ -174,9 +174,13 @@ public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
                 if (resultPos == null || resultPos.length == 0)
                     continue;
 
-                int posX = ctrl.ByteArrayToInt16( resultPos, NxCinemaCtrl.FORMAT_INT16_MSB);
-                int posY = ctrl.ByteArrayToInt16( resultPos, NxCinemaCtrl.FORMAT_INT16_LSB);
+                int posX = ctrl.ByteArrayToInt16( resultPos, NxCinemaCtrl.MASK_INT16_MSB);
+                int posY = ctrl.ByteArrayToInt16( resultPos, NxCinemaCtrl.MASK_INT16_LSB);
                 mAdapter.add( new LedPosInfo(String.valueOf(i), String.valueOf(posX), String.valueOf(posY)));
+
+
+                Log.i("", String.format("%d, %d", posX, posY));
+                ctrl.PrintByteArrayToHex(resultPos);
             }
             return null;
         }

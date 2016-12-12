@@ -262,8 +262,6 @@ public class CinemaService extends Service {
             sender.connect(new LocalSocketAddress(SOCKET_NAME));
             sender.getOutputStream().write(message.getBytes());
             sender.getOutputStream().close();
-
-            Log.i( VD_DTAG, ">>>>> " + new LocalSocketAddress(SOCKET_NAME).getName());
         }
     }
 
@@ -350,8 +348,6 @@ public class CinemaService extends Service {
             sender.getOutputStream().write(message.getBytes());
             sender.getOutputStream().close();
             sender.close();
-
-            Log.i( VD_DTAG, ">>>>> " + new LocalSocketAddress(SOCKET_NAME).getName());
         }
     }
 

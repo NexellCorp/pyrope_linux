@@ -266,6 +266,20 @@ public class LoginActivity extends AppCompatActivity {
 
             mCinemaInfo.SortCabinet();
 
+            CinemaInfo info = (CinemaInfo)getApplicationContext();
+            if( info.IsStandAlone() ) {
+                byte[] cabinet = info.GetCabinet();
+                boolean bValidPort0 = false, bValidPort1 = false;
+                for( byte id : cabinet ) {
+                    if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
+                    if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
+                }
+
+                NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+                if( bValidPort0 )   ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_MULTI, new byte[] {(byte)0x01} );
+                if( bValidPort1 )   ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_MULTI, new byte[] {(byte)0x01} );
+            }
+
             startActivity( new Intent(getApplicationContext(), TopActivity.class) );
             overridePendingTransition(0, 0);
 

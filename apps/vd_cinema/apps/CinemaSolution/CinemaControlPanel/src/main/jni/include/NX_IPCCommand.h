@@ -36,13 +36,24 @@
 #define TCON_CMD_PATTERN_RUN		0x0021	//	Test Pattern Run
 #define TCON_CMD_PATTERN_STOP		0x0022	//	Test Pattern Stop
 
-#define TCON_CMD_MASTERING			0x0031
+#define TCON_CMD_MASTERING_RD		0x0031
+#define TCON_CMD_MASTERING_WR		0x0032
+#define TCON_CMD_QUALITY			0x0033
+#define TCON_CMD_TGAM_R				0x0034
+#define TCON_CMD_TGAM_G				0x0035
+#define TCON_CMD_TGAM_B				0x0036
+#define TCON_CMD_DGAM_R				0x0037
+#define TCON_CMD_DGAM_G				0x0038
+#define TCON_CMD_DGAM_B				0x0039
+#define TCON_CMD_DOT_CORRECTION		0x0040
 
-#define TCON_CMD_ELAPSED_TIME		0x0041	//	LED Elapsed Time
-#define TCON_CMD_ACCUMULATE_TIME	0x0042	//	Total LED Accumulate Time
+#define TCON_CMD_ELAPSED_TIME		0x0051	//	LED Elapsed Time
+#define TCON_CMD_ACCUMULATE_TIME	0x0052	//	Total LED Accumulate Time
+
+#define TCON_CMD_INPUT_SOURCE		0x0061	//	Input Source Selection
 
 #define TCON_CMD_VERSION			0x0070	//	TCON Version
-
+#define TCON_CMD_MULTI				0x00FF	//	TCON Multi Mode
 
 //
 //	PFPGA Command

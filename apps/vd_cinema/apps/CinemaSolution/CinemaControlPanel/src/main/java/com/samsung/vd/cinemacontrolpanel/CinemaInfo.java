@@ -21,6 +21,8 @@ public class CinemaInfo extends Application {
     public static final String KEY_CABINET_NUM      = "cabinet.num";
     public static final String KEY_SCREEN_SAVING    = "screen.saving";
     public static final String KEY_INPUT_SOURCE     = "input.source";
+    public static final String KEY_INPUT_RESOLUTION = "input.resolution";
+    public static final String KEY_MASTERING_MODE   = "mastering.mode";
 
     public static final int OFFSET_TCON = 16;
 
@@ -47,6 +49,10 @@ public class CinemaInfo extends Application {
 
     public boolean IsCheckLogin() {
         return false;
+    }
+
+    public boolean IsStandAlone() {
+        return true;
     }
 
     //

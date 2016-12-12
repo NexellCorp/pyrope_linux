@@ -15,18 +15,35 @@ public class NxCinemaCtrl {
     public static final int CMD_TCON                = 0x0000;
     public static final int CMD_TCON_STATUS         = 0x0001;
     public static final int CMD_TCON_DOOR_STATUS    = 0x0002;
+
     public static final int CMD_TCON_MODE_NORMAL    = 0x0011;
     public static final int CMD_TCON_MODE_LOD       = 0x0012;
     public static final int CMD_TCON_OPEN_NUM       = 0x0013;
     public static final int CMD_TCON_OPEN_POS       = 0x0014;
     public static final int CMD_TCON_SHORT_NUM      = 0x0015;
     public static final int CMD_TCON_SHORT_POS      = 0x0016;
+
     public static final int CMD_TCON_PATTERN_RUN    = 0x0021;
     public static final int CMD_TCON_PATTERN_STOP   = 0x0022;
-    public static final int CMD_TCON_MASTERING      = 0x0031;
-    public static final int CMD_TCON_ELAPSED_TIME   = 0x0041;
-    public static final int CMD_TCON_ACCUMULATE_TIME= 0x0042;
+
+    public static final int CMD_TCON_MASTERING_RD   = 0x0031;
+    public static final int CMD_TCON_MASTERING_WR   = 0x0032;
+    public static final int CMD_TCON_QUALITY        = 0x0033;
+    public static final int CMD_TCON_TGAM_R	    	= 0x0034;
+    public static final int CMD_TCON_TGAM_G	    	= 0x0035;
+    public static final int CMD_TCON_TGAM_B	    	= 0x0036;
+    public static final int CMD_TCON_DGAM_R	    	= 0x0037;
+    public static final int CMD_TCON_DGAM_G		    = 0x0038;
+    public static final int CMD_TCON_DGAM_B	    	= 0x0039;
+    public static final int CMD_TCON_DOT_CORRECTION = 0x0040;
+
+    public static final int CMD_TCON_ELAPSED_TIME   = 0x0051;
+    public static final int CMD_TCON_ACCUMULATE_TIME= 0x0052;
+
+    public static final int CMD_TCON_INPUT_SOURCE   = 0x0061;
+
     public static final int CMD_TCON_VERSION        = 0x0070;
+    public static final int CMD_TCON_MULTI          = 0x00FF;
 
     public static final int CMD_PFPGA               = 0x0100;
     public static final int CMD_PFPGA_STATUS        = 0x0101;
@@ -70,23 +87,36 @@ public class NxCinemaCtrl {
         return null;
     }
 
-    public static final int FORMAT_CHAR     = 1;
+    public static final int FORMAT_INT8     = 1;
     public static final int FORMAT_INT16    = 2;
+    public static final int FORMAT_INT24    = 3;
     public static final int FORMAT_INT32    = 4;
-    public static final int FORMAT_INT64    = 8;
 
-    public static final int FORMAT_INT16_MSB= 0;
-    public static final int FORMAT_INT16_LSB= 2;
-
-    public static final int FORMAT_INT32_MSB= 0;
-    public static final int FORMAT_INT43_LSB= 4;
+    public static final int MASK_INT16_MSB  = 0;
+    public static final int MASK_INT16_LSB  = 2;
+    public static final int MASK_INT32_MSB  = 0;
+    public static final int MASK_INT32_LSB  = 4;
 
     public byte[] IntToByteArray( int value, int format ) {
         byte[] result = new byte[format];
 
         for( int i = 0 ;i < format; i++ ) {
-            int offset = (result.length - 1 - i) * 8;
+//            int offset = (result.length - 1 - i) * 8;
+            int offset = (format - 1 - i) * 8;
             result[i] = (byte)((value >> offset) & 0xFF);
+        }
+
+        return result;
+    }
+
+    public byte[] IntArrayToByteArray( int[] value, int format ) {
+        byte[] result = new byte[format * value.length];
+
+        for( int i = 0; i < value.length; i++ ) {
+            for( int j = 0; j < format; j++ ) {
+                int offset = (format - 1 - j) * 8;
+                result[i * format + j] = (byte)((value[i] >> offset) & 0xFF);
+            }
         }
 
         return result;
@@ -102,31 +132,37 @@ public class NxCinemaCtrl {
         return result;
     }
 
-    public int ByteArrayToInt16( byte[] value, int format ) {
+    public int ByteArrayToInt16( byte[] value, int mask ) {
         if( value.length != FORMAT_INT16 * 2 ) {
-            Log.i(NX_DTAG, "Invalid ByteArray Size.");
+            Log.i(NX_DTAG, String.format( "Fail, Invalid ByteArray Size. ( in: %d, expected: %d )", value.length, FORMAT_INT16 * 2 ) );
             return -1;
         }
 
+        byte[] inData = new byte[FORMAT_INT16];
+        System.arraycopy( value, mask, inData, 0, FORMAT_INT16 );
+
         int result = 0;
         for( int i = 0; i < FORMAT_INT16; i++ ) {
-            int offset = (FORMAT_INT16*2 - format - 1 - i) * 8;
-            result += (value[i + format] & 0x000000FF ) << offset;
+            int offset = (FORMAT_INT16 -  1 - i) * 8;
+            result += (inData[i] & 0x000000FF ) << offset;
         }
 
         return result;
     }
 
-    public int ByteArrayToInt32( byte[] value, int format ) {
+    public int ByteArrayToInt32( byte[] value, int mask ) {
         if( value.length != FORMAT_INT32 * 2 ) {
-            Log.i(NX_DTAG, "Invalid ByteArray Size.");
+            Log.i(NX_DTAG, String.format( "Fail, Invalid ByteArray Size. ( in: %d, expected: %d )", value.length, FORMAT_INT32 * 2 ) );
             return -1;
         }
 
+        byte[] inData = new byte[FORMAT_INT32];
+        System.arraycopy( value, mask, inData, 0, FORMAT_INT32 );
+
         int result = 0;
         for( int i = 0; i < FORMAT_INT32; i++ ) {
-            int offset = (FORMAT_INT32*2 - format - 1 - i) * 8;
-            result += (value[i + format] & 0x000000FF ) << offset;
+            int offset = (FORMAT_INT32 - 1 - i) * 8;
+            result += (inData[i] & 0x000000FF ) << offset;
         }
 
         return result;

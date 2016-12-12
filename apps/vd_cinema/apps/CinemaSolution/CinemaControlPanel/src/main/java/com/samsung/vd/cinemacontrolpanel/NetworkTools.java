@@ -17,9 +17,9 @@ import java.util.Locale;
  * Created by doriya on 11/14/16.
  */
 public class NetworkTools {
-    private static final String SOCKET_NAME     = "cinema.network";
+    private static final String SOCKET_NAME     = "cinema.helper";
 
-    private static final String TAG_ETH_CONFIG  = "config";
+    private static final String TAG_ETH_NETWORK = "network";
     private static final String TAG_ETH_LINK    = "link";
 
     public NetworkTools() {
@@ -31,7 +31,7 @@ public class NetworkTools {
         try {
             LocalSocket sender = new LocalSocket();
             sender.connect(new LocalSocketAddress(SOCKET_NAME));
-            sender.getOutputStream().write(String.format("%s%s\n%s\n%s\n%s\n%s\n%s\n", TAG_ETH_CONFIG, ip, netmask, gateway, cidr, dns1, dns2).getBytes());
+            sender.getOutputStream().write(String.format("%s%s\n%s\n%s\n%s\n%s\n%s\n", TAG_ETH_NETWORK, ip, netmask, gateway, cidr, dns1, dns2).getBytes());
             sender.getOutputStream().close();
             sender.close();
         } catch (IOException e) {

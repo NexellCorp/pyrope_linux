@@ -92,7 +92,6 @@ public:
 	//	Implement Pure Virtual Function
 	virtual void ThreadProc()
 	{
-		printf("Run!\n");
 		while(m_bThreadRun)
 		{
 			usleep(100000);
@@ -159,17 +158,17 @@ private:
 };
 
 //------------------------------------------------------------------------------
-class NapNetwork
+class NapHelper
 	: public CNX_Thread
 {
 public:
-	NapNetwork()
+	NapHelper()
 	{
 		m_bThreadRun = true;
 		Start();
 	}
 
-	virtual ~NapNetwork()
+	virtual ~NapHelper()
 	{
 		if( true == m_bThreadRun )
 		{
@@ -181,10 +180,11 @@ public:
 	//	Implement Pure Virtual Function
 	virtual void ThreadProc()
 	{
-		const char *pSockName	= "cinema.network";
+		const char *pSockName	= "cinema.helper";
 
-		const char *pReqConfig	= "config";
+		const char *pReqNetwork	= "network";
 		const char *pReqLink	= "link";
+		const char *pBusyBox	= "busybox";
 
 		const char *pResult[2] = {
 			"false", "true",
@@ -226,17 +226,18 @@ public:
 			memset( readBuf, 0x00, sizeof(readBuf) );
 			read( clnSock, readBuf, sizeof(readBuf) );
 
-			if( !strncmp( readBuf, pReqConfig, strlen(pReqConfig)) )
+			if( !strncmp( readBuf, pReqNetwork, strlen(pReqNetwork)) )
 			{
 				FILE *pFile = fopen("/system/bin/nap_network", "w");
-				fprintf(pFile, "%s\n", readBuf + strlen(pReqConfig));
+				fprintf(pFile, "%s\n", readBuf + strlen(pReqNetwork));
 				fclose(pFile);
 				sync();
 
 				system("/system/bin/nap_network.sh restart");
 			}
 
-			if( !strncmp( readBuf, pReqLink, strlen(pReqLink)) ) {
+			if( !strncmp( readBuf, pReqLink, strlen(pReqLink)) )
+			{
 				if( 0 < CheckEthLink("eth0") )
 				{
 					write( clnSock, pResult[1], strlen(pResult[1]) );
@@ -245,6 +246,11 @@ public:
 				{
 					write( clnSock, pResult[0], strlen(pResult[0]) );
 				}
+			}
+
+			if( !strncmp( readBuf, pBusyBox, strlen(pBusyBox)) )
+			{
+				system( readBuf );
 			}
 
 			close(clnSock);
@@ -278,7 +284,7 @@ private:
 
 //------------------------------------------------------------------------------
 static NapTamperChecker	*gstTamper = NULL;
-static NapNetwork *gstNetwork = NULL;
+static NapHelper *gstHelper = NULL;
 
 //------------------------------------------------------------------------------
 static void signal_handler( int32_t signal )
@@ -298,7 +304,7 @@ static void signal_handler( int32_t signal )
 	}
 
 	if( NULL != gstTamper) delete gstTamper;
-	if( NULL != gstNetwork ) delete gstNetwork;
+	if( NULL != gstHelper ) delete gstHelper;
 
 	NX_SLinkServerStop();
 	NX_IPCServerStop();
@@ -441,7 +447,7 @@ int32_t main( void )
 	//
 	//
 	gstTamper = new NapTamperChecker();
-	gstNetwork = new NapNetwork();
+	gstHelper = new NapHelper();
 
 	gstTamper->RegisterCallback(TamperCheckerCallback, NULL);
 

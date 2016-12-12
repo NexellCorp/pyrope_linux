@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #include <tms_protocol.h>
@@ -28,14 +29,14 @@
 #include <NX_IPCClient.h>
 #include <NX_IPCCommand.h>
 
-#define NX_DTAG	"[TMS Client]"
+#define NX_DTAG	"[IPC Client]"
 #include <NX_DbgMsg.h>
 
 #define	IPC_SERVER_FILE "/data/local/tmp/ipc_server"
 
 //------------------------------------------------------------------------------
 //
-//	TMS Client APIs
+//	IPC Client APIs
 //
 class CNX_IPCClient
 {
@@ -54,14 +55,16 @@ public:
 
 private:
 	//	TCON Commands
-	int32_t TCONCmdStatus( int32_t id, uint32_t cmd, uint8_t *status, int32_t *size );
-	int32_t TCONCmdMode( int32_t id, uint32_t cmd );
-	int32_t TCONCmdInfo( int32_t id, uint32_t cmd, uint8_t *pInfo, int32_t *size );
-	int32_t TCONCmdControl( uint32_t id, uint32_t cmd, uint8_t value1, uint8_t value2 );
-	int32_t TCONCmdControl( uint32_t id, uint32_t cmd, uint8_t value1, uint8_t value2, uint8_t value3 );
+	int32_t TCONCmdRead( int32_t id, uint32_t cmd, uint8_t *pBuf, int32_t *size );
+	int32_t TCONCmdRead( int32_t id, uint32_t cmd, uint8_t reg, uint8_t *pBuf, int32_t *size );
+	int32_t TCONCmdWrite( int32_t id, uint32_t cmd );
+	int32_t TCONCmdWrite( int32_t id, uint32_t cmd, uint8_t buf );
+	int32_t TCONCmdWrite( int32_t id, uint32_t cmd, uint8_t buf1, uint8_t buf2 );
+	int32_t TCONCmdWrite( int32_t id, uint32_t cmd, uint8_t buf1, uint8_t buf2, uint8_t buf3 );
+	int32_t TCONCmdWrite( int32_t id, uint32_t cmd, uint8_t *pBuf, int32_t *size );
 
 	//	PFPGA Commands
-	int32_t PFPGACmdStatus( uint8_t *status, int *size );
+	int32_t PFPGACmdRead( uint32_t cmd, uint8_t *pBuf, int32_t *size );
 	int32_t PFPGACmdSource( uint8_t index );
 	int32_t PFPGACmdVersion( uint8_t *pVersion );
 
@@ -91,12 +94,14 @@ CNX_IPCClient* CNX_IPCClient::m_psInstance = NULL;
 //
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCClient::TCONCmdStatus( int32_t id, uint32_t cmd, uint8_t *status, int32_t *size )
+int32_t CNX_IPCClient::TCONCmdRead( int32_t id, uint32_t cmd, uint8_t *pBuf, int32_t *size )
 {
-	uint8_t index = id;
-	int32_t clntSock, sendSize, recvSize, payloadSize;
+	int32_t clntSock;
+	int32_t sendSize, recvSize, payloadSize;
 	uint32_t key;
 	void *payload;
+
+	uint8_t data[1] = { (uint8_t)id };
 
 	clntSock = LS_Connect(IPC_SERVER_FILE);
 	if( -1 == clntSock)
@@ -105,7 +110,7 @@ int32_t CNX_IPCClient::TCONCmdStatus( int32_t id, uint32_t cmd, uint8_t *status,
 		return -1;
 	}
 
-	sendSize = TMS_MakePacket( TMS_KEY_VALUE, cmd, &index, sizeof(index), m_TConSendBuf, sizeof(m_TConSendBuf) );
+	sendSize = TMS_MakePacket( TMS_KEY_VALUE, cmd, &data, sizeof(data), m_TConSendBuf, sizeof(m_TConSendBuf) );
 	write( clntSock, m_TConSendBuf, sendSize );
 
 	recvSize = read( clntSock, m_TConReceiveBuf, sizeof(m_TConReceiveBuf) );
@@ -123,20 +128,22 @@ int32_t CNX_IPCClient::TCONCmdStatus( int32_t id, uint32_t cmd, uint8_t *status,
 		return -1;
 	}
 
-	memcpy( status, payload, payloadSize );
+	memcpy( pBuf, payload, payloadSize );
 	*size = payloadSize;
 
-	close( clntSock);
+	close( clntSock );
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCClient::TCONCmdMode( int32_t id, uint32_t cmd )
+int32_t CNX_IPCClient::TCONCmdRead( int32_t id, uint32_t cmd, uint8_t reg, uint8_t *pBuf, int32_t *size )
 {
-	uint8_t index = id;
-	int32_t clntSock, sendSize, recvSize, payloadSize;
+	int32_t clntSock;
+	int32_t sendSize, recvSize, payloadSize;
 	uint32_t key;
 	void *payload;
+
+	uint8_t data[2] = { (uint8_t)id, reg };
 
 	clntSock = LS_Connect(IPC_SERVER_FILE);
 	if( -1 == clntSock)
@@ -145,44 +152,7 @@ int32_t CNX_IPCClient::TCONCmdMode( int32_t id, uint32_t cmd )
 		return -1;
 	}
 
-	sendSize = TMS_MakePacket( TMS_KEY_VALUE, cmd, &index, sizeof(index), m_TConSendBuf, sizeof(m_TConSendBuf) );
-	write( clntSock, m_TConSendBuf, sendSize );
-
-	recvSize = read( clntSock, m_TConReceiveBuf, sizeof(m_TConReceiveBuf) );
-	if( 0 != TMS_ParsePacket( m_TConReceiveBuf, recvSize, &key, &cmd, &payload, &payloadSize ) )
-	{
-		NxErrMsg( "Error : TMS_ParsePacket().\n" );
-		close( clntSock );
-		return -1;
-	}
-
-	if( 0 > recvSize )
-	{
-		NxErrMsg( "Fail, read().\n" );
-		close( clntSock );
-		return -1;
-	}
-
-	close( clntSock);
-	return 0;
-}
-
-//------------------------------------------------------------------------------
-int32_t CNX_IPCClient::TCONCmdInfo( int32_t id, uint32_t cmd, uint8_t *pInfo, int32_t *size )
-{
-	uint8_t index = id;
-	int32_t clntSock, sendSize, recvSize, payloadSize;
-	uint32_t key;
-	void *payload;
-
-	clntSock = LS_Connect(IPC_SERVER_FILE);
-	if( -1 == clntSock)
-	{
-		NxErrMsg( "Error : LS_Connect(). ( %s )\n", IPC_SERVER_FILE);
-		return -1;
-	}
-
-	sendSize = TMS_MakePacket( TMS_KEY_VALUE, cmd, &index, sizeof(index), m_TConSendBuf, sizeof(m_TConSendBuf) );
+	sendSize = TMS_MakePacket( TMS_KEY_VALUE, cmd, &data, sizeof(data), m_TConSendBuf, sizeof(m_TConSendBuf) );
 	write( clntSock, m_TConSendBuf, sendSize );
 
 	recvSize = read( clntSock, m_TConReceiveBuf, sizeof(m_TConReceiveBuf) );
@@ -200,21 +170,111 @@ int32_t CNX_IPCClient::TCONCmdInfo( int32_t id, uint32_t cmd, uint8_t *pInfo, in
 		return -1;
 	}
 
-	memcpy( pInfo, payload, payloadSize );
+	memcpy( pBuf, payload, payloadSize );
 	*size = payloadSize;
 
-	close( clntSock);
+	close( clntSock );
 	return 0;
-
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCClient::TCONCmdControl( uint32_t id, uint32_t cmd, uint8_t value1, uint8_t value2 )
+int32_t CNX_IPCClient::TCONCmdWrite( int32_t id, uint32_t cmd )
 {
 	int32_t ret = 0;
 	int32_t clntSock;
 	int32_t sendSize, recvSize;
-	uint8_t data[3] = { (uint8_t)id, value1, value2 };
+
+	uint8_t data[1] = { (uint8_t)id };
+
+	clntSock = LS_Connect(IPC_SERVER_FILE);
+	if( -1 == clntSock)
+	{
+		NxErrMsg( "Error : LS_Connect(). ( %s )\n", IPC_SERVER_FILE);
+		return -1;
+	}
+
+	sendSize = TMS_MakePacket( TMS_KEY_VALUE, cmd, &data, sizeof(data), m_TConSendBuf, sizeof(m_TConSendBuf) );
+	write( clntSock, m_TConSendBuf, sendSize );
+
+	recvSize = read( clntSock, m_TConReceiveBuf, sizeof(m_TConReceiveBuf) );
+	if( 0 > recvSize )
+	{
+		NxErrMsg( "Fail, read().\n" );
+		ret = -1;
+	}
+
+	close( clntSock );
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_IPCClient::TCONCmdWrite( int32_t id, uint32_t cmd, uint8_t buf )
+{
+	int32_t ret = 0;
+	int32_t clntSock;
+	int32_t sendSize, recvSize;
+
+	uint8_t data[2] = { (uint8_t)id, buf };
+
+	clntSock = LS_Connect(IPC_SERVER_FILE);
+	if( -1 == clntSock)
+	{
+		NxErrMsg( "Error : LS_Connect(). ( %s )\n", IPC_SERVER_FILE);
+		return -1;
+	}
+
+	sendSize = TMS_MakePacket( TMS_KEY_VALUE, cmd, &data, sizeof(data), m_TConSendBuf, sizeof(m_TConSendBuf) );
+	write( clntSock, m_TConSendBuf, sendSize );
+
+	recvSize = read( clntSock, m_TConReceiveBuf, sizeof(m_TConReceiveBuf) );
+	if( 0 > recvSize )
+	{
+		NxErrMsg( "Fail, read().\n" );
+		ret = -1;
+	}
+
+	close( clntSock );
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_IPCClient::TCONCmdWrite( int32_t id, uint32_t cmd, uint8_t buf1, uint8_t buf2 )
+{
+	int32_t ret = 0;
+	int32_t clntSock;
+	int32_t sendSize, recvSize;
+
+	uint8_t data[3] = { (uint8_t)id, buf1, buf2 };
+
+	clntSock = LS_Connect(IPC_SERVER_FILE);
+	if( -1 == clntSock)
+	{
+		NxErrMsg( "Error : LS_Connect (%s)\n", IPC_SERVER_FILE);
+		return -1;
+	}
+
+	sendSize = TMS_MakePacket( TMS_KEY_VALUE, cmd, &data, sizeof(data), m_TConSendBuf, sizeof(m_TConSendBuf) );
+	write( clntSock, m_TConSendBuf, sendSize );
+
+	recvSize = read( clntSock, m_TConReceiveBuf, sizeof(m_TConReceiveBuf) );
+	if( 0 > recvSize )
+	{
+		NxErrMsg( "Fail, read().\n" );
+		ret = -1;
+	}
+
+	close( clntSock );
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_IPCClient::TCONCmdWrite( int32_t id, uint32_t cmd, uint8_t buf1, uint8_t buf2, uint8_t buf3 )
+{
+	int32_t ret = 0;
+	int32_t clntSock;
+	int32_t sendSize, recvSize;
+
+	uint8_t data[4] = { (uint8_t)id, buf1, buf2, buf3 };
 
 	clntSock = LS_Connect(IPC_SERVER_FILE);
 	if( -1 == clntSock)
@@ -238,12 +298,18 @@ int32_t CNX_IPCClient::TCONCmdControl( uint32_t id, uint32_t cmd, uint8_t value1
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCClient::TCONCmdControl( uint32_t id, uint32_t cmd, uint8_t value1, uint8_t value2, uint8_t value3 )
+int32_t CNX_IPCClient::TCONCmdWrite( int32_t id, uint32_t cmd, uint8_t *pBuf, int32_t *size )
 {
-	int32_t ret = 0;
 	int32_t clntSock;
-	int32_t sendSize, recvSize;
-	uint8_t data[4] = { (uint8_t)id, value1, value2, value3 };
+	int32_t sendSize, recvSize, payloadSize;
+	uint32_t key;
+	void *payload;
+
+	int32_t iDataSize = *size + 1;
+	uint8_t *pData = (uint8_t*)malloc( sizeof(uint8_t) * iDataSize );
+
+	pData[0] = id;
+	memcpy( pData + 1, pBuf, *size );
 
 	clntSock = LS_Connect(IPC_SERVER_FILE);
 	if( -1 == clntSock)
@@ -252,24 +318,31 @@ int32_t CNX_IPCClient::TCONCmdControl( uint32_t id, uint32_t cmd, uint8_t value1
 		return -1;
 	}
 
-printf("0x%02x, 0x%02x, 0x%02x, 0x%02x\n", data[0], data[1], data[2], data[3]);
-
-	sendSize = TMS_MakePacket( TMS_KEY_VALUE, cmd, &data, sizeof(data), m_TConSendBuf, sizeof(m_TConSendBuf) );
+	sendSize = TMS_MakePacket( TMS_KEY_VALUE, cmd, pData, iDataSize, m_TConSendBuf, sizeof(m_TConSendBuf) );
 	write( clntSock, m_TConSendBuf, sendSize );
 
 	recvSize = read( clntSock, m_TConReceiveBuf, sizeof(m_TConReceiveBuf) );
-	if( 0 > recvSize )
+	if( 0 != TMS_ParsePacket( m_TConReceiveBuf, recvSize, &key, &cmd, &payload, &payloadSize ) )
 	{
-		NxErrMsg( "Fail, read().\n" );
-		ret = -1;
+		NxErrMsg( "Error : TMS_ParsePacket().\n" );
+		close( clntSock );
+		return -1;
 	}
 
+	if( *size < payloadSize )
+	{
+		NxErrMsg( "Error: Buffer size(%d) < Payload Size(%d).", *size, payloadSize );
+		close( clntSock );
+		return -1;
+	}
 
+	memcpy( pBuf, payload, payloadSize );
+	*size = payloadSize;
 
-	close( clntSock);
-	return ret;
+	close( clntSock );
+	free( pData );
+	return 0;
 }
-
 
 //------------------------------------------------------------------------------
 int32_t CNX_IPCClient::TCONCommand( int32_t id, int32_t cmd, uint8_t *pBuf, int32_t *size )
@@ -278,12 +351,6 @@ int32_t CNX_IPCClient::TCONCommand( int32_t id, int32_t cmd, uint8_t *pBuf, int3
 	{
 	case TCON_CMD_STATUS:
 	case TCON_CMD_DOOR_STATUS:
-		return TCONCmdStatus( id, cmd & 0xFF, pBuf, size );
-
-	case TCON_CMD_MODE_NORMAL:
-	case TCON_CMD_MODE_LOD:
-		return TCONCmdMode( id, cmd & 0xFF );
-
 	case TCON_CMD_OPEN_NUM:
 	case TCON_CMD_OPEN_POS:
 	case TCON_CMD_SHORT_NUM:
@@ -291,14 +358,35 @@ int32_t CNX_IPCClient::TCONCommand( int32_t id, int32_t cmd, uint8_t *pBuf, int3
 	case TCON_CMD_ELAPSED_TIME:
 	case TCON_CMD_ACCUMULATE_TIME:
 	case TCON_CMD_VERSION:
-		return TCONCmdInfo( id, cmd & 0xFF, pBuf, size );
+		return TCONCmdRead( id, cmd, pBuf, size );
+
+	case TCON_CMD_MASTERING_RD:
+		return TCONCmdRead( id, cmd, pBuf[0], pBuf, size );
+
+	case TCON_CMD_MODE_NORMAL:
+	case TCON_CMD_MODE_LOD:
+		return TCONCmdWrite( id, cmd );
 
 	case TCON_CMD_PATTERN_RUN:
 	case TCON_CMD_PATTERN_STOP:
-		return TCONCmdControl( id, cmd & 0xFF, pBuf[0], pBuf[1] );
+	case TCON_CMD_INPUT_SOURCE:
+		return TCONCmdWrite( id, cmd, pBuf[0], pBuf[1] );
 
-	case TCON_CMD_MASTERING:
-		return TCONCmdControl( id, cmd & 0xFF, pBuf[0], pBuf[1], pBuf[2] );
+	case TCON_CMD_MASTERING_WR:
+	case TCON_CMD_QUALITY:
+		return TCONCmdWrite( id, cmd, pBuf[0], pBuf[1], pBuf[2] );
+
+	case TCON_CMD_TGAM_R:
+	case TCON_CMD_TGAM_G:
+	case TCON_CMD_TGAM_B:
+	case TCON_CMD_DGAM_R:
+	case TCON_CMD_DGAM_G:
+	case TCON_CMD_DGAM_B:
+	case TCON_CMD_DOT_CORRECTION:
+		return TCONCmdWrite( id, cmd, pBuf, size );
+
+	case TCON_CMD_MULTI:
+		return TCONCmdWrite( id, cmd, pBuf[0], pBuf[1] );
 
 	default:
 		return -1;
@@ -314,34 +402,43 @@ int32_t CNX_IPCClient::TCONCommand( int32_t id, int32_t cmd, uint8_t *pBuf, int3
 //
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCClient::PFPGACmdStatus( uint8_t *status, int32_t * /*size*/ )
+int32_t CNX_IPCClient::PFPGACmdRead( uint32_t cmd, uint8_t *pBuf, int32_t *size )
 {
-	int32_t clntSock, sendSize, ret = 0;
-	int32_t recvSize;
-	uint32_t key, cmd;
+	int32_t clntSock;
+	int32_t sendSize, recvSize, payloadSize;
+	uint32_t key;
 	void *payload;
-	int32_t payloadSize;
 
 	clntSock = LS_Connect(IPC_SERVER_FILE);
 	if( -1 == clntSock)
 	{
-		NxErrMsg( "Error : socket (%s)\n", IPC_SERVER_FILE);
+		NxErrMsg( "Error : LS_Connect(). ( %s )\n", IPC_SERVER_FILE);
 		return -1;
 	}
+
 	sendSize = TMS_MakePacket( TMS_KEY_VALUE, PFPGA_CMD_STATUS, NULL, 0, m_PFPGASendBuf, sizeof(m_PFPGASendBuf) );
-	//	Write Command
 	write( clntSock, m_PFPGASendBuf, sendSize );
 
-	//	Read Response
 	recvSize = read( clntSock, m_PFPGAReceiveBuf, sizeof(m_PFPGAReceiveBuf) );
 	if( 0 != TMS_ParsePacket( m_PFPGAReceiveBuf, recvSize, &key, &cmd, &payload, &payloadSize ) )
 	{
-		NxErrMsg( "Error : TMS_ParsePacket\n" );
-		ret = -1;
+		NxErrMsg( "Error : TMS_ParsePacket().\n" );
+		close( clntSock );
+		return -1;
 	}
-	status[0] = ((uint8_t*)payload)[0];
-	close( clntSock);
-	return ret;
+
+	if( *size < payloadSize )
+	{
+		NxErrMsg( "Error: Buffer size(%d) < Payload Size(%d).", *size, payloadSize );
+		close( clntSock );
+		return -1;
+	}
+
+	memcpy( pBuf, payload, payloadSize );
+	*size = payloadSize;
+
+	close( clntSock );
+	return 0;
 }
 
 //------------------------------------------------------------------------------
@@ -406,7 +503,7 @@ int32_t CNX_IPCClient::PFPGACommand( int32_t cmd, uint8_t *pBuf, int32_t *size )
 	switch ( cmd & 0xFFFF )
 	{
 	case PFPGA_CMD_STATUS :
-		return PFPGACmdStatus( pBuf, size );
+		return PFPGACmdRead( cmd, pBuf, size );
 
 	case PFPGA_CMD_SOURCE :
 		return PFPGACmdSource( pBuf[0] );

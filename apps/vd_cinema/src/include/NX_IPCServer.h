@@ -11,7 +11,7 @@
 //	Module		:
 //	File		:
 //	Description	:
-//	Author		: 
+//	Author		:
 //	Export		:
 //	History		:
 //
@@ -23,7 +23,7 @@
 #include <stdint.h>
 
 #define	IPC_SERVER_FILE		"/data/local/tmp/ipc_server"
-#define	MAX_PAYLOAD_SIZE	(128*1024)
+#define	MAX_PAYLOAD_SIZE	(64*1024)
 
 int32_t NX_IPCServerStart();
 void	NX_IPCServerStop();

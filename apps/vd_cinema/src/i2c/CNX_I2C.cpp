@@ -34,6 +34,9 @@
 
 #include <CNX_I2C.h>
 
+#define I2C_DEBUG_ERROR		0
+#define I2C_DEBUG_RESULT	0
+
 //------------------------------------------------------------------------------
 CNX_I2C::CNX_I2C( int32_t iPort )
 	: m_hDev( -1 )
@@ -81,7 +84,15 @@ int32_t CNX_I2C::Write( uint8_t iSlave )
 	iRet = RawWrite( iSlave, NULL, 0 );
 	if( 0 > iRet )
 	{
-		// printf("fail, [wr] i2c-%d, slave:0x%02x, addr:NULL, size:0\n", m_iPort, iSlave );
+#if I2C_DEBUG_ERROR
+		printf("fail, [wr] i2c-%d, slave:0x%02x, addr:NULL, size:0\n", m_iPort, iSlave );
+#endif
+	}
+	else
+	{
+#if I2C_DEBUG_RESULT
+		printf("[wr] i2c-%d, slave:0x%02x, addr:NULL, size:0\n", m_iPort, iSlave );
+#endif
 	}
 
 	return iRet;
@@ -101,10 +112,17 @@ int32_t CNX_I2C::Write( uint8_t iSlave, uint16_t iAddr, uint16_t iBuf )
 	iRet = RawWrite( iSlave, rawData, sizeof(rawData) );
 	if( 0 > iRet )
 	{
-		// printf("fail, [wr] i2c-%d, slave:0x%02x, addr:0x%04x, size:%04x\n", m_iPort, iSlave, iAddr, iBuf);
+#if I2C_DEBUG_ERROR
+		printf("fail, [wr] i2c-%d, slave:0x%02x, addr:0x%04x, size:%04x\n", m_iPort, iSlave, iAddr, iBuf);
+#endif
+	}
+	else
+	{
+#if I2C_DEBUG_RESULT
+		printf("[wr] i2c-%d, slave:0x%02x, addr:0x%04x, data:%04x\n", m_iPort, iSlave, iAddr, iBuf);
+#endif
 	}
 
-	// printf("[wr] i2c-%d, slave:0x%02x, addr:0x%04x, size:%04x\n", m_iPort, iSlave, iAddr, iBuf);
 	return iRet;
 }
 
@@ -131,7 +149,15 @@ int32_t CNX_I2C::Write( uint8_t iSlave, uint16_t iAddr, uint16_t *pBuf, int32_t 
 	iRet = RawWrite( iSlave, pRawData, iRawSize );
 	if( 0 > iRet )
 	{
-		// printf("fail, [wr] i2c-%d, slave:0x%02x, addr:0x%04x, size:%d\n", m_iPort, iSlave, iAddr, iSize);
+#if I2C_DEBUG_ERROR
+		printf("fail, [wr] i2c-%d, slave:0x%02x, addr:0x%04x, size:%d\n", m_iPort, iSlave, iAddr, iSize);
+#endif
+	}
+	else
+	{
+#if I2C_DEBUG_RESULT
+		printf("[wr] i2c-%d, slave:0x%02x, addr:0x%04x, size:%d\n", m_iPort, iSlave, iAddr, iSize);
+#endif
 	}
 
 	if( pRawData ) free( pRawData );
@@ -151,18 +177,27 @@ int32_t CNX_I2C::Read( uint8_t iSlave, uint16_t iAddr )
 	iRet = RawWrite( iSlave, addr, 2 );
 	if( 0 > iRet )
 	{
-		// printf("fail, [wr] i2c-%d, slave:0x%02x, addr:0x%04x, size:1\n", m_iPort, iSlave, iAddr );
+#if I2C_DEBUG_ERROR
+		printf("fail, [wr] i2c-%d, slave:0x%02x, addr:0x%04x, size:1\n", m_iPort, iSlave, iAddr );
+#endif
 		return iRet;
 	}
 
 	iRet = RawRead( iSlave, data, sizeof(data) );
 	if( 0 > iRet )
 	{
-		// printf("fail, [rd] i2c-%d, slave:0x%02x, addr:0x%04x, size:1\n", m_iPort, iSlave, iAddr );
+#if I2C_DEBUG_ERROR
+		printf("fail, [rd] i2c-%d, slave:0x%02x, addr:0x%04x, size:1\n", m_iPort, iSlave, iAddr );
+#endif
 		return iRet;
 	}
 
-	// printf("[rd] i2c-%d, slave:0x%02x, addr:0x%04x, size:%04x\n", m_iPort, iSlave, iAddr, ((data[0] << 8 & 0xFF00) | (data[1] << 0 & 0x00FF)));
+#if I2C_DEBUG_RESULT
+	if( 0 <= iRet )
+	{
+		printf("[rd] i2c-%d, slave:0x%02x, addr:0x%04x, data:%04x\n", m_iPort, iSlave, iAddr, ((data[0] << 8 & 0xFF00) | (data[1] << 0 & 0x00FF)));
+	}
+#endif
 	return 0x0000FFFF & ((data[0] << 8 & 0xFF00) | (data[1] << 0 & 0x00FF));
 }
 
@@ -178,14 +213,18 @@ int32_t CNX_I2C::Read( uint8_t iSlave, uint16_t iAddr, uint16_t *pBuf, int32_t i
 	iRet = RawWrite( iSlave, addr, 2 );
 	if( 0 > iRet )
 	{
-		// printf("fail, [wr] i2c-%d, slave:0x%02x, addr:0x%04x, size:1\n", m_iPort, iSlave, iAddr );
+#if I2C_DEBUG_ERROR
+		printf("fail, [wr] i2c-%d, slave:0x%02x, addr:0x%04x, size:1\n", m_iPort, iSlave, iAddr );
+#endif
 		return iRet;
 	}
 
 	iRet = RawRead( iSlave, (uint8_t*)pBuf, iSize * 2 );
 	if( 0 > iRet )
 	{
-		// printf("fail, [rd] i2c-%d, slave:0x%02x, addr:0x%04x, size:%d\n", m_iPort, iSlave, iAddr, iSize );
+#if I2C_DEBUG_ERROR
+		printf("fail, [rd] i2c-%d, slave:0x%02x, addr:0x%04x, size:%d\n", m_iPort, iSlave, iAddr, iSize );
+#endif
 		return iRet;
 	}
 
@@ -197,6 +236,12 @@ int32_t CNX_I2C::Read( uint8_t iSlave, uint16_t iAddr, uint16_t *pBuf, int32_t i
 		pBuf[i] = (iUpper << 8 & 0xFF00) | (iLower << 0 & 0x00FF);
 	}
 
+#if I2C_DEBUG_RESULT
+	if( 0 <= iRet )
+	{
+		printf("[rd] i2c-%d, slave:0x%02x, addr:0x%04x, size:%d\n", m_iPort, iSlave, iAddr, iSize );
+	}
+#endif
 	return iRet;
 }
 

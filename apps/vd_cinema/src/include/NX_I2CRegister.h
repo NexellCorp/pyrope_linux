@@ -20,8 +20,6 @@
 #ifndef __NX_I2CREGISTER_H__
 #define __NX_I2CREGISTER_H__
 
-#define PFPGA_I2C_PORT					2
-
 //
 //	TCON Status
 //
@@ -137,5 +135,57 @@
 #define TCON_REG_F_LED_DATA14_READ		0x0160
 #define TCON_REG_F_LED_DATA15_READ		0x0161
 
+
+//
+//	Quality
+//
+#define TCON_REG_LUT_BURST_SEL			0x0001
+
+#define TCON_REG_TGAM_WR_SEL			0x0081
+#define TCON_REG_TGAM_R_WDATA			0x0084
+#define TCON_REG_TGAM_G_WDATA			0x0086
+#define TCON_REG_TGAM_B_WDATA			0x0088
+
+#define TCON_REG_DGAM_WR_SEL			0x0096
+#define TCON_REG_DGAM_R_WDATA			0x0099
+#define TCON_REG_DGAM_G_WDATA			0x009B
+#define TCON_REG_DGAM_B_WDATA			0x009D
+
+
+//
+//
+//
+#define TCON_REG_FLASH_SEL				0x008D
+#define TCON_REG_FLASH_WDATA			0x0091
+
+//
+//	Input Source
+//
+#define TCON_REG_MUTE					0x0064
+#define TCON_REG_XYZ_TO_RGB				0x0004
+#define TCON_REG_I_H_RAST_SIZE			0x0005
+#define TCON_REG_I_V_RAST_SIZE			0x0006
+#define TCON_REG_I_H_ACTIVE_SIZE		0x0007
+#define TCON_REG_I_V_ACTIVE_SIZE		0x0008
+#define TCON_H_RAST_SIZE_MIN			0x0009
+#define TCON_H_RAST_SIZE_MAX			0x000A
+#define TCON_V_RAST_SIZE_MIN			0x000B
+#define TCON_V_RAST_SIZE_MAX			0x000C
+
+
+//
+//	TCON Multi Mode
+//
+#define TCON_REG_MULTI					0x0018
+
+
+//
+//	P.FPGA Status
+//
+#define PFPGA_I2C_PORT					2
+#define PFPGA_I2C_SLAVE					0x0A
+
+#define PFPGA_REG_CHECK_STATUS			0x0001
+#define PFPGA_VAL_CHECK_STATUS			0x03EC
 
 #endif	// __NX_I2CREGISTER_H__

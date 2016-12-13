@@ -26,5 +26,6 @@ int32_t NX_TCONCommand( int32_t id, int32_t cmd, uint8_t *pBuf, int32_t *size );
 int32_t NX_PFPGACommand( int32_t cmd, uint8_t *pBuf, int32_t *size );
 int32_t NX_BATCommand( int32_t cmd, uint8_t *pBuf, int32_t *size );
 int32_t NX_IMBCommand( int32_t cmd, uint8_t *pBuf, int32_t *size );
+int32_t NX_IPCCommand( int32_t cmd, uint8_t *pBuf, int32_t *size );
 
 #endif	// __NX_IPCCLIENT_H__

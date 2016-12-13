@@ -104,6 +104,9 @@ private:
 	int32_t IMB_Status( int32_t fd );
 	int32_t IMB_Version( int32_t fd );
 
+	//	IPC Commands
+	int32_t IPC_Version( int32_t fd );
+
 	int32_t ProcessCommand( int32_t clientSocket, uint32_t cmd, void *pPayload, int32_t payloadSize );
 
 private:
@@ -1584,6 +1587,20 @@ int32_t CNX_IPCServer::IMB_Version( int32_t fd )
 }
 
 //------------------------------------------------------------------------------
+int32_t CNX_IPCServer::IPC_Version( int32_t fd )
+{
+	uint8_t version[32];
+	int32_t sendSize;
+
+	sprintf( (char*)version, "%s, %s", __TIME__, __DATE__ );
+
+	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, IPC_CMD_VERSION_SERVER, version, strlen((const char*)version), m_SendBuf, sizeof(m_SendBuf) );
+	write( fd, m_SendBuf, sendSize );
+	// NX_HexDump( m_SendBuf, sent );
+	return 0;
+}
+
+//------------------------------------------------------------------------------
 int32_t CNX_IPCServer::ProcessCommand( int32_t fd, uint32_t cmd, void *pPayload, int32_t payloadSize )
 {
 	uint8_t *pData = (uint8_t*)pPayload;
@@ -1669,6 +1686,10 @@ int32_t CNX_IPCServer::ProcessCommand( int32_t fd, uint32_t cmd, void *pPayload,
 	//	IMB Commands
 	case IMB_CMD_STATUS:
 		return IMB_Status( fd );
+
+	//	IPC Commands
+	case IPC_CMD_VERSION_SERVER:
+		return IPC_Version( fd );
 
 	default:
 		return -1;

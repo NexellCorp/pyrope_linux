@@ -76,4 +76,11 @@
 #define IMB_CMD_STATUS				0x0301	//	IMB Status
 #define IMB_CMD_VERSION				0x0302	//	IMB Version
 
+
+//
+//	IPC Command
+//
+#define IPC_CMD_VERSION_SERVER		0x0401	//	IPC Server Version
+#define IPC_CMD_VERSION_CLIENT		0x0402	//	IPC Client Version
+
 #endif	// __NX_IPCCOMMAND_H__

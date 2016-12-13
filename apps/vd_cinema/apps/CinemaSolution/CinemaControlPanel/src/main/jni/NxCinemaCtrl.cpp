@@ -232,7 +232,54 @@ JNIEXPORT jbyteArray JNICALL NX_CinemaCtrlBAT( JNIEnv *env, jclass obj, jint cmd
 
 	if( 0 > NX_BATCommand( cmd, (uint8_t*)pTmpBuf, &iTmpSize ) )
 	{
-	    NxDbgMsg( NX_DBG_ERR, "Fail, NX_PFPGACommand().\n" );
+	    NxDbgMsg( NX_DBG_ERR, "Fail, NX_BATCommand().\n" );
+	    NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
+	    return NULL;
+	}
+
+    jbyteArray outArray = env->NewByteArray( iTmpSize );
+    if( NULL == outArray )
+    {
+        NxDbgMsg( NX_DBG_ERR, "Fail, NewCharArray().\n" );
+        NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
+        return NULL;
+    }
+
+    env->SetByteArrayRegion( outArray, 0, iTmpSize, (jbyte*)pTmpBuf );
+    NX_HexDump( pTmpBuf, iTmpSize );
+
+    NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
+    return outArray;
+}
+
+//------------------------------------------------------------------------------
+JNIEXPORT jbyteArray JNICALL NX_CinemaCtrlIPC( JNIEnv *env, jclass obj, jint cmd, jbyteArray inArray )
+{
+    NxDbgMsg( NX_DBG_VBS, "%s()++", __FUNCTION__ );
+
+    uint8_t* pTmpBuf = NULL;
+    int32_t iTmpSize = 0;
+
+    if( NULL != inArray )
+    {
+        jbyte* pData = env->GetByteArrayElements( inArray, NULL );
+        jint dataSize = env->GetArrayLength( inArray );
+
+        iTmpSize = dataSize;
+        pTmpBuf = (uint8_t*)malloc( sizeof(uint8_t) * iTmpSize );
+
+        memcpy( pTmpBuf, (uint8_t*)pData, dataSize );
+        env->ReleaseByteArrayElements( inArray, pData, 0 );
+    }
+    else
+    {
+        iTmpSize = MAX_BUF_SIZE;
+        pTmpBuf = (uint8_t*)malloc( sizeof(uint8_t) * iTmpSize );
+    }
+
+	if( 0 > NX_IPCCommand( cmd, (uint8_t*)pTmpBuf, &iTmpSize ) )
+	{
+	    NxDbgMsg( NX_DBG_ERR, "Fail, NX_IPCCommand().\n" );
 	    NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
 	    return NULL;
 	}
@@ -254,10 +301,11 @@ JNIEXPORT jbyteArray JNICALL NX_CinemaCtrlBAT( JNIEnv *env, jclass obj, jint cmd
 
 //------------------------------------------------------------------------------
 static JNINativeMethod sMethods[] = {
-    //  Native Function Name,           Sigunature,                         C++ Function Name
+    //  Native Function Name,           Signature,                          C++ Function Name
     { "NX_CinemaCtrlTCON",              "(II[B)[B",                         (void*)NX_CinemaCtrlTCON    },
     { "NX_CinemaCtrlPFPGA",             "(I[B)[B",                          (void*)NX_CinemaCtrlPFPGA   },
     { "NX_CinemaCtrlBAT",               "(I[B)[B",                          (void*)NX_CinemaCtrlBAT     },
+    { "NX_CinemaCtrlIPC",               "(I[B)[B",                          (void*)NX_CinemaCtrlIPC     },
 };
 
 //------------------------------------------------------------------------------

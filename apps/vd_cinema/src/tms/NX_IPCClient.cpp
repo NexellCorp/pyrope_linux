@@ -52,6 +52,7 @@ public:
 	int32_t PFPGACommand( int32_t cmd, uint8_t *pBuf, int32_t *size );
 	int32_t BATCommand( int32_t cmd, uint8_t *pBuf, int32_t *size );
 	int32_t IMBCommand( int32_t cmd, uint8_t *pBuf, int32_t *size );
+	int32_t IPCCommand( int32_t cmd, uint8_t *pBuf, int32_t *size );
 
 private:
 	//	TCON Commands
@@ -74,12 +75,18 @@ private:
 	//	IMB Commands
 	int32_t IMBCmdStatus( uint8_t *pBuf, int32_t *size );
 
+	//	IPC Commands
+	int32_t IPCCmdServerVersion( uint32_t cmd, uint8_t *pBuf, int32_t *size );
+	int32_t IPCCmdClientVerison( uint32_t cmd, uint8_t *pBuf, int32_t *size );
+
 private:
 	//	Rx/Tx Buffer
 	uint8_t m_TConSendBuf[64*1024];
 	uint8_t m_TConReceiveBuf[64*1024];
 	uint8_t m_PFPGASendBuf[64*1024];
 	uint8_t m_PFPGAReceiveBuf[64*1024];
+	uint8_t m_IPCSendBuf[64*1024];
+	uint8_t m_IPCReceiveBuf[64*1024];
 
 private:
 	//	For Singleton
@@ -626,6 +633,86 @@ int32_t CNX_IPCClient::IMBCommand( int32_t cmd, uint8_t *pBuf, int32_t *size )
 
 //------------------------------------------------------------------------------
 //
+//	IMB Control APIs
+//
+
+//------------------------------------------------------------------------------
+int32_t CNX_IPCClient::IPCCmdServerVersion( uint32_t cmd, uint8_t *pBuf, int32_t *size )
+{
+	int32_t clntSock;
+	int32_t sendSize, recvSize, payloadSize;
+	uint32_t key;
+	void *payload;
+
+	clntSock = LS_Connect(IPC_SERVER_FILE);
+	if( -1 == clntSock)
+	{
+		NxErrMsg( "Error : LS_Connect(). ( %s )\n", IPC_SERVER_FILE);
+		return -1;
+	}
+
+	sendSize = TMS_MakePacket( TMS_KEY_VALUE, cmd, NULL, 0, m_IPCSendBuf, sizeof(m_IPCSendBuf) );
+	write( clntSock, m_IPCSendBuf, sendSize );
+
+	recvSize = read( clntSock, m_IPCReceiveBuf, sizeof(m_IPCReceiveBuf) );
+	if( 0 != TMS_ParsePacket( m_IPCReceiveBuf, recvSize, &key, &cmd, &payload, &payloadSize ) )
+	{
+		NxErrMsg( "Error : TMS_ParsePacket().\n" );
+		close( clntSock );
+		return -1;
+	}
+
+	if( *size < payloadSize )
+	{
+		NxErrMsg( "Error: Buffer size(%d) < Payload Size(%d).", *size, payloadSize );
+		close( clntSock );
+		return -1;
+	}
+
+	memcpy( pBuf, payload, payloadSize );
+	*size = payloadSize;
+
+	close( clntSock);
+	return 0;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_IPCClient::IPCCmdClientVerison( uint32_t /*cmd*/, uint8_t *pBuf, int32_t *size )
+{
+	uint8_t version[1024];
+	sprintf( (char*)version, "%s, %s", __TIME__, __DATE__ );
+
+	int32_t payloadSize = (int32_t)strlen((const char*)version);
+	if( *size < payloadSize )
+	{
+		NxErrMsg( "Error: Buffer size(%d) < Payload Size(%d).", *size, payloadSize );
+		return -1;
+	}
+
+	memcpy( pBuf, version, payloadSize );
+	*size = payloadSize;
+
+	return 0;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_IPCClient::IPCCommand( int32_t cmd, uint8_t *pBuf, int32_t *size )
+{
+	switch( cmd )
+	{
+	case IPC_CMD_VERSION_SERVER:
+		return IPCCmdServerVersion( cmd, pBuf, size );
+	case IPC_CMD_VERSION_CLIENT:
+		return IPCCmdClientVerison( cmd, pBuf, size );
+	default:
+		return -1;
+	}
+	return 0;
+}
+
+
+//------------------------------------------------------------------------------
+//
 //	For Singleton
 //
 
@@ -681,4 +768,11 @@ int32_t NX_IMBCommand( int32_t cmd, uint8_t *pBuf, int32_t *size )
 {
 	CNX_IPCClient *hIpc = CNX_IPCClient::GetInstance();
 	return hIpc->IMBCommand( cmd, pBuf, size );
+}
+
+//------------------------------------------------------------------------------
+int32_t NX_IPCCommand( int32_t cmd, uint8_t *pBuf, int32_t *size )
+{
+	CNX_IPCClient *hIpc = CNX_IPCClient::GetInstance();
+	return hIpc->IPCCommand( cmd, pBuf, size );
 }

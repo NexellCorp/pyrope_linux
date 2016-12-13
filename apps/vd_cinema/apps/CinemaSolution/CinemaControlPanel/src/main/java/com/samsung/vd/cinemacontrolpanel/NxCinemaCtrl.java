@@ -57,6 +57,10 @@ public class NxCinemaCtrl {
     public static final int CMD_IMB_STATUS          = 0x0301;
     public static final int CMD_IMB_VERSION         = 0x0302;
 
+    public static final int CMD_IPC                 = 0x0400;
+    public static final int CMD_IPC_SERVER_VERSION  = 0x0401;
+    public static final int CMD_IPC_CLIENT_VERSION  = 0x0402;
+
     private static NxCinemaCtrl mInstance;
 
     private NxCinemaCtrl() {
@@ -82,6 +86,9 @@ public class NxCinemaCtrl {
         }
         if( CMD_BAT == (cmd & 0xFF00) ) {
             return NX_CinemaCtrlBAT( cmd, data );
+        }
+        if( CMD_IPC == (cmd & 0xFF00) ) {
+            return NX_CinemaCtrlIPC( cmd, data );
         }
 
         return null;
@@ -204,4 +211,5 @@ public class NxCinemaCtrl {
     public native byte[] NX_CinemaCtrlTCON( int id, int cmd, byte[] inData );
     public native byte[] NX_CinemaCtrlPFPGA( int cmd, byte[] inData );
     public native byte[] NX_CinemaCtrlBAT( int cmd, byte[] inData );
+    public native byte[] NX_CinemaCtrlIPC( int cmd, byte[] inData );
 }

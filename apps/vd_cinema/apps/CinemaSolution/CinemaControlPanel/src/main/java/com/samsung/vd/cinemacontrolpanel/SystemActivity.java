@@ -38,6 +38,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
 
 /**
@@ -51,6 +53,7 @@ public class SystemActivity extends AppCompatActivity {
     private EditText mEditIpAddress;
     private EditText mEditSubnetMask;
     private EditText mEditDefaulGateway;
+    private StatusDescribeAdapter mAdapterVersion;
 
     @Override
     protected void onCreate( Bundle savedInstanceState) {
@@ -75,12 +78,12 @@ public class SystemActivity extends AppCompatActivity {
         //  Configuration StatusBar
         //
         new VdStatusBar( getApplicationContext(), (LinearLayout)findViewById( R.id.layoutStatusBar ) );
+        View listViewFooter = ((LayoutInflater)getApplicationContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE)).inflate(R.layout.listview_footer_blank, null, false);
 
         //
         //  System Log
         //
         ListView listViewLog = (ListView)findViewById(R.id.listview_system_log);
-        View listViewFooter = ((LayoutInflater)getApplicationContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE)).inflate(R.layout.listview_footer_blank, null, false);
         listViewLog.addFooterView(listViewFooter);
 
         CinemaLog log = new CinemaLog( getApplicationContext() );
@@ -100,6 +103,32 @@ public class SystemActivity extends AppCompatActivity {
 
         SimpleCursorAdapter adapter = new SimpleCursorAdapter( getApplicationContext(), R.layout.listview_row_system_log, cursor, from, to, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER );
         listViewLog.setAdapter( adapter );
+
+        //
+        //  System Version
+        //
+        ListView listViewVersion = (ListView)findViewById(R.id.listview_system_version);
+        listViewVersion.addFooterView(listViewFooter);
+
+        mAdapterVersion = new StatusDescribeAdapter(this, R.layout.listview_row_status_describe);
+        listViewVersion.setAdapter( mAdapterVersion );
+
+
+        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+        byte[] srvVersion = ctrl.Send( NxCinemaCtrl.CMD_IPC_SERVER_VERSION, null );
+        byte[] clnVersion = ctrl.Send( NxCinemaCtrl.CMD_IPC_CLIENT_VERSION, null );
+
+        Date date = new Date( BuildConfig.BUILD_DATE + 3600 * 9 * 1000 );
+        String[][] strVersion = {
+                { "Application", new SimpleDateFormat("HH:mm:ss, MMM dd yyyy ", Locale.US).format(date) },
+                { "IPC Server", (srvVersion != null && srvVersion.length != 0) ? new String(srvVersion) : "Unknown" },
+                { "IPC Client", (clnVersion != null && clnVersion.length != 0) ? new String(clnVersion) : "Unknown" },
+        };
+
+        for( int i = 0; i < strVersion.length; i++ ) {
+            mAdapterVersion.add( new StatusDescribeInfo( strVersion[i][0], strVersion[i][1] ) );
+            mAdapterVersion.notifyDataSetChanged();
+        }
 
         //
         //  Initialize Tab
@@ -147,8 +176,13 @@ public class SystemActivity extends AppCompatActivity {
         tabSpec1.setIndicator("SYSTEM LOG");
         tabSpec1.setContent(R.id.tab_system_log);
 
+        TabHost.TabSpec tabSpec2 = mTabHost.newTabSpec( "TAB2" );
+        tabSpec2.setIndicator("SYSTEM VERSION");
+        tabSpec2.setContent(R.id.tab_system_version);
+
         mTabHost.addTab(tabSpec0);
         mTabHost.addTab(tabSpec1);
+        mTabHost.addTab(tabSpec2);
 
         mTabHost.setOnTabChangedListener(mSystemTabChange);
         mTabHost.setCurrentTab(0);

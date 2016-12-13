@@ -167,42 +167,45 @@ public class CinemaService extends Service {
         @Override
         public void run() {
             try {
+                boolean isDetectTamper = ((CinemaInfo)getApplicationContext()).IsDetectTamper();
                 LocalServerSocket lServer = new LocalServerSocket(SOCKET_NAME);
 
                 while( mRun )
                 {
                     LocalSocket lSocket = lServer.accept();
                     if( null != lSocket ) {
-                        String strEvent = Read(lSocket.getInputStream());
-                        Log.i(VD_DTAG, ">>> " + strEvent);
+                        if( isDetectTamper ) {
+                            String strEvent = Read(lSocket.getInputStream());
+                            Log.i(VD_DTAG, ">>> " + strEvent);
 
-                        String[] strToken = strEvent.split(" ");
-                        if( strToken[0].equals("Error") )
-                        {
-                            if( !mDoorTamper && strToken[1].equals("DoorTamper") ) {
-                                mDoorTamper = true;
+                            String[] strToken = strEvent.split(" ");
+                            if( strToken[0].equals("Error") )
+                            {
+                                if( !mDoorTamper && strToken[1].equals("DoorTamper") ) {
+                                    mDoorTamper = true;
 
-                                CinemaAlert.Show( getApplicationContext(), "Alert", strToken[0] + " " + strToken[1], CinemaAlert.TYPE_DOOR, new CinemaAlert.OnFinishListener() {
-                                    @Override
-                                    public void onFinish() {
-                                        mDoorTamper = false;
-                                    }
-                                });
+                                    CinemaAlert.Show( getApplicationContext(), "Alert", strToken[0] + " " + strToken[1], CinemaAlert.TYPE_DOOR, new CinemaAlert.OnFinishListener() {
+                                        @Override
+                                        public void onFinish() {
+                                            mDoorTamper = false;
+                                        }
+                                    });
 
-                                RefreshScreenSaver();
-                            }
+                                    RefreshScreenSaver();
+                                }
 
-                            if( !mMarriageTamper && strToken[1].equals("MarriageTamper") ) {
-                                mMarriageTamper = true;
+                                if( !mMarriageTamper && strToken[1].equals("MarriageTamper") ) {
+                                    mMarriageTamper = true;
 
-                                CinemaAlert.Show( getApplicationContext(), "Alert", strToken[0] + " " + strToken[1], CinemaAlert.TYPE_MARRIAGE, new CinemaAlert.OnFinishListener() {
-                                    @Override
-                                    public void onFinish() {
-                                        mMarriageTamper = false;
-                                    }
-                                });
+                                    CinemaAlert.Show( getApplicationContext(), "Alert", strToken[0] + " " + strToken[1], CinemaAlert.TYPE_MARRIAGE, new CinemaAlert.OnFinishListener() {
+                                        @Override
+                                        public void onFinish() {
+                                            mMarriageTamper = false;
+                                        }
+                                    });
 
-                                RefreshScreenSaver();
+                                    RefreshScreenSaver();
+                                }
                             }
                         }
 

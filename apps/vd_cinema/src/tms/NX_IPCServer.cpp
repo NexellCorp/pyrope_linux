@@ -1206,6 +1206,9 @@ int32_t CNX_IPCServer::TCON_DotCorrection( int32_t fd, uint32_t cmd, uint32_t in
 	uint16_t *pData = (uint16_t*)(data + 1);
 	int32_t iDataSize = (size-1) / 2;
 
+	uint16_t ccData[9] = { 0x0000, };
+	uint16_t opData[15] = { 0x0000, };
+
 	CNX_I2C i2c( port );
 
 	if( 0 > i2c.Open() )
@@ -1214,7 +1217,155 @@ int32_t CNX_IPCServer::TCON_DotCorrection( int32_t fd, uint32_t cmd, uint32_t in
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, flashSel) )
+	//
+	// 1. Read Screen Correction Data.
+	//
+	if( 0 > i2c.Write( slave, TCON_REG_F_CC_RD_EN, 0x0001 ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_F_CC_RD_EN, 0x0001 );
+		goto ERROR_TCON;
+	}
+
+	if( 0 > i2c.Write( slave, TCON_REG_F_CC_RD_EN, 0x0000 ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_F_CC_RD_EN, 0x0000 );
+		goto ERROR_TCON;
+	}
+
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, flashSel >> 1 ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_FLASH_SEL, flashSel >> 1 );
+		goto ERROR_TCON;
+	}
+
+	for( int32_t i = 0; i < (int32_t)(sizeof(ccData) / sizeof(ccData[0])); i++ )
+	{
+		int32_t iReadData = 0x0000;
+		if( 0 > (iReadData = i2c.Read( slave, TCON_REG_F_CC00_READ + i )) )
+		{
+			NxDbgMsg( NX_DBG_VBS, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
+				port, slave, TCON_REG_F_CC00_READ + i );
+			goto ERROR_TCON;
+		}
+
+		ccData[i] = (uint16_t)(iReadData & 0x0000FFFF);
+	}
+
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, 0x001F ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_FLASH_SEL, 0x001F );
+		goto ERROR_TCON;
+	}
+
+	//
+	//	2. Read Optional Data.
+	//
+	if( 0 > i2c.Write( slave, TCON_REG_F_LED_RD_EN, 0x0001 ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_F_LED_RD_EN, 0x0001 );
+		goto ERROR_TCON;
+	}
+
+	if( 0 > i2c.Write( slave, TCON_REG_F_LED_RD_EN, 0x0000 ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_F_LED_RD_EN, 0x0000 );
+		goto ERROR_TCON;
+	}
+
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, flashSel ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_FLASH_SEL, flashSel );
+		goto ERROR_TCON;
+	}
+
+	for( int32_t i = 0; i < (int32_t)(sizeof(opData) / sizeof(opData[0])); i++ )
+	{
+		int32_t iReadData = 0x0000;
+		if( 0 > (iReadData = i2c.Read( slave, TCON_REG_F_LED_DATA00_READ + i )) )
+		{
+			NxDbgMsg( NX_DBG_VBS, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
+				port, slave, TCON_REG_F_LED_DATA00_READ + i );
+			goto ERROR_TCON;
+		}
+
+		opData[i] = (uint16_t)(iReadData & 0x0000FFFF);
+	}
+
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, 0x001F ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_FLASH_SEL, 0x001F );
+		goto ERROR_TCON;
+	}
+
+	//
+	//	3. Flash Protection Off.
+	//
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, flashSel ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_FLASH_SEL, flashSel );
+		goto ERROR_TCON;
+	}
+
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_STATUS_WRITE, 0x0001 ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0001 );
+		goto ERROR_TCON;
+	}
+
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_STATUS_WRITE, 0x0000 ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0000 );
+		goto ERROR_TCON;
+	}
+
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, 0x001F ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_FLASH_SEL, 0x001F );
+		goto ERROR_TCON;
+	}
+
+	//
+	//	4. Erase Flash.
+	//
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, flashSel ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_FLASH_SEL, flashSel );
+		goto ERROR_TCON;
+	}
+
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_CHIP_ERASE, 0x0001 ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_FLASH_CHIP_ERASE, 0x0001 );
+		goto ERROR_TCON;
+	}
+
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_CHIP_ERASE, 0x0000 ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_FLASH_CHIP_ERASE, 0x0000 );
+		goto ERROR_TCON;
+	}
+
+	usleep(4000000);
+
+	//
+	//	5. Write Dot Correction Data.
+	//
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, flashSel ) )
 	{
 		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_FLASH_SEL, flashSel );
@@ -1255,6 +1406,119 @@ int32_t CNX_IPCServer::TCON_DotCorrection( int32_t fd, uint32_t cmd, uint32_t in
 	}
 
 	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, 0x001F) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_FLASH_SEL, 0x001F );
+		goto ERROR_TCON;
+	}
+
+	//
+	//	6. Write Screen Correction Data.
+	//
+	for( int32_t i = 0; i < (int32_t)(sizeof(ccData) / sizeof(ccData[0])); i++ )
+	{
+		if( 0 > i2c.Write( slave, TCON_REG_CC00 + i, ccData[i] ) )
+		{
+			NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+				port, slave, TCON_REG_CC00 + i, ccData[i] );
+			goto ERROR_TCON;
+		}
+	}
+
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, flashSel ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_FLASH_SEL, flashSel );
+		goto ERROR_TCON;
+	}
+
+	if( 0 > i2c.Write( slave, TCON_REG_F_CC_WR_EN, 0x0001 ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_F_CC_WR_EN, 0x0001 );
+		goto ERROR_TCON;
+	}
+
+	if( 0 > i2c.Write( slave, TCON_REG_F_CC_WR_EN, 0x0000 ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_F_CC_WR_EN, 0x0000 );
+		goto ERROR_TCON;
+	}
+
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, 0x001F) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_FLASH_SEL, 0x001F );
+		goto ERROR_TCON;
+	}
+
+	//
+	//	7. Write Optional Data.
+	//
+	for( int32_t i = 0; i < (int32_t)(sizeof(opData) / sizeof(opData[0])); i++ )
+	{
+		if( 0 > i2c.Write( slave, TCON_REG_F_LED_DATA00, opData[i] ) )
+		{
+			NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+				port, slave, TCON_REG_F_LED_DATA00 + i, opData[i] );
+			goto ERROR_TCON;
+		}
+	}
+
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, flashSel ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_FLASH_SEL, flashSel );
+		goto ERROR_TCON;
+	}
+
+	if( 0 > i2c.Write( slave, TCON_REG_F_LED_WR_EN, 0x0001 ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_F_LED_WR_EN, 0x0001 );
+		goto ERROR_TCON;
+	}
+
+	if( 0 > i2c.Write( slave, TCON_REG_F_LED_WR_EN, 0x0000 ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_F_LED_WR_EN, 0x0000 );
+		goto ERROR_TCON;
+	}
+
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, 0x001F) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_FLASH_SEL, 0x001F );
+		goto ERROR_TCON;
+	}
+
+	//
+	//	8. Flash Protection On.
+	//
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, flashSel ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_FLASH_SEL, flashSel );
+		goto ERROR_TCON;
+	}
+
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_STATUS_WRITE, 0x0002 ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0001 );
+		goto ERROR_TCON;
+	}
+
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_STATUS_WRITE, 0x0000 ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0000 );
+		goto ERROR_TCON;
+	}
+
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, 0x001F ) )
 	{
 		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_FLASH_SEL, 0x001F );

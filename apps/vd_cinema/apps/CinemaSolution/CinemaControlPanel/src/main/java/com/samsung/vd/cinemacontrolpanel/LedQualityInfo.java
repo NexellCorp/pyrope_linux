@@ -20,6 +20,7 @@ public class LedQualityInfo {
 
     public static final String PATH = "LED_Display(P2.5_Cinema)_IFC(20161101)";
     public static final String NAME = "DEMO.txt";
+    public static final String PATTERN_DATA = "\\w+\\s*=\\s*\\{\\s*(\\d*)\\s*,\\s*(\\d*)\\s*,\\s*(\\d*)\\s*,\\s*(\\d*)\\s*\\}";
 
     private int[] mRegister = {
             0x0004,     // XYZ_TO_RGB   XYZtoRGB
@@ -57,7 +58,7 @@ public class LedQualityInfo {
         if( !fileName.equals(NAME) )
             return false;
 
-        Pattern pattern = Pattern.compile("\\w+\\s*=\\s*\\{\\s*(\\d*)\\s*,\\s*(\\d*)\\s*,\\s*(\\d*)\\s*,\\s*(\\d*)\\s*\\}");
+        Pattern pattern = Pattern.compile(PATTERN_DATA);
         try {
             FileInputStream inStream = new FileInputStream( filePath );
             BufferedReader bufferedReader = new BufferedReader( new InputStreamReader(inStream) );

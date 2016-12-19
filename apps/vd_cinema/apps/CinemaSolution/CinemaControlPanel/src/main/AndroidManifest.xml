@@ -61,7 +61,7 @@
             android:name=".DisplayModeActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"
             android:screenOrientation="sensorLandscape"
-            android:windowSoftInputMode="stateHidden" >
+            android:windowSoftInputMode="stateHidden|adjustPan" >
         </activity>
         <activity
             android:name=".SystemActivity"

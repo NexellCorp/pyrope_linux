@@ -1,5 +1,6 @@
 package com.samsung.vd.cinemacontrolpanel;
 
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -13,15 +14,18 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TabHost;
@@ -35,6 +39,7 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.Locale;
@@ -124,7 +129,7 @@ public class DisplayModeActivity extends AppCompatActivity {
     private Spinner mSpinnerMastering;
     private Button[] mBtnMastering = new Button[mTextMastering.length];
     private SeekBar[] mSeekBarMastering = new SeekBar[mTextMastering.length];
-    private TextView[] mValueMastering = new TextView[mTextMastering.length];
+    private EditText[] mValueMastering = new EditText[mTextMastering.length];
 
     private String mMasteringMode = mStrModeMastering[0];
     private int mMasteringModePos = 0;
@@ -132,7 +137,7 @@ public class DisplayModeActivity extends AppCompatActivity {
     private Spinner mSpinnerImageQuality;
     private Button mBtnImageQuality;
 
-    private StatusSimpleAdapter mAdapterDot;
+    private CheckRunAdapter mAdapterDotCorrect;
 
     private EditText mEditCabinet;
 
@@ -155,7 +160,9 @@ public class DisplayModeActivity extends AppCompatActivity {
     private Spinner mSpinnerInputReoslution;
     private Spinner mSpinnerInputSource;
 
-    private Button mBtnDotCorrection;
+    private Button mBtnDotCorrectCheckAll;
+    private Button mBtnDotCorrectUnCheckAll;
+    private Button mBtnDotCorrectApply;
 
     private Spinner mSpinnerYear;
     private Spinner mSpinnerMonth;
@@ -176,21 +183,28 @@ public class DisplayModeActivity extends AppCompatActivity {
                 }
 
                 String[] resultQuality = CheckFileInUsb(LedQualityInfo.PATH, LedQualityInfo.NAME);
-                String[] resultGamma = CheckFileInUsb(LedGammaInfo.PATH, LedGammaInfo.NAME);
+                String[] resultGamma = CheckFileInUsb(LedGammaInfo.PATH, LedGammaInfo.PATTERN_NAME);
 
                 if( (resultQuality != null && resultQuality.length != 0) || (resultGamma != null && resultGamma.length != 0) ) {
                     mBtnImageQuality.setEnabled(true);
                 }
 
-                String[] resultDot = CheckFileInUsb(LedDotCorrectInfo.PATH, LedDotCorrectInfo.NAME);
-                if( (resultDot != null && resultDot.length != 0) ) {
-                    mBtnDotCorrection.setEnabled(true);
-                }
+                String[] resultDot = CheckDirectoryInUsb(LedDotCorrectInfo.PATH, LedDotCorrectInfo.PATTERN_DIR);
 
+                if( (resultDot != null && resultDot.length != 0) ) {
+                    new AsyncTaskAdapterDotCorrection(mAdapterDotCorrect).execute();
+                    mBtnDotCorrectCheckAll.setEnabled(true);
+                    mBtnDotCorrectUnCheckAll.setEnabled(true);
+                    mBtnDotCorrectApply.setEnabled(true);
+                }
             }
             if( intent.getAction().equals(Intent.ACTION_MEDIA_EJECT) ) {
                 mBtnImageQuality.setEnabled(false);
-                mBtnDotCorrection.setEnabled(false);
+                mBtnDotCorrectCheckAll.setEnabled(false);
+                mBtnDotCorrectUnCheckAll.setEnabled(false);
+                mBtnDotCorrectApply.setEnabled(false);
+
+                mAdapterDotCorrect.clear();
             }
         }
     };
@@ -329,22 +343,42 @@ public class DisplayModeActivity extends AppCompatActivity {
         //
         //  DOT CORRECTION
         //
-        ListView listViewDot= (ListView)findViewById(R.id.listview_dot_correction);
-        listViewDot.addFooterView(listViewFooter);
+        ListView listViewDotCorrect = (ListView)findViewById(R.id.listview_dot_correction);
+        listViewDotCorrect.addFooterView(listViewFooter);
 
-        mAdapterDot = new StatusSimpleAdapter(this, R.layout.listview_row_status_simple);
-        listViewDot.setAdapter( mAdapterDot );
+        mAdapterDotCorrect = new CheckRunAdapter(this, R.layout.listview_row_check_run);
+        listViewDotCorrect.setAdapter( mAdapterDotCorrect );
 
-//        for( byte cabinet : mCabinet ) {
-//            mAdapterDot.add( new StatusSimpleInfo("Cabinet " + String.valueOf(cabinet - CinemaInfo.OFFSET_TCON)) );
-//            mAdapterDot.notifyDataSetChanged();
-//        }
+        mBtnDotCorrectCheckAll = (Button)findViewById(R.id.btnDotCorrectionCheckAll);
+        mBtnDotCorrectUnCheckAll = (Button)findViewById(R.id.btnDotCorrectionUnCheckAll);
+        mBtnDotCorrectApply = (Button)findViewById(R.id.btnDotCorrectionApply);
 
-        mBtnDotCorrection = (Button)findViewById(R.id.btnDotCorrection);
-        mBtnDotCorrection.setOnClickListener(new View.OnClickListener() {
+        mBtnDotCorrectCheckAll.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                new AsyncTaskDotCorrection(mAdapterDot).execute();
+                for( int i = 0; i < mAdapterDotCorrect.getCount(); i++ ) {
+                    CheckRunInfo info = mAdapterDotCorrect.getItem(i);
+                    info.SetChecked( true );
+                }
+                mAdapterDotCorrect.notifyDataSetChanged();
+            }
+        });
+
+        mBtnDotCorrectUnCheckAll.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                for( int i = 0; i < mAdapterDotCorrect.getCount(); i++ ) {
+                    CheckRunInfo info = mAdapterDotCorrect.getItem(i);
+                    info.SetChecked( false );
+                }
+                mAdapterDotCorrect.notifyDataSetChanged();
+            }
+        });
+
+        mBtnDotCorrectApply.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                new AsyncTaskDotCorrection(mAdapterDotCorrect).execute();
             }
         });
 
@@ -499,12 +533,37 @@ public class DisplayModeActivity extends AppCompatActivity {
         //
         //  IMM Handler
         //
-        LinearLayout parent = (LinearLayout)findViewById(R.id.layoutParent);
+        RelativeLayout parent = (RelativeLayout)findViewById(R.id.layoutParent);
         parent.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(mEditCabinet.getWindowToken(), 0);
+
+                for( int i = 0; i < mValueMastering.length; i++) {
+                    String strValue = mValueMastering[i].getText().toString();
+                    if( strValue.equals("") ) {
+                        strValue = "0";
+                    }
+
+                    if( Integer.parseInt(strValue, 10) > mSeekBarMastering[i].getMax() ) {
+                        strValue = String.valueOf(mSeekBarMastering[i].getMax());
+                    }
+
+                    mValueMastering[i].setText(strValue);
+                    mSeekBarMastering[i].setProgress(Integer.parseInt(strValue, 10));
+
+                    int pos = mSpinnerMastering.getSelectedItemPosition();
+                    int progress = mSeekBarMastering[i].getProgress();
+                    if( mDataMastering[pos][i] == progress && mBtnMastering[i].isEnabled() ) {
+                        mBtnMastering[i].setEnabled(false);
+                    }
+                    if( mDataMastering[pos][i] != progress && !mBtnMastering[i].isEnabled() ) {
+                        if( IsMasterMode() ) {
+                            mBtnMastering[i].setEnabled(true);
+                        }
+                    }
+                }
             }
         });
     }
@@ -586,7 +645,7 @@ public class DisplayModeActivity extends AppCompatActivity {
 
     private void UpdateImageQuality() {
         String[] resultQuality = CheckFileInUsb(LedQualityInfo.PATH, LedQualityInfo.NAME);
-        String[] resultGamma = CheckFileInUsb(LedGammaInfo.PATH, LedGammaInfo.NAME);
+        String[] resultGamma = CheckFileInUsb(LedGammaInfo.PATH, LedGammaInfo.PATTERN_NAME);
         if( (resultQuality == null || resultQuality.length == 0) && (resultGamma == null || resultGamma.length == 0) )
             return;
 
@@ -594,11 +653,14 @@ public class DisplayModeActivity extends AppCompatActivity {
     }
 
     private void UpdateDotCorrection() {
-        String[] result = CheckFileInUsb(LedDotCorrectInfo.PATH, LedDotCorrectInfo.NAME);
+        String[] result = CheckDirectoryInUsb(LedDotCorrectInfo.PATH, LedDotCorrectInfo.PATTERN_DIR);
         if( result == null || result.length == 0 )
             return;
 
-        mBtnDotCorrection.setEnabled(true);
+        new AsyncTaskAdapterDotCorrection(mAdapterDotCorrect).execute();
+        mBtnDotCorrectCheckAll.setEnabled(true);
+        mBtnDotCorrectUnCheckAll.setEnabled(true);
+        mBtnDotCorrectApply.setEnabled(true);
     }
 
     private void UpdateInputSource() {
@@ -674,7 +736,7 @@ public class DisplayModeActivity extends AppCompatActivity {
         final LinearLayout layoutText = (LinearLayout)childView[index].findViewById(R.id.layoutTextMastering0);
         final TextView textView0    = (TextView)childView[index].findViewById(R.id.textMastering0);
         final TextView textView1    = (TextView)childView[index].findViewById(R.id.textMastering1);
-        mValueMastering[itemIndex]  = (TextView)childView[index].findViewById(R.id.textMastering2);
+        mValueMastering[itemIndex]  = (EditText)childView[index].findViewById(R.id.editMastering);
         mSeekBarMastering[itemIndex]= (SeekBar)childView[index].findViewById(R.id.seekMastering);
         mBtnMastering[itemIndex]    = (Button)childView[index].findViewById(R.id.btnMastering);
 
@@ -721,6 +783,41 @@ public class DisplayModeActivity extends AppCompatActivity {
                 mDataMastering[mMasteringModePos][itemIndex] = Integer.parseInt( mValueMastering[itemIndex].getText().toString() );
                 ApplyMasteringMode( itemIndex, mDataMastering[mMasteringModePos][itemIndex] );
                 mBtnMastering[itemIndex].setEnabled( false );
+            }
+        });
+
+        mValueMastering[itemIndex].setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+                switch (i) {
+                    case EditorInfo.IME_ACTION_DONE:
+                        String strValue = mValueMastering[itemIndex].getText().toString();
+                        if( strValue.equals("") ) {
+                            strValue = "0";
+                        }
+
+                        if( Integer.parseInt(strValue, 10) > mSeekBarMastering[itemIndex].getMax() ) {
+                            strValue = String.valueOf(mSeekBarMastering[itemIndex].getMax());
+                        }
+
+                        mValueMastering[itemIndex].setText(strValue);
+                        mSeekBarMastering[itemIndex].setProgress(Integer.parseInt(strValue, 10));
+
+                        int pos = mSpinnerMastering.getSelectedItemPosition();
+                        int progress = mSeekBarMastering[itemIndex].getProgress();
+                        if( mDataMastering[pos][itemIndex] == progress && mBtnMastering[itemIndex].isEnabled() ) {
+                            mBtnMastering[itemIndex].setEnabled(false);
+                        }
+                        if( mDataMastering[pos][itemIndex] != progress && !mBtnMastering[itemIndex].isEnabled() ) {
+                            if( IsMasterMode() ) {
+                                mBtnMastering[itemIndex].setEnabled(true);
+                            }
+                        }
+                        break;
+                    default:
+                        return false;
+                }
+                return false;
             }
         });
     }
@@ -935,24 +1032,73 @@ public class DisplayModeActivity extends AppCompatActivity {
     //
     //
     //
-    private String[] CheckFileInUsb( String dir, String regularExpression ) {
+    private String[] CheckDirectoryInUsb( String topdir, String regularExpression ) {
         String[] result = new String[0];
-
-        String subdir = (dir == null) ? "" : dir;
         for( int i = 0; i < 10; i++ ) {
-            File folder = new File( String.format(Locale.US, "/storage/usbdisk%d/%s", i, subdir) );
-            File[] list = folder.listFiles();
-            if( list == null || list.length == 0 )
+            File topfolder = new File( String.format(Locale.US, "/storage/usbdisk%d/%s", i, topdir) );
+            File[] toplist = topfolder.listFiles();
+            if( toplist == null || toplist.length == 0 )
                 continue;
 
             Pattern pattern = Pattern.compile( regularExpression );
-            for( File file : list ) {
+            for( File dir : toplist) {
+                if( !dir.isDirectory() )
+                    continue;
+
+                Matcher matcher = pattern.matcher(dir.getName());
+                if( matcher.matches() ) {
+                    String[] temp = Arrays.copyOf( result, result.length + 1);
+                    temp[result.length] = dir.getAbsolutePath();
+                    result = temp;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private String[] CheckFileInUsb( String topdir, String regularExpression ) {
+        String[] result = new String[0];
+        for( int i = 0; i < 10; i++ ) {
+            File topfolder = new File( String.format(Locale.US, "/storage/usbdisk%d/%s", i, topdir) );
+            File[] toplist = topfolder.listFiles();
+            if( toplist == null || toplist.length == 0 )
+                continue;
+
+            Pattern pattern = Pattern.compile( regularExpression );
+            for( File file : toplist ) {
+                if( !file.isFile() )
+                    continue;
+
                 Matcher matcher = pattern.matcher(file.getName());
                 if( matcher.matches() ) {
                     String[] temp = Arrays.copyOf( result, result.length + 1);
                     temp[result.length] = file.getAbsolutePath();
                     result = temp;
                 }
+            }
+        }
+
+        return result;
+    }
+
+    private String[] CheckFile( String topdir, String regularExpression ) {
+        String[] result = new String[0];
+        File topfolder = new File( topdir );
+        File[] toplist = topfolder.listFiles();
+        if( toplist == null || toplist.length == 0 )
+            return result;
+
+        Pattern pattern = Pattern.compile( regularExpression );
+        for( File file : toplist ) {
+            if( !file.isFile() )
+                continue;
+
+            Matcher matcher = pattern.matcher(file.getName());
+            if( matcher.matches() ) {
+                String[] temp = Arrays.copyOf( result, result.length + 1);
+                temp[result.length] = file.getAbsolutePath();
+                result = temp;
             }
         }
 
@@ -988,7 +1134,7 @@ public class DisplayModeActivity extends AppCompatActivity {
                 }
             }
 
-            result = CheckFileInUsb(LedGammaInfo.PATH, LedGammaInfo.NAME);
+            result = CheckFileInUsb(LedGammaInfo.PATH, LedGammaInfo.PATTERN_NAME);
             for( String file : result ) {
                 LedGammaInfo info = new LedGammaInfo();
                 if( info.Parse( file ) ) {
@@ -1022,40 +1168,100 @@ public class DisplayModeActivity extends AppCompatActivity {
         }
     }
 
-    private class AsyncTaskDotCorrection extends AsyncTask<Void, Integer, Void> {
-        private StatusSimpleAdapter mAdapter;
+    private class AsyncTaskAdapterDotCorrection extends AsyncTask<Void, String, Void> {
+        private CheckRunAdapter mAdapter;
 
-        public AsyncTaskDotCorrection( StatusSimpleAdapter adapter ) {
+        public AsyncTaskAdapterDotCorrection( CheckRunAdapter adapter ) {
             mAdapter = adapter;
             mAdapter.clear();
         }
 
         @Override
+        protected Void doInBackground(Void... voids) {
+            String[] resultDir = CheckDirectoryInUsb(LedDotCorrectInfo.PATH, LedDotCorrectInfo.PATTERN_DIR);
+            for( String dir : resultDir ) {
+                if( isCancelled() ) {
+                    return null;
+                }
+                publishProgress( dir );
+            }
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(String... values) {
+            String[] resultFile = CheckFile(values[0], LedDotCorrectInfo.PATTERN_NAME);
+            mAdapter.add( new CheckRunInfo(values[0].substring(values[0].lastIndexOf("/") + 1), String.format("total : %s", resultFile.length)) );
+            Collections.sort(mAdapter.get(), new Comparator<CheckRunInfo>() {
+                @Override
+                public int compare(CheckRunInfo t0, CheckRunInfo t1) {
+                    return (t0.GetTitle().compareTo(t1.GetTitle()) > 0) ? 1 : -1;
+                }
+            });
+
+            mAdapter.notifyDataSetChanged();
+            super.onProgressUpdate(values);
+        }
+
+        @Override
+        protected void onPreExecute() {
+            CinemaLoading.Show( DisplayModeActivity.this );
+            super.onPreExecute();
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            CinemaLoading.Hide();
+            super.onPostExecute(aVoid);
+        }
+    }
+
+    private class AsyncTaskDotCorrection extends AsyncTask<Void, Integer, Void> {
+        private CheckRunAdapter mAdapter;
+
+        public AsyncTaskDotCorrection( CheckRunAdapter adapter ) {
+            mAdapter = adapter;
+        }
+
+        @Override
         protected Void doInBackground(Void... params) {
-            int cnt = 0;
+            String[] resultDir = CheckDirectoryInUsb(LedDotCorrectInfo.PATH, LedDotCorrectInfo.PATTERN_DIR);
+            if( resultDir == null || resultDir.length == 0 )
+                return null;
+
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+            String topdir = resultDir[0].substring(0, resultDir[0].lastIndexOf("/") + 1);
 
-            String[] result = CheckFileInUsb(LedDotCorrectInfo.PATH, LedDotCorrectInfo.NAME);
-            for( String file : result ) {
-                LedDotCorrectInfo info = new LedDotCorrectInfo();
-                if( info.Parse(file) ) {
-                    byte[] sel = ctrl.IntToByteArray( info.GetFlashSel(), NxCinemaCtrl.FORMAT_INT8 );       // size: 1
-                    byte[] data = ctrl.IntArrayToByteArray( info.GetData(), NxCinemaCtrl.FORMAT_INT16 );    // size: 61440
-                    byte[] inData =  ctrl.AppendByteArray( sel, data );
+            for( int i = 0; i < mAdapter.getCount(); i++ ) {
+                int success = 0;
+                int fail = 0;
 
-                    byte[] res = ctrl.Send( info.GetIndex(), NxCinemaCtrl.CMD_TCON_DOT_CORRECTION, inData );
+                CheckRunInfo item = mAdapter.getItem(i);
+                if( !item.GetChecked() )
+                    continue;
 
-                    if( res == null || res.length == 0 ) {
-                        publishProgress(info.GetIndex(), info.GetFlashSel(), 0);
-                        continue;
+                String[] result = CheckFile(topdir + item.GetTitle(), LedDotCorrectInfo.PATTERN_NAME);
+                for( String file : result ) {
+                    Log.i(VD_DTAG, "Dot Correct Info : " + file);
+
+                    LedDotCorrectInfo info = new LedDotCorrectInfo();
+                    if( info.Parse(file) ) {
+                        byte[] sel = ctrl.IntToByteArray( info.GetFlashSel(), NxCinemaCtrl.FORMAT_INT8 );       // size: 1
+                        byte[] data = ctrl.IntArrayToByteArray( info.GetData(), NxCinemaCtrl.FORMAT_INT16 );    // size: 61440
+                        byte[] inData =  ctrl.AppendByteArray( sel, data );
+
+                        byte[] res = ctrl.Send( info.GetIndex(), NxCinemaCtrl.CMD_TCON_DOT_CORRECTION, inData );
+                        if( res == null || res.length == 0 ) {
+                            publishProgress(i, result.length, success, ++fail);
+                            continue;
+                        }
+
+                        if( res[0] == (byte)0xFF ) {
+                            publishProgress(i, result.length, success, ++fail);
+                            continue;
+                        }
+                        publishProgress(i, result.length, ++success, fail);
                     }
-
-                    if( res[0] == (byte)0xFF ) {
-                        publishProgress(info.GetIndex(), info.GetFlashSel(), 0);
-                        continue;
-                    }
-
-                    publishProgress(info.GetIndex(), info.GetFlashSel(), 1);
                 }
             }
 
@@ -1064,19 +1270,8 @@ public class DisplayModeActivity extends AppCompatActivity {
 
         @Override
         protected void onProgressUpdate(Integer... values) {
-            mAdapter.add(
-                new StatusSimpleInfo(
-                String.format(Locale.US, "Cabinet %02d - Module %02d", (values[0] & 0x7F) - CinemaInfo.OFFSET_TCON, values[1]),
-                values[2])
-            );
-
-            mAdapter.sort(new Comparator<StatusSimpleInfo>() {
-                @Override
-                public int compare(StatusSimpleInfo t0, StatusSimpleInfo t1) {
-                    return (t0.GetTitle().compareTo(t1.GetTitle()) > 0) ? 1 : -1;
-                }
-            });
-
+            CheckRunInfo info = mAdapter.getItem(values[0]);
+            info.SetDescription( String.format(Locale.US, "total: %d, success: %d, fail: %d", values[1], values[2], values[3]));
             mAdapter.notifyDataSetChanged();
             super.onProgressUpdate(values);
         }

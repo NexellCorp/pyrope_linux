@@ -409,6 +409,10 @@ public class DiagnosticsActivity extends AppCompatActivity {
 
                 publishProgress();
             }
+
+            if( bValidPort0 )   ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_MODE_NORMAL, null);
+            if( bValidPort1 )   ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_MODE_NORMAL, null);
+
             return null;
         }
 
@@ -600,16 +604,6 @@ public class DiagnosticsActivity extends AppCompatActivity {
             if( mAsyncTaskLedOpenNum.getStatus() == AsyncTask.Status.RUNNING ) {
                 mAsyncTaskLedOpenNum.cancel(true);
             }
-
-            boolean bValidPort0 = false, bValidPort1 = false;
-            for( byte id : mCabinet ) {
-                if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-                if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-            }
-
-            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-            if( bValidPort0 )   ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_MODE_NORMAL, null);
-            if( bValidPort1 )   ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_MODE_NORMAL, null);
         }
 
         if( mAsyncTaskCabinetDoor != null && mAsyncTaskCabinetDoor.getStatus() == AsyncTask.Status.RUNNING ) {

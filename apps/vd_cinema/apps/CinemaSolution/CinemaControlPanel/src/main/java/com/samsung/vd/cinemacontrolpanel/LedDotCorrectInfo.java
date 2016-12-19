@@ -19,7 +19,9 @@ public class LedDotCorrectInfo {
     private static final String VD_DTAG = "LedDotCorrectInfo";
 
     public static final String PATH = "LED_Display(P2.5_Cinema)_IFC(20161101)/DOT";
-    public static final String NAME = "RGB_P2_5_ID(\\d*)_(L|R)(\\d)(A|B).txt";
+    public static final String PATTERN_DIR  = "ID(\\d*)";
+    public static final String PATTERN_NAME = "RGB_P2_5_ID(\\d*)_(L|R)(\\d)(A|B).txt";
+    public static final String PATTERN_DATA = "(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*)";
 
     private int[] mRegister = {
         0x0047,	0x0048,	0x0049,     // REG_IN_CC_00, REG_IN_CC_01, REG_IN_CC_02,
@@ -41,21 +43,30 @@ public class LedDotCorrectInfo {
 
         String fileName = filePath.substring( filePath.lastIndexOf("/") + 1 );
 
-        Pattern pattern = Pattern.compile(NAME);
+        Pattern pattern = Pattern.compile(PATTERN_NAME);
         Matcher matcher = pattern.matcher(fileName);
-        if( !matcher.matches() )
+        if( !matcher.matches() ) {
+            Log.i(VD_DTAG, String.format("Fail, Pattern Match. ( name: %s, pattern: %s )", fileName, PATTERN_NAME) );
             return false;
+        }
 
         //
         //  RGB_P2_5_ID009_L0A.txt : 009, L, 0, A -> 0
         //  RGB_P2_5_ID009_R3B.txt : 009, R, 3, B -> 15
         //
         int idx = Integer.parseInt( matcher.group(1), 10 );
+		if( idx < CinemaInfo.OFFSET_TCON ) {
+            Log.i(VD_DTAG, String.format("Fail, Invalid Index. ( name: %s, index: %d )", fileName, idx) );
+			return false;
+		}
+
         if( (idx % 16) < 8 ) {
-            mIndex = idx + CinemaInfo.OFFSET_TCON;
+            // mIndex = idx + CinemaInfo.OFFSET_TCON;
+            mIndex = idx;
         }
         else {
-            mIndex = (idx | 0x80) + CinemaInfo.OFFSET_TCON;
+            // mIndex = (idx | 0x80) + CinemaInfo.OFFSET_TCON;
+            mIndex = (idx | 0x80);
         }
 
         int side = matcher.group(2).equals("L") ? 0 : 1;
@@ -64,7 +75,8 @@ public class LedDotCorrectInfo {
         mFlashSel = (4 * line) + (2 * side) + type;
 
         int [][][] oriData = new int [64][60][mRegister.length];    // 14bit Original Data
-        Pattern patternData = Pattern.compile("(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*)");
+        Log.i(VD_DTAG, "File Path : " + filePath);
+        Pattern patternData = Pattern.compile(PATTERN_DATA);
         try {
             FileInputStream inStream = new FileInputStream( filePath );
             BufferedReader bufferedReader = new BufferedReader( new InputStreamReader(inStream) );
@@ -75,10 +87,14 @@ public class LedDotCorrectInfo {
             while( (strValue = bufferedReader.readLine()) != null ) {
                 Matcher matcherData = patternData.matcher(strValue);
                 if( matcherData.matches() ) {
-                    for( int i = 0; i < oriData.length; i++ ) {
-                        oriData[cnt/oriData[0].length][cnt%oriData[0].length][i] = Integer.parseInt( matcher.group(i+1), 10 );
+                    for( int i = 0; i < mRegister.length; i++ ) {
+                        oriData[cnt/oriData[0].length][cnt%oriData[0].length][i] = Integer.parseInt( matcherData.group(i+1), 10 );
                     }
                     cnt++;
+                }
+                else {
+                    Log.i(VD_DTAG, String.format("Fail, Pattern Match. ( name: %s, pattern: %s )", fileName, PATTERN_DATA) );
+                    return false;
                 }
             }
         } catch (IOException e) {
@@ -110,7 +126,6 @@ public class LedDotCorrectInfo {
         }
 
         Log.i(VD_DTAG, String.format(">>>>> slave: %d, module index: %d", mIndex, mFlashSel) );
-
         return true;
     }
 

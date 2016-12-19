@@ -195,6 +195,18 @@ public class NxCinemaCtrl {
         Log.i(NX_DTAG, sb.toString() );
     }
 
+    public void PrintByteArrayToHex( byte[] inData, int size ) {
+        int loop = (size > inData.length) ? inData.length : size;
+
+        StringBuilder sb = new StringBuilder();
+        sb.append( String.format(Locale.US, "data( %d ) : ", inData.length) );
+        for( final byte data: inData ) {
+            sb.append( String.format("%02x ", data & 0xFF) );
+        }
+
+        Log.i(NX_DTAG, sb.toString() );
+    }
+
     public int GetRandomValue( int startNum, int endNum ) {
         if( startNum >= endNum ) {
             return -1;

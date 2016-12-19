@@ -52,7 +52,19 @@
         android:gravity="end"
         android:layout_alignParentBottom="true" >
         <Button
-            android:id="@+id/btnDotCorrection"
+            android:id="@+id/btnDotCorrectionCheckAll"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Check All" />
+
+        <Button
+            android:id="@+id/btnDotCorrectionUnCheckAll"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="UnCheck All" />
+
+        <Button
+            android:id="@+id/btnDotCorrectionApply"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="APPLY" />

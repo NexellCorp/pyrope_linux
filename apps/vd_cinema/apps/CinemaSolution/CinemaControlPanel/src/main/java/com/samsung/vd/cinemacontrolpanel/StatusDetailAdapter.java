@@ -138,12 +138,12 @@ public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
             byte[] cabinet = ((CinemaInfo)(context.getApplicationContext())).GetCabinet();
             mId = cabinet[position];
 
-            if( mType == NxCinemaCtrl.CMD_TCON_OPEN_NUM || mType == NxCinemaCtrl.CMD_TCON_OPEN_POS ) {
+            if( type == NxCinemaCtrl.CMD_TCON_OPEN_NUM || type == NxCinemaCtrl.CMD_TCON_OPEN_POS ) {
                 mCmd1 = NxCinemaCtrl.CMD_TCON_OPEN_NUM;
                 mCmd2 = NxCinemaCtrl.CMD_TCON_OPEN_POS;
             }
 
-            if( mType == NxCinemaCtrl.CMD_TCON_SHORT_NUM || mType == NxCinemaCtrl.CMD_TCON_SHORT_POS ) {
+            if( type == NxCinemaCtrl.CMD_TCON_SHORT_NUM || type == NxCinemaCtrl.CMD_TCON_SHORT_POS ) {
                 mCmd1 = NxCinemaCtrl.CMD_TCON_SHORT_NUM;
                 mCmd2 = NxCinemaCtrl.CMD_TCON_SHORT_POS;
             }
@@ -159,6 +159,8 @@ public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
         @Override
         protected Void doInBackground(Void... params) {
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+            ctrl.Send( mId, NxCinemaCtrl.CMD_TCON_MODE_LOD, null );
+
             byte[] resultNum;
             resultNum = ctrl.Send( mId, mCmd1, null);
             if (resultNum == null || resultNum.length == 0)
@@ -177,11 +179,9 @@ public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
                 int posX = ctrl.ByteArrayToInt16( resultPos, NxCinemaCtrl.MASK_INT16_MSB);
                 int posY = ctrl.ByteArrayToInt16( resultPos, NxCinemaCtrl.MASK_INT16_LSB);
                 mAdapter.add( new LedPosInfo(String.valueOf(i), String.valueOf(posX), String.valueOf(posY)));
-
-
-                Log.i("", String.format("%d, %d", posX, posY));
-                ctrl.PrintByteArrayToHex(resultPos);
             }
+
+            ctrl.Send( mId, NxCinemaCtrl.CMD_TCON_MODE_NORMAL, null );
             return null;
         }
 

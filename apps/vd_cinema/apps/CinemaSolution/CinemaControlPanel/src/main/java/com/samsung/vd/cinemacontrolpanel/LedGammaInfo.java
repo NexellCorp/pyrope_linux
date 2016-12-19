@@ -18,7 +18,7 @@ public class LedGammaInfo {
     private static final String VD_DTAG = "LedGammaInfo";
 
     public static final String PATH = "LED_Display(P2.5_Cinema)_IFC(20161101)/LUT";
-    public static final String NAME = "(T|D)GAM(0|1)_(R|G|B).txt";
+    public static final String PATTERN_NAME = "(T|D)GAM(0|1)_(R|G|B).txt";
 
     public static final int TYPE_TARGET     = 0;
     public static final int TYPE_DEVICE     = 1;
@@ -44,10 +44,12 @@ public class LedGammaInfo {
             return false;
 
         String fileName = filePath.substring( filePath.lastIndexOf("/") + 1 );
-        Pattern pattern = Pattern.compile( NAME );
+        Pattern pattern = Pattern.compile( PATTERN_NAME );
         Matcher matcher = pattern.matcher(fileName);
-        if( !matcher.matches() )
+        if( !matcher.matches() ) {
+            Log.i(VD_DTAG, String.format("Fail, Pattern Match. ( name : %s, pattern : %s )", fileName, PATTERN_NAME) );
             return false;
+        }
 
         if( matcher.group(1).equals("T") ) mType = TYPE_TARGET;
         if( matcher.group(1).equals("D") ) mType = TYPE_DEVICE;
@@ -74,7 +76,11 @@ public class LedGammaInfo {
             e.printStackTrace();
         }
 
-        Log.i(VD_DTAG, String.format(">>>>> type: %d, table: %d, channel: %d", mType, mTable, mChannel));
+        Log.i(VD_DTAG, String.format(">>>>> type: %s(%d), table: %s(%d), channel: %s(%d)",
+                matcher.group(1), mType,
+                matcher.group(2), mTable,
+                matcher.group(3), mChannel)
+        );
 
         return true;
     }

@@ -1243,7 +1243,7 @@ int32_t CNX_IPCServer::TCON_DotCorrection( int32_t fd, uint32_t cmd, uint32_t in
 	uint16_t *pData = (uint16_t*)malloc( sizeof(uint16_t) * iDataSize );
 
 	uint16_t ccData[9] = { 0x0000, };
-	uint16_t opData[15] = { 0x0000, };
+	uint16_t opData[16] = { 0x0000, };
 
 	for( int32_t i = 0; i < iDataSize; i++ )
 	{

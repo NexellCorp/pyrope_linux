@@ -66,6 +66,7 @@ private:
 
 	//	PFPGA Commands
 	int32_t PFPGACmdRead( uint32_t cmd, uint8_t *pBuf, int32_t *size );
+	int32_t PFPGACmdWrite( uint32_t cmd, uint8_t *pBuf, int32_t *size );
 	int32_t PFPGACmdSource( uint8_t index );
 	int32_t PFPGACmdVersion( uint8_t *pVersion );
 
@@ -423,7 +424,47 @@ int32_t CNX_IPCClient::PFPGACmdRead( uint32_t cmd, uint8_t *pBuf, int32_t *size 
 		return -1;
 	}
 
-	sendSize = TMS_MakePacket( TMS_KEY_VALUE, PFPGA_CMD_STATUS, NULL, 0, m_PFPGASendBuf, sizeof(m_PFPGASendBuf) );
+	sendSize = TMS_MakePacket( TMS_KEY_VALUE, cmd, NULL, 0, m_PFPGASendBuf, sizeof(m_PFPGASendBuf) );
+	write( clntSock, m_PFPGASendBuf, sendSize );
+
+	recvSize = read( clntSock, m_PFPGAReceiveBuf, sizeof(m_PFPGAReceiveBuf) );
+	if( 0 != TMS_ParsePacket( m_PFPGAReceiveBuf, recvSize, &key, &cmd, &payload, &payloadSize ) )
+	{
+		NxErrMsg( "Error : TMS_ParsePacket().\n" );
+		close( clntSock );
+		return -1;
+	}
+
+	if( *size < payloadSize )
+	{
+		NxErrMsg( "Error: Buffer size(%d) < Payload Size(%d).", *size, payloadSize );
+		close( clntSock );
+		return -1;
+	}
+
+	memcpy( pBuf, payload, payloadSize );
+	*size = payloadSize;
+
+	close( clntSock );
+	return 0;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_IPCClient::PFPGACmdWrite( uint32_t cmd, uint8_t *pBuf, int32_t *size )
+{
+	int32_t clntSock;
+	int32_t sendSize, recvSize, payloadSize;
+	uint32_t key;
+	void *payload;
+
+	clntSock = LS_Connect(IPC_SERVER_FILE);
+	if( -1 == clntSock)
+	{
+		NxErrMsg( "Error : LS_Connect (%s)\n", IPC_SERVER_FILE);
+		return -1;
+	}
+
+	sendSize = TMS_MakePacket( TMS_KEY_VALUE, cmd, pBuf, *size, m_PFPGASendBuf, sizeof(m_PFPGASendBuf) );
 	write( clntSock, m_PFPGASendBuf, sendSize );
 
 	recvSize = read( clntSock, m_PFPGAReceiveBuf, sizeof(m_PFPGAReceiveBuf) );
@@ -510,7 +551,12 @@ int32_t CNX_IPCClient::PFPGACommand( int32_t cmd, uint8_t *pBuf, int32_t *size )
 	switch ( cmd & 0xFFFF )
 	{
 	case PFPGA_CMD_STATUS :
+	case PFPGA_CMD_UNIFORMITY_RD :
 		return PFPGACmdRead( cmd, pBuf, size );
+
+	case PFPGA_CMD_UNIFORMITY_WR :
+	case PFPGA_CMD_UNIFORMITY_DATA :
+		return PFPGACmdWrite( cmd, pBuf, size );
 
 	case PFPGA_CMD_SOURCE :
 		return PFPGACmdSource( pBuf[0] );

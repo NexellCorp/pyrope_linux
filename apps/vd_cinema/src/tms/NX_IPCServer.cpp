@@ -92,6 +92,9 @@ private:
 
 	//	PFPGA Commands
 	int32_t PFPGA_Status( int32_t fd );
+	int32_t PFPGA_UniformityEnableRead( int32_t fd );
+	int32_t PFPGA_UniformityEnableWrite( int32_t fd, uint8_t data );
+	int32_t PFPGA_UniformityData( int32_t fd, uint8_t *data, int32_t size );
 	int32_t PFPGA_Source( int32_t fd, uint8_t *index );
 	int32_t PFPGA_Version( int32_t fd) ;
 
@@ -1757,20 +1760,22 @@ int32_t CNX_IPCServer::TCON_Multi( int32_t fd, uint32_t cmd, uint8_t index, uint
 	}
 
 #if I2C_DEBUG
-	int32_t iReadData = 0x0000;
-	if( 0 > (iReadData = i2c.Read( slave, TCON_REG_MULTI )) )
 	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
-			port, slave, TCON_REG_MULTI );
+		int32_t iReadData = 0x0000;
+		if( 0 > (iReadData = i2c.Read( slave, TCON_REG_MULTI )) )
+		{
+			NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
+				port, slave, TCON_REG_MULTI );
+		}
+
+		NxDbgMsg( NX_DBG_VBS, "%s.( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x, read: 0x%04x )\n",
+			(iReadData == data) ? "Success" : "Fail",
+			port, slave, TCON_REG_MULTI, data, iReadData );
+
+		printf( "%s.( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x, read: 0x%04x )\n",
+			(iReadData == data) ? "Success" : "Fail",
+			port, slave, TCON_REG_MULTI, data, iReadData );
 	}
-
-	NxDbgMsg( NX_DBG_VBS, "%s.( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x, read: 0x%04x )\n",
-		(iReadData == data) ? "Success" : "Fail",
-		port, i, TCON_REG_MULTI, data, iReadData );
-
-	printf( "%s.( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x, read: 0x%04x )\n",
-		(iReadData == data) ? "Success" : "Fail",
-		port, i, TCON_REG_MULTI, data, iReadData );
 #endif
 
 ERROR_TCON:
@@ -1819,13 +1824,182 @@ int32_t CNX_IPCServer::PFPGA_Status( int32_t fd )
 	result = ((PFPGA_VAL_CHECK_STATUS == iReadData) ? 1 : 0);
 #endif
 
-	printf("port(%d), slave(%02x), reg(%02x), data(%d)\n", port, slave, PFPGA_VAL_CHECK_STATUS, iReadData);
+	printf("port(%d), slave(%02x), reg(%02x), data(%d)\n", port, slave, PFPGA_VAL_CHECK_STATUS, result);
 
 ERROR_PFPGA:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, PFPGA_REG_CHECK_STATUS, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket( SEC_KEY_VALUE, PFPGA_CMD_STATUS, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
+
+	return 0;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_IPCServer::PFPGA_UniformityEnableRead( int32_t fd )
+{
+	uint8_t result = 0xFF;
+	int32_t sendSize;
+
+#if FAKE_DATA
+	result = NX_GetRandomValue( 0 , 1 );
+#else
+	int32_t port	= PFPGA_I2C_PORT;
+	uint8_t slave	= PFPGA_I2C_SLAVE;
+
+	CNX_I2C i2c( port );
+	int32_t iReadData = 0x0000;
+
+	if( 0 > i2c.Open() )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port );
+		goto ERROR_PFPGA;
+	}
+
+	if( 0 > (iReadData = i2c.Read( slave, PFPGA_REG_NUC_EN )) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
+			port, slave, PFPGA_REG_NUC_EN );
+		goto ERROR_PFPGA;
+	}
+
+	result = (uint8_t)iReadData;
+#endif
+
+ERROR_PFPGA:
+	sendSize = TMS_MakePacket( SEC_KEY_VALUE, PFPGA_CMD_UNIFORMITY_RD, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+
+	write( fd, m_SendBuf, sendSize );
+	// NX_HexDump( m_SendBuf, sendSize );
+
+	return 0;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_IPCServer::PFPGA_UniformityEnableWrite( int32_t fd, uint8_t data )
+{
+	uint8_t result = 0xFF;
+	int32_t sendSize;
+
+#if FAKE_DATA
+	result = NX_GetRandomValue( 0 , 1 );
+#else
+	int32_t port	= PFPGA_I2C_PORT;
+	uint8_t slave	= PFPGA_I2C_SLAVE;
+
+	CNX_I2C i2c( port );
+
+	if( 0 > i2c.Open() )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port );
+		goto ERROR_PFPGA;
+	}
+
+	if( 0 > i2c.Write( slave, PFPGA_REG_NUC_EN, data ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, PFPGA_REG_NUC_EN, data );
+		goto ERROR_PFPGA;
+	}
+
+	result = 0x01;
+#endif
+
+#if I2C_DEBUG
+	{
+		int32_t iReadData = 0x0000;
+		if( 0 > (iReadData = i2c.Read( slave, PFPGA_REG_NUC_EN )) )
+		{
+			NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
+				port, slave, PFPGA_REG_NUC_EN );
+		}
+
+		NxDbgMsg( NX_DBG_VBS, "%s.( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x, read: 0x%04x )\n",
+			(iReadData == data) ? "Success" : "Fail",
+			port, slave, PFPGA_REG_NUC_EN, data, iReadData );
+
+		printf( "%s.( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x, read: 0x%04x )\n",
+			(iReadData == data) ? "Success" : "Fail",
+			port, slave, PFPGA_REG_NUC_EN, data, iReadData );
+	}
+#endif
+
+ERROR_PFPGA:
+	sendSize = TMS_MakePacket( SEC_KEY_VALUE, PFPGA_CMD_UNIFORMITY_WR, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+
+	write( fd, m_SendBuf, sendSize );
+	// NX_HexDump( m_SendBuf, sendSize );
+
+	return 0;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_IPCServer::PFPGA_UniformityData( int32_t fd, uint8_t *data, int32_t size )
+{
+	uint8_t result = 0xFF;
+	int32_t sendSize;
+
+	int32_t port	= PFPGA_I2C_PORT;
+	uint8_t slave	= PFPGA_I2C_SLAVE;
+
+	int32_t iDataSize = size / 2;
+	uint16_t *pData = (uint16_t*)malloc( sizeof(uint16_t) * iDataSize );
+
+	for( int32_t i = 0; i < iDataSize; i++ )
+	{
+		pData[i] = ((int16_t)(data[2 * i + 0] << 8) & 0xFF00) | ((int16_t)(data[2 * i + 1] << 0) & 0x00FF);
+	}
+
+	CNX_I2C i2c( port );
+
+	if( 0 > i2c.Open() )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port );
+		goto ERROR_PFPGA;
+	}
+
+	if( 0 > i2c.Write( slave, PFPGA_REG_LUT_BURST_SEL, 0x0080) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, PFPGA_REG_LUT_BURST_SEL, 0x0080 );
+		goto ERROR_PFPGA;
+	}
+
+#if I2C_SEPARATE_BURST
+	for( int32_t i = 0; i < 4; i++ )
+	{
+		if( 0 > i2c.Write( slave, PFPGA_REG_NUC_WDATA, pData + iDataSize / 4 * i, iDataSize / 4) )
+		{
+			NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, size: 0x%04x )\n",
+				port, slave, PFPGA_REG_NUC_WDATA, iDataSize / 4 );
+			goto ERROR_PFPGA;
+		}
+	}
+#else
+	if( 0 > i2c.Write( slave, PFPGA_REG_NUC_WDATA, pData, iDataSize ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, size: 0x%04x )\n",
+			port, slave, PFPGA_REG_NUC_WDATA, iDataSize );
+		goto ERROR_PFPGA;
+	}
+#endif
+
+	if( 0 > i2c.Write( slave, PFPGA_REG_LUT_BURST_SEL, 0x0000) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, PFPGA_REG_LUT_BURST_SEL, 0x0000 );
+		goto ERROR_PFPGA;
+	}
+
+	result = 0x01;
+
+ERROR_PFPGA:
+	sendSize = TMS_MakePacket( SEC_KEY_VALUE, PFPGA_CMD_UNIFORMITY_DATA, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+
+	write( fd, m_SendBuf, sendSize );
+	// NX_HexDump( m_SendBuf, sendSize );
+
+	free( pData );
 
 	return 0;
 }
@@ -2012,6 +2186,15 @@ int32_t CNX_IPCServer::ProcessCommand( int32_t fd, uint32_t cmd, void *pPayload,
 	//	PFPGA Commands
 	case PFPGA_CMD_STATUS:
 		return PFPGA_Status( fd );
+
+	case PFPGA_CMD_UNIFORMITY_RD:
+		return PFPGA_UniformityEnableRead( fd );
+
+	case PFPGA_CMD_UNIFORMITY_WR:
+		return PFPGA_UniformityEnableWrite( fd, pData[0] );
+
+	case PFPGA_CMD_UNIFORMITY_DATA:
+		return PFPGA_UniformityData( fd, pData, payloadSize );
 
 	case PFPGA_CMD_SOURCE:
 		return PFPGA_Source( fd, (uint8_t*)pPayload );

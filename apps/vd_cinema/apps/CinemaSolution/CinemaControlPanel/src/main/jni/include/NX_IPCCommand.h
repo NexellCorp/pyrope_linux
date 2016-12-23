@@ -61,6 +61,10 @@
 #define PFPGA_CMD_STATUS			0x0101	//	PFPGA Status
 #define PFPGA_CMD_SOURCE			0x0102
 
+#define PFPGA_CMD_UNIFORMITY_WR		0x0111	//	PFPGA Uniformity Enable Write
+#define PFPGA_CMD_UNIFORMITY_RD		0x0112	//	PFPGA Uniformity Enable Read
+#define PFPGA_CMD_UNIFORMITY_DATA	0x0113	//	PFPGA Uniformity Data Write
+
 #define PFPGA_CMD_VERSION			0x0170	//	PFPGA Version
 
 

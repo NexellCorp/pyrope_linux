@@ -134,6 +134,9 @@ public class DisplayModeActivity extends AppCompatActivity {
     private String mMasteringMode = mStrModeMastering[0];
     private int mMasteringModePos = 0;
 
+    private Button mBtnUniformityEnable;
+    private Button mBtnUniformityWrite;
+
     private Spinner mSpinnerImageQuality;
     private Button mBtnImageQuality;
 
@@ -182,6 +185,11 @@ public class DisplayModeActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
 
+                String[] resultUnifomiry = CheckFileInUsb(LedUniformityCorrectInfo.PATH, LedUniformityCorrectInfo.NAME);
+                if( (resultUnifomiry != null && resultUnifomiry.length != 0) ) {
+                    mBtnUniformityWrite.setEnabled(true);
+                }
+
                 String[] resultQuality = CheckFileInUsb(LedQualityInfo.PATH, LedQualityInfo.NAME);
                 String[] resultGamma = CheckFileInUsb(LedGammaInfo.PATH, LedGammaInfo.PATTERN_NAME);
 
@@ -199,6 +207,7 @@ public class DisplayModeActivity extends AppCompatActivity {
                 }
             }
             if( intent.getAction().equals(Intent.ACTION_MEDIA_EJECT) ) {
+                mBtnUniformityWrite.setEnabled(false);
                 mBtnImageQuality.setEnabled(false);
                 mBtnDotCorrectCheckAll.setEnabled(false);
                 mBtnDotCorrectUnCheckAll.setEnabled(false);
@@ -317,6 +326,35 @@ public class DisplayModeActivity extends AppCompatActivity {
                 UpdateMasteringMode();
 
                 ((CinemaInfo)getApplicationContext()).InsertLog(String.format( Locale.US, "Change Mastering Mode. ( %s Mode )", mMasteringMode ));
+            }
+        });
+
+
+        //
+        //  Uniformity Correction
+        //
+        mBtnUniformityEnable = (Button)findViewById(R.id.btnUniformityEnable);
+        mBtnUniformityWrite = (Button)findViewById(R.id.btnUniformityWrite);
+
+        mBtnUniformityEnable.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+                if( mBtnUniformityEnable.getText().toString().equals("ENABLE") ) {
+                    ctrl.Send(NxCinemaCtrl.CMD_PFPGA_UNIFORMITY_WR, new byte[]{(byte) 0x00});
+                    mBtnUniformityEnable.setText("DISABLE");
+                }
+                else {
+                    ctrl.Send(NxCinemaCtrl.CMD_PFPGA_UNIFORMITY_WR, new byte[]{(byte) 0x01});
+                    mBtnUniformityEnable.setText("ENABLE");
+                }
+            }
+        });
+
+        mBtnUniformityWrite.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                new AsyncTaskUniformityCorrection().execute();
             }
         });
 
@@ -577,42 +615,48 @@ public class DisplayModeActivity extends AppCompatActivity {
         tabSpec0.setContent(R.id.tabMasteringMode);
 
         TabHost.TabSpec tabSpec1 = tabHost.newTabSpec("TAB1");
-        tabSpec1.setIndicator("Image Quality");
-        tabSpec1.setContent(R.id.tabImageQuality);
+        tabSpec1.setIndicator("Uniformity");
+        tabSpec1.setContent(R.id.tabUniformityCorrection);
 
         TabHost.TabSpec tabSpec2 = tabHost.newTabSpec("TAB2");
-        tabSpec2.setIndicator("Dot Correction");
-        tabSpec2.setContent(R.id.tabDotCorrection);
+        tabSpec2.setIndicator("Image Quality");
+        tabSpec2.setContent(R.id.tabImageQuality);
 
         TabHost.TabSpec tabSpec3 = tabHost.newTabSpec("TAB3");
-        tabSpec3.setIndicator("Input Source");
-        tabSpec3.setContent(R.id.tabInputSource);
+        tabSpec3.setIndicator("Dot Correction");
+        tabSpec3.setContent(R.id.tabDotCorrection);
 
         TabHost.TabSpec tabSpec4 = tabHost.newTabSpec("TAB4");
-        tabSpec4.setIndicator("Set up");
-        tabSpec4.setContent(R.id.tabSetup);
+        tabSpec4.setIndicator("Input Source");
+        tabSpec4.setContent(R.id.tabInputSource);
+
+        TabHost.TabSpec tabSpec5 = tabHost.newTabSpec("TAB5");
+        tabSpec5.setIndicator("Set up");
+        tabSpec5.setContent(R.id.tabSetup);
 
         tabHost.addTab(tabSpec0);
         tabHost.addTab(tabSpec1);
         tabHost.addTab(tabSpec2);
         tabHost.addTab(tabSpec3);
         tabHost.addTab(tabSpec4);
+        tabHost.addTab(tabSpec5);
 
         tabHost.setOnTabChangedListener(mTabChange);
         tabHost.setCurrentTab(0);
 
-        tabHost.getTabWidget().getChildTabViewAt(3).setEnabled(false);
-        ((TextView)tabHost.getTabWidget().getChildAt(3).findViewById(android.R.id.title)).setTextColor(0xFFDCDCDC);
+        tabHost.getTabWidget().getChildTabViewAt(4).setEnabled(false);
+        ((TextView)tabHost.getTabWidget().getChildAt(4).findViewById(android.R.id.title)).setTextColor(0xFFDCDCDC);
     }
 
     private TabHost.OnTabChangeListener mTabChange = new TabHost.OnTabChangeListener() {
         @Override
         public void onTabChanged(String tabId) {
             if( tabId.equals("TAB0") ) UpdateMasteringMode();
-            if( tabId.equals("TAB1") ) UpdateImageQuality();
-            if( tabId.equals("TAB2") ) UpdateDotCorrection();
-            if( tabId.equals("TAB3") ) UpdateInputSource();
-            if( tabId.equals("TAB4") ) UpdateSetup();
+            if( tabId.equals("TAB1") ) UpdateUniformityCorrection();
+            if( tabId.equals("TAB2") ) UpdateImageQuality();
+            if( tabId.equals("TAB3") ) UpdateDotCorrection();
+            if( tabId.equals("TAB4") ) UpdateInputSource();
+            if( tabId.equals("TAB5") ) UpdateSetup();
         }
     };
 
@@ -640,6 +684,23 @@ public class DisplayModeActivity extends AppCompatActivity {
                 }
                 break;
             }
+        }
+    }
+
+    private void UpdateUniformityCorrection() {
+        String[] result = CheckFileInUsb(LedUniformityCorrectInfo.PATH, LedUniformityCorrectInfo.NAME);
+        if( result == null || result.length == 0 )
+            return;
+
+        mBtnUniformityWrite.setEnabled(true);
+
+        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+        byte[] resultEnable = ctrl.Send( NxCinemaCtrl.CMD_PFPGA_UNIFORMITY_RD, null );
+        if( resultEnable[0] == (byte)1 ) {
+            mBtnUniformityEnable.setText("ENABLE");
+        }
+        else {
+            mBtnUniformityEnable.setText("DISABLE");
         }
     }
 
@@ -1103,6 +1164,37 @@ public class DisplayModeActivity extends AppCompatActivity {
         }
 
         return result;
+    }
+
+    private class AsyncTaskUniformityCorrection extends AsyncTask<Void, Void, Void> {
+        @Override
+        protected Void doInBackground(Void... voids) {
+            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+
+            String[] result;
+            result = CheckFileInUsb(LedUniformityCorrectInfo.PATH, LedUniformityCorrectInfo.NAME);
+            for( String file : result ) {
+                LedUniformityCorrectInfo info = new LedUniformityCorrectInfo();
+                if( info.Parse(file) ) {
+                    byte[] inData = ctrl.IntArrayToByteArray( info.GetData(), NxCinemaCtrl.FORMAT_INT16 );
+                    ctrl.Send( NxCinemaCtrl.CMD_PFPGA_UNIFORMITY_DATA, inData );
+                }
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            CinemaLoading.Show( DisplayModeActivity.this );
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            CinemaLoading.Hide();
+        }
     }
 
     private class AsyncTaskImageQuality extends AsyncTask<Void, Void, Void> {

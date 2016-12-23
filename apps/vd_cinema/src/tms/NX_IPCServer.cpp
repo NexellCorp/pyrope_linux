@@ -466,6 +466,13 @@ int32_t CNX_IPCServer::TCON_LedModeNormal( int32_t fd, uint32_t cmd, uint8_t ind
 		goto ERROR_TCON;
 	}
 
+	if( 0 > i2c.Write( slave, TCON_REG_PATTERN, 0x0000) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_PATTERN, 0x0000 );
+		goto ERROR_TCON;
+	}
+
 	result = 0;
 #endif
 
@@ -490,12 +497,26 @@ int32_t CNX_IPCServer::TCON_LedModeLod( int32_t fd, uint32_t cmd, uint8_t index 
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
+	const uint16_t pattern[] = {
+		10,		0,		1024,	0,		1080,	4095,	4095,	4095
+	};
+
 	CNX_I2C i2c( port );
 
 	if( 0 > i2c.Open() )
 	{
 		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port );
 		goto ERROR_TCON;
+	}
+
+	for( int32_t i = 0; i < (int32_t)(sizeof(pattern) / sizeof(pattern[0])); i++ )
+	{
+		if( 0 > i2c.Write( slave, TCON_REG_PATTERN + i, pattern[i] ) )
+		{
+			NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+				port, slave, TCON_REG_PATTERN + i, pattern[i] );
+			goto ERROR_TCON;
+		}
 	}
 
 	if( 0 > i2c.Write( slave, TCON_REG_LOD_REMOVAL_EN, 0x0000 ) )
@@ -988,11 +1009,20 @@ int32_t CNX_IPCServer::TCON_TargetGamma( int32_t fd, uint32_t cmd, uint32_t inde
 		// pLsbData[i] = ((int16_t)(data[i * 3 + 2] << 8) & 0xFF00) + (int16_t)data[i * 3 + 3];
 
 		pMsbData[i]	=
-			((int16_t)(data[i * 3 + 1] << 5) & 0xE000) |
-			((int16_t)(data[i * 3 + 2] << 3) & 0x1FE0) |
-			((int16_t)(data[i * 3 + 3] >> 5) & 0x0007);
+			(((int16_t)data[i * 3 + 1] << 13) & 0xE000) |	// 1110 0000 0000 0000
+			(((int16_t)data[i * 3 + 2] <<  5) & 0x1FE0) |	// 0001 1111 1110 0000
+			(((int16_t)data[i * 3 + 3] >>  3) & 0x001F);	// 0000 0000 0001 1111
 
 		pLsbData[i] = ((int16_t)(data[i * 3 + 3]) & 0x0007);
+
+		// int32_t oriData =
+		// 	(((int32_t)data[i * 3 + 1] << 16) & 0x00FF0000) |
+		// 	(((int32_t)data[i * 3 + 2] <<  8) & 0x0000FF00) |
+		// 	(((int32_t)data[i * 3 + 3] <<  0) & 0x000000FF);
+
+		// printf("[ %d ( 0x%06x ) : %02x %02x %02x ] msb - 0x%04x, lsb - 0x%04x\n",
+		// 	oriData, oriData, data[i * 3 + 1], data[i * 3 + 2], data[i * 3 + 3],
+		// 	pMsbData[i], pLsbData[i] );
 	}
 
 	CNX_I2C i2c( port );
@@ -1020,7 +1050,7 @@ int32_t CNX_IPCServer::TCON_TargetGamma( int32_t fd, uint32_t cmd, uint32_t inde
 #if I2C_SEPARATE_BURST
 	for( int32_t i = 0; i < 4; i++ )
 	{
-		if( 0 > i2c.Write( slave, dataReg, pLsbData + iDataSize / 4 * i, iDataSize / 4) )
+		if( 0 > i2c.Write( slave, dataReg, pMsbData + iDataSize / 4 * i, iDataSize / 4) )
 		{
 			NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, size: 0x%04x )\n",
 				port, slave, dataReg, iDataSize );
@@ -1060,7 +1090,7 @@ int32_t CNX_IPCServer::TCON_TargetGamma( int32_t fd, uint32_t cmd, uint32_t inde
 #if I2C_SEPARATE_BURST
 	for( int32_t i = 0; i < 4; i++ )
 	{
-		if( 0 > i2c.Write( slave, dataReg, pMsbData + iDataSize / 4 * i, iDataSize / 4) )
+		if( 0 > i2c.Write( slave, dataReg, pLsbData + iDataSize / 4 * i, iDataSize / 4) )
 		{
 			NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, size: 0x%04x )\n",
 				port, slave, dataReg, iDataSize / 4 );
@@ -1120,11 +1150,20 @@ int32_t CNX_IPCServer::TCON_DeviceGamma( int32_t fd, uint32_t cmd, uint32_t inde
 		// pLsbData[i] = ((int16_t)(data[i * 3 + 2] << 8) & 0xFF00) + (int16_t)data[i * 3 + 3];
 
 		pMsbData[i]	=
-			((int16_t)(data[i * 3 + 1] << 5) & 0xE000) |
-			((int16_t)(data[i * 3 + 2] << 3) & 0x1FE0) |
-			((int16_t)(data[i * 3 + 3] >> 5) & 0x0007);
+			(((int16_t)data[i * 3 + 1] << 13) & 0xE000) |	// 1110 0000 0000 0000
+			(((int16_t)data[i * 3 + 2] <<  5) & 0x1FE0) |	// 0001 1111 1110 0000
+			(((int16_t)data[i * 3 + 3] >>  3) & 0x001F);	// 0000 0000 0001 1111
 
 		pLsbData[i] = ((int16_t)(data[i * 3 + 3]) & 0x0007);
+
+		// int32_t oriData =
+		// 	(((int32_t)data[i * 3 + 1] << 16) & 0x00FF0000) |
+		// 	(((int32_t)data[i * 3 + 2] <<  8) & 0x0000FF00) |
+		// 	(((int32_t)data[i * 3 + 3] <<  0) & 0x000000FF);
+
+		// printf("[ %d ( 0x%06x ) : %02x %02x %02x ] msb - 0x%04x, lsb - 0x%04x\n",
+		// 	oriData, oriData, data[i * 3 + 1], data[i * 3 + 2], data[i * 3 + 3],
+		// 	pMsbData[i], pLsbData[i] );
 	}
 
 	CNX_I2C i2c( port );
@@ -1152,7 +1191,7 @@ int32_t CNX_IPCServer::TCON_DeviceGamma( int32_t fd, uint32_t cmd, uint32_t inde
 #if I2C_SEPARATE_BURST
 	for( int32_t i = 0; i < 4; i++ )
 	{
-		if( 0 > i2c.Write( slave, dataReg, pLsbData + iDataSize / 4 * i, iDataSize / 4) )
+		if( 0 > i2c.Write( slave, dataReg, pMsbData + iDataSize / 4 * i, iDataSize / 4) )
 		{
 			NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, size: 0x%04x )\n",
 				port, slave, dataReg, iDataSize );
@@ -1192,7 +1231,7 @@ int32_t CNX_IPCServer::TCON_DeviceGamma( int32_t fd, uint32_t cmd, uint32_t inde
 #if I2C_SEPARATE_BURST
 	for( int32_t i = 0; i < 4; i++ )
 	{
-		if( 0 > i2c.Write( slave, dataReg, pMsbData + iDataSize / 4 * i, iDataSize / 4) )
+		if( 0 > i2c.Write( slave, dataReg, pLsbData + iDataSize / 4 * i, iDataSize / 4) )
 		{
 			NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, size: 0x%04x )\n",
 				port, slave, dataReg, iDataSize / 4 );
@@ -2010,7 +2049,7 @@ static int32_t TestPatternColorBar( CNX_I2C *pI2c, uint8_t index, uint8_t patter
 {
 	const uint16_t patternData[][8] = {
 		//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
-		{	1,		0,		1024,	0,		1080,	4095,	4095,	4096	},	// 6 Color Bar
+		{	1,		0,		1024,	0,		1080,	4095,	4095,	4095	},	// 6 Color Bar
 	};
 
 	const uint16_t *pData = patternData[patternIndex];

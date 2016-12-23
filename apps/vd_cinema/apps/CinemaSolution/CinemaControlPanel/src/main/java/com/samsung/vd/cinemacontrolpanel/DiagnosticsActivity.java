@@ -6,18 +6,15 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.ArrayAdapter;
+import android.widget.ExpandableListView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.RadioButton;
 import android.widget.TabHost;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -26,8 +23,6 @@ import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTitleBar;
 
 import java.io.IOException;
-import java.lang.ref.WeakReference;
-import java.lang.reflect.Array;
 import java.util.Locale;
 
 /**
@@ -43,7 +38,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
     private StatusDetailAdapter mAdapterLedShort;
     private StatusSimpleAdapter mAdapterCabinetDoor;
     private StatusSimpleAdapter mAdapterPeripheral;
-    private StatusDescribeAdapter mAdapterVersion;
+    private StatusDescribeExpandableAdapter mAdapterVersion;
 
     private AsyncTaskStatus     mAsyncTaskStatus;
     private AsyncTaskLedOpenNum mAsyncTaskLedOpenNum;
@@ -173,21 +168,11 @@ public class DiagnosticsActivity extends AppCompatActivity {
         //
         //  VERSION
         //
-        ListView listViewVersion = (ListView)findViewById(R.id.listview_version);
+        ExpandableListView listViewVersion = (ExpandableListView)findViewById(R.id.listview_version);
         listViewVersion.addFooterView(listViewFooter);
 
-        mAdapterVersion = new StatusDescribeAdapter(this, R.layout.listview_row_status_describe);
+        mAdapterVersion = new StatusDescribeExpandableAdapter(this, R.layout.listview_row_status_describe, R.layout.listview_row_status_describe);
         listViewVersion.setAdapter( mAdapterVersion );
-
-        final String[] strVersion = {
-            "TCON Version",
-            "TCON LED Version",
-        };
-
-        for( final String str : strVersion ) {
-            mAdapterVersion.add( new StatusDescribeInfo( str, "xx.xx.xx" ) );
-            mAdapterVersion.notifyDataSetChanged();
-        }
 
         //
         //  Initialize Tab
@@ -556,32 +541,35 @@ public class DiagnosticsActivity extends AppCompatActivity {
     }
 
     private class AsyncTaskVersion extends AsyncTask<Void, Void, Void> {
-        private StatusDescribeAdapter mAdapter;
+        private StatusDescribeExpandableAdapter mAdapter;
 
-        public AsyncTaskVersion( StatusDescribeAdapter adapter) {
+        public AsyncTaskVersion( StatusDescribeExpandableAdapter adapter) {
             mAdapter = adapter;
+            mAdapter.clear();
         }
 
         @Override
         protected Void doInBackground(Void... params) {
-            //
-            //  TCON Version
-            //
-            if(isCancelled()) return null;
+            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
 
-            {
+            if( mCabinet == null )
+                return null;
 
-            }
+            for( int i = 0; i < mCabinet.length; i++ ) {
+                mAdapter.addGroup( new StatusDescribeExpandableInfo(String.format( Locale.US, "Cabinet %02d", mCabinet[i] - CinemaInfo.OFFSET_TCON )) );
 
-            publishProgress();
+                for( int j = 0; j < 24; j++ ) {
+                    byte[] module = ctrl.IntToByteArray( j, NxCinemaCtrl.FORMAT_INT8 );
+                    byte[] inData = new byte[32];
+                    inData[0] = module[0];
 
-            //
-            //  TCON Led Version
-            //
-            if(isCancelled()) return null;
-
-            {
-
+                    byte[] result = ctrl.Send( mCabinet[i], NxCinemaCtrl.CMD_TCON_VERSION, inData );
+                    if( result == null || result.length == 0 ) {
+                        mAdapter.addChild(i, new StatusDescribeInfo(String.format( Locale.US, "Module #%02d", j), String.valueOf("Error")) );
+                        continue;
+                    }
+                    mAdapter.addChild(i, new StatusDescribeInfo(String.format( Locale.US, "Module #%02d", j), new String(result) ));
+                }
             }
 
             publishProgress();
@@ -592,6 +580,18 @@ public class DiagnosticsActivity extends AppCompatActivity {
         protected void onProgressUpdate(Void... values) {
             mAdapter.notifyDataSetChanged();
             super.onProgressUpdate(values);
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            CinemaLoading.Show(DiagnosticsActivity.this);
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            CinemaLoading.Hide();
         }
     }
 

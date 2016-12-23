@@ -4,26 +4,24 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.os.SystemClock;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.Chronometer;
+import android.widget.ExpandableListView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.Spinner;
 import android.widget.TabHost;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTitleBar;
+
+import java.util.Locale;
 
 /**
  * Created by doriya on 8/16/16.
@@ -70,7 +68,7 @@ public class DisplayCheckActivity extends AppCompatActivity {
     };
 
     private SelectRunAdapter mAdapterTestPattern;
-    private StatusDescribeAdapter mAdapterAccumulation;
+    private StatusDescribeExpandableAdapter mAdapterAccumulation;
 
     private byte[]  mCabinet;
 
@@ -143,21 +141,11 @@ public class DisplayCheckActivity extends AppCompatActivity {
         //
         //  ACCUMULATION TIME
         //
-        ListView listViewAccumulation = (ListView)findViewById(R.id.listview_accumulation);
+        ExpandableListView listViewAccumulation = (ExpandableListView)findViewById(R.id.listview_accumulation);
         listViewAccumulation.addFooterView( listViewFooter );
 
-        mAdapterAccumulation = new StatusDescribeAdapter(this, R.layout.listview_row_status_describe);
+        mAdapterAccumulation = new StatusDescribeExpandableAdapter(this, R.layout.listview_row_status_describe, R.layout.listview_row_status_describe);
         listViewAccumulation.setAdapter( mAdapterAccumulation );
-
-        final String[] strAccumulation = {
-                "Elapsed Time",
-                "Total Accumulation Time",
-        };
-
-        for( final String str : strAccumulation ) {
-            mAdapterAccumulation.add( new StatusDescribeInfo( str, "00 hrs 00 min") );
-            mAdapterAccumulation.notifyDataSetChanged();
-        }
     }
 
     private void AddTabs() {
@@ -193,6 +181,8 @@ public class DisplayCheckActivity extends AppCompatActivity {
 
     private void UpdateAccumulation() {
         StopTestPattern();
+
+        new AsyncTaskAccumulation(mAdapterAccumulation).execute();
     }
 
     private void RunTestPattern( int funcIndex, int patternIndex, boolean status ) {
@@ -238,6 +228,61 @@ public class DisplayCheckActivity extends AppCompatActivity {
             byte[] data = { (byte)i, (byte)0x00 };
             if( bValidPort0 ) ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data );
             if( bValidPort1 ) ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data );
+        }
+    }
+
+    private class AsyncTaskAccumulation extends AsyncTask<Void, Void, Void> {
+        private StatusDescribeExpandableAdapter mAdapter;
+
+        public AsyncTaskAccumulation( StatusDescribeExpandableAdapter adapter) {
+            mAdapter = adapter;
+            mAdapter.clear();
+        }
+
+        @Override
+        protected Void doInBackground(Void... params) {
+            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+
+            if( mCabinet == null )
+                return null;
+
+            for( int i = 0; i < mCabinet.length; i++ ) {
+                mAdapter.addGroup( new StatusDescribeExpandableInfo(String.format( Locale.US, "Cabinet %02d", mCabinet[i] - CinemaInfo.OFFSET_TCON )) );
+
+                for( int j = 0; j < 24; j++ ) {
+                    byte[] module = ctrl.IntToByteArray( j, NxCinemaCtrl.FORMAT_INT8 );
+                    byte[] inData = new byte[32];
+                    inData[0] = module[0];
+
+                    byte[] result = ctrl.Send( mCabinet[i], NxCinemaCtrl.CMD_TCON_ACCUMULATE_TIME, inData );
+                    if( result == null || result.length == 0 ) {
+                        mAdapter.addChild(i, new StatusDescribeInfo(String.format( Locale.US, "Module #%02d", j), String.valueOf("Error")) );
+                        continue;
+                    }
+                    mAdapter.addChild(i, new StatusDescribeInfo(String.format( Locale.US, "Module #%02d", j), new String(result) ));
+                }
+            }
+
+            publishProgress();
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Void... values) {
+            mAdapter.notifyDataSetChanged();
+            super.onProgressUpdate(values);
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            CinemaLoading.Show(DisplayCheckActivity.this);
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            CinemaLoading.Hide();
         }
     }
 

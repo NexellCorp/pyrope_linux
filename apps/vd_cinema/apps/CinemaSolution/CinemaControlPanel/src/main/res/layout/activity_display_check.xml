@@ -17,6 +17,7 @@
         android:layout_height="match_parent"
         android:id="@+id/tabHost"
         android:layout_below="@+id/layoutTitleBar"
+        android:layout_above="@+id/layoutStatusBar"
         android:layout_alignParentStart="true">
 
         <LinearLayout
@@ -42,7 +43,7 @@
                     <include
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        layout="@layout/layout_display_check_test" />
+                        layout="@layout/layout_display_check_test_pattern" />
                 </RelativeLayout>
 
                 <RelativeLayout
@@ -54,7 +55,7 @@
                     <include
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        layout="@layout/layout_display_check_time" />
+                        layout="@layout/layout_display_check_accumulation_time" />
                 </RelativeLayout>
             </FrameLayout>
         </LinearLayout>

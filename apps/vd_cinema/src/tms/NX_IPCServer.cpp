@@ -87,9 +87,7 @@ private:
 	int32_t	TCON_DeviceGamma( int32_t fd, uint32_t cmd, uint32_t index, uint8_t *data, int32_t size );
 	int32_t TCON_DotCorrection( int32_t fd, uint32_t cmd, uint32_t index, uint8_t *data, int32_t size );
 	int32_t TCON_InputSource( int32_t fd, uint32_t cmd, uint32_t index, uint8_t resolIndex, uint8_t srcIndex );
-	int32_t TCON_ElapsedTime( int32_t fd, uint32_t cmd, uint8_t index );
-	int32_t TCON_AccumulateTime( int32_t fd, uint32_t cmd, uint8_t index );
-	int32_t TCON_Version( int32_t fd, uint32_t cmd, uint8_t index );
+	int32_t TCON_OptionalData( int32_t fd, uint32_t cmd, uint8_t index, uint8_t module );
 	int32_t TCON_Multi( int32_t fd, uint32_t cmd, uint8_t index, uint8_t data );
 
 	//	PFPGA Commands
@@ -1609,12 +1607,15 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_ElapsedTime( int32_t fd, uint32_t cmd, uint8_t index )
+int32_t CNX_IPCServer::TCON_OptionalData( int32_t fd, uint32_t cmd, uint8_t index, uint8_t module )
 {
+	uint8_t result[32] = { 0xFF, };
 	int32_t sendSize;
 
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
+
+	uint16_t iOptionalData[16] = { 0x0000, };
 
 	CNX_I2C i2c( port );
 
@@ -1624,73 +1625,68 @@ int32_t CNX_IPCServer::TCON_ElapsedTime( int32_t fd, uint32_t cmd, uint8_t index
 		goto ERROR_TCON;
 	}
 
-	//
-	//
-	//
-	NxDbgMsg( NX_DBG_INFO, "Not Implementaion. ( i2c-%d, %d )\n", port, slave );
-
-ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
-
-	return 0;
-}
-
-//------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_AccumulateTime( int32_t fd, uint32_t cmd, uint8_t index )
-{
-	int32_t sendSize;
-
-	int32_t port	= (index & 0x80) >> 7;
-	uint8_t slave	= (index & 0x7F);
-
-	CNX_I2C i2c( port );
-
-	if( 0 > i2c.Open() )
+	if( 0 > i2c.Write( slave, TCON_REG_F_LED_RD_EN, 0x0001 ) )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port);
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_F_LED_RD_EN, 0x0001 );
 		goto ERROR_TCON;
 	}
 
-	//
-	//
-	//
-	NxDbgMsg( NX_DBG_INFO, "Not Implementaion. ( i2c-%d, %d )\n", port, slave );
-
-ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
-
-	return 0;
-}
-
-//------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_Version( int32_t fd, uint32_t cmd, uint8_t index )
-{
-	int32_t sendSize;
-
-	int32_t port	= (index & 0x80) >> 7;
-	uint8_t slave	= (index & 0x7F);
-
-	CNX_I2C i2c( port );
-
-	if( 0 > i2c.Open() )
+	if( 0 > i2c.Write( slave, TCON_REG_F_LED_RD_EN, 0x0000 ) )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port );
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_F_LED_RD_EN, 0x0000 );
 		goto ERROR_TCON;
 	}
 
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, module ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_FLASH_SEL, module );
+		goto ERROR_TCON;
+	}
+
+	for( int32_t i = 0; i < (int32_t)(sizeof(iOptionalData) / sizeof(iOptionalData[0])); i++ )
+	{
+		int32_t iReadData = 0x0000;
+		if( 0 > (iReadData = i2c.Read( slave, TCON_REG_F_LED_DATA00_READ + i )) )
+		{
+			NxDbgMsg( NX_DBG_VBS, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
+				port, slave, TCON_REG_F_LED_DATA00_READ + i );
+			goto ERROR_TCON;
+		}
+
+		iOptionalData[i] = (uint16_t)(iReadData & 0x0000FFFF);
+	}
+
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, 0x001F ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_FLASH_SEL, 0x001F );
+		goto ERROR_TCON;
+	}
+
+	for(int32_t i = 0; i < (int32_t)(sizeof(iOptionalData) / sizeof(iOptionalData[0])); i++ )
+	{
+		result[i * 2 + 0] = (uint8_t)((iOptionalData[i] >> 8 ) & 0xFF);
+		result[i * 2 + 1] = (uint8_t)((iOptionalData[i] >> 0 ) & 0xFF);
+	}
+
 	//
+	//	Print Debug Message
 	//
-	//
-	NxDbgMsg( NX_DBG_INFO, "Not Implementaion. ( i2c-%d, %d )\n", port, slave );
+	// printf(">> index %d, module %d\n", index, module);
+	// printf("code(id)              : 0x%04x%04x%04x%04x\n", iOptionalData[3], iOptionalData[2], iOptionalData[1], iOptionalData[0] );
+	// printf("module - date         : %04d.%02d.%02d\n", (iOptionalData[4] >> 9) & 0x7F, (iOptionalData[4] >> 5) & 0x0F, (iOptionalData[4] >> 0) & 0x1F );
+	// printf("module - location     : %c%c%c%c\n", (iOptionalData[6] >> 8) & 0xFF, (iOptionalData[6] >> 0) & 0xFF, (iOptionalData[5] >> 8) & 0xFF, (iOptionalData[5] >> 0) & 0xFF );
+	// printf("led - manufacturer    : %c%c%c\n", (iOptionalData[8] >> 0) & 0xFF, (iOptionalData[7] >> 8) & 0xFF, (iOptionalData[7] >> 0) & 0xFF );
+	// printf("correction - date     : %04d.%02d.%02d\n", (iOptionalData[9] >> 1) & 0x7F, ((iOptionalData[9] << 3) & 0x80) | ((iOptionalData[8] << 13) & 0x07), (iOptionalData[8] >> 8) & 0x1F );
+	// printf("correction - location : %c%c%c%c\n", (iOptionalData[11] >> 0) & 0xFF, (iOptionalData[10] >> 8) & 0xFF, (iOptionalData[10] >> 0) & 0xFF, (iOptionalData[9] >> 8) & 0xFF );
+	// printf("hour of use           : %lld\n", (((uint64_t)(iOptionalData[15] << 9)) & 0x00FFFFFF) | ((uint64_t)(iOptionalData[14] >> 7) & 0x000001FF) );
+	// printf("parity                : %d\n", (iOptionalData[15] >> 15) & 0x01 );
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -1967,13 +1963,9 @@ int32_t CNX_IPCServer::ProcessCommand( int32_t fd, uint32_t cmd, void *pPayload,
 		return TCON_DotCorrection( fd, cmd, pData[0], pData + 1, payloadSize );
 
 	case TCON_CMD_ELAPSED_TIME:
-		return TCON_ElapsedTime( fd, cmd, pData[0] );
-
 	case TCON_CMD_ACCUMULATE_TIME:
-		return TCON_AccumulateTime( fd, cmd, pData[0] );
-
 	case TCON_CMD_VERSION:
-		return TCON_Version( fd, cmd, pData[0] );
+		return TCON_OptionalData( fd, cmd, pData[0], pData[1] );
 
 	case TCON_CMD_MULTI:
 		return TCON_Multi( fd, cmd, pData[0], pData[1] );

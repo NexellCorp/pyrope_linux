@@ -122,7 +122,7 @@ private:
 	uint8_t		m_PayloadBuf[MAX_PAYLOAD_SIZE];
 	uint8_t		m_SendBuf[MAX_PAYLOAD_SIZE+12];
 
-	int32_t		(*m_pTestPatternFunc[5])( CNX_I2C*, uint8_t, uint8_t );
+	int32_t		(*m_pTestPatternFunc[6])( CNX_I2C*, uint8_t, uint8_t );
 
 private:
 	//	For Singletone
@@ -132,6 +132,7 @@ private:
 CNX_IPCServer* CNX_IPCServer::m_psInstance = NULL;
 
 //------------------------------------------------------------------------------
+static int32_t TestPatternDci( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex );
 static int32_t TestPatternColorBar( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex );
 static int32_t TestPatternFullScreenColor( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex );
 static int32_t TestPatternGrayScale( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex );
@@ -144,11 +145,12 @@ CNX_IPCServer::CNX_IPCServer()
 	, m_ExitLoop (true)
 	, m_hSocket (-1)
 {
-	m_pTestPatternFunc[0] = &TestPatternColorBar;
-	m_pTestPatternFunc[1] = &TestPatternFullScreenColor;
-	m_pTestPatternFunc[2] = &TestPatternGrayScale;
-	m_pTestPatternFunc[3] = &TestPatternDot;
-	m_pTestPatternFunc[4] = &TestPatternDiagonal;
+	m_pTestPatternFunc[0] = &TestPatternDci;
+	m_pTestPatternFunc[1] = &TestPatternColorBar;
+	m_pTestPatternFunc[2] = &TestPatternFullScreenColor;
+	m_pTestPatternFunc[3] = &TestPatternGrayScale;
+	m_pTestPatternFunc[4] = &TestPatternDot;
+	m_pTestPatternFunc[5] = &TestPatternDiagonal;
 }
 
 //------------------------------------------------------------------------------
@@ -751,13 +753,6 @@ int32_t CNX_IPCServer::TCON_TestPattern( int32_t fd, uint32_t cmd, uint8_t index
 
 	if( TCON_CMD_PATTERN_RUN == cmd )
 	{
-		if( 0 > i2c.Write( slave, TCON_REG_XYZ_TO_RGB, 0x0001 ) )
-		{
-			NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
-				port, slave, TCON_REG_XYZ_TO_RGB, 0x0001 );
-			goto ERROR_TCON;
-		}
-
 		if( funcIndex != sizeof(m_pTestPatternFunc)/sizeof(m_pTestPatternFunc[0]) )
 		{
 			m_pTestPatternFunc[funcIndex](&i2c, index, patternIndex);
@@ -798,7 +793,7 @@ int32_t CNX_IPCServer::TCON_TestPattern( int32_t fd, uint32_t cmd, uint8_t index
 	}
 	else
 	{
-		if( 0 > i2c.Write( slave, TCON_REG_XYZ_TO_RGB, 0x0000 ) )
+		if( 0 > i2c.Write( slave, TCON_REG_XYZ_TO_RGB, 0x0001 ) )
 		{
 			NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_XYZ_TO_RGB, 0x0000 );
@@ -2228,15 +2223,89 @@ int32_t CNX_IPCServer::ProcessCommand( int32_t fd, uint32_t cmd, void *pPayload,
 //
 
 //------------------------------------------------------------------------------
-static int32_t TestPatternColorBar( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
+static int32_t TestPatternDci( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
 {
 	const uint16_t patternData[][8] = {
 		//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
-		{	1,		0,		1024,	0,		1080,	4095,	4095,	4095	},	// 6 Color Bar
+		{	10,		0,		1024,	0,		2160,	2901,	2171,	100		},	//	Red-1
+		{	10,		0,		1024,	0,		2160,	2417,	3493,	1222	},	//	Green-1
+		{	10,		0,		1024,	0,		2160,	2014,	1416,	3816	},	//	Blue-1
+		{	10,		0,		1024,	0,		2160,	2911,	3618,	3890	},	//	Cyan-1
+		{	10,		0,		1024,	0,		2160,	3289,	2421,	3814	},	//	Magenta-1
+		{	10,		0,		1024,	0,		2160,	3494,	3853,	1221	},	//	Yellow-1
+		{	10,		0,		1024,	0,		2160,	2738,	2171,	1233	},	//	Red-2
+		{	10,		0,		1024,	0,		2160,	2767,	3493,	2325	},	//	Green-2
+		{	10,		0,		1024,	0,		2160,	1800,	1416,	3203	},	//	Blue-2
+		{	10,		0,		1024,	0,		2160,	3085,	3590,	3756	},	//	Cyan-2
+		{	10,		0,		1024,	0,		2160,	3062,	2421,	3497	},	//	Magenta-2
+		{	10,		0,		1024,	0,		2160,	3461,	3777,	2065	},	//	Yellow-2
+		{	10,		0,		1024,	0,		2160,	3883,	3960,	4092	},	//	White-1
+		{	10,		0,		1024,	0,		2160,	3794,	3960,	3890	},	//	White-2
+		{	10,		0,		1024,	0,		2160,	3893,	3960,	3838	},	//	White-3
 	};
 
 	const uint16_t *pData = patternData[patternIndex];
 	int32_t iDataNum = (int32_t)(sizeof(patternData[0]) / sizeof(patternData[0][0]));
+
+	if( 0 > pI2c->Write( index & 0x7F, TCON_REG_XYZ_TO_RGB, 0x0001 ) )
+	{
+		return -1;
+	}
+
+	for( int32_t i = 0; i < iDataNum; i++ )
+	{
+		if( 0 > pI2c->Write( index & 0x7F, TCON_REG_PATTERN + i, pData[i] ) )
+		{
+			return -1;
+		}
+	}
+
+#if I2C_DEBUG
+	int32_t port	= (index & 0x80) >> 7;
+	uint8_t slave	= (index & 0x7F);
+
+	for( int32_t i = 0x16; i < 0x80; i++ )
+	{
+		int32_t ret = pI2c->Read( i, TCON_REG_CHECK_STATUS );
+		if( 0 > ret )
+			continue;
+
+		for( int32_t j = 0; j < iDataNum; j++ )
+		{
+			int32_t iReadData = 0x0000;
+			if( 0 > (iReadData = pI2c->Read( i, TCON_REG_PATTERN + j )) )
+			{
+				NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
+					port, i, TCON_REG_PATTERN + j );
+			}
+
+			NxDbgMsg( NX_DBG_VBS, "%s.( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x, read: 0x%04x )\n",
+				(iReadData == pData[j]) ? "Success" : "Fail",
+				port, i, TCON_REG_PATTERN + j, pData[j], iReadData );
+
+			printf("%s.( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x, read: 0x%04x )\n",
+				(iReadData == pData[j]) ? "Success" : "Fail",
+				port, i, TCON_REG_PATTERN + j, pData[j], iReadData );
+		}
+	}
+#endif
+	return 0;
+}
+
+static int32_t TestPatternColorBar( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
+{
+	const uint16_t patternData[][8] = {
+		//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
+		{	1,		0,		1024,	0,		2160,	4095,	4095,	4095	},	// 6 Color Bar
+	};
+
+	const uint16_t *pData = patternData[patternIndex];
+	int32_t iDataNum = (int32_t)(sizeof(patternData[0]) / sizeof(patternData[0][0]));
+
+	if( 0 > pI2c->Write( index & 0x7F, TCON_REG_XYZ_TO_RGB, 0x0000 ) )
+	{
+		return -1;
+	}
 
 	for( int32_t i = 0; i < iDataNum; i++ )
 	{
@@ -2283,27 +2352,32 @@ static int32_t TestPatternFullScreenColor( CNX_I2C *pI2c, uint8_t index, uint8_t
 {
 	const uint16_t patternData[][8] = {
 		//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
-		{	10,		0,		1024,	0,		1080,	4095,	4095,	4095	},	//	White	100%
-		{	10,		0,		1024,	0,		1080,	3685,	3685,	3685	},	//	Gray	90%
-		{	10,		0,		1024,	0,		1080,	3276,	2948,	2948	},	//	Gray	80%
-		{	10,		0,		1024,	0,		1080,	2866,	2866,	2866	},	//	Gray	70%
-		{	10,		0,		1024,	0,		1080,	2457,	2457,	2457	},	//	Gray	60%
-		{	10,		0,		1024,	0,		1080,	2047,	2047,	2047	},	//	Gray	50%
-		{	10,		0,		1024,	0,		1080,	1638,	1638,	1638	},	//	Gray	40%
-		{	10,		0,		1024,	0,		1080,	1228,	1228,	1228	},	//	Gray	30%
-		{	10,		0,		1024,	0,		1080,	819,	819,	819		},	//	Gray	20%
-		{	10,		0,		1024,	0,		1080,	409,	409,	409		},	//	Gray	1c0%
-		{	10,		0,		1024,	0,		1080,	0,		0,		0		},	//	Black	0%
-		{	10,		0,		1024,	0,		1080,	4095,	0,		0		},	//	Red		100%
-		{	10,		0,		1024,	0,		1080,	0,		4095,	0		},	//	Green	100%
-		{	10,		0,		1024,	0,		1080,	0,		0,		4095	},	//	Blue	100%
-		{	10,		0,		1024,	0,		1080,	4095,	0,		4095	},	//	Magenta	100%
-		{	10,		0,		1024,	0,		1080,	0,		4095,	4095	},	//	Cyan	100%
-		{	10,		0,		1024,	0,		1080,	4095,	4095,	0		},	//	Yellow 	00%
+		{	10,		0,		1024,	0,		2160,	4095,	4095,	4095	},	//	White	100%
+		{	10,		0,		1024,	0,		2160,	3685,	3685,	3685	},	//	Gray	90%
+		{	10,		0,		1024,	0,		2160,	3276,	2948,	2948	},	//	Gray	80%
+		{	10,		0,		1024,	0,		2160,	2866,	2866,	2866	},	//	Gray	70%
+		{	10,		0,		1024,	0,		2160,	2457,	2457,	2457	},	//	Gray	60%
+		{	10,		0,		1024,	0,		2160,	2047,	2047,	2047	},	//	Gray	50%
+		{	10,		0,		1024,	0,		2160,	1638,	1638,	1638	},	//	Gray	40%
+		{	10,		0,		1024,	0,		2160,	1228,	1228,	1228	},	//	Gray	30%
+		{	10,		0,		1024,	0,		2160,	819,	819,	819		},	//	Gray	20%
+		{	10,		0,		1024,	0,		2160,	409,	409,	409		},	//	Gray	1c0%
+		{	10,		0,		1024,	0,		2160,	0,		0,		0		},	//	Black	0%
+		{	10,		0,		1024,	0,		2160,	4095,	0,		0		},	//	Red		100%
+		{	10,		0,		1024,	0,		2160,	0,		4095,	0		},	//	Green	100%
+		{	10,		0,		1024,	0,		2160,	0,		0,		4095	},	//	Blue	100%
+		{	10,		0,		1024,	0,		2160,	4095,	0,		4095	},	//	Magenta	100%
+		{	10,		0,		1024,	0,		2160,	0,		4095,	4095	},	//	Cyan	100%
+		{	10,		0,		1024,	0,		2160,	4095,	4095,	0		},	//	Yellow 	00%
 	};
 
 	const uint16_t *pData = patternData[patternIndex];
 	int32_t iDataNum = (int32_t)(sizeof(patternData[0]) / sizeof(patternData[0][0]));
+
+	if( 0 > pI2c->Write( index & 0x7F, TCON_REG_XYZ_TO_RGB, 0x0000 ) )
+	{
+		return -1;
+	}
 
 	for( int32_t i = 0; i < iDataNum; i++ )
 	{
@@ -2350,20 +2424,25 @@ static int32_t TestPatternGrayScale( CNX_I2C *pI2c, uint8_t index, uint8_t patte
 {
 	const uint16_t patternData[][8] = {
 		//	0x24	0x25	0x26	0x27	0x28
-		{	2,		0,		1024,	0,		1080	},							//	Gray 16-Step
-		{	3,		0,		1024,	0,		1080	},							//	Gray 32-Step
-		{	4,		0,		1024,	0,		1080	},							//	Gray 64-Step
-		{	5,		0,		1024,	0,		1080	},							//	Gray 128-Step
-		{	6,		0,		1024,	0,		1080	},							//	Gray 256-Step
-		{	7,		0,		1024,	0,		1080	},							//	Gray 512-Step
-		{	9,		7,		1024,	0,		1080	},							//	Gray 2048-Step
-		{	9,		1,		1024,	0,		1080	},							//	Red 2048-Step
-		{	9,		2,		1024,	0,		1080	},							//	Green 2048-Step
-		{	9,		4,		1024,	0,		1080	},							//	Blue 2048-Step
+		{	2,		0,		1024,	0,		2160	},							//	Gray 16-Step
+		{	3,		0,		1024,	0,		2160	},							//	Gray 32-Step
+		{	4,		0,		1024,	0,		2160	},							//	Gray 64-Step
+		{	5,		0,		1024,	0,		2160	},							//	Gray 128-Step
+		{	6,		0,		1024,	0,		2160	},							//	Gray 256-Step
+		{	7,		0,		1024,	0,		2160	},							//	Gray 512-Step
+		{	9,		7,		1024,	0,		2160	},							//	Gray 2048-Step
+		{	9,		1,		1024,	0,		2160	},							//	Red 2048-Step
+		{	9,		2,		1024,	0,		2160	},							//	Green 2048-Step
+		{	9,		4,		1024,	0,		2160	},							//	Blue 2048-Step
 	};
 
 	const uint16_t *pData = patternData[patternIndex];
 	int32_t iDataNum = (int32_t)(sizeof(patternData[0]) / sizeof(patternData[0][0]));
+	
+	if( 0 > pI2c->Write( index & 0x7F, TCON_REG_XYZ_TO_RGB, 0x0000 ) )
+	{
+		return -1;
+	}
 
 	for( int32_t i = 0; i < iDataNum; i++ )
 	{
@@ -2410,11 +2489,16 @@ static int32_t TestPatternDot( CNX_I2C *pI2c, uint8_t index, uint8_t patternInde
 {
 	const uint16_t patternData[][8] = {
 		//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
-		{	17,		0,		1024,	0,		1080,	4095,	4095,	4095	},	//	Dot Pattern 1x1
+		{	17,		0,		1024,	0,		2160,	4095,	4095,	4095	},	//	Dot Pattern 1x1
 	};
 
 	const uint16_t *pData = patternData[patternIndex];
 	int32_t iDataNum = (int32_t)(sizeof(patternData[0]) / sizeof(patternData[0][0]));
+
+	if( 0 > pI2c->Write( index & 0x7F, TCON_REG_XYZ_TO_RGB, 0x0000 ) )
+	{
+		return -1;
+	}
 
 	for( int32_t i = 0; i < iDataNum; i++ )
 	{
@@ -2461,12 +2545,17 @@ static int32_t TestPatternDiagonal( CNX_I2C *pI2c, uint8_t index, uint8_t patter
 {
 	const uint16_t patternData[][8] = {
 		//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
-		{	104,	0,		1024,	0,		1080,	65535,	65535,	65535	},	//	Right-Down
-		{	105,	0,		1024,	0,		1080,	65535,	65535,	65535	},	//	Right-Up
+		{	104,	0,		1024,	0,		2160,	65535,	65535,	65535	},	//	Right-Down
+		{	105,	0,		1024,	0,		2160,	65535,	65535,	65535	},	//	Right-Up
 	};
 
 	const uint16_t *pData = patternData[patternIndex];
 	int32_t iDataNum = (int32_t)(sizeof(patternData[0]) / sizeof(patternData[0][0]));
+
+	if( 0 > pI2c->Write( index & 0x7F, TCON_REG_XYZ_TO_RGB, 0x0000 ) )
+	{
+		return -1;
+	}
 
 	for( int32_t i = 0; i < iDataNum; i++ )
 	{

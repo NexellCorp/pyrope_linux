@@ -54,7 +54,7 @@ public class CinemaInfo extends Application {
     public boolean IsDetectTamper() { return true; }
 
     public boolean IsStandAlone() {
-        return true;
+        return false;
     }
 
     //

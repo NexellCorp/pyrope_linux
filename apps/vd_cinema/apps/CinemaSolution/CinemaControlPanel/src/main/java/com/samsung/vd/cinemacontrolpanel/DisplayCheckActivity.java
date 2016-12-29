@@ -30,12 +30,21 @@ public class DisplayCheckActivity extends AppCompatActivity {
     private final String VD_DTAG = "DisplayCheckActivity";
 
     private String[] mFuncName = {
+            "DCI",
             "Color Bar",
             "Full Screen Color",
             "Gary Scale ( Horizontal )",
             "Dot Pattern / Checker Board",
             "Diagonal Pattern",
             "Cabinet ID",
+    };
+
+    private String[] mDci = {
+            "Red-1",            "Green-1",          "Blue-1",
+            "Cyan-1",           "Magenta-1",        "Yellow-1",
+            "Red-2",            "Green-2",          "Blue-2",
+            "Cyan-2",           "Magenta-2",        "Yellow-2",
+            "White-1",          "White-2",          "White-3",
     };
 
     private String[] mFullScreenColor = {
@@ -59,6 +68,7 @@ public class DisplayCheckActivity extends AppCompatActivity {
     };
 
     private String[][] mPatternName = {
+            mDci,
             new String[0],
             mFullScreenColor,
             mGrayScale,

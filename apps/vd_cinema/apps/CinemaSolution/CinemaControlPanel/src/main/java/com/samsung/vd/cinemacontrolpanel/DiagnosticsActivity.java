@@ -40,12 +40,6 @@ public class DiagnosticsActivity extends AppCompatActivity {
     private StatusSimpleAdapter mAdapterPeripheral;
     private StatusDescribeExpandableAdapter mAdapterVersion;
 
-    private AsyncTaskStatus     mAsyncTaskStatus;
-    private AsyncTaskLedOpenNum mAsyncTaskLedOpenNum;
-    private AsyncTaskCabinetDoor mAsyncTaskCabinetDoor;
-    private AsyncTaskPeripheral mAsyncTaskPeripheral;
-    private AsyncTaskVersion    mAsyncTaskVersion;
-
     private byte[]  mCabinet;
 
     @Override
@@ -206,7 +200,6 @@ public class DiagnosticsActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        StopTask();
         super.onDestroy();
     }
 
@@ -268,18 +261,11 @@ public class DiagnosticsActivity extends AppCompatActivity {
     };
 
     private void UpdateTconStatus() {
-        StopTask();
-
-        mAsyncTaskStatus = new AsyncTaskStatus( mAdapterTcon );
-        mAsyncTaskStatus.execute();
+        new AsyncTaskStatus(mAdapterTcon).execute();
     }
 
-
     private void UpdateLedOpen() {
-        StopTask();
-
-        mAsyncTaskLedOpenNum = new AsyncTaskLedOpenNum( mAdapterLedOpen );
-        mAsyncTaskLedOpenNum.execute();
+        new AsyncTaskLedOpenNum(mAdapterLedOpen).execute();
     }
 
     private void UpdateLedShort() {
@@ -287,10 +273,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
     }
 
     private void UpdateCabinetDoor() {
-        StopTask();
-
-        mAsyncTaskCabinetDoor = new AsyncTaskCabinetDoor( mAdapterCabinetDoor );
-        mAsyncTaskCabinetDoor.execute();
+        new AsyncTaskCabinetDoor(mAdapterCabinetDoor).execute();
     }
 
     private void UpdateBattery() {
@@ -298,17 +281,11 @@ public class DiagnosticsActivity extends AppCompatActivity {
     }
 
     private void UpdatePeripheral() {
-        StopTask();
-
-        mAsyncTaskPeripheral = new AsyncTaskPeripheral( mAdapterPeripheral );
-        mAsyncTaskPeripheral.execute();
+        new AsyncTaskPeripheral(mAdapterPeripheral).execute();
     }
 
     private void UpdateVersion() {
-        StopTask();
-
-        mAsyncTaskVersion = new AsyncTaskVersion( mAdapterVersion );
-        mAsyncTaskVersion.execute();
+        new AsyncTaskVersion(mAdapterVersion).execute();
     }
 
     //
@@ -344,6 +321,18 @@ public class DiagnosticsActivity extends AppCompatActivity {
         protected void onProgressUpdate(Void... values) {
             mAdapter.notifyDataSetChanged();
             super.onProgressUpdate(values);
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            CinemaLoading.Show( DiagnosticsActivity.this );
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            CinemaLoading.Hide();
         }
     }
 
@@ -406,6 +395,18 @@ public class DiagnosticsActivity extends AppCompatActivity {
             mAdapter.notifyDataSetChanged();
             super.onProgressUpdate(values);
         }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            CinemaLoading.Show( DiagnosticsActivity.this );
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            CinemaLoading.Hide();
+        }
     }
 
     private class AsyncTaskCabinetDoor extends AsyncTask<Void, Void, Void> {
@@ -441,6 +442,18 @@ public class DiagnosticsActivity extends AppCompatActivity {
         protected void onProgressUpdate(Void... values) {
             mAdapter.notifyDataSetChanged();
             super.onProgressUpdate(values);
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            CinemaLoading.Show( DiagnosticsActivity.this );
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            CinemaLoading.Hide();
         }
     }
 
@@ -538,6 +551,18 @@ public class DiagnosticsActivity extends AppCompatActivity {
             mAdapter.notifyDataSetChanged();
             super.onProgressUpdate(values);
         }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            CinemaLoading.Show( DiagnosticsActivity.this );
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            CinemaLoading.Hide();
+        }
     }
 
     private class AsyncTaskVersion extends AsyncTask<Void, Void, Void> {
@@ -592,37 +617,6 @@ public class DiagnosticsActivity extends AppCompatActivity {
             super.onPostExecute(aVoid);
             CinemaLoading.Hide();
         }
-    }
-
-    private void StopTask() {
-        if( mAsyncTaskStatus != null && mAsyncTaskStatus.getStatus() == AsyncTask.Status.RUNNING ) {
-            mAsyncTaskStatus.cancel( true );
-        }
-
-        if( mAsyncTaskLedOpenNum != null ) {
-            if( mAsyncTaskLedOpenNum.getStatus() == AsyncTask.Status.RUNNING ) {
-                mAsyncTaskLedOpenNum.cancel(true);
-            }
-        }
-
-        if( mAsyncTaskCabinetDoor != null && mAsyncTaskCabinetDoor.getStatus() == AsyncTask.Status.RUNNING ) {
-            mAsyncTaskCabinetDoor.cancel( true );
-        }
-
-        if( mAsyncTaskPeripheral != null && mAsyncTaskPeripheral.getStatus() == AsyncTask.Status.RUNNING ) {
-            mAsyncTaskPeripheral.cancel( true );
-        }
-
-        if( mAsyncTaskVersion != null && mAsyncTaskVersion.getStatus() == AsyncTask.Status.RUNNING ) {
-            mAsyncTaskVersion.cancel( true );
-        }
-
-        mAsyncTaskStatus = null;
-        mAsyncTaskLedOpenNum = null;
-        mAsyncTaskCabinetDoor = null;
-        mAsyncTaskPeripheral = null;
-        mAsyncTaskVersion = null;
-
     }
 
     //

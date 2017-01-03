@@ -35,21 +35,40 @@
                 android:layout_marginLeft="5dp"
                 android:layout_marginRight="5dp"
                 android:gravity="center"
+                android:orientation="vertical"
                 android:weightSum="1">
 
                 <TextView
-                    android:layout_width="0px"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
                     android:textAppearance="?android:attr/textAppearanceLarge"
-                    android:text="Current Status"
+                    android:text="* Test Table"
                     android:paddingTop="10dp"
                     android:paddingBottom="10dp"
                     android:paddingLeft="20dp"
                     android:textStyle=""
-                    android:layout_weight="1" />
+                    android:layout_weight="0.5" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:text="-. Image Quality Path : [USB_TOP]/DCI/DEMO.txt"
+                    android:paddingLeft="40dp"
+                    android:textStyle=""
+                    android:layout_weight="0.5" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:text="-. Gamma Path : [USB_TOP]/DCI/LUT/(T|D)GAM(0|1)_(R|G|B).txt"
+                    android:paddingLeft="40dp"
+                    android:paddingBottom="10dp"
+                    android:textStyle=""
+                    android:layout_weight="0.5" />
             </LinearLayout>
 
-            <!-- LCD Display Screen -->
             <LinearLayout
                 android:background="@drawable/draw_line_border"
                 android:layout_width="match_parent"
@@ -60,384 +79,52 @@
                 android:weightSum="1">
 
                 <TextView
-                    android:layout_width="0px"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:text="LCD Display Screen"
-                    android:gravity="center"
-                    android:paddingTop="15dp"
-                    android:paddingBottom="15dp"
-                    android:layout_weight="0.4" />
-
-                <RadioGroup
-                    android:background="@drawable/draw_line_left"
+                    android:background="@drawable/draw_line_border"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center"
-                    android:paddingTop="11dp"
-                    android:paddingBottom="12dp"
-                    android:layout_weight="0.6">
-
-                    <RadioButton
-                        android:id="@+id/radioButtonLcdOn"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="25dp"
-                        android:layout_marginEnd="25dp"
-                        android:text="ON"
-                        android:clickable="false"/>
-
-                    <RadioButton
-                        android:id="@+id/radioButtonLcdOff"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="25dp"
-                        android:layout_marginEnd="25dp"
-                        android:text="OFF"
-                        android:clickable="false"/>
-                </RadioGroup>
-            </LinearLayout>
-
-            <!-- Cinema Screen -->
-            <LinearLayout
-                android:background="@drawable/draw_line_border"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="5dp"
-                android:layout_marginRight="5dp"
-                android:gravity="center"
-                android:weightSum="1">
-
-                <TextView
-                    android:layout_width="0px"
-                    android:layout_height="wrap_content"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:text="Cinema Screen"
+                    android:text="Image Quality"
                     android:gravity="center"
                     android:paddingTop="15dp"
                     android:paddingBottom="15dp"
-                    android:layout_weight="0.4" />
+                    android:layout_weight="0.25"/>
 
-                <TextView
-                    android:background="@drawable/draw_line_left"
-                    android:layout_width="0px"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:text="Resolution"
-                    android:gravity="center"
-                    android:paddingTop="15dp"
-                    android:paddingBottom="15dp"
-                    android:layout_weight="0.2" />
-
-                <TextView
-                    android:background="@drawable/draw_line_left"
-                    android:layout_width="0px"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:text="Frame Rate"
-                    android:gravity="center"
-                    android:paddingTop="15dp"
-                    android:paddingBottom="15dp"
-                    android:layout_weight="0.2" />
-
-                <TextView
-                    android:background="@drawable/draw_line_left"
-                    android:layout_width="0px"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:text="Aspect Ratio"
-                    android:gravity="center"
-                    android:paddingTop="15dp"
-                    android:paddingBottom="15dp"
-                    android:layout_weight="0.2" />
-            </LinearLayout>
-
-            <!-- Input Source -->
-            <LinearLayout
-                android:background="@drawable/draw_line_border"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="5dp"
-                android:layout_marginRight="5dp"
-                android:gravity="center"
-                android:weightSum="1">
-
-                <TextView
-                    android:layout_width="0px"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:text="Input Source Selection"
-                    android:gravity="center"
-                    android:paddingTop="15dp"
-                    android:paddingBottom="15dp"
-                    android:layout_weight="0.4"/>
-
-                <RadioGroup
-                    android:background="@drawable/draw_line_left"
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
                     android:gravity="center"
-                    android:paddingTop="11dp"
-                    android:paddingBottom="12dp"
-                    android:layout_weight="0.6">
+                    android:paddingTop="4dp"
+                    android:paddingBottom="3dp"
+                    android:layout_weight="0.65">
 
-                    <RadioButton
-                        android:id="@+id/radioButtonInputSource1"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="25dp"
-                        android:layout_marginEnd="25dp"
-                        android:text="DCP"
-                        android:clickable="false"/>
+                    <Spinner
+                        android:id="@+id/spinnerImageQuality"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_marginLeft="230dp"
+                        android:layout_marginRight="230dp"
+                        android:gravity="center"/>
+                </LinearLayout>
 
-                    <RadioButton
-                        android:id="@+id/radioButtonInputSource2"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="25dp"
-                        android:layout_marginEnd="25dp"
-                        android:text="HDMI"
-                        android:clickable="false"/>
-
-                    <RadioButton
-                        android:id="@+id/radioButtonInputSource3"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="25dp"
-                        android:layout_marginEnd="25dp"
-                        android:text="HD-SDI"
-                        android:clickable="false"/>
-
-                    <RadioButton
-                        android:id="@+id/radioButtonInputSource4"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="25dp"
-                        android:layout_marginEnd="25dp"
-                        android:text="IP"
-                        android:clickable="false"/>
-                </RadioGroup>
-            </LinearLayout>
-
-            <!-- Brightness -->
-            <LinearLayout
-                android:background="@drawable/draw_line_border"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="5dp"
-                android:layout_marginRight="5dp"
-                android:gravity="center"
-                android:weightSum="1">
-
-                <TextView
-                    android:layout_width="0px"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:text="Brightness"
-                    android:gravity="center"
-                    android:paddingTop="15dp"
-                    android:paddingBottom="15dp"
-                    android:layout_weight="0.4" />
-
-                <RadioGroup
-                    android:background="@drawable/draw_line_left"
+                <LinearLayout
+                    android:background="@drawable/draw_line_border"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
                     android:gravity="center"
-                    android:paddingTop="11dp"
-                    android:paddingBottom="12dp"
-                    android:layout_weight="0.6">
-
-                    <RadioButton
-                        android:id="@+id/radioButtonBrightness1"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="3dp"
+                    android:layout_weight="0.1">
+                    <Button
+                        android:id="@+id/btnImageQuality"
+                        android:text="Apply"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="25dp"
-                        android:layout_marginEnd="25dp"
-                        android:text="48 nit"
-                        android:clickable="false"/>
-
-                    <RadioButton
-                        android:id="@+id/radioButtonBrightness2"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="25dp"
-                        android:layout_marginEnd="25dp"
-                        android:text="150 nit"
-                        android:clickable="false"/>
-
-                    <RadioButton
-                        android:id="@+id/radioButtonBrightness3"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="25dp"
-                        android:layout_marginEnd="25dp"
-                        android:text="300 nit"
-                        android:clickable="false"/>
-                </RadioGroup>
+                        android:enabled="false"
+                        android:gravity="center" />
+                </LinearLayout>
             </LinearLayout>
 
-            <!-- Color Gamut -->
-            <LinearLayout
-                android:background="@drawable/draw_line_border"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="5dp"
-                android:layout_marginRight="5dp"
-                android:gravity="center"
-                android:weightSum="1">
 
-                <TextView
-                    android:layout_width="0px"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:text="Color Gamut"
-                    android:gravity="center"
-                    android:paddingTop="15dp"
-                    android:paddingBottom="15dp"
-                    android:layout_weight="0.4" />
-
-                <RadioGroup
-                    android:background="@drawable/draw_line_left"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center"
-                    android:paddingTop="11dp"
-                    android:paddingBottom="12dp"
-                    android:layout_weight="0.6">
-
-                    <RadioButton
-                        android:id="@+id/radioButtonColorGamut1"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="25dp"
-                        android:layout_marginEnd="25dp"
-                        android:text="REC.709"
-                        android:clickable="false"/>
-
-                    <RadioButton
-                        android:id="@+id/radioButtonColorGamut2"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="25dp"
-                        android:layout_marginEnd="25dp"
-                        android:text="sRGB"
-                        android:clickable="false"/>
-
-                    <RadioButton
-                        android:id="@+id/radioButtonColorGamut3"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="25dp"
-                        android:layout_marginEnd="25dp"
-                        android:text="DCI-P3"
-                        android:clickable="false"/>
-                </RadioGroup>
-            </LinearLayout>
-
-            <!-- HDR -->
-            <LinearLayout
-                android:background="@drawable/draw_line_border"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="5dp"
-                android:layout_marginRight="5dp"
-                android:gravity="center"
-                android:weightSum="1">
-
-                <TextView
-                    android:layout_width="0px"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:text="HDR"
-                    android:gravity="center"
-                    android:paddingTop="15dp"
-                    android:paddingBottom="15dp"
-                    android:layout_weight="0.4"/>
-
-                <RadioGroup
-                    android:background="@drawable/draw_line_left"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center"
-                    android:paddingTop="11dp"
-                    android:paddingBottom="12dp"
-                    android:layout_weight="0.6">
-
-                    <RadioButton
-                        android:id="@+id/radioButtonHdrOn"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="25dp"
-                        android:layout_marginEnd="25dp"
-                        android:text="ON"
-                        android:clickable="false"/>
-
-                    <RadioButton
-                        android:id="@+id/radioButtonHdrOff"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="25dp"
-                        android:layout_marginEnd="25dp"
-                        android:text="OFF"
-                        android:clickable="false"/>
-                </RadioGroup>
-            </LinearLayout>
-
-            <!-- System -->
-            <LinearLayout
-                android:background="@drawable/draw_line_border"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="5dp"
-                android:layout_marginRight="5dp"
-                android:gravity="center"
-                android:weightSum="1">
-
-                <TextView
-                    android:layout_width="0px"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:text="System Status"
-                    android:gravity="center"
-                    android:paddingTop="15dp"
-                    android:paddingBottom="15dp"
-                    android:layout_weight="0.4"/>
-
-                <RadioGroup
-                    android:background="@drawable/draw_line_left"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center"
-                    android:paddingTop="11dp"
-                    android:paddingBottom="12dp"
-                    android:layout_weight="0.6">
-
-                    <RadioButton
-                        android:id="@+id/radioButtonSystemOk"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="25dp"
-                        android:layout_marginEnd="25dp"
-                        android:text="System OK"
-                        android:clickable="false"/>
-
-                    <RadioButton
-                        android:id="@+id/radioButtonSystemErr"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="25dp"
-                        android:layout_marginEnd="25dp"
-                        android:text="System Warning"
-                        android:clickable="false"/>
-                </RadioGroup>
-            </LinearLayout>
         </LinearLayout>
 
         <!-- Menu Button -->

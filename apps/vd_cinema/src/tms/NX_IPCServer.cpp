@@ -413,10 +413,10 @@ int32_t CNX_IPCServer::TCON_DoorStatus( int32_t fd, uint32_t cmd, uint8_t index 
 
 	result = (uint8_t)iReadData;
 
-	if( 0 > i2c.Write( slave, TCON_REG_CHECK_DOOR_READ, 0x0000 ) )
+	if( 0 > i2c.Write( slave, TCON_REG_CHECK_DOOR_READ, TCON_VAL_DOOR_CLOSE ) )
 	{
 		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
-			port, slave, TCON_REG_CHECK_DOOR_READ, 0x0000 );
+			port, slave, TCON_REG_CHECK_DOOR_READ, TCON_VAL_DOOR_CLOSE );
 		goto ERROR_TCON;
 	}
 #endif
@@ -2438,7 +2438,7 @@ static int32_t TestPatternGrayScale( CNX_I2C *pI2c, uint8_t index, uint8_t patte
 
 	const uint16_t *pData = patternData[patternIndex];
 	int32_t iDataNum = (int32_t)(sizeof(patternData[0]) / sizeof(patternData[0][0]));
-	
+
 	if( 0 > pI2c->Write( index & 0x7F, TCON_REG_XYZ_TO_RGB, 0x0000 ) )
 	{
 		return -1;

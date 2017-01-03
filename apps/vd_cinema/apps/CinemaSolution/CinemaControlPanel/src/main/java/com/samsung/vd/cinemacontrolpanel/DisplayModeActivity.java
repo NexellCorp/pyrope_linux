@@ -672,13 +672,15 @@ public class DisplayModeActivity extends AppCompatActivity {
                 if( !IsMasterMode() ) {
                     for( int j = 0; j < mSeekBarMastering.length; j++ ) {
                         mSeekBarMastering[j].setEnabled(false);
+                        mValueMastering[j].setEnabled(false);
                         mSeekBarMastering[j].setProgress( mDataMastering[mMasteringModePos][j] );
-                        mValueMastering[i].setText( String.valueOf(mDataMastering[mMasteringModePos][j]) );
+                        mValueMastering[j].setText( String.valueOf(mDataMastering[mMasteringModePos][j]) );
                     }
                 }
                 else {
-                    for( final SeekBar seekBar : mSeekBarMastering ) {
-                        seekBar.setEnabled(true);
+                    for( int j = 0; j < mSeekBarMastering.length; j++ ) {
+                        mSeekBarMastering[j].setEnabled(true);
+                        mValueMastering[j].setEnabled(true);
                     }
                     new AsyncTaskMasteringRead().execute();
                 }
@@ -1071,6 +1073,9 @@ public class DisplayModeActivity extends AppCompatActivity {
             CinemaLoading.Show(DisplayModeActivity.this);
 
             mValue = new int[mRegMastering.length];
+            for( int i = 0; i < mValue.length; i++ ) {
+                mValue[i] = 0;
+            }
         }
 
         @Override

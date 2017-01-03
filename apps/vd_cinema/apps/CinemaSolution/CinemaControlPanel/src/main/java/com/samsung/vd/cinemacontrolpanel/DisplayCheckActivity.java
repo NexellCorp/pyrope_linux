@@ -257,7 +257,7 @@ public class DisplayCheckActivity extends AppCompatActivity {
                 return null;
 
             for( int i = 0; i < mCabinet.length; i++ ) {
-                mAdapter.addGroup( new StatusDescribeExpandableInfo(String.format( Locale.US, "Cabinet %02d", mCabinet[i] - CinemaInfo.OFFSET_TCON )) );
+                mAdapter.addGroup( new StatusDescribeExpandableInfo(String.format( Locale.US, "Cabinet %02d", (mCabinet[i] & 0x7F) - CinemaInfo.OFFSET_TCON )) );
 
                 for( int j = 0; j < 24; j++ ) {
                     byte[] module = ctrl.IntToByteArray( j, NxCinemaCtrl.FORMAT_INT8 );
@@ -271,9 +271,8 @@ public class DisplayCheckActivity extends AppCompatActivity {
                     }
                     mAdapter.addChild(i, new StatusDescribeInfo(String.format( Locale.US, "Module #%02d", j), new String(result) ));
                 }
+	            publishProgress();
             }
-
-            publishProgress();
             return null;
         }
 

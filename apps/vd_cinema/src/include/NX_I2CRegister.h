@@ -30,7 +30,9 @@
 //	Cabinet Door
 //
 #define TCON_REG_CHECK_DOOR_READ		0x0171
-
+#define TCON_VAL_DOOR_OPEN				0x0000
+#define TCON_VAL_DOOR_CLOSE				0x0001
+#define TCON_VAL_DOOR_OPEN_CLOSE		0x0002
 
 //
 //	LED Open Check

@@ -95,7 +95,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
 
         for(int i = 0; i < mCabinet.length; i++ )
         {
-            mAdapterTcon.add( new StatusSimpleInfo( String.format( Locale.US, "Cabinet %02d", mCabinet[i] - CinemaInfo.OFFSET_TCON ) ));
+            mAdapterTcon.add( new StatusSimpleInfo( String.format( Locale.US, "Cabinet %02d", (mCabinet[i] & 0x7F) - CinemaInfo.OFFSET_TCON ) ));
             mAdapterTcon.notifyDataSetChanged();
         }
 
@@ -110,7 +110,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
 
         for(int i = 0; i < mCabinet.length; i++ )
         {
-            mAdapterLedOpen.add( new StatusDetailInfo( String.format( Locale.US, "Cabinet %02d", mCabinet[i] - CinemaInfo.OFFSET_TCON ) ));
+            mAdapterLedOpen.add( new StatusDetailInfo( String.format( Locale.US, "Cabinet %02d", (mCabinet[i] & 0x7F) - CinemaInfo.OFFSET_TCON ) ));
             mAdapterLedOpen.notifyDataSetChanged();
         }
 
@@ -125,7 +125,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
 
         for(int i = 0; i < mCabinet.length; i++ )
         {
-            mAdapterLedShort.add( new StatusDetailInfo( String.format( Locale.US, "Cabinet %02d", mCabinet[i] - CinemaInfo.OFFSET_TCON ) ));
+            mAdapterLedShort.add( new StatusDetailInfo( String.format( Locale.US, "Cabinet %02d", (mCabinet[i] & 0x7F) - CinemaInfo.OFFSET_TCON ) ));
             mAdapterLedShort.notifyDataSetChanged();
         }
 
@@ -140,7 +140,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
 
         for(int i = 0; i < mCabinet.length; i++ )
         {
-            mAdapterCabinetDoor.add( new StatusSimpleInfo( String.format( Locale.US, "Cabinet %02d", mCabinet[i] - CinemaInfo.OFFSET_TCON ) ));
+            mAdapterCabinetDoor.add( new StatusSimpleInfo( String.format( Locale.US, "Cabinet %02d", (mCabinet[i] & 0x7F) - CinemaInfo.OFFSET_TCON ) ));
             mAdapterCabinetDoor.notifyDataSetChanged();
         }
 
@@ -556,7 +556,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
                 return null;
 
             for( int i = 0; i < mCabinet.length; i++ ) {
-                mAdapter.addGroup( new StatusDescribeExpandableInfo(String.format( Locale.US, "Cabinet %02d", mCabinet[i] - CinemaInfo.OFFSET_TCON )) );
+                mAdapter.addGroup( new StatusDescribeExpandableInfo(String.format( Locale.US, "Cabinet %02d", (mCabinet[i] & 0x7F) - CinemaInfo.OFFSET_TCON )) );
 
                 for( int j = 0; j < 24; j++ ) {
                     byte[] module = ctrl.IntToByteArray( j, NxCinemaCtrl.FORMAT_INT8 );
@@ -570,9 +570,8 @@ public class DiagnosticsActivity extends AppCompatActivity {
                     }
                     mAdapter.addChild(i, new StatusDescribeInfo(String.format( Locale.US, "Module #%02d", j), new String(result) ));
                 }
+            	publishProgress();
             }
-
-            publishProgress();
             return null;
         }
 

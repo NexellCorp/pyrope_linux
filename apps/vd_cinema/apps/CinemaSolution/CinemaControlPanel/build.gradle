@@ -4,7 +4,6 @@ import org.apache.tools.ant.taskdefs.condition.Os
 android {
     compileSdkVersion 23
     buildToolsVersion "23.0.2"
-
     defaultConfig {
         applicationId "com.samsung.vd.cinemacontrolpanel"
         minSdkVersion 19
@@ -19,7 +18,17 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-
+    signingConfigs {
+        release {
+            keyAlias 'platformkey'
+            keyPassword 'nexell'
+            storeFile file('../platform_release.jks')
+            storePassword 'nexell'
+        }
+        debug {
+            storeFile file('../platform_debug.jks')
+        }
+    }
     //
     // For Android JNI
     //
@@ -27,9 +36,8 @@ android {
         jniLibs.srcDir 'src/main/libs'
         jni.srcDirs = []
     }
-
     //noinspection GroovyAssignabilityCheck
-    task ndkBuild(type: Exec, description:'Compile JNI source via NDK') {
+    task ndkBuild(type: Exec, description: 'Compile JNI source via NDK') {
         Properties properties = new Properties()
         properties.load(project.rootProject.file('local.properties').newDataInputStream())
 
@@ -47,7 +55,7 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile fileTree(include: ['*.jar'], dir: 'libs')
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:23.2.0'
     compile project(':BaseUtils')

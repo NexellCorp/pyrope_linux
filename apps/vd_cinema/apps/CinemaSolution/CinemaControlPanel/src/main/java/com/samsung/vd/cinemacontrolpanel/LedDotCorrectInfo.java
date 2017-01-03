@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 public class LedDotCorrectInfo {
     private static final String VD_DTAG = "LedDotCorrectInfo";
 
-    public static final String PATH = "LED_Display(P2.5_Cinema)_IFC(20161101)/DOT";
+    public static final String PATH = "DCI/DOT";
     public static final String PATTERN_DIR  = "ID(\\d*)";
     public static final String PATTERN_NAME = "RGB_P2_5_ID(\\d*)_(L|R)(\\d)(A|B).txt";
     public static final String PATTERN_DATA = "(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*)";

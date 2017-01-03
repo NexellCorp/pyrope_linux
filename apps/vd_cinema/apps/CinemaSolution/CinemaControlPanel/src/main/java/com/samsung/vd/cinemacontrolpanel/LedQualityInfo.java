@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 public class LedQualityInfo {
     private static final String VD_DTAG = "LedQualityInfo";
 
-    public static final String PATH = "LED_Display(P2.5_Cinema)_IFC(20161101)";
+    public static final String PATH = "DCI";
     public static final String NAME = "DEMO.txt";
     public static final String PATTERN_DATA = "\\w+\\s*=\\s*\\{\\s*(\\d*)\\s*,\\s*(\\d*)\\s*,\\s*(\\d*)\\s*,\\s*(\\d*)\\s*\\}";
 

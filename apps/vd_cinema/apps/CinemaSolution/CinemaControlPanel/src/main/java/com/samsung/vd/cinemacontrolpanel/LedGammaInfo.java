@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 public class LedGammaInfo {
     private static final String VD_DTAG = "LedGammaInfo";
 
-    public static final String PATH = "LED_Display(P2.5_Cinema)_IFC(20161101)/LUT";
+    public static final String PATH = "DCI/LUT";
     public static final String PATTERN_NAME = "(T|D)GAM(0|1)_(R|G|B).txt";
 
     public static final int TYPE_TARGET     = 0;

@@ -14,7 +14,7 @@ import java.util.StringTokenizer;
  */
 
 public class LedUniformityCorrectInfo {
-    public static final String PATH = "LED_Display(P2.5_Cinema)_IFC(20161101)";
+    public static final String PATH = "DCI";
     public static final String NAME = "UC_COEF.txt";
 
     public int[] mData = new int[64*64];

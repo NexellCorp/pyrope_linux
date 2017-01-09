@@ -96,7 +96,7 @@ public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
         mButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                new AsyncTaskLedPos(context, pos, mType).execute();
+                new AsyncTaskLedPos(context, mData.get(pos).GetSlave(), mType).execute();
             }
         });
 
@@ -113,6 +113,12 @@ public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
     public void remove(StatusDetailInfo object) {
         mData.remove(object);
         super.remove(object);
+    }
+
+    @Override
+    public void clear() {
+        mData.clear();
+        super.clear();
     }
 
     private class Holder {
@@ -135,8 +141,9 @@ public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
             mContext = context;
             mAdapter = new LedPosAdapter(mContext.getApplicationContext(), R.layout.listview_row_info_led);
 
-            byte[] cabinet = ((CinemaInfo)(context.getApplicationContext())).GetCabinet();
-            mId = cabinet[position];
+//            byte[] cabinet = ((CinemaInfo)(context.getApplicationContext())).GetCabinet();
+//            mId = cabinet[position];
+            mId = (byte)(position & 0xFF);
 
             if( type == NxCinemaCtrl.CMD_TCON_OPEN_NUM || type == NxCinemaCtrl.CMD_TCON_OPEN_POS ) {
                 mCmd1 = NxCinemaCtrl.CMD_TCON_OPEN_NUM;

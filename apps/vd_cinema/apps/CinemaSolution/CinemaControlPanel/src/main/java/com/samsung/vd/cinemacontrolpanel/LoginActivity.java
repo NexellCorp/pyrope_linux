@@ -24,12 +24,16 @@ import android.widget.ToggleButton;
 import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTitleBar;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class LoginActivity extends AppCompatActivity {
     private static final String VD_DTAG = "LoginActivity";
+    private static boolean mFirstBoot = true;
 
     private Spinner mSpinnerAccount;
 
@@ -235,6 +239,24 @@ public class LoginActivity extends AppCompatActivity {
 
         @Override
         protected Void doInBackground(Void... params) {
+            //
+            //
+            //
+            if( mFirstBoot && ((CinemaInfo)getApplicationContext()).IsBootDelay() ) {
+                int maxWaitTime = ((CinemaInfo)getApplicationContext()).GetBootDelay();
+                try {
+                    for( int i = 0; i < maxWaitTime; i++ ) {
+                        Log.i(VD_DTAG, String.format(Locale.US, "wait time : %d sec", maxWaitTime - i ));
+                        Thread.sleep(1000);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            //
+            //  Detection Cabinet
+            //
             for( int i = 0; i < 255; i++ ) {
                 if( (i & 0x7F) < 0x10 )
                     continue;
@@ -247,8 +269,61 @@ public class LoginActivity extends AppCompatActivity {
                     continue;
 
                 mCinemaInfo.AddCabinet( (byte)i );
+                Log.i(VD_DTAG, String.format(Locale.US, "Cabinet : 0x%02x, port : %d, slave : 0x%02x", (i & 0x7F) - CinemaInfo.OFFSET_TCON, (i & 0x80) >> 7, i & 0x7F ));
             }
 
+            //
+            //  Image Quality Function for Test
+            //
+            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+
+            boolean bValidPort0 = false, bValidPort1 = false;
+            for( byte id : ((CinemaInfo)getApplicationContext()).GetCabinet() ) {
+                if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
+                if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
+            }
+
+            String[] result;
+            result = CheckFile(LedQualityInfo.PATH_TARGET, LedQualityInfo.NAME);
+            for( String file : result ) {
+                LedQualityInfo info = new LedQualityInfo();
+                if( info.Parse( file ) ) {
+                    for( int i = 0; i < info.GetRegister().length; i++ ) {
+                        byte[] reg = ctrl.IntToByteArray(info.GetRegister()[i], NxCinemaCtrl.FORMAT_INT8);
+                        byte[] data = ctrl.IntToByteArray(info.GetData(0)[i], NxCinemaCtrl.FORMAT_INT16);
+                        byte[] inData = ctrl.AppendByteArray(reg, data);
+
+                        if( bValidPort0 ) ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_QUALITY, inData);
+                        if( bValidPort1 ) ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_QUALITY, inData);
+                    }
+                }
+            }
+
+            result = CheckFile(LedGammaInfo.PATH_TARGET, LedGammaInfo.PATTERN_NAME);
+            for( String file : result ) {
+                LedGammaInfo info = new LedGammaInfo();
+                if( info.Parse( file ) ) {
+                    int cmd;
+                    if( info.GetType() == LedGammaInfo.TYPE_TARGET )
+                        cmd = NxCinemaCtrl.CMD_TCON_TGAM_R;
+                    else
+                        cmd = NxCinemaCtrl.CMD_TCON_DGAM_R;
+
+                    byte[] table = ctrl.IntToByteArray(info.GetTable(), NxCinemaCtrl.FORMAT_INT8);
+                    byte[] data = ctrl.IntArrayToByteArray(info.GetData(), NxCinemaCtrl.FORMAT_INT24);
+                    byte[] inData = ctrl.AppendByteArray(table, data);
+
+                    if( bValidPort0 ) ctrl.Send( 0x09, cmd + info.GetChannel(), inData );
+                    if( bValidPort1 ) ctrl.Send( 0x89, cmd + info.GetChannel(), inData );
+                }
+            }
+
+            if( mFirstBoot ) {
+                if( bValidPort0 ) ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_INIT, null);
+                if( bValidPort1 ) ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_INIT, null);
+            }
+
+            mFirstBoot = false;
             return null;
         }
 
@@ -286,6 +361,29 @@ public class LoginActivity extends AppCompatActivity {
             CinemaLoading.Hide();
             finish();
         }
+    }
+
+    private String[] CheckFile( String topdir, String regularExpression ) {
+        String[] result = new String[0];
+        File topfolder = new File( topdir );
+        File[] toplist = topfolder.listFiles();
+        if( toplist == null || toplist.length == 0 )
+            return result;
+
+        Pattern pattern = Pattern.compile( regularExpression );
+        for( File file : toplist ) {
+            if( !file.isFile() )
+                continue;
+
+            Matcher matcher = pattern.matcher(file.getName());
+            if( matcher.matches() ) {
+                String[] temp = Arrays.copyOf( result, result.length + 1);
+                temp[result.length] = file.getAbsolutePath();
+                result = temp;
+            }
+        }
+
+        return result;
     }
 
     //

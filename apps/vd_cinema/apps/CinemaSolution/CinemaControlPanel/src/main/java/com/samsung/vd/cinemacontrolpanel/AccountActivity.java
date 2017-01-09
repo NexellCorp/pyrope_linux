@@ -99,6 +99,10 @@ public class AccountActivity extends AppCompatActivity {
             }
         });
 
+        if( !((CinemaInfo)getApplicationContext()).IsEnableExit() ) {
+            titleBar.SetVisibility(VdTitleBar.BTN_EXIT, View.GONE);
+        }
+
         //
         //  Set StatusBar
         //

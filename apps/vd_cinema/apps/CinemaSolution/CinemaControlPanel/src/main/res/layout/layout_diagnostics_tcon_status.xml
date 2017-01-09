@@ -21,10 +21,10 @@
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.2"/>
+            android:layout_weight="0.4"/>
 
         <TextView
-            android:background="@drawable/draw_line_left_top_bottom"
+            android:background="@drawable/draw_line_border"
             android:layout_width="0px"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
@@ -33,41 +33,17 @@
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.3"/>
-
-        <TextView
-            android:background="@drawable/draw_line_border"
-            android:layout_width="0px"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="@string/txt_describe"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:paddingTop="15dp"
-            android:paddingBottom="15dp"
-            android:layout_weight="0.35"/>
-
-        <TextView
-            android:background="@drawable/draw_line_top_right_bottom"
-            android:layout_width="0px"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="@string/txt_detail"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:paddingTop="15dp"
-            android:paddingBottom="15dp"
-            android:layout_weight="0.15"/>
+            android:layout_weight="0.6"/>
     </LinearLayout>
 
     <ListView
-        android:id="@+id/listview_led_open"
+        android:id="@+id/listView_tcon_status"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:footerDividersEnabled="true" />
 
     <TextView
-        android:id="@+id/listview_led_open_text"
+        android:id="@+id/listview_tcon_status_text"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceMedium"
@@ -75,5 +51,4 @@
         android:textStyle="bold"
         android:gravity="center"
         android:paddingTop="15dp" />
-
 </LinearLayout>

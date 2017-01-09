@@ -18,7 +18,8 @@ import java.util.regex.Pattern;
 public class LedQualityInfo {
     private static final String VD_DTAG = "LedQualityInfo";
 
-    public static final String PATH = "DCI";
+    public static final String PATH_SOURCE = "DCI";
+    public static final String PATH_TARGET = "/storage/sdcard0";
     public static final String NAME = "DEMO.txt";
     public static final String PATTERN_DATA = "\\w+\\s*=\\s*\\{\\s*(\\d*)\\s*,\\s*(\\d*)\\s*,\\s*(\\d*)\\s*,\\s*(\\d*)\\s*\\}";
 
@@ -41,7 +42,7 @@ public class LedQualityInfo {
             0x00B9,     // CC_R         CcGain_R
             0x00BA,     // CC_G         CcGain_G
             0x00BB,     // CC_B         CcGain_B
-            0x00BD,     // BC           BcGain
+            0x00DD,     // BC           BcGain
     };
 
     private int[][] mData = new int[4][mRegister.length];
@@ -80,6 +81,10 @@ public class LedQualityInfo {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        Log.i(VD_DTAG, String.format(">>>>> path: %s",
+                filePath)
+        );
 
         return true;
     }

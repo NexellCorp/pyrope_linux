@@ -77,6 +77,12 @@ public class StatusDescribeAdapter extends ArrayAdapter<StatusDescribeInfo> {
         super.remove(object);
     }
 
+    @Override
+    public void clear() {
+        mData.clear();
+        super.clear();
+    }
+
     private class Holder {
         TextView    mTitle;
         TextView    mDescribe;

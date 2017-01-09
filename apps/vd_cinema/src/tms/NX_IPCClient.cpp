@@ -357,8 +357,10 @@ int32_t CNX_IPCClient::TCONCommand( int32_t id, int32_t cmd, uint8_t *pBuf, int3
 {
 	switch ( cmd & 0xFFFF )
 	{
+	case TCON_CMD_INIT:
 	case TCON_CMD_STATUS:
 	case TCON_CMD_DOOR_STATUS:
+	case TCON_CMD_LVDS_STATUS:
 	case TCON_CMD_OPEN_NUM:
 	case TCON_CMD_OPEN_POS:
 	case TCON_CMD_SHORT_NUM:
@@ -556,6 +558,7 @@ int32_t CNX_IPCClient::PFPGACommand( int32_t cmd, uint8_t *pBuf, int32_t *size )
 
 	case PFPGA_CMD_UNIFORMITY_WR :
 	case PFPGA_CMD_UNIFORMITY_DATA :
+	case PFPGA_CMD_MUTE :
 		return PFPGACmdWrite( cmd, pBuf, size );
 
 	case PFPGA_CMD_SOURCE :

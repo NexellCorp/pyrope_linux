@@ -13,8 +13,10 @@ public class NxCinemaCtrl {
     private static final String NX_DTAG = "NxCinemaCtrl";
 
     public static final int CMD_TCON                  = 0x0000;
-    public static final int CMD_TCON_STATUS           = 0x0001;
-    public static final int CMD_TCON_DOOR_STATUS      = 0x0002;
+    public static final int CMD_TCON_INIT             = 0x0001;
+    public static final int CMD_TCON_STATUS           = 0x0002;
+    public static final int CMD_TCON_DOOR_STATUS      = 0x0003;
+    public static final int CMD_TCON_LVDS_STATUS      = 0x0004;
 
     public static final int CMD_TCON_MODE_NORMAL      = 0x0011;
     public static final int CMD_TCON_MODE_LOD         = 0x0012;
@@ -50,6 +52,7 @@ public class NxCinemaCtrl {
     public static final int CMD_PFPGA_UNIFORMITY_WR   = 0x0111;
     public static final int CMD_PFPGA_UNIFORMITY_RD   = 0x0112;
     public static final int CMD_PFPGA_UNIFORMITY_DATA = 0x0113;
+    public static final int CMD_PFPGA_MUTE            = 0x0121;
 
     public static final int CMD_PFPGA_SOURCE          = 0x0102;
     public static final int CMD_PFPGA_VERSION         = 0x0170;

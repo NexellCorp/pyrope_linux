@@ -18,11 +18,16 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTitleBar;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -37,7 +42,8 @@ public class TopActivity extends AppCompatActivity {
     private byte[]  mCabinet;
 
     private Spinner mSpinnerImageQuality;
-    private Button mBtnImageQuality;
+    private Button mBtnUpdateImageQuality;
+    private Button mBtnApplyImageQuality;
 
     private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -49,15 +55,15 @@ public class TopActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
 
-                String[] resultQuality = CheckFileInUsb(LedQualityInfo.PATH, LedQualityInfo.NAME);
-                String[] resultGamma = CheckFileInUsb(LedGammaInfo.PATH, LedGammaInfo.PATTERN_NAME);
+                String[] resultQuality = CheckFileInUsb(LedQualityInfo.PATH_SOURCE, LedQualityInfo.NAME);
+                String[] resultGamma = CheckFileInUsb(LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME);
 
                 if( (resultQuality != null && resultQuality.length != 0) || (resultGamma != null && resultGamma.length != 0) ) {
-                    mBtnImageQuality.setEnabled(true);
+                    mBtnUpdateImageQuality.setEnabled(true);
                 }
             }
             if( intent.getAction().equals(Intent.ACTION_MEDIA_EJECT) ) {
-                mBtnImageQuality.setEnabled(false);
+                mBtnUpdateImageQuality.setEnabled(false);
             }
         }
     };
@@ -107,6 +113,10 @@ public class TopActivity extends AppCompatActivity {
             }
         });
 
+        if( !((CinemaInfo)getApplicationContext()).IsEnableExit() ) {
+            titleBar.SetVisibility(VdTitleBar.BTN_EXIT, View.GONE);
+        }
+
         //
         //  Configuration Status Bar
         //
@@ -130,8 +140,31 @@ public class TopActivity extends AppCompatActivity {
         mSpinnerImageQuality = (Spinner)findViewById(R.id.spinnerImageQuality);
         mSpinnerImageQuality.setAdapter( new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, new String[] { "1", "2", "3", "4"}));
 
-        mBtnImageQuality = (Button)findViewById(R.id.btnImageQuality);
-        mBtnImageQuality.setOnClickListener(new View.OnClickListener() {
+        mBtnUpdateImageQuality = (Button)findViewById(R.id.btnUpdateImageQuality);
+        mBtnUpdateImageQuality.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String[] resultQuality = CheckFileInUsb(LedQualityInfo.PATH_SOURCE, LedQualityInfo.NAME);
+                for( String path : resultQuality ) {
+                    Log.i(VD_DTAG, ">>" + path);
+                    FileCopy(path, LedQualityInfo.PATH_TARGET + "/" + path.substring(path.lastIndexOf("/") + 1));
+                }
+
+                String[] resultGamma = CheckFileInUsb(LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME);
+                for( String path : resultGamma ) {
+                    Log.i(VD_DTAG, ">>" + path);
+                    FileCopy(path, LedGammaInfo.PATH_TARGET + "/" + path.substring(path.lastIndexOf("/") + 1));
+                }
+
+                if( (resultQuality.length != 0) || (resultGamma.length != 0) ) {
+                    ShowMessage( "Update Image Quality File.");
+                    UpdateImageQuality();
+                }
+            }
+        });
+
+        mBtnApplyImageQuality = (Button)findViewById(R.id.btnApplyImageQuality);
+        mBtnApplyImageQuality.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 new AsyncTaskImageQuality().execute();
@@ -204,17 +237,91 @@ public class TopActivity extends AppCompatActivity {
     };
 
     private void UpdateImageQuality() {
-        String[] resultQuality = CheckFileInUsb(LedQualityInfo.PATH, LedQualityInfo.NAME);
-        String[] resultGamma = CheckFileInUsb(LedGammaInfo.PATH, LedGammaInfo.PATTERN_NAME);
-        if( (resultQuality == null || resultQuality.length == 0) && (resultGamma == null || resultGamma.length == 0) )
-            return;
+        String[] usbQuality = CheckFileInUsb(LedQualityInfo.PATH_SOURCE, LedQualityInfo.NAME);
+        String[] usbGamma = CheckFileInUsb(LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME);
+        String[] internalQuality = CheckFile(LedQualityInfo.PATH_TARGET, LedQualityInfo.NAME);
+        String[] internalGamma = CheckFile(LedGammaInfo.PATH_TARGET, LedGammaInfo.PATTERN_NAME);
 
-        mBtnImageQuality.setEnabled(true);
+        if( (usbQuality != null && usbQuality.length != 0) || (usbGamma != null && usbGamma.length != 0) ) {
+            mBtnUpdateImageQuality.setEnabled(true);
+        }
+
+        if( (internalQuality != null && internalQuality.length != 0) || (internalGamma != null && internalGamma.length != 0) ) {
+            mBtnApplyImageQuality.setEnabled(true);
+        }
     }
 
     //
     //
     //
+    public static void FileCopy(String inFile, String outFile) {
+        FileInputStream inStream = null;
+        FileOutputStream outStream = null;
+
+        FileChannel inChannel = null;
+        FileChannel outChannel = null;
+
+        try {
+            inStream = new FileInputStream(inFile);
+            outStream = new FileOutputStream(outFile);
+
+            inChannel = inStream.getChannel();
+            outChannel = outStream.getChannel();
+
+            long size = inChannel.size();
+            inChannel.transferTo(0, size, outChannel);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                outChannel.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            try {
+                inChannel.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            try{
+                outStream.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            try{
+                inStream.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private String[] CheckFile( String topdir, String regularExpression ) {
+        String[] result = new String[0];
+        File topfolder = new File( topdir );
+        File[] toplist = topfolder.listFiles();
+        if( toplist == null || toplist.length == 0 )
+            return result;
+
+        Pattern pattern = Pattern.compile( regularExpression );
+        for( File file : toplist ) {
+            if( !file.isFile() )
+                continue;
+
+            Matcher matcher = pattern.matcher(file.getName());
+            if( matcher.matches() ) {
+                String[] temp = Arrays.copyOf( result, result.length + 1);
+                temp[result.length] = file.getAbsolutePath();
+                result = temp;
+            }
+        }
+
+        return result;
+    }
+
     private String[] CheckFileInUsb( String topdir, String regularExpression ) {
         String[] result = new String[0];
         for( int i = 0; i < 10; i++ ) {
@@ -245,6 +352,9 @@ public class TopActivity extends AppCompatActivity {
 
         @Override
         protected Void doInBackground(Void... voids) {
+            if( mCabinet.length == 0 )
+                return null;
+
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
 
             boolean bValidPort0 = false, bValidPort1 = false;
@@ -253,8 +363,21 @@ public class TopActivity extends AppCompatActivity {
                 if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
             }
 
+            byte[] resultLvds = ctrl.Send( mCabinet[0], NxCinemaCtrl.CMD_TCON_LVDS_STATUS, null );
+            if (resultLvds == null || resultLvds.length == 0 ) {
+                Log.i(VD_DTAG, "LVDS Signal is not valid.");
+                return null;
+            }
+
+            if( resultLvds[0] == (byte)0x00 ) {
+                Log.i(VD_DTAG, "LVDS Signal is not valid.");
+                return null;
+            }
+
+            ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x01} );
+
             String[] result;
-            result = CheckFileInUsb(LedQualityInfo.PATH, LedQualityInfo.NAME);
+            result = CheckFile(LedQualityInfo.PATH_TARGET, LedQualityInfo.NAME);
             for( String file : result ) {
                 LedQualityInfo info = new LedQualityInfo();
                 if( info.Parse( file ) ) {
@@ -265,11 +388,13 @@ public class TopActivity extends AppCompatActivity {
 
                         if( bValidPort0 ) ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_QUALITY, inData);
                         if( bValidPort1 ) ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_QUALITY, inData);
+
+                        Log.i(VD_DTAG, String.format(Locale.US, ">> [%d] reg(0x%02x), data(0x%02x%02x)", mIndexQuality, reg[0], data[0], data[1]));
                     }
                 }
             }
 
-            result = CheckFileInUsb(LedGammaInfo.PATH, LedGammaInfo.PATTERN_NAME);
+            result = CheckFile(LedQualityInfo.PATH_TARGET, LedGammaInfo.PATTERN_NAME);
             for( String file : result ) {
                 LedGammaInfo info = new LedGammaInfo();
                 if( info.Parse( file ) ) {
@@ -287,7 +412,10 @@ public class TopActivity extends AppCompatActivity {
                     if( bValidPort1 ) ctrl.Send( 0x89, cmd + info.GetChannel(), inData );
                 }
             }
+
+            ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x00} );
             return null;
+
         }
 
         @Override
@@ -301,6 +429,19 @@ public class TopActivity extends AppCompatActivity {
             super.onPostExecute(aVoid);
             CinemaLoading.Hide();
         }
+    }
+
+    //
+    //  For Internal Toast Message
+    //
+    private static Toast mToast;
+
+    private void ShowMessage( String strMsg ) {
+        if( mToast == null )
+            mToast = Toast.makeText(getApplicationContext(), null, Toast.LENGTH_SHORT);
+
+        mToast.setText(strMsg);
+        mToast.show();
     }
 
     //

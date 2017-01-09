@@ -17,7 +17,8 @@ import java.util.regex.Pattern;
 public class LedGammaInfo {
     private static final String VD_DTAG = "LedGammaInfo";
 
-    public static final String PATH = "DCI/LUT";
+    public static final String PATH_SOURCE = "DCI/LUT";
+    public static final String PATH_TARGET = "/storage/sdcard0";
     public static final String PATTERN_NAME = "(T|D)GAM(0|1)_(R|G|B).txt";
 
     public static final int TYPE_TARGET     = 0;
@@ -76,7 +77,8 @@ public class LedGammaInfo {
             e.printStackTrace();
         }
 
-        Log.i(VD_DTAG, String.format(">>>>> type: %s(%d), table: %s(%d), channel: %s(%d)",
+        Log.i(VD_DTAG, String.format(">>>>> path: %s, type: %s(%d), table: %s(%d), channel: %s(%d)",
+                filePath,
                 matcher.group(1), mType,
                 matcher.group(2), mTable,
                 matcher.group(3), mChannel)

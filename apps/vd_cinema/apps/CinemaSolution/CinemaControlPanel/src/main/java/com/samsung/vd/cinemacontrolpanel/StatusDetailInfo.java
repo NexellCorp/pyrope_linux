@@ -5,6 +5,7 @@ package com.samsung.vd.cinemacontrolpanel;
  */
 public class StatusDetailInfo {
     private String  mTitle;
+    private int     mSlave = 0x00;
     private int     mStatus = -1;      // -1: unknown, 0: fail, 1: pass
     private String  mDescription = "";
 
@@ -18,12 +19,27 @@ public class StatusDetailInfo {
         mDescription = description;
     }
 
+    public StatusDetailInfo( String title, int slave, int status, String description ) {
+        mTitle = title;
+        mSlave = slave;
+        mStatus = status;
+        mDescription = description;
+    }
+
     public String GetTitle() {
         return mTitle;
     }
 
     public void SetTitle( String title ) {
         mTitle = title;
+    }
+
+    public int GetSlave() {
+        return mSlave;
+    }
+
+    public void SetSlave( int slave ) {
+        mSlave = slave;
     }
 
     public int GetStatus() {

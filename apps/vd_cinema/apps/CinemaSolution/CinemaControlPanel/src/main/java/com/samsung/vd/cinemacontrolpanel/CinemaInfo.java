@@ -51,10 +51,24 @@ public class CinemaInfo extends Application {
         return false;
     }
 
-    public boolean IsDetectTamper() { return true; }
+    public boolean IsDetectTamper() {
+		return true;
+	}
 
     public boolean IsStandAlone() {
         return false;
+    }
+
+    public boolean IsEnableExit() {
+        return false;
+    }
+
+    public boolean IsBootDelay() {
+		return true;
+	}
+
+    public int GetBootDelay() {
+        return 15;
     }
 
     //

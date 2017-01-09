@@ -23,8 +23,10 @@
 //
 //	TCON Command
 //
-#define TCON_CMD_STATUS				0x0001	//	TCON Status
-#define TCON_CMD_DOOR_STATUS		0x0002	//	Door Tamper Status
+#define TCON_CMD_INIT				0x0001	//	TCON Init
+#define TCON_CMD_STATUS				0x0002	//	TCON Status
+#define TCON_CMD_DOOR_STATUS		0x0003	//	Door Tamper Status
+#define TCON_CMD_LVDS_STATUS		0x0004	//	TCON LVDS Status
 
 #define TCON_CMD_MODE_NORMAL		0x0011	//	TCON Normal Mode
 #define TCON_CMD_MODE_LOD			0x0012	//	TCON LOD Mode for LED Open Check
@@ -64,6 +66,8 @@
 #define PFPGA_CMD_UNIFORMITY_WR		0x0111	//	PFPGA Uniformity Enable Write
 #define PFPGA_CMD_UNIFORMITY_RD		0x0112	//	PFPGA Uniformity Enable Read
 #define PFPGA_CMD_UNIFORMITY_DATA	0x0113	//	PFPGA Uniformity Data Write
+
+#define PFPGA_CMD_MUTE				0x0121	//	PFPGA Mute
 
 #define PFPGA_CMD_VERSION			0x0170	//	PFPGA Version
 

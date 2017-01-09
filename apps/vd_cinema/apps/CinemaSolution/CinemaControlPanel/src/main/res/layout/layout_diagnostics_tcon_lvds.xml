@@ -37,8 +37,19 @@
     </LinearLayout>
 
     <ListView
-        android:id="@+id/listView_tcon"
+        android:id="@+id/listView_tcon_lvds"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:footerDividersEnabled="true" />>
+        android:footerDividersEnabled="true" />
+
+    <TextView
+        android:id="@+id/listview_tcon_lvds_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="All is successful."
+        android:textStyle="bold"
+        android:gravity="center"
+        android:paddingTop="15dp" />
+
 </LinearLayout>

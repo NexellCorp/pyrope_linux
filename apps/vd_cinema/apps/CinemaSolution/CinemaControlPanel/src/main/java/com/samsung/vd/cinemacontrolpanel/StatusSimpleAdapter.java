@@ -91,6 +91,12 @@ public class StatusSimpleAdapter extends ArrayAdapter<StatusSimpleInfo> {
         super.remove(object);
     }
 
+    @Override
+    public void clear() {
+        mData.clear();
+        super.clear();
+    }
+
     private class Holder {
         TextView    mTitle;
         RadioButton mRadio1;

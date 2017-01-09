@@ -111,6 +111,10 @@ public class DisplayCheckActivity extends AppCompatActivity {
             }
         });
 
+        if( !((CinemaInfo)getApplicationContext()).IsEnableExit() ) {
+            titleBar.SetVisibility(VdTitleBar.BTN_EXIT, View.GONE);
+        }
+
         //
         // Configuration StatusBar
         //

@@ -74,6 +74,10 @@ public class SystemActivity extends AppCompatActivity {
             }
         });
 
+        if( !((CinemaInfo)getApplicationContext()).IsEnableExit() ) {
+            titleBar.SetVisibility(VdTitleBar.BTN_EXIT, View.GONE);
+        }
+
         //
         //  Configuration StatusBar
         //

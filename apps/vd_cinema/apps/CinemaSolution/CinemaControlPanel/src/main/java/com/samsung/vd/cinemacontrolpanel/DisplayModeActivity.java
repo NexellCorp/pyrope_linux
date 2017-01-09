@@ -36,7 +36,11 @@ import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTitleBar;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
@@ -138,7 +142,8 @@ public class DisplayModeActivity extends AppCompatActivity {
     private Button mBtnUniformityWrite;
 
     private Spinner mSpinnerImageQuality;
-    private Button mBtnImageQuality;
+    private Button mBtnUpdateImageQuality;
+    private Button mBtnApplyImageQuality;
 
     private CheckRunAdapter mAdapterDotCorrect;
 
@@ -190,11 +195,11 @@ public class DisplayModeActivity extends AppCompatActivity {
                     mBtnUniformityWrite.setEnabled(true);
                 }
 
-                String[] resultQuality = CheckFileInUsb(LedQualityInfo.PATH, LedQualityInfo.NAME);
-                String[] resultGamma = CheckFileInUsb(LedGammaInfo.PATH, LedGammaInfo.PATTERN_NAME);
+                String[] resultQuality = CheckFileInUsb(LedQualityInfo.PATH_SOURCE, LedQualityInfo.NAME);
+                String[] resultGamma = CheckFileInUsb(LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME);
 
                 if( (resultQuality != null && resultQuality.length != 0) || (resultGamma != null && resultGamma.length != 0) ) {
-                    mBtnImageQuality.setEnabled(true);
+                    mBtnUpdateImageQuality.setEnabled(true);
                 }
 
                 String[] resultDot = CheckDirectoryInUsb(LedDotCorrectInfo.PATH, LedDotCorrectInfo.PATTERN_DIR);
@@ -208,7 +213,7 @@ public class DisplayModeActivity extends AppCompatActivity {
             }
             if( intent.getAction().equals(Intent.ACTION_MEDIA_EJECT) ) {
                 mBtnUniformityWrite.setEnabled(false);
-                mBtnImageQuality.setEnabled(false);
+                mBtnUpdateImageQuality.setEnabled(false);
                 mBtnDotCorrectCheckAll.setEnabled(false);
                 mBtnDotCorrectUnCheckAll.setEnabled(false);
                 mBtnDotCorrectApply.setEnabled(false);
@@ -271,6 +276,10 @@ public class DisplayModeActivity extends AppCompatActivity {
                 mService.TurnOff();
             }
         });
+
+        if( !((CinemaInfo)getApplicationContext()).IsEnableExit() ) {
+            titleBar.SetVisibility(VdTitleBar.BTN_EXIT, View.GONE);
+        }
 
         //
         //  Configuration StatusBar
@@ -369,8 +378,31 @@ public class DisplayModeActivity extends AppCompatActivity {
         mSpinnerImageQuality = (Spinner)findViewById(R.id.spinnerImageQuality);
         mSpinnerImageQuality.setAdapter( new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, strImageQuality));
 
-        mBtnImageQuality = (Button)findViewById(R.id.btnImageQuality);
-        mBtnImageQuality.setOnClickListener(new View.OnClickListener() {
+        mBtnUpdateImageQuality = (Button)findViewById(R.id.btnUpdateImageQuality);
+        mBtnUpdateImageQuality.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String[] resultQuality = CheckFileInUsb(LedQualityInfo.PATH_SOURCE, LedQualityInfo.NAME);
+                for( String path : resultQuality ) {
+                    Log.i(VD_DTAG, ">>" + path);
+                    FileCopy(path, LedQualityInfo.PATH_TARGET + "/" + path.substring(path.lastIndexOf("/") + 1));
+                }
+
+                String[] resultGamma = CheckFileInUsb(LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME);
+                for( String path : resultGamma ) {
+                    Log.i(VD_DTAG, ">>" + path);
+                    FileCopy(path, LedGammaInfo.PATH_TARGET + "/" + path.substring(path.lastIndexOf("/") + 1));
+                }
+
+                if( (resultQuality.length != 0) || (resultGamma.length != 0) ) {
+                    ShowMessage( "Update Image Quality File.");
+                    UpdateImageQuality();
+                }
+            }
+        });
+
+        mBtnApplyImageQuality = (Button)findViewById(R.id.btnApplyImageQuality);
+        mBtnApplyImageQuality.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 new AsyncTaskImageQuality().execute();
@@ -707,12 +739,21 @@ public class DisplayModeActivity extends AppCompatActivity {
     }
 
     private void UpdateImageQuality() {
-        String[] resultQuality = CheckFileInUsb(LedQualityInfo.PATH, LedQualityInfo.NAME);
-        String[] resultGamma = CheckFileInUsb(LedGammaInfo.PATH, LedGammaInfo.PATTERN_NAME);
-        if( (resultQuality == null || resultQuality.length == 0) && (resultGamma == null || resultGamma.length == 0) )
-            return;
+        //
+        //  Update Button
+        //
+        String[] usbQuality = CheckFileInUsb(LedQualityInfo.PATH_SOURCE, LedQualityInfo.NAME);
+        String[] usbGamma = CheckFileInUsb(LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME);
+        String[] internalQuality = CheckFile(LedQualityInfo.PATH_TARGET, LedQualityInfo.NAME);
+        String[] internalGamma = CheckFile(LedGammaInfo.PATH_TARGET, LedGammaInfo.PATTERN_NAME);
 
-        mBtnImageQuality.setEnabled(true);
+        if( (usbQuality != null && usbQuality.length != 0) || (usbGamma != null && usbGamma.length != 0) ) {
+            mBtnUpdateImageQuality.setEnabled(true);
+        }
+
+        if( (internalQuality != null && internalQuality.length != 0) || (internalGamma != null && internalGamma.length != 0) ) {
+            mBtnApplyImageQuality.setEnabled(true);
+        }
     }
 
     private void UpdateDotCorrection() {
@@ -1098,6 +1139,36 @@ public class DisplayModeActivity extends AppCompatActivity {
     //
     //
     //
+    public static void FileCopy(String inFile, String outFile) {
+        FileInputStream inStream = null;
+        FileOutputStream outStream = null;
+
+        FileChannel inChannel = null;
+        FileChannel outChannel = null;
+
+        try {
+            inStream = new FileInputStream(inFile);
+            outStream = new FileOutputStream(outFile);
+
+            inChannel = inStream.getChannel();
+            outChannel = outStream.getChannel();
+
+            long size = inChannel.size();
+            inChannel.transferTo(0, size, outChannel);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                inChannel.close();
+                outChannel.close();
+                inStream.close();
+                outStream.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     private String[] CheckDirectoryInUsb( String topdir, String regularExpression ) {
         String[] result = new String[0];
         for( int i = 0; i < 10; i++ ) {
@@ -1207,6 +1278,9 @@ public class DisplayModeActivity extends AppCompatActivity {
 
         @Override
         protected Void doInBackground(Void... voids) {
+            if( mCabinet.length == 0 )
+                return null;
+
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
 
             boolean bValidPort0 = false, bValidPort1 = false;
@@ -1215,8 +1289,17 @@ public class DisplayModeActivity extends AppCompatActivity {
                 if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
             }
 
+            byte[] resultLvds = ctrl.Send( mCabinet[0], NxCinemaCtrl.CMD_TCON_LVDS_STATUS, null );
+            if (resultLvds == null || resultLvds.length == 0 )
+                return null;
+
+            if( resultLvds[0] == (byte)0x00 )
+                return null;
+
+            ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x01} );
+
             String[] result;
-            result = CheckFileInUsb(LedQualityInfo.PATH, LedQualityInfo.NAME);
+            result = CheckFile(LedQualityInfo.PATH_TARGET, LedQualityInfo.NAME);
             for( String file : result ) {
                 LedQualityInfo info = new LedQualityInfo();
                 if( info.Parse( file ) ) {
@@ -1231,7 +1314,7 @@ public class DisplayModeActivity extends AppCompatActivity {
                 }
             }
 
-            result = CheckFileInUsb(LedGammaInfo.PATH, LedGammaInfo.PATTERN_NAME);
+            result = CheckFile(LedGammaInfo.PATH_TARGET, LedGammaInfo.PATTERN_NAME);
             for( String file : result ) {
                 LedGammaInfo info = new LedGammaInfo();
                 if( info.Parse( file ) ) {
@@ -1249,6 +1332,8 @@ public class DisplayModeActivity extends AppCompatActivity {
                     if( bValidPort1 ) ctrl.Send( 0x89, cmd + info.GetChannel(), inData );
                 }
             }
+
+            ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x00} );
             return null;
         }
 

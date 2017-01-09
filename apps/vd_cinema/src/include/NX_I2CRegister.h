@@ -21,18 +21,22 @@
 #define __NX_I2CREGISTER_H__
 
 //
+//	TON Initialize
+//
+#define TCON_REG_SCAN_DATA1				0x0122
+#define TCON_REG_SCAN_DATA2				0x0123
+
+//
 //	TCON Status
 //
 #define TCON_REG_CHECK_STATUS			0x0170
-
+#define TCON_REG_LVDS_STATUS			0x0015
 
 //
 //	Cabinet Door
 //
 #define TCON_REG_CHECK_DOOR_READ		0x0171
-#define TCON_VAL_DOOR_OPEN				0x0000
-#define TCON_VAL_DOOR_CLOSE				0x0001
-#define TCON_VAL_DOOR_OPEN_CLOSE		0x0002
+#define TCON_REG_CLOSE_DOOR				0x016F
 
 //
 //	LED Open Check
@@ -248,6 +252,8 @@
 
 #define PFPGA_REG_CHECK_STATUS			0x018E
 #define PFPGA_VAL_CHECK_STATUS			0x03EC
+
+#define PFPGA_REG_MUTE					0x01BF
 
 #define PFPGA_REG_LUT_BURST_SEL			0x0001
 #define PFPGA_REG_NUC_EN				0x01B0

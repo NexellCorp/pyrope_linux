@@ -17,6 +17,8 @@ import java.util.Locale;
  * Created by doriya on 11/14/16.
  */
 public class NetworkTools {
+    private static final String VD_DTAG = "NetworkTools";
+
     private static final String SOCKET_NAME     = "cinema.helper";
 
     private static final String TAG_ETH_NETWORK = "network";
@@ -25,13 +27,13 @@ public class NetworkTools {
     public NetworkTools() {
     }
 
-    public void SetConfig( String ip, String netmask, String gateway, String dns1, String dns2 ) {
+    public void SetConfig( String ip, String netmask, String gateway, String dns1, String dns2, String host ) {
         String cidr = GetCidr( ip, netmask );
 
         try {
             LocalSocket sender = new LocalSocket();
             sender.connect(new LocalSocketAddress(SOCKET_NAME));
-            sender.getOutputStream().write(String.format("%s%s\n%s\n%s\n%s\n%s\n%s\n", TAG_ETH_NETWORK, ip, netmask, gateway, cidr, dns1, dns2).getBytes());
+            sender.getOutputStream().write(String.format("%s%s\n%s\n%s\n%s\n%s\n%s\n%s\n", TAG_ETH_NETWORK, ip, netmask, gateway, cidr, dns1, dns2, host).getBytes());
             sender.getOutputStream().close();
             sender.close();
         } catch (IOException e) {
@@ -113,7 +115,8 @@ public class NetworkTools {
             try {
                 InetAddress inetAddr = InetAddress.getByName(mHost);
                 try {
-                    mResult = inetAddr.isReachable(0);
+                    mResult = inetAddr.isReachable(3000);
+                    Log.i(VD_DTAG, String.format(Locale.US, "Network Reachable( %s ) : %b", mHost, mResult));
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

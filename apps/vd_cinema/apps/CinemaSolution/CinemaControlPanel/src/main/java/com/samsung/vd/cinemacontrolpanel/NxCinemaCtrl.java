@@ -17,6 +17,7 @@ public class NxCinemaCtrl {
     public static final int CMD_TCON_STATUS           = 0x0002;
     public static final int CMD_TCON_DOOR_STATUS      = 0x0003;
     public static final int CMD_TCON_LVDS_STATUS      = 0x0004;
+    public static final int CMD_TCON_BOOTING_STATUS   = 0x0005;
 
     public static final int CMD_TCON_MODE_NORMAL      = 0x0011;
     public static final int CMD_TCON_MODE_LOD         = 0x0012;

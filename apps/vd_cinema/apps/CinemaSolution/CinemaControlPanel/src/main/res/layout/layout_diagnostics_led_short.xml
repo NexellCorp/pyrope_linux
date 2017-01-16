@@ -33,7 +33,7 @@
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.3"/>
+            android:layout_weight="0.4"/>
 
         <TextView
             android:background="@drawable/draw_line_border"
@@ -45,7 +45,7 @@
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.35"/>
+            android:layout_weight="0.25"/>
 
         <TextView
             android:background="@drawable/draw_line_top_right_bottom"

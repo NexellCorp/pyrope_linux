@@ -4,9 +4,13 @@ package com.samsung.vd.cinemacontrolpanel;
  * Created by doriya on 10/31/16.
  */
 public class StatusDetailInfo {
+    public static final int PASS = 1;
+    public static final int FAIL = 0;
+    public static final int ERROR = -1;
+
     private String  mTitle;
     private int     mSlave = 0x00;
-    private int     mStatus = -1;      // -1: unknown, 0: fail, 1: pass
+    private int     mStatus = -1;      // -1: error, 0: fail, 1: pass
     private String  mDescription = "";
 
     public StatusDetailInfo( String title ) {

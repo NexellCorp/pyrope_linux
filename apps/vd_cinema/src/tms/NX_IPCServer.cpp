@@ -75,6 +75,7 @@ private:
 	int32_t TCON_Status( int32_t fd, uint32_t cmd, uint8_t index );
 	int32_t TCON_DoorStatus( int32_t fd, uint32_t cmd, uint8_t index );
 	int32_t TCON_LvdsStatus( int32_t fd, uint32_t cmd, uint8_t index );
+	int32_t TCON_BootingStatus( int32_t fd, uint32_t cmd, uint8_t index );
 	int32_t TCON_LedModeNormal( int32_t fd, uint32_t cmd, uint8_t index );
 	int32_t TCON_LedModeLod( int32_t fd, uint32_t cmd, uint8_t index );
 	int32_t TCON_LedOpenNum( int32_t fd, uint32_t cmd, uint8_t index );
@@ -471,7 +472,6 @@ int32_t CNX_IPCServer::TCON_DoorStatus( int32_t fd, uint32_t cmd, uint8_t index 
 			port, slave, TCON_REG_CLOSE_DOOR, 0 );
 		goto ERROR_TCON;
 	}
-
 #endif
 
 ERROR_TCON:
@@ -512,7 +512,46 @@ int32_t CNX_IPCServer::TCON_LvdsStatus( int32_t fd, uint32_t cmd, uint8_t index 
 	}
 
 	result = (iReadData == 1080 || iReadData == 2160) ? 1 : 0;
+#endif
 
+ERROR_TCON:
+	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+
+	write( fd, m_SendBuf, sendSize );
+	// NX_HexDump( m_SendBuf, sendSize );
+
+	return 0;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_IPCServer::TCON_BootingStatus( int32_t fd, uint32_t cmd, uint8_t index )
+{
+	uint8_t result = 0xFF;
+	int32_t sendSize;
+
+#if FAKE_DATA
+	result = NX_GetRandomValue( 0, 1 );
+#else
+	int32_t port	= (index & 0x80) >> 7;
+	uint8_t slave	= (index & 0x7F);
+
+	CNX_I2C i2c( port );
+	int32_t iReadData = 0x0000;
+
+	if( 0 > i2c.Open() )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port );
+		goto ERROR_TCON;
+	}
+
+	if( 0 > (iReadData = i2c.Read( slave, TCON_REG_LVDS_STATUS )) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
+			port, slave, TCON_REG_LVDS_STATUS );
+		goto ERROR_TCON;
+	}
+
+	result = (iReadData == 0x07E1 ) ? 1 : 0;
 #endif
 
 ERROR_TCON:
@@ -2283,6 +2322,9 @@ int32_t CNX_IPCServer::ProcessCommand( int32_t fd, uint32_t cmd, void *pPayload,
 
 	case TCON_CMD_LVDS_STATUS:
 		return TCON_LvdsStatus( fd, cmd, pData[0] );
+
+	case TCON_CMD_BOOTING_STATUS:
+		return TCON_BootingStatus( fd, cmd, pData[0] );
 
 	case TCON_CMD_MODE_NORMAL:
 		return TCON_LedModeNormal( fd, cmd, pData[0] );

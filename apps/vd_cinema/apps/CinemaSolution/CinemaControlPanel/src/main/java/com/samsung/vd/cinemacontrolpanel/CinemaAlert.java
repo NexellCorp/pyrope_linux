@@ -2,17 +2,10 @@ package com.samsung.vd.cinemacontrolpanel;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.DatePickerDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.view.View;
-import android.widget.EditText;
-
-import java.io.Serializable;
 
 /**
  * Created by doriya on 11/3/16.

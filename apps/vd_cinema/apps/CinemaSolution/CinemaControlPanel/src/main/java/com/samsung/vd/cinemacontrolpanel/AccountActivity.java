@@ -4,10 +4,10 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -77,6 +77,7 @@ public class AccountActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        SetScreenRotation();
         setContentView(R.layout.activity_account);
 
         //
@@ -84,6 +85,13 @@ public class AccountActivity extends AppCompatActivity {
         //
         VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.layoutTitleBar ));
         titleBar.SetTitle( "Cinema LED Display System - Account" );
+        titleBar.SetListener(VdTitleBar.BTN_ROTATE, new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ChangeScreenRotation();
+            }
+        });
+
         titleBar.SetListener(VdTitleBar.BTN_BACK, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -98,6 +106,10 @@ public class AccountActivity extends AppCompatActivity {
                 mService.TurnOff();
             }
         });
+
+        if( !((CinemaInfo)getApplicationContext()).IsEnableRotate() ) {
+            titleBar.SetVisibility(VdTitleBar.BTN_ROTATE, View.GONE);
+        }
 
         if( !((CinemaInfo)getApplicationContext()).IsEnableExit() ) {
             titleBar.SetVisibility(VdTitleBar.BTN_EXIT, View.GONE);
@@ -205,6 +217,54 @@ public class AccountActivity extends AppCompatActivity {
 
         mToast.setText(strMsg);
         mToast.show();
+    }
+
+    //
+    //  For Screen Rotation
+    //
+    private void SetScreenRotation() {
+        String orientation = ((CinemaInfo) getApplicationContext()).GetValue(CinemaInfo.KEY_SCREEN_ROTATE);
+        if( orientation == null ) {
+            orientation = String.valueOf(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        }
+
+        switch( Integer.parseInt(orientation) ) {
+            case ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE:
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                break;
+            case ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE:
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+                break;
+            default:
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                break;
+        }
+    }
+
+    private void ChangeScreenRotation() {
+        String orientation = ((CinemaInfo) getApplicationContext()).GetValue(CinemaInfo.KEY_SCREEN_ROTATE);
+        if( orientation == null ) {
+            orientation = String.valueOf(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        }
+
+        int curRotate;
+        int prvRotate = Integer.parseInt(orientation);
+        switch (prvRotate) {
+            case ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE:
+                curRotate = ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+                break;
+            case ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE:
+                curRotate = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                break;
+            default:
+                curRotate = ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+                break;
+        }
+
+        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_SCREEN_ROTATE, String.valueOf(curRotate));
     }
 
     //

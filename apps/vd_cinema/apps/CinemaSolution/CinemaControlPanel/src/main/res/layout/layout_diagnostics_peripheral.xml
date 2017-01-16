@@ -42,4 +42,63 @@
         android:layout_height="wrap_content"
         android:footerDividersEnabled="true" />
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:gravity="center"
+        android:paddingTop="10dp"
+        android:orientation="vertical"
+        android:weightSum="1">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="* IMB Status : Please connect N.AP to IMB in network cable."
+            android:textStyle=""
+            android:layout_weight="0.1" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="-. Failure case :"
+            android:textStyle=""
+            android:layout_weight="0.1" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="  1. Network cable is not connected."
+            android:textStyle=""
+            android:layout_weight="0.1" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="  2. Network response is invalid. ( wrong IMB Address, wrong network setting. )"
+            android:textStyle=""
+            android:layout_weight="0.1" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="-. Error case :"
+            android:textStyle=""
+            android:layout_weight="0.1" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="  1. IMB address is blank."
+            android:textStyle=""
+            android:layout_weight="0.1" />
+
+    </LinearLayout>
 </LinearLayout>

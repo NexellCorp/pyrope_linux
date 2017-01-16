@@ -1,9 +1,7 @@
 package com.samsung.vd.cinemacontrolpanel;
 
 import android.app.Application;
-import android.content.Context;
 import android.util.Log;
-import android.widget.ListView;
 
 import com.samsung.vd.baseutils.VdPreference;
 
@@ -23,6 +21,7 @@ public class CinemaInfo extends Application {
     public static final String KEY_INPUT_SOURCE     = "input.source";
     public static final String KEY_INPUT_RESOLUTION = "input.resolution";
     public static final String KEY_MASTERING_MODE   = "mastering.mode";
+    public static final String KEY_SCREEN_ROTATE    = "screen.rotate";
 
     public static final int OFFSET_TCON = 16;
 
@@ -61,6 +60,10 @@ public class CinemaInfo extends Application {
 
     public boolean IsEnableExit() {
         return false;
+    }
+
+    public boolean IsEnableRotate() {
+        return true;
     }
 
     public boolean IsBootDelay() {

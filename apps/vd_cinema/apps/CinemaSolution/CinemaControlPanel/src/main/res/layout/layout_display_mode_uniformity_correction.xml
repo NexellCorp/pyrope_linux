@@ -5,17 +5,69 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <Button
-        android:id="@+id/btnUniformityEnable"
-        android:text="Enable"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+    <LinearLayout
+        android:background="#FFE0E0E0"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:gravity="center"
+        android:weightSum="1">
 
-    <Button
-        android:id="@+id/btnUniformityWrite"
-        android:text="Write"
-        android:enabled="false"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        <TextView
+            android:background="@drawable/draw_line_border"
+            android:layout_width="0px"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="Control Panel"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:paddingTop="15dp"
+            android:paddingBottom="15dp"
+            android:layout_weight="1" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:background="@drawable/draw_line_border"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:gravity="center"
+        android:weightSum="1">
+
+        <LinearLayout
+            android:background="@drawable/draw_line_border"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:paddingTop="4dp"
+            android:paddingBottom="3dp"
+            android:layout_weight="0.5">
+            <Button
+                android:id="@+id/btnUniformityEnable"
+                android:text="Enable"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:background="@drawable/draw_line_border"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:paddingTop="4dp"
+            android:paddingBottom="3dp"
+            android:layout_weight="0.5">
+            <Button
+                android:id="@+id/btnUniformityWrite"
+                android:text="Write"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:enabled="false"
+                android:gravity="center" />
+        </LinearLayout>
+    </LinearLayout>
 
 </LinearLayout>

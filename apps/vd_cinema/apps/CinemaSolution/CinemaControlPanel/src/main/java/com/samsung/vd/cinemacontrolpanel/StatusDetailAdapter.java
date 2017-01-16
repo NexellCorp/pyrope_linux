@@ -43,57 +43,69 @@ public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
         final Context context = parent.getContext();
         final int pos = position;
 
-        TextView mTitle;
-        RadioButton mRadio1;
-        RadioButton mRadio2;
-        TextView mDescribe;
-        Button mButton;
-        Holder mHolder;
+        TextView title;
+        RadioButton radio1;
+        RadioButton radio2;
+        RadioButton radio3;
+        TextView describe;
+        Button button;
+        Holder holder;
 
         if( convertView == null ) {
             LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             convertView = inflater.inflate(mResource, parent, false);
 
-            mTitle = (TextView) convertView.findViewById(R.id.listview_row_status_detail_title);
-            mRadio1 = (RadioButton) convertView.findViewById(R.id.listview_row_status_detail_radio1);
-            mRadio2 = (RadioButton) convertView.findViewById(R.id.listview_row_status_detail_radio2);
-            mDescribe = (TextView)convertView.findViewById(R.id.listview_row_status_detail_text);
-            mButton = (Button)convertView.findViewById(R.id.listview_row_status_detail_button);
+            title = (TextView) convertView.findViewById(R.id.listview_row_status_detail_title);
+            radio1 = (RadioButton) convertView.findViewById(R.id.listview_row_status_detail_radio1);
+            radio2 = (RadioButton) convertView.findViewById(R.id.listview_row_status_detail_radio2);
+            radio3 = (RadioButton) convertView.findViewById(R.id.listview_row_status_detail_radio3);
+            describe = (TextView)convertView.findViewById(R.id.listview_row_status_detail_text);
+            button = (Button)convertView.findViewById(R.id.listview_row_status_detail_button);
 
-            mHolder = new Holder();
-            mHolder.mTitle = mTitle;
-            mHolder.mRadio1 = mRadio1;
-            mHolder.mRadio2 = mRadio2;
-            mHolder.mDescribe = mDescribe;
-            mHolder.mButton = mButton;
+            holder = new Holder();
+            holder.mTitle = title;
+            holder.mRadio1 = radio1;
+            holder.mRadio2 = radio2;
+            holder.mRadio3 = radio3;
+            holder.mDescribe = describe;
+            holder.mButton = button;
 
-            convertView.setTag(mHolder);
+            convertView.setTag(holder);
         }
         else {
-            mHolder = (Holder)convertView.getTag();
+            holder = (Holder)convertView.getTag();
 
-            mTitle = mHolder.mTitle;
-            mRadio1 = mHolder.mRadio1;
-            mRadio2 = mHolder.mRadio2;
-            mDescribe = mHolder.mDescribe;
-            mButton = mHolder.mButton;
+            title = holder.mTitle;
+            radio1 = holder.mRadio1;
+            radio2 = holder.mRadio2;
+            radio3 = holder.mRadio3;
+            describe = holder.mDescribe;
+            button = holder.mButton;
         }
 
-        mTitle.setText( mData.get(position).GetTitle() );
-        mDescribe.setText( mData.get(position).GetDescription() );
+        title.setText( mData.get(position).GetTitle() );
+        describe.setText( mData.get(position).GetDescription() );
 
-        if( mData.get(position).GetStatus() == 1 ) {
-            mRadio1.setChecked( true );
-            mRadio2.setChecked( false );
-            mButton.setEnabled( false );
+        if( mData.get(position).GetStatus() == StatusDetailInfo.PASS ) {
+            radio1.setChecked( true );
+            radio2.setChecked( false );
+            radio3.setChecked( false );
+            button.setEnabled( false );
+        }
+        else if( mData.get(position).GetStatus() == StatusDetailInfo.FAIL ) {
+            radio1.setChecked( false );
+            radio2.setChecked( true );
+            radio3.setChecked( false );
+            button.setEnabled( true );
         }
         else {
-            mRadio1.setChecked( false );
-            mRadio2.setChecked( true );
-            mButton.setEnabled( true );
+            radio1.setChecked( false );
+            radio2.setChecked( false );
+            radio3.setChecked( true );
+            button.setEnabled( false );
         }
 
-        mButton.setOnClickListener(new View.OnClickListener() {
+        button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 new AsyncTaskLedPos(context, mData.get(pos).GetSlave(), mType).execute();
@@ -125,6 +137,7 @@ public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
         TextView    mTitle;
         RadioButton mRadio1;
         RadioButton mRadio2;
+        RadioButton mRadio3;
         TextView    mDescribe;
         Button      mButton;
     }

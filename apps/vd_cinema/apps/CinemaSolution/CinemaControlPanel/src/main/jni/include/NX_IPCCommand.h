@@ -27,6 +27,7 @@
 #define TCON_CMD_STATUS				0x0002	//	TCON Status
 #define TCON_CMD_DOOR_STATUS		0x0003	//	Door Tamper Status
 #define TCON_CMD_LVDS_STATUS		0x0004	//	TCON LVDS Status
+#define TCON_CMD_BOOTING_STATUS		0x0005	//	TCON Booting Status --> 0x7E1
 
 #define TCON_CMD_MODE_NORMAL		0x0011	//	TCON Normal Mode
 #define TCON_CMD_MODE_LOD			0x0012	//	TCON LOD Mode for LED Open Check

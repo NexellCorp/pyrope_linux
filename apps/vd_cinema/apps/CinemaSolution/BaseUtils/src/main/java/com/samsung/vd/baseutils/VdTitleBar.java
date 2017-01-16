@@ -13,9 +13,10 @@ import android.widget.TextView;
 public class VdTitleBar implements View.OnClickListener {
     private static final String VD_DTAG = "VdTitleBar";
 
-    public static int BTN_BACK = 0;
-    public static int BTN_EXIT = 1;
-    public static int TXT_TITLE = 2;
+    public static int BTN_ROTATE = 0;
+    public static int BTN_BACK   = 1;
+    public static int BTN_EXIT   = 2;
+    public static int TXT_TITLE  = 3;
 
     private Context mContext;
 
@@ -23,12 +24,14 @@ public class VdTitleBar implements View.OnClickListener {
     private ViewGroup mViewGroup = null;
     private ViewGroup.LayoutParams mViewGroupLayoutParams;
 
+    private ImageButton mBtnRotate;
     private ImageButton mBtnBack;
     private ImageButton mBtnExit;
     private TextView mTextTitle;
 
-    private View.OnClickListener mBackListener  = null;
-    private View.OnClickListener mExitListener  = null;
+    private View.OnClickListener mRotateListener = null;
+    private View.OnClickListener mBackListener   = null;
+    private View.OnClickListener mExitListener   = null;
 
     public VdTitleBar(Context context, ViewGroup viewGroup ) {
         mContext = context;
@@ -38,10 +41,12 @@ public class VdTitleBar implements View.OnClickListener {
 
         LayoutInflater inflater = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         mView       = inflater.inflate(R.layout.vd_title_bar, null);
+        mBtnRotate  = (ImageButton)mView.findViewById( R.id.btnRotate );
         mBtnBack    = (ImageButton)mView.findViewById( R.id.btnBack );
         mBtnExit    = (ImageButton)mView.findViewById( R.id.btnExit );
         mTextTitle  = (TextView)mView.findViewById( R.id.textTitle );
 
+        mBtnRotate.setOnClickListener( this );
         mBtnBack.setOnClickListener( this );
         mBtnExit.setOnClickListener( this );
 
@@ -53,19 +58,25 @@ public class VdTitleBar implements View.OnClickListener {
     }
 
     public void SetListener( int id, View.OnClickListener listener ) {
-        if( id == BTN_BACK )        mBackListener = listener;
-        else if( id == BTN_EXIT )   mExitListener = listener;
+        if( id == BTN_ROTATE )      mRotateListener = listener;
+        else if( id == BTN_BACK )   mBackListener   = listener;
+        else if( id == BTN_EXIT )   mExitListener   = listener;
     }
 
     public void SetVisibility( int id, int visibility ) {
-        if( id == BTN_BACK )        mBtnBack.setVisibility( visibility );
+        if( id == BTN_ROTATE )      mBtnRotate.setVisibility( visibility );
+        else if( id == BTN_BACK )   mBtnBack.setVisibility( visibility );
         else if( id == BTN_EXIT )   mBtnExit.setVisibility( visibility );
         else if( id == TXT_TITLE )  mTextTitle.setVisibility( visibility );
     }
 
     @Override
     public void onClick(View view) {
-        if( ((ImageButton)view).getId() == R.id.btnBack ) {
+        if( ((ImageButton)view).getId() == R.id.btnRotate ) {
+            if( mRotateListener != null )
+                mRotateListener.onClick(view);
+        }
+        else if( ((ImageButton)view).getId() == R.id.btnBack ) {
             if( mBackListener != null )
                 mBackListener.onClick(view);
         }

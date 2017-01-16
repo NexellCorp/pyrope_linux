@@ -22,6 +22,7 @@
             android:name=".InitialActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"
             android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize"
             android:windowSoftInputMode="stateHidden" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -36,48 +37,48 @@
         <activity
             android:name=".LoginActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"
-            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize"
             android:windowSoftInputMode="stateHidden" >
         </activity>
         <activity
             android:name=".TopActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"
-            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize"
             android:windowSoftInputMode="stateHidden" >
         </activity>
         <activity
             android:name=".DiagnosticsActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"
-            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize"
             android:windowSoftInputMode="stateHidden" >
         </activity>
         <activity
             android:name=".DisplayCheckActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"
-            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize"
             android:windowSoftInputMode="stateHidden" >
         </activity>
         <activity
             android:name=".DisplayModeActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"
-            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize"
             android:windowSoftInputMode="stateHidden|adjustPan" >
         </activity>
         <activity
             android:name=".SystemActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"
-            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize"
             android:windowSoftInputMode="stateHidden" >
         </activity>
         <activity
             android:name=".AccountActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"
-            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize"
             android:windowSoftInputMode="stateHidden" >
         </activity>
         <activity
             android:name=".CinemaAlert"
-            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize"
             android:theme="@android:style/Theme.Dialog">
         </activity>
         <service

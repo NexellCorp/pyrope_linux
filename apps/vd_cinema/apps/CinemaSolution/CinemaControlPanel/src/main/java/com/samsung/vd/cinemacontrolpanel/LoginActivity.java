@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.ActivityInfo;
 import android.os.AsyncTask;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
@@ -19,14 +20,12 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.Toast;
-import android.widget.ToggleButton;
 
 import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTitleBar;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -50,7 +49,7 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        SetScreenRotation();
         if( !((CinemaInfo)getApplicationContext()).IsCheckLogin() ) {
             new AsyncTaskCheckCabinet().execute();
             return;
@@ -59,12 +58,20 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(R.layout.activity_login);
 
         //
-        // Configuration Title Bar
+        //  Configuration Title Bar
         //
         VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.layoutTitleBar ));
         titleBar.SetTitle( "Cinema LED Display System - Login" );
+        titleBar.SetListener(VdTitleBar.BTN_ROTATE, new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ChangeScreenRotation();
+            }
+        });
 
-        // For Debugging
+        //
+        //  For Debugging
+        //
         titleBar.SetVisibility(VdTitleBar.BTN_BACK, View.GONE);
         titleBar.SetListener(VdTitleBar.BTN_BACK, new View.OnClickListener() {
             @Override
@@ -81,6 +88,14 @@ public class LoginActivity extends AppCompatActivity {
                 mService.TurnOff();
             }
         });
+
+        if( !((CinemaInfo)getApplicationContext()).IsEnableRotate() ) {
+            titleBar.SetVisibility(VdTitleBar.BTN_ROTATE, View.GONE);
+        }
+
+        if( !((CinemaInfo)getApplicationContext()).IsEnableExit() ) {
+            titleBar.SetVisibility(VdTitleBar.BTN_EXIT, View.GONE);
+        }
 
         //
         //  Configuration Status Bar
@@ -269,23 +284,49 @@ public class LoginActivity extends AppCompatActivity {
                     continue;
 
                 mCinemaInfo.AddCabinet( (byte)i );
-                Log.i(VD_DTAG, String.format(Locale.US, "Cabinet : 0x%02x, port : %d, slave : 0x%02x", (i & 0x7F) - CinemaInfo.OFFSET_TCON, (i & 0x80) >> 7, i & 0x7F ));
+                Log.i(VD_DTAG, String.format(Locale.US, "Add Cabinet ( Cabinet : %d, port : %d, slave : 0x%02x )", (i & 0x7F) - CinemaInfo.OFFSET_TCON, (i & 0x80) >> 7, i & 0x7F ));
+            }
+
+            mCinemaInfo.SortCabinet();
+
+            byte[] cabinet = mCinemaInfo.GetCabinet();
+            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+
+            boolean bValidPort0 = false, bValidPort1 = false;
+            for( byte id : cabinet ) {
+                if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
+                if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
+            }
+
+            //
+            //  Check TCON Booting Status
+            //
+            boolean bTconBooting = true;
+            for( byte id : cabinet ) {
+                byte[] result;
+                result = ctrl.Send(id, NxCinemaCtrl.CMD_TCON_BOOTING_STATUS, null);
+                if (result == null || result.length == 0) {
+                    Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / slave : 0x%02x )", (id & 0x7F) - CinemaInfo.OFFSET_TCON, id));
+                    continue;
+                }
+
+                if( result[0] == 0 ) {
+                    Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x / result : %d )", (id & 0x7F) - CinemaInfo.OFFSET_TCON, id, result[0] ));
+                    bTconBooting = false;
+                }
+            }
+
+            if( !bTconBooting ) {
+                Log.i(VD_DTAG, "Fail, TCON booting.");
+                return null;
             }
 
             //
             //  Image Quality Function for Test
             //
-            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-
-            boolean bValidPort0 = false, bValidPort1 = false;
-            for( byte id : ((CinemaInfo)getApplicationContext()).GetCabinet() ) {
-                if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-                if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-            }
-
-            String[] result;
-            result = CheckFile(LedQualityInfo.PATH_TARGET, LedQualityInfo.NAME);
-            for( String file : result ) {
+            String[] resultPath;
+            resultPath = CheckFile(LedQualityInfo.PATH_TARGET, LedQualityInfo.NAME);
+            for( String file : resultPath ) {
                 LedQualityInfo info = new LedQualityInfo();
                 if( info.Parse( file ) ) {
                     for( int i = 0; i < info.GetRegister().length; i++ ) {
@@ -299,8 +340,11 @@ public class LoginActivity extends AppCompatActivity {
                 }
             }
 
-            result = CheckFile(LedGammaInfo.PATH_TARGET, LedGammaInfo.PATTERN_NAME);
-            for( String file : result ) {
+            //
+            //  Gamma Function for Test
+            //
+            resultPath = CheckFile(LedGammaInfo.PATH_TARGET, LedGammaInfo.PATTERN_NAME);
+            for( String file : resultPath ) {
                 LedGammaInfo info = new LedGammaInfo();
                 if( info.Parse( file ) ) {
                     int cmd;
@@ -323,6 +367,11 @@ public class LoginActivity extends AppCompatActivity {
                 if( bValidPort1 ) ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_INIT, null);
             }
 
+            if( mCinemaInfo.IsStandAlone() ) {
+                if( bValidPort0 ) ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_MULTI, new byte[] {(byte)0x01} );
+                if( bValidPort1 ) ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_MULTI, new byte[] {(byte)0x01} );
+            }
+
             mFirstBoot = false;
             return null;
         }
@@ -338,22 +387,6 @@ public class LoginActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
-
-            mCinemaInfo.SortCabinet();
-
-            CinemaInfo info = (CinemaInfo)getApplicationContext();
-            if( info.IsStandAlone() ) {
-                byte[] cabinet = info.GetCabinet();
-                boolean bValidPort0 = false, bValidPort1 = false;
-                for( byte id : cabinet ) {
-                    if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-                    if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-                }
-
-                NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-                if( bValidPort0 )   ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_MULTI, new byte[] {(byte)0x01} );
-                if( bValidPort1 )   ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_MULTI, new byte[] {(byte)0x01} );
-            }
 
             startActivity( new Intent(getApplicationContext(), TopActivity.class) );
             overridePendingTransition(0, 0);
@@ -397,6 +430,54 @@ public class LoginActivity extends AppCompatActivity {
 
         mToast.setText(strMsg);
         mToast.show();
+    }
+
+    //
+    //  For Screen Rotation
+    //
+    private void SetScreenRotation() {
+        String orientation = ((CinemaInfo) getApplicationContext()).GetValue(CinemaInfo.KEY_SCREEN_ROTATE);
+        if( orientation == null ) {
+            orientation = String.valueOf(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        }
+
+        switch( Integer.parseInt(orientation) ) {
+            case ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE:
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                break;
+            case ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE:
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+                break;
+            default:
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                break;
+        }
+    }
+
+    private void ChangeScreenRotation() {
+        String orientation = ((CinemaInfo) getApplicationContext()).GetValue(CinemaInfo.KEY_SCREEN_ROTATE);
+        if( orientation == null ) {
+            orientation = String.valueOf(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        }
+
+        int curRotate;
+        int prvRotate = Integer.parseInt(orientation);
+        switch (prvRotate) {
+            case ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE:
+                curRotate = ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+                break;
+            case ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE:
+                curRotate = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                break;
+            default:
+                curRotate = ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+                break;
+        }
+
+        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_SCREEN_ROTATE, String.valueOf(curRotate));
     }
 
     //

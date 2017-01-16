@@ -361,6 +361,7 @@ int32_t CNX_IPCClient::TCONCommand( int32_t id, int32_t cmd, uint8_t *pBuf, int3
 	case TCON_CMD_STATUS:
 	case TCON_CMD_DOOR_STATUS:
 	case TCON_CMD_LVDS_STATUS:
+	case TCON_CMD_BOOTING_STATUS:
 	case TCON_CMD_OPEN_NUM:
 	case TCON_CMD_OPEN_POS:
 	case TCON_CMD_SHORT_NUM:

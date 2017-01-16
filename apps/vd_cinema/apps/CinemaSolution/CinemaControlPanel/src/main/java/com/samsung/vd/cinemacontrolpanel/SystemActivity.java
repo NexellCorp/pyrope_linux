@@ -4,14 +4,11 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.ActivityInfo;
 import android.database.Cursor;
-import android.net.LocalSocket;
-import android.net.LocalSocketAddress;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -31,13 +28,9 @@ import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTitleBar;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -58,6 +51,7 @@ public class SystemActivity extends AppCompatActivity {
     @Override
     protected void onCreate( Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        SetScreenRotation();
         setContentView(R.layout.activity_system);
 
         //
@@ -65,6 +59,13 @@ public class SystemActivity extends AppCompatActivity {
         //
         VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.layoutTitleBar ));
         titleBar.SetTitle( "Cinema LED Display System - System" );
+        titleBar.SetListener(VdTitleBar.BTN_ROTATE, new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ChangeScreenRotation();
+            }
+        });
+
         titleBar.SetListener(VdTitleBar.BTN_BACK, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -73,6 +74,10 @@ public class SystemActivity extends AppCompatActivity {
                 finish();
             }
         });
+        
+        if( !((CinemaInfo)getApplicationContext()).IsEnableRotate() ) {
+            titleBar.SetVisibility(VdTitleBar.BTN_ROTATE, View.GONE);
+        }
 
         if( !((CinemaInfo)getApplicationContext()).IsEnableExit() ) {
             titleBar.SetVisibility(VdTitleBar.BTN_EXIT, View.GONE);
@@ -204,8 +209,9 @@ public class SystemActivity extends AppCompatActivity {
         EditText editGateway = (EditText)findViewById(R.id.editDefaultGateway);
         EditText editDns1 = (EditText)findViewById(R.id.editDns1);
         EditText editDns2 = (EditText)findViewById(R.id.editDns2);
+        EditText editImbAddress = (EditText)findViewById(R.id.editImbAddress);
 
-        String strIpAddress, strNetmask, strGateway, strDns1, strDns2;
+        String strIpAddress, strNetmask, strGateway, strDns1, strDns2, strImbAddress;
 
         try {
             BufferedReader inReader = new BufferedReader(new FileReader("/system/bin/nap_network"));
@@ -216,12 +222,14 @@ public class SystemActivity extends AppCompatActivity {
                 inReader.readLine();                // param: network    ( mandatory but auto generate )
                 strDns1 = inReader.readLine();      // param: dns1       ( optional )
                 strDns2 = inReader.readLine();      // param: dns2       ( optional )
+                strImbAddress = inReader.readLine();// param: imb address( optional )
 
                 editIpAddress.setText(strIpAddress);
                 editNetmask.setText(strNetmask);
                 editGateway.setText(strGateway);
                 editDns1.setText((strDns1 != null) ? strDns1 : "");
                 editDns2.setText((strDns2 != null) ? strDns2 : "");
+                editImbAddress.setText((strImbAddress != null) ? strImbAddress : "");
 
                 inReader.close();
 
@@ -239,52 +247,61 @@ public class SystemActivity extends AppCompatActivity {
         EditText editGateway = (EditText)findViewById(R.id.editDefaultGateway);
         EditText editDns1 = (EditText)findViewById(R.id.editDns1);
         EditText editDns2 = (EditText)findViewById(R.id.editDns2);
+        EditText editImbAddress = (EditText)findViewById(R.id.editImbAddress);
 
         String strIp = editIp.getText().toString();
         String strNetmask = editNetmask.getText().toString();
         String strGateway = editGateway.getText().toString();
         String strDns1 = editDns1.getText().toString();
         String strDns2 = editDns2.getText().toString();
+        String strImbAddress = editImbAddress.getText().toString();
 
         //
         //  Check Parameter.
         //
         if( !Patterns.IP_ADDRESS.matcher(strIp).matches() ) {
-            ShowMessage("Please check ip address.");
+            ShowMessage(String.format(Locale.US, "Please check ip address. ( %s )", strIp));
             return ;
         }
 
         if( !Patterns.IP_ADDRESS.matcher(strNetmask).matches() ) {
-            ShowMessage("Please check netmask.");
+            ShowMessage(String.format(Locale.US, "Please check netmask. ( %s )", strNetmask));
             return ;
         }
 
         if( !Patterns.IP_ADDRESS.matcher(strGateway).matches() ) {
-            ShowMessage("Please check gateway.");
+            ShowMessage(String.format(Locale.US, "Please check gateway. ( %s )", strGateway));
             return ;
         }
 
         if( strIp.equals(strGateway) ) {
-            ShowMessage("Please check ip address and gateway." );
+            ShowMessage(String.format(Locale.US, "Please check ip address and gateway. ( ip:%s, gateway:%s )", strIp, strGateway));
             return ;
         }
 
         if( !strDns1.equals("") && !Patterns.IP_ADDRESS.matcher(strDns1).matches() ) {
-            ShowMessage("Please check dns1.");
+            ShowMessage(String.format(Locale.US, "Please check check dns1. ( %s )", strDns1));
             return ;
         }
 
         if( !strDns2.equals("") && !Patterns.IP_ADDRESS.matcher(strDns2).matches() ) {
-            ShowMessage("Please check dns2.");
+            ShowMessage(String.format(Locale.US, "Please check check dns2. ( %s )", strDns2));
             return ;
         }
 
-        NetworkTools tools = new NetworkTools();
-        tools.SetConfig( strIp, strNetmask, strGateway, strDns1, strDns2 );
+        if( !strImbAddress.equals("") && !Patterns.IP_ADDRESS.matcher(strImbAddress).matches() ) {
+            ShowMessage(String.format(Locale.US, "Please check check IMB ip address. ( %s )", strImbAddress));
+            return ;
+        }
 
-        if( tools.Ping( strGateway ) ) ShowMessage( "Valid IP Address.");
-        else ShowMessage("Please Check IP Address. ( Invalid IP Address )");
+        // NetworkTools tools = new NetworkTools();
+        // tools.SetConfig( strIp, strNetmask, strGateway, strDns1, strDns2, strImbAddress );
 
+        // if( tools.Ping( strGateway ) ) ShowMessage( "Valid IP Address.");
+        // else ShowMessage("Please Check IP Address. ( Invalid IP Address )");
+
+        new NetworkTools().SetConfig( strIp, strNetmask, strGateway, strDns1, strDns2, strImbAddress );
+        ShowMessage("Change IP Address.");
         ((CinemaInfo)getApplicationContext()).InsertLog("Change IP Address.");
     }
 
@@ -299,6 +316,54 @@ public class SystemActivity extends AppCompatActivity {
 
         mToast.setText(strMsg);
         mToast.show();
+    }
+
+    //
+    //  For Screen Rotation
+    //
+    private void SetScreenRotation() {
+        String orientation = ((CinemaInfo) getApplicationContext()).GetValue(CinemaInfo.KEY_SCREEN_ROTATE);
+        if( orientation == null ) {
+            orientation = String.valueOf(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        }
+
+        switch( Integer.parseInt(orientation) ) {
+            case ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE:
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                break;
+            case ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE:
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+                break;
+            default:
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                break;
+        }
+    }
+
+    private void ChangeScreenRotation() {
+        String orientation = ((CinemaInfo) getApplicationContext()).GetValue(CinemaInfo.KEY_SCREEN_ROTATE);
+        if( orientation == null ) {
+            orientation = String.valueOf(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        }
+
+        int curRotate;
+        int prvRotate = Integer.parseInt(orientation);
+        switch (prvRotate) {
+            case ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE:
+                curRotate = ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+                break;
+            case ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE:
+                curRotate = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                break;
+            default:
+                curRotate = ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+                break;
+        }
+
+        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_SCREEN_ROTATE, String.valueOf(curRotate));
     }
 
     //

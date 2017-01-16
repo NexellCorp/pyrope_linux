@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.ActivityInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -22,6 +23,9 @@ import android.widget.Toast;
 import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTitleBar;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.Locale;
 
@@ -51,6 +55,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        SetScreenRotation();
         setContentView(R.layout.activity_diagnostics);
 
         //
@@ -58,6 +63,13 @@ public class DiagnosticsActivity extends AppCompatActivity {
         //
         VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.layoutTitleBar ));
         titleBar.SetTitle( "Cinema LED Display System - Diagnostics" );
+        titleBar.SetListener(VdTitleBar.BTN_ROTATE, new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ChangeScreenRotation();
+            }
+        });
+
         titleBar.SetListener(VdTitleBar.BTN_BACK, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -72,6 +84,10 @@ public class DiagnosticsActivity extends AppCompatActivity {
                 mService.TurnOff();
             }
         });
+
+        if( !((CinemaInfo)getApplicationContext()).IsEnableRotate() ) {
+            titleBar.SetVisibility(VdTitleBar.BTN_ROTATE, View.GONE);
+        }
 
         if( !((CinemaInfo)getApplicationContext()).IsEnableExit() ) {
             titleBar.SetVisibility(VdTitleBar.BTN_EXIT, View.GONE);
@@ -325,12 +341,15 @@ public class DiagnosticsActivity extends AppCompatActivity {
         protected Void doInBackground(Void... params) {
             for( byte cabinet : mCabinet ) {
                 byte[] result = NxCinemaCtrl.GetInstance().Send(cabinet, NxCinemaCtrl.CMD_TCON_STATUS, null);
-                if (result == null || result.length == 0)
+                if (result == null || result.length == 0) {
+                    Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / slave : 0x%02x )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet));
+                    publishProgress((cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, -1);
                     continue;
+                }
 
-                if( result[0] == 0x00 ) {
-                    Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet ));
-                    publishProgress( (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, (int)result[0]);
+                if( result[0] != StatusSimpleInfo.PASS ) {
+                    Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x / result : %d )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet, result[0] ));
+                    publishProgress((cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, (int)result[0]);
                 }
             }
             return null;
@@ -376,12 +395,15 @@ public class DiagnosticsActivity extends AppCompatActivity {
         protected Void doInBackground(Void... params) {
             for( byte cabinet : mCabinet ) {
                 byte[] result = NxCinemaCtrl.GetInstance().Send(cabinet, NxCinemaCtrl.CMD_TCON_LVDS_STATUS, null);
-                if (result == null || result.length == 0)
+                if (result == null || result.length == 0) {
+                    Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / slave : 0x%02x )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet));
+                    publishProgress((cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, -1);
                     continue;
+                }
 
-                if( result[0] == 0x00 ) {
-                    Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet ));
-                    publishProgress( (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, (int)result[0]);
+                if( result[0] != StatusSimpleInfo.PASS ) {
+                    Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x / result : %d )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet, result[0] ));
+                    publishProgress((cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, (int)result[0]);
                 }
             }
             return null;
@@ -444,11 +466,11 @@ public class DiagnosticsActivity extends AppCompatActivity {
                 int value = ctrl.ByteArrayToInt16(result, NxCinemaCtrl.FORMAT_INT16);
 
                 if( value == 0xFFFF ) {
-                    Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet ));
+                    Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / slave : 0x%02x )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet ));
                     publishProgress(cabinet & 0xFF, (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, -1);
                 }
                 else if( value != 0 ) {
-                    Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet ));
+                    Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x / result : %d)", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet, value ));
                     publishProgress(cabinet & 0xFF, (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, value);
                 }
             }
@@ -461,7 +483,10 @@ public class DiagnosticsActivity extends AppCompatActivity {
 
         @Override
         protected void onProgressUpdate(Integer... values) {
-            if( values[1] == -1 ) {
+            //
+            //  values[0] : Cabinet ID, values[1] : Slave Address, values[2] : Result
+            //
+            if( 0 > values[2] ) {
                 mAdapter.add(new StatusDetailInfo(String.format(Locale.US, "Cabinet %02d", values[1]), values[0], -1, "-"));
             } else {
                 mAdapter.add(new StatusDetailInfo(String.format(Locale.US, "Cabinet %02d", values[1]), values[0], 0, String.valueOf(values[2])));
@@ -504,12 +529,18 @@ public class DiagnosticsActivity extends AppCompatActivity {
         protected Void doInBackground(Void... params) {
             for( byte cabinet : mCabinet ) {
                 byte[] result = NxCinemaCtrl.GetInstance().Send(cabinet, NxCinemaCtrl.CMD_TCON_DOOR_STATUS, null);
-                if (result == null || result.length == 0)
+                if (result == null || result.length == 0) {
+                    Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / slave : 0x%02x )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet));
+                    publishProgress((cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, -1);
                     continue;
-
-                if( result[0] != 0x01 ) {
-                    Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet ));
-                    publishProgress( (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, (int)result[0]);
+                }
+                if( 0 > result[0] ) {
+                    Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x / result : %d )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet, result[0] ));
+                    publishProgress((cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, StatusSimpleInfo.ERROR);
+                }
+                else if( result[0] == 0 || result[0] == 2 ) {
+                    Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x / result : %d )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet, result[0] ));
+                    publishProgress( (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, StatusSimpleInfo.FAIL );
                 }
             }
             return null;
@@ -558,10 +589,10 @@ public class DiagnosticsActivity extends AppCompatActivity {
             //
             {
                 StatusSimpleInfo info = mAdapter.getItem(0);
-                info.SetStatus(0);
+                info.SetStatus(StatusSimpleInfo.FAIL);
 
                 ((CinemaInfo)getApplicationContext()).SetSecureAlive("false");
-                for( int i = 0; i < 64; i++ ) {
+                for( int i = 0; i < 16; i++ ) {
                     try {
                         Thread.sleep(100);
                     } catch (InterruptedException e) {
@@ -569,7 +600,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
                     }
 
                     if( ((CinemaInfo)getApplicationContext()).GetSecureAlive().equals("true") ) {
-                        info.SetStatus(1);
+                        info.SetStatus(StatusSimpleInfo.PASS);
                         break;
                     }
                 }
@@ -581,21 +612,25 @@ public class DiagnosticsActivity extends AppCompatActivity {
             //  P.FPGA
             //
             {
-                StatusSimpleInfo info = mAdapter.getItem(1);
-                info.SetStatus(0);
-
-                NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
 
-                byte[] result = ctrl.Send(NxCinemaCtrl.CMD_PFPGA_STATUS, null);
-                if (result != null || result.length > 0 ) {
-                    info.SetStatus((int)result[0]);
-                    publishProgress();
+                StatusSimpleInfo info = mAdapter.getItem(1);
+                info.SetStatus(StatusSimpleInfo.ERROR);
+
+                byte[] result = NxCinemaCtrl.GetInstance().Send(NxCinemaCtrl.CMD_PFPGA_STATUS, null);
+                if( result == null || result.length == 0 ) {
+                    Log.i(VD_DTAG,  "Unknown Error.");
+                    info.SetStatus(StatusSimpleInfo.ERROR);
                 }
+                else {
+                    info.SetStatus( result[0] );
+                }
+
+                publishProgress();
             }
 
             //
@@ -605,16 +640,39 @@ public class DiagnosticsActivity extends AppCompatActivity {
                 NetworkTools tools = new NetworkTools();
                 StatusSimpleInfo info = mAdapter.getItem(2);
 
+                String strImbAddress = "";
                 try {
-                    if( tools.GetEthLink().equals("true") && tools.Ping("192.168.10.1") ) {
-                        info.SetStatus(1);
+                    BufferedReader inReader = new BufferedReader(new FileReader("/system/bin/nap_network"));
+                    try {
+                        inReader.readLine();    // param: ip address ( mandatory )
+                        inReader.readLine();    // param: netmask    ( mandatory )
+                        inReader.readLine();    // param: gateway    ( mandatory )
+                        inReader.readLine();    // param: network    ( mandatory but auto generate )
+                        inReader.readLine();    // param: dns1       ( optional )
+                        inReader.readLine();    // param: dns2       ( optional )
+                        strImbAddress = inReader.readLine();// param: imb address( optional )
+                        inReader.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
-                    else
-                    {
-                        info.SetStatus(0);
-                    }
-                } catch (IOException e) {
+                } catch (FileNotFoundException e) {
                     e.printStackTrace();
+                }
+
+                if( strImbAddress != null && !strImbAddress.equals("") ) {
+                    try {
+                        if( tools.GetEthLink().equals("true") && tools.Ping(strImbAddress) ) {
+                            info.SetStatus(StatusSimpleInfo.PASS);
+                        }
+                        else {
+                            info.SetStatus(StatusSimpleInfo.FAIL);
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                else {
+                    info.SetStatus(StatusSimpleInfo.ERROR);
                 }
             }
 
@@ -706,6 +764,54 @@ public class DiagnosticsActivity extends AppCompatActivity {
 
         mToast.setText(strMsg);
         mToast.show();
+    }
+
+    //
+    //  For Screen Rotation
+    //
+    private void SetScreenRotation() {
+        String orientation = ((CinemaInfo) getApplicationContext()).GetValue(CinemaInfo.KEY_SCREEN_ROTATE);
+        if( orientation == null ) {
+            orientation = String.valueOf(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        }
+
+        switch( Integer.parseInt(orientation) ) {
+            case ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE:
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                break;
+            case ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE:
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+                break;
+            default:
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                break;
+        }
+    }
+
+    private void ChangeScreenRotation() {
+        String orientation = ((CinemaInfo) getApplicationContext()).GetValue(CinemaInfo.KEY_SCREEN_ROTATE);
+        if( orientation == null ) {
+            orientation = String.valueOf(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        }
+
+        int curRotate;
+        int prvRotate = Integer.parseInt(orientation);
+        switch (prvRotate) {
+            case ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE:
+                curRotate = ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+                break;
+            case ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE:
+                curRotate = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                break;
+            default:
+                curRotate = ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+                break;
+        }
+
+        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_SCREEN_ROTATE, String.valueOf(curRotate));
     }
 
     //

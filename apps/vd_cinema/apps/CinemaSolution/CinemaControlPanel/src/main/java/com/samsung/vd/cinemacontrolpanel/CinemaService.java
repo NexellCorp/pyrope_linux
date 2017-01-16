@@ -1,7 +1,6 @@
 package com.samsung.vd.cinemacontrolpanel;
 
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 import android.net.LocalServerSocket;
 import android.net.LocalSocket;

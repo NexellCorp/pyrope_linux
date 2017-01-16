@@ -50,6 +50,10 @@ public class CinemaInfo extends Application {
         return false;
     }
 
+    public boolean IsCheckTconBooting() {
+        return true;
+    }
+
     public boolean IsDetectTamper() {
 		return true;
 	}

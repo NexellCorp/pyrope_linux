@@ -39,6 +39,11 @@
 #define TCON_REG_CLOSE_DOOR				0x016F
 
 //
+//	Check Booting
+//
+#define TCON_REG_BOOTING_STATUS			0x0185
+
+//
 //	LED Open Check
 //
 #define TCON_REG_LOD_REMOVAL_EN			0x00E6

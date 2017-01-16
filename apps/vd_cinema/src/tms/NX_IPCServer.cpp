@@ -544,10 +544,10 @@ int32_t CNX_IPCServer::TCON_BootingStatus( int32_t fd, uint32_t cmd, uint8_t ind
 		goto ERROR_TCON;
 	}
 
-	if( 0 > (iReadData = i2c.Read( slave, TCON_REG_LVDS_STATUS )) )
+	if( 0 > (iReadData = i2c.Read( slave, TCON_REG_BOOTING_STATUS )) )
 	{
 		NxDbgMsg( NX_DBG_VBS, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
-			port, slave, TCON_REG_LVDS_STATUS );
+			port, slave, TCON_REG_BOOTING_STATUS );
 		goto ERROR_TCON;
 	}
 

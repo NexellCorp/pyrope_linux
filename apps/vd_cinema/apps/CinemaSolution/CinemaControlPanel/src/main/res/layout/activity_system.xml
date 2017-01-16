@@ -50,6 +50,17 @@
                 </RelativeLayout>
 
                 <RelativeLayout
+                    android:id="@+id/tab_system_wifi"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical">
+                    <include
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        layout="@layout/layout_system_wifi" />
+                </RelativeLayout>
+
+                <RelativeLayout
                     android:id="@+id/tab_system_log"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"

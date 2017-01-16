@@ -1,14 +1,21 @@
 package com.samsung.vd.cinemacontrolpanel;
 
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.ActivityInfo;
 import android.database.Cursor;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -22,6 +29,7 @@ import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TabHost;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.samsung.vd.baseutils.VdStatusBar;
@@ -47,6 +55,61 @@ public class SystemActivity extends AppCompatActivity {
     private EditText mEditSubnetMask;
     private EditText mEditDefaulGateway;
     private StatusDescribeAdapter mAdapterVersion;
+
+    private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String action = intent.getAction();
+            if(action.equals(WifiManager.NETWORK_STATE_CHANGED_ACTION)){
+                NetworkInfo info = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
+                if( info != null && info.isConnected() ) {
+                    Log.i(VD_DTAG, "Connected!");
+
+                    WifiManager wifiManager = (WifiManager)context.getSystemService(Context.WIFI_SERVICE);
+                    WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+
+                    String strWifi;
+                    strWifi = String.format(Locale.US, "%s",
+                            wifiInfo.getSSID() );
+
+//                    strWifi = String.format(Locale.US, "%s : %d.%d.%d.%d",
+//                            wifiInfo.getSSID(),
+//                            wifiInfo.getIpAddress() & 0xFF,
+//                            wifiInfo.getIpAddress() >> 8 & 0xFF,
+//                            wifiInfo.getIpAddress() >> 16 & 0xFF,
+//                            wifiInfo.getIpAddress() >> 24 & 0xFF );
+
+                    TextView textWifi = (TextView)findViewById(R.id.textWifiConfig);
+                    textWifi.setText(strWifi);
+                }
+            }
+        }
+    };
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        //
+        //  This is called after onCreate().
+        //
+        IntentFilter filter = new IntentFilter();
+        filter.addAction( WifiManager.NETWORK_STATE_CHANGED_ACTION );
+        registerReceiver( mBroadcastReceiver, filter );
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        unregisterReceiver( mBroadcastReceiver );
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        Log.i(VD_DTAG, String.format(Locale.US, "requestCode(%d), resultCode(%d)", requestCode, resultCode));
+        UpdateWifi();
+    }
 
     @Override
     protected void onCreate( Bundle savedInstanceState) {
@@ -90,6 +153,23 @@ public class SystemActivity extends AppCompatActivity {
         View listViewFooter = ((LayoutInflater)getApplicationContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE)).inflate(R.layout.listview_footer_blank, null, false);
 
         //
+        //  Wifi Configuration
+        //
+        Button btnWifi = (Button)findViewById(R.id.btnWifiConfig);
+        btnWifi.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(WifiManager.ACTION_PICK_WIFI_NETWORK);
+                intent.putExtra("only_access_points", true);
+                intent.putExtra("extra_prefs_show_button_bar", true);
+                intent.putExtra("wifi_show_menus", true);
+                intent.putExtra("wifi_enable_next_on_connect", true);
+                intent.putExtra("wifi_disable_back", true);
+                startActivityForResult(intent, 1);
+            }
+        });
+
+        //
         //  System Log
         //
         ListView listViewLog = (ListView)findViewById(R.id.listview_system_log);
@@ -121,7 +201,6 @@ public class SystemActivity extends AppCompatActivity {
 
         mAdapterVersion = new StatusDescribeAdapter(this, R.layout.listview_row_status_describe);
         listViewVersion.setAdapter( mAdapterVersion );
-
 
         NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
         byte[] srvVersion = ctrl.Send( NxCinemaCtrl.CMD_IPC_SERVER_VERSION, null );
@@ -171,6 +250,12 @@ public class SystemActivity extends AppCompatActivity {
                 SaveIPAddress();
             }
         });
+
+        //
+        //
+        //
+        mTabHost.getTabWidget().getChildTabViewAt(1).setEnabled(false);
+        ((TextView)mTabHost.getTabWidget().getChildAt(1).findViewById(android.R.id.title)).setTextColor(0xFFDCDCDC);
     }
 
     private void AddTabs() {
@@ -182,16 +267,21 @@ public class SystemActivity extends AppCompatActivity {
         tabSpec0.setContent(R.id.tab_system_ip);
 
         TabHost.TabSpec tabSpec1 = mTabHost.newTabSpec( "TAB1" );
-        tabSpec1.setIndicator("SYSTEM LOG");
-        tabSpec1.setContent(R.id.tab_system_log);
+        tabSpec1.setIndicator("WIFI CONFIG");
+        tabSpec1.setContent(R.id.tab_system_wifi);
 
         TabHost.TabSpec tabSpec2 = mTabHost.newTabSpec( "TAB2" );
-        tabSpec2.setIndicator("SYSTEM VERSION");
-        tabSpec2.setContent(R.id.tab_system_version);
+        tabSpec2.setIndicator("SYSTEM LOG");
+        tabSpec2.setContent(R.id.tab_system_log);
+
+        TabHost.TabSpec tabSpec3 = mTabHost.newTabSpec( "TAB3" );
+        tabSpec3.setIndicator("SYSTEM VERSION");
+        tabSpec3.setContent(R.id.tab_system_version);
 
         mTabHost.addTab(tabSpec0);
         mTabHost.addTab(tabSpec1);
         mTabHost.addTab(tabSpec2);
+        mTabHost.addTab(tabSpec3);
 
         mTabHost.setOnTabChangedListener(mSystemTabChange);
         mTabHost.setCurrentTab(0);
@@ -200,6 +290,7 @@ public class SystemActivity extends AppCompatActivity {
     private TabHost.OnTabChangeListener mSystemTabChange = new TabHost.OnTabChangeListener() {
         @Override
         public void onTabChanged(String tabId) {
+            if( tabId.equals("TAB1") ) UpdateWifi();
         }
     };
 
@@ -303,6 +394,32 @@ public class SystemActivity extends AppCompatActivity {
         new NetworkTools().SetConfig( strIp, strNetmask, strGateway, strDns1, strDns2, strImbAddress );
         ShowMessage("Change IP Address.");
         ((CinemaInfo)getApplicationContext()).InsertLog("Change IP Address.");
+    }
+
+    private void UpdateWifi() {
+        ConnectivityManager connectivityManager = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+        String strWifi = "Not Connected.";
+
+        if( networkInfo != null ) {
+            WifiManager wifiManager = (WifiManager)getSystemService(Context.WIFI_SERVICE);
+            WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+
+            if( networkInfo.isConnected() ) {
+                strWifi = String.format(Locale.US, "%s",
+                        wifiInfo.getSSID() );
+
+//            strWifi = String.format(Locale.US, "%s : %d.%d.%d.%d",
+//                wifiInfo.getSSID(),
+//                wifiInfo.getIpAddress() & 0xFF,
+//                wifiInfo.getIpAddress() >> 8 & 0xFF,
+//                wifiInfo.getIpAddress() >> 16 & 0xFF,
+//                wifiInfo.getIpAddress() >> 24 & 0xFF );
+            }
+        }
+
+        TextView textWifi = (TextView)findViewById(R.id.textWifiConfig);
+        textWifi.setText(strWifi);
     }
 
     //

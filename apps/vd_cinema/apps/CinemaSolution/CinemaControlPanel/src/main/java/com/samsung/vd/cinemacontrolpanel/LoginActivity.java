@@ -25,7 +25,9 @@ import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTitleBar;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -269,6 +271,22 @@ public class LoginActivity extends AppCompatActivity {
                 }
             }
 
+            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+
+            //
+            //  Display Version
+            //
+            byte[] srvVersion = ctrl.Send( NxCinemaCtrl.CMD_IPC_SERVER_VERSION, null );
+            byte[] clnVersion = ctrl.Send( NxCinemaCtrl.CMD_IPC_CLIENT_VERSION, null );
+
+            Date date = new Date( BuildConfig.BUILD_DATE + 3600 * 9 * 1000 );
+
+            Log.i(VD_DTAG, String.format(Locale.US, ">> Debug Information"));
+            Log.i(VD_DTAG, String.format(Locale.US, "- Application: %s", new SimpleDateFormat("HH:mm:ss, MMM dd yyyy ", Locale.US).format(date)));
+            Log.i(VD_DTAG, String.format(Locale.US, "- IPC Server : %s", (srvVersion != null && srvVersion.length != 0) ? new String(srvVersion) : "Unknown"));
+            Log.i(VD_DTAG, String.format(Locale.US, "- IPC Client : %s", (clnVersion != null && clnVersion.length != 0) ? new String(clnVersion) : "Unknown"));
+            Log.i(VD_DTAG, String.format(Locale.US, "- TCON Booting Check : %b", mCinemaInfo.IsCheckTconBooting()));
+
             //
             //  Detection Cabinet
             //
@@ -276,7 +294,7 @@ public class LoginActivity extends AppCompatActivity {
                 if( (i & 0x7F) < 0x10 )
                     continue;
 
-                byte[] result = NxCinemaCtrl.GetInstance().Send(i, NxCinemaCtrl.CMD_TCON_STATUS, null);
+                byte[] result = ctrl.Send(i, NxCinemaCtrl.CMD_TCON_STATUS, null);
                 if (result == null || result.length == 0)
                     continue;
 
@@ -290,7 +308,6 @@ public class LoginActivity extends AppCompatActivity {
             mCinemaInfo.SortCabinet();
 
             byte[] cabinet = mCinemaInfo.GetCabinet();
-            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
 
             boolean bValidPort0 = false, bValidPort1 = false;
             for( byte id : cabinet ) {
@@ -301,24 +318,26 @@ public class LoginActivity extends AppCompatActivity {
             //
             //  Check TCON Booting Status
             //
-            boolean bTconBooting = true;
-            for( byte id : cabinet ) {
-                byte[] result;
-                result = ctrl.Send(id, NxCinemaCtrl.CMD_TCON_BOOTING_STATUS, null);
-                if (result == null || result.length == 0) {
-                    Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / slave : 0x%02x )", (id & 0x7F) - CinemaInfo.OFFSET_TCON, id));
-                    continue;
+            if( mCinemaInfo.IsCheckTconBooting() ) {
+                boolean bTconBooting = true;
+                for( byte id : cabinet ) {
+                    byte[] result;
+                    result = ctrl.Send(id, NxCinemaCtrl.CMD_TCON_BOOTING_STATUS, null);
+                    if (result == null || result.length == 0) {
+                        Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / slave : 0x%02x )", (id & 0x7F) - CinemaInfo.OFFSET_TCON, id));
+                        continue;
+                    }
+
+                    if( result[0] == 0 ) {
+                        Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x / result : %d )", (id & 0x7F) - CinemaInfo.OFFSET_TCON, id, result[0] ));
+                        bTconBooting = false;
+                    }
                 }
 
-                if( result[0] == 0 ) {
-                    Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x / result : %d )", (id & 0x7F) - CinemaInfo.OFFSET_TCON, id, result[0] ));
-                    bTconBooting = false;
+                if( !bTconBooting ) {
+                    Log.i(VD_DTAG, "Fail, TCON booting.");
+                    return null;
                 }
-            }
-
-            if( !bTconBooting ) {
-                Log.i(VD_DTAG, "Fail, TCON booting.");
-                return null;
             }
 
             //

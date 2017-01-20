@@ -109,6 +109,7 @@ CN = Entity and dnQualifier
 #old = Dir.glob( [ "#{rootca_prefix}.*", "#{inter_prefix}.*", "#{leaf_prefix}.*", "#{cert_chain_file}" ] )
 #old.each do |file|
 #	File.delete( file )
+#	`sync`
 #end
 
 
@@ -124,9 +125,13 @@ if File.file?(product_info_file)
 
 		case product_info[0]
 		when "PRODUCT_NAME"
-			product_name = "." + product_info[1].chomp
+			if product_info[1].chomp != ''
+				product_name = "." + product_info[1].chomp
+			end
 		when "PRODUCT_SERIAL"
-			product_serial = "." + product_info[1].chomp
+			if product_info[1].chomp != ''
+				product_serial = "." + product_info[1].chomp
+			end
 		end
 	end
 end
@@ -143,22 +148,51 @@ else
 	require 'securerandom'
 	cert_serial = SecureRandom.hex(8)
 	cert_serial = '0x' + cert_serial
-end	
+end
+
+
+#
+# Check Zero Files
+#
+puts ""
+puts "------------------------------------------------------------\n"
+puts "-                                                          -\n"
+puts "-  Check Files                                             -\n"
+puts "-                                                          -\n"
+puts "------------------------------------------------------------\n"
+
+list = Dir.glob( [ "*" ] )
+list.each do |file|
+	if !file.include?(".cnf") && !file.include?(".csr") && !file.include?(".key") && !file.include?(".pem")
+		next
+	end
+
+	if File.zero?(file)
+		puts "> " + file + " : Unstable file."
+		File.delete( file )
+		`sync`
+	else
+		puts "> " + file + " : OK."
+	end
+end
 
 
 #
 # Check CNF files for Certificate
 #
 if !File.file?(rootca_cnf_file)
-	File.open( rootca_cnf_file, "w" ) { |f| f.write( rootca_cnf ) }	
+	File.open( rootca_cnf_file, "w" ) { |f| f.write( rootca_cnf ) }
+	`sync`
 end
 
 if !File.file?(inter_cnf_file)
 	File.open( inter_cnf_file, 'w' ) { |f| f.write( inter_cnf ) }
+	`sync`
 end
 
 if !File.file?(leaf_cnf_file)
 	File.open( leaf_cnf_file, 'w' ) { |f| f.write( leaf_cnf ) }
+	`sync`
 end
 
 
@@ -174,13 +208,16 @@ if !File.file?(rootca_priv_file) || !File.file?(rootca_cert_file)
 	puts "------------------------------------------------------------\n"
 
 	`openssl genrsa -out "#{rootca_priv_file}" "#{bit_of_key}"`
+	`sync`
+
 	rootca_dnq = `openssl rsa -outform PEM -pubout -in "#{rootca_priv_file}" | openssl base64 -d | dd bs=1 skip=24 2>/dev/null | openssl sha1 -binary | openssl base64`.chomp
 	rootca_dnq = rootca_dnq.gsub( '/', '\/' )
 	rootca_subject = '/O=CA.SAMSUNG.COM/OU=CA.SAMSUNG.COM/CN=.PRODUCT.CA.SAMSUNG.COM/dnQualifier=' + rootca_dnq
-	
+
 	`date "#{product_date}";hwclock -w`
 	cur_date = `date +"%Y%m%d"`.chomp
 	`openssl req -new -x509 -sha256 -config "#{rootca_cnf_file}" -days "#{expire_date}" -set_serial "#{cur_date}" -subj "#{rootca_subject}" -key "#{rootca_priv_file}" -outform PEM -out "#{rootca_cert_file}"`
+	`sync`
 end
 
 # Make Intermediate Certificate
@@ -192,29 +229,21 @@ if !File.file?(inter_priv_file) || !File.file?(inter_cert_file) || !File.file?(i
 	puts "------------------------------------------------------------\n"
 
 	`openssl genrsa -out "#{inter_priv_file}" "#{bit_of_key}"`
+	`sync`
+
 	inter_dnq = `openssl rsa -outform PEM -pubout -in "#{inter_priv_file}" | openssl base64 -d | dd bs=1 skip=24 2>/dev/null | openssl sha1 -binary | openssl base64`.chomp
 	inter_dnq = inter_dnq.gsub( '/', '\/' )
 	inter_subject = "/O=CA.SAMSUNG.COM/OU=CA.SAMSUNG.COM/CN=.LED.PRODUCT.CA.SAMSUNG.COM/dnQualifier=" + inter_dnq
 	`openssl req -new -config "#{inter_cnf_file}" -days "#{expire_date}" -subj "#{inter_subject}" -key "#{inter_priv_file}" -out "#{inter_csr_file}"`
-	
+	`sync`
+
 	`date "#{product_date}";hwclock -w`
 	cur_date = `date +"%Y%m%d"`.chomp
 	`openssl x509 -req -sha256 -days "#{expire_date}" -CA "#{rootca_cert_file}" -CAkey "#{rootca_priv_file}" -set_serial "#{cur_date}" -in "#{inter_csr_file}" -extfile "#{inter_cnf_file}" -extensions v3_ca -out "#{inter_cert_file}"`
+	`sync`
 end
 
 # Make Leaf Certificate
-if File.zero?(leaf_priv_file) || File.zero?(leaf_cert_file) || File.zero?(leaf_csr_file)
-	if File.file?(leaf_priv_file)
-		File.delete( leaf_priv_file )
-	end
-	if File.file?(leaf_cert_file)
-		File.delete( leaf_cert_file )
-	end
-	if File.file?(leaf_csr_file)
-		File.delete( leaf_csr_file )
-	end
-end
-
 if !File.file?(leaf_priv_file) || !File.file?(leaf_cert_file) || !File.file?(leaf_csr_file)
 	puts "------------------------------------------------------------\n"
 	puts "-                                                          -\n"
@@ -223,13 +252,17 @@ if !File.file?(leaf_priv_file) || !File.file?(leaf_cert_file) || !File.file?(lea
 	puts "------------------------------------------------------------\n"
 
 	`openssl genrsa -out "#{leaf_priv_file}" "#{bit_of_key}"`
+	`sync`
+
 	leaf_dnq = `openssl rsa -outform PEM -pubout -in "#{leaf_priv_file}" | openssl base64 -d | dd bs=1 skip=24 2>/dev/null | openssl sha1 -binary | openssl base64`.chomp
 	leaf_dnq = leaf_dnq.gsub( '/', '\/' )
 	leaf_subject = "/O=CA.SAMSUNG.COM/OU=CA.SAMSUNG.COM/CN=PR SPB" + product_serial + product_name + ".LED.PRODUCT.CA.SAMSUNG.COM/dnQualifier=" + leaf_dnq
 	`openssl req -new -config "#{leaf_cnf_file}" -days "#{expire_date}" -subj "#{leaf_subject}" -key "#{leaf_priv_file}" -outform PEM -out "#{leaf_csr_file}"`
-	
+	`sync`
+
 	`date "#{product_date}";hwclock -w`
 	`openssl x509 -req -sha256 -days "#{expire_date}" -CA "#{inter_cert_file}" -CAkey "#{inter_priv_file}" -set_serial "#{cert_serial}" -in "#{leaf_csr_file}" -extfile "#{leaf_cnf_file}" -extensions v3_ca -out "#{leaf_cert_file}"`
+	`sync`
 end
 
 
@@ -248,7 +281,14 @@ puts "------------------------------------------------------------\n"
 # Reomve Certificate Chain
 if File.file?(cert_chain_file)
 	File.delete(cert_chain_file)
+	`sync`
 end
+
+# Show Product Information
+puts "Product Information"
+puts "> name   : " + (product_name == '' ? "none" : product_name[1..-1])
+puts "> serial : " + (product_serial == '' ? "none" : product_serial[1..-1])
+puts ""
 
 # Show Certificate Information
 [ ["Self-singed RootCA Certificate", rootca_cert_file], ["Intermediate Certificate", inter_cert_file], ["Leaf Certificate", leaf_cert_file] ].each do |t|
@@ -258,7 +298,7 @@ end
 	puts "> #{`openssl x509 -noout -issuer -in #{t.last}`}\n"
 end
 
-# Verify Certification
+# Verify Certificate
 puts "> #{`openssl verify -CAfile #{rootca_cert_file} #{rootca_cert_file}`}"
 `cat "#{rootca_cert_file}" >> "#{cert_chain_file}"`
 
@@ -268,4 +308,5 @@ puts "> #{`openssl verify -CAfile "#{cert_chain_file}" "#{inter_cert_file}"`}"
 puts "> #{`openssl verify -CAfile "#{cert_chain_file}" "#{leaf_cert_file}"`}"
 `cat "#{leaf_cert_file}" >> "#{cert_chain_file}"`
 
+`sync`
 puts "\nDONE."

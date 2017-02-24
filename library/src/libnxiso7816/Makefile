@@ -13,9 +13,9 @@ LIBRARY	+= -L$(LIB_INSTALL) -lnxgpio -lnxpwm
 
 ######################################################################
 # Target
-COBJS  	:= 
+COBJS  	:=
 COBJS  	+= nx_iso7816.o
-CPPOBJS	:=  
+CPPOBJS	:=
 
 LIBNAME	:= libnxiso7816
 TARGET  := $(LIBNAME).so

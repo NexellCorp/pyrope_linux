@@ -2,34 +2,34 @@ ifndef	JOBS
 JOBJS	:= 8
 endif
 
-DIR		:= 
+DIR		:=
 ######################################################################
 # Build options
 
 # Multi Media Libraries
-DIR += libion
-DIR += libnxmalloc
-DIR += libnxv4l2
-DIR += libhevc
-DIR += libnxvpu
-DIR += libnxjpeg
-DIR += libnxdeinterlace
+#DIR += libion
+#DIR += libnxmalloc
+#DIR += libnxv4l2
+#DIR += libhevc
+#DIR += libnxvpu
+#DIR += libnxjpeg
+#DIR += libnxdeinterlace
 
 # Graphic library
-DIR += libnxscaler
-DIR += libnxgraphictools
+#DIR += libnxscaler
+#DIR += libnxgraphictools
 
 # I/O Wrapper
-DIR += libcec
-DIR += libnxadc
+#DIR += libcec
+#DIR += libnxadc
 DIR += libnxgpio
-DIR += libnxaudio
+#DIR += libnxaudio
 DIR += libnxpwm
 DIR += libnxiso7816
 
 # Etc Libraries
-DIR += libnxuevent
-DIR += libnxnmeaparser
+#DIR += libnxuevent
+#DIR += libnxnmeaparser
 
 ######################################################################
 # Build

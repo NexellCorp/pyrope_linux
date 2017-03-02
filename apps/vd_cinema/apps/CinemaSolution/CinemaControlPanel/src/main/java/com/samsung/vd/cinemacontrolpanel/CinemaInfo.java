@@ -54,6 +54,10 @@ public class CinemaInfo extends Application {
         return true;
     }
 
+    public boolean IsCheckTconLvds() {
+        return true;
+    }
+
     public boolean IsDetectTamper() {
 		return true;
 	}

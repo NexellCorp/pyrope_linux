@@ -50,19 +50,28 @@
                     android:layout_weight="0.5" />
 
                 <TextView
+                    android:id="@+id/textPathConfigPfpga"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:text="-. Image Quality Path : [USB_TOP]/DCI/DEMO.txt"
                     android:paddingLeft="40dp"
                     android:textStyle=""
                     android:layout_weight="0.5" />
 
                 <TextView
+                    android:id="@+id/textPathConfigTcon"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:text="-. Gamma Path : [USB_TOP]/DCI/LUT/(T|D)GAM(0|1)_(R|G|B).txt"
+                    android:paddingLeft="40dp"
+                    android:textStyle=""
+                    android:layout_weight="0.5" />
+
+                <TextView
+                    android:id="@+id/textPathGamma"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
                     android:paddingLeft="40dp"
                     android:paddingBottom="10dp"
                     android:textStyle=""

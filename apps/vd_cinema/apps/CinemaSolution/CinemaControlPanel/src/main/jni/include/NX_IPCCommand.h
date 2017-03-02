@@ -49,6 +49,7 @@
 #define TCON_CMD_DGAM_G				0x0038
 #define TCON_CMD_DGAM_B				0x0039
 #define TCON_CMD_DOT_CORRECTION		0x0040
+#define TCON_CMD_WRITE_CONFIG		0x0041	//	TCON Write Config Data
 
 #define TCON_CMD_ELAPSED_TIME		0x0051	//	LED Elapsed Time
 #define TCON_CMD_ACCUMULATE_TIME	0x0052	//	Total LED Accumulate Time
@@ -57,6 +58,7 @@
 
 #define TCON_CMD_VERSION			0x0070	//	TCON Version
 #define TCON_CMD_MULTI				0x00FF	//	TCON Multi Mode
+
 
 //
 //	PFPGA Command
@@ -67,6 +69,7 @@
 #define PFPGA_CMD_UNIFORMITY_WR		0x0111	//	PFPGA Uniformity Enable Write
 #define PFPGA_CMD_UNIFORMITY_RD		0x0112	//	PFPGA Uniformity Enable Read
 #define PFPGA_CMD_UNIFORMITY_DATA	0x0113	//	PFPGA Uniformity Data Write
+#define PFPGA_CMD_WRITE_CONFIG		0x0114	//	PFPGA Write Config Data
 
 #define PFPGA_CMD_MUTE				0x0121	//	PFPGA Mute
 

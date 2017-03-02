@@ -18,6 +18,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.samsung.vd.baseutils.VdStatusBar;
@@ -37,7 +38,7 @@ import java.util.regex.Pattern;
  * Created by doriya on 8/17/16.
  */
 public class TopActivity extends AppCompatActivity {
-    private final String VD_DTAG = "DiagnosticsActivity";
+    private final String VD_DTAG = "TopActivity";
 
     private byte[]  mCabinet;
 
@@ -55,10 +56,13 @@ public class TopActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
 
-                String[] resultQuality = CheckFileInUsb(LedQualityInfo.PATH_SOURCE, LedQualityInfo.NAME);
-                String[] resultGamma = CheckFileInUsb(LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME);
+                String[] resultPfpga = FileManager.CheckFileInUsb(ConfigPfpgaInfo.PATH_SOURCE, ConfigPfpgaInfo.NAME);
+                String[] resultTcon = FileManager.CheckFileInUsb(ConfigTconInfo.PATH_SOURCE, ConfigTconInfo.NAME);
+                String[] resultGamma = FileManager.CheckFileInUsb(LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME);
 
-                if( (resultQuality != null && resultQuality.length != 0) || (resultGamma != null && resultGamma.length != 0) ) {
+                if( (resultPfpga != null && resultPfpga.length != 0) ||
+                    (resultTcon != null && resultTcon.length != 0) ||
+                    (resultGamma != null && resultGamma.length != 0) ) {
                     mBtnUpdateImageQuality.setEnabled(true);
                 }
             }
@@ -149,6 +153,20 @@ public class TopActivity extends AppCompatActivity {
             CinemaAlert.Show( TopActivity.this, "Alert",  strMessage );
         }
 
+        //
+        //
+        //
+        TextView textPathConfigPfpga = (TextView)findViewById(R.id.textPathConfigPfpga);
+        TextView textPathConfigTcon = (TextView)findViewById(R.id.textPathConfigTcon);
+        TextView textPathGamma = (TextView)findViewById(R.id.textPathGamma);
+
+        textPathConfigPfpga.setText("-. PFPGA Config Path : [USB_TOP]/" + ConfigPfpgaInfo.PATH_SOURCE + "/" + ConfigPfpgaInfo.NAME);
+        textPathConfigTcon.setText("-. TCON Config Path : [USB_TOP]/" + ConfigTconInfo.PATH_SOURCE + "/" + ConfigTconInfo.NAME);
+        textPathGamma.setText("-. Gamma Path : [USB_TOP]/" + LedGammaInfo.PATH_SOURCE + "/" + LedGammaInfo.PATTERN_NAME);
+
+        //
+        //
+        //
         mSpinnerImageQuality = (Spinner)findViewById(R.id.spinnerImageQuality);
         mSpinnerImageQuality.setAdapter( new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, new String[] { "1", "2", "3", "4"}));
 
@@ -156,16 +174,16 @@ public class TopActivity extends AppCompatActivity {
         mBtnUpdateImageQuality.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String[] resultQuality = CheckFileInUsb(LedQualityInfo.PATH_SOURCE, LedQualityInfo.NAME);
+                String[] resultQuality = FileManager.CheckFileInUsb(ConfigTconInfo.PATH_SOURCE, ConfigTconInfo.NAME);
                 for( String path : resultQuality ) {
                     Log.i(VD_DTAG, ">>" + path);
-                    FileCopy(path, LedQualityInfo.PATH_TARGET + "/" + path.substring(path.lastIndexOf("/") + 1));
+                    FileManager.CopyFile(path, ConfigTconInfo.PATH_TARGET + "/" + path.substring(path.lastIndexOf("/") + 1));
                 }
 
-                String[] resultGamma = CheckFileInUsb(LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME);
+                String[] resultGamma = FileManager.CheckFileInUsb(LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME);
                 for( String path : resultGamma ) {
                     Log.i(VD_DTAG, ">>" + path);
-                    FileCopy(path, LedGammaInfo.PATH_TARGET + "/" + path.substring(path.lastIndexOf("/") + 1));
+                    FileManager.CopyFile(path, LedGammaInfo.PATH_TARGET + "/" + path.substring(path.lastIndexOf("/") + 1));
                 }
 
                 if( (resultQuality.length != 0) || (resultGamma.length != 0) ) {
@@ -249,111 +267,24 @@ public class TopActivity extends AppCompatActivity {
     };
 
     private void UpdateImageQuality() {
-        String[] usbQuality = CheckFileInUsb(LedQualityInfo.PATH_SOURCE, LedQualityInfo.NAME);
-        String[] usbGamma = CheckFileInUsb(LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME);
-        String[] internalQuality = CheckFile(LedQualityInfo.PATH_TARGET, LedQualityInfo.NAME);
-        String[] internalGamma = CheckFile(LedGammaInfo.PATH_TARGET, LedGammaInfo.PATTERN_NAME);
+        String[] usbPfpga = FileManager.CheckFileInUsb(ConfigPfpgaInfo.PATH_SOURCE, ConfigPfpgaInfo.NAME);
+        String[] usbTcon = FileManager.CheckFileInUsb(ConfigTconInfo.PATH_SOURCE, ConfigTconInfo.NAME);
+        String[] usbGamma = FileManager.CheckFileInUsb(LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME);
+        String[] internalPfpga = FileManager.CheckFile(ConfigPfpgaInfo.PATH_TARGET, ConfigPfpgaInfo.NAME);
+        String[] internalTcon = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET, ConfigTconInfo.NAME);
+        String[] internalGamma = FileManager.CheckFile(LedGammaInfo.PATH_TARGET, LedGammaInfo.PATTERN_NAME);
 
-        if( (usbQuality != null && usbQuality.length != 0) || (usbGamma != null && usbGamma.length != 0) ) {
+        if( (usbPfpga != null && usbPfpga.length != 0) ||
+            (usbTcon != null && usbTcon.length != 0) ||
+            (usbGamma != null && usbGamma.length != 0) ) {
             mBtnUpdateImageQuality.setEnabled(true);
         }
 
-        if( (internalQuality != null && internalQuality.length != 0) || (internalGamma != null && internalGamma.length != 0) ) {
+        if( (internalPfpga != null && internalPfpga.length != 0) ||
+            (internalTcon != null && internalTcon.length != 0) ||
+            (internalGamma != null && internalGamma.length != 0) ) {
             mBtnApplyImageQuality.setEnabled(true);
         }
-    }
-
-    //
-    //
-    //
-    public void FileCopy(String inFile, String outFile) {
-        if( !new File(inFile).exists() ) {
-            Log.i(VD_DTAG, String.format(Locale.US, "Fail, Invalid File. ( %s )", inFile));
-            return;
-        }
-
-        FileInputStream inStream;
-        FileOutputStream outStream = null;
-
-        FileChannel inChannel = null;
-        FileChannel outChannel = null;
-
-        try {
-            inStream = new FileInputStream(inFile);
-            outStream = new FileOutputStream(outFile);
-
-            inChannel = inStream.getChannel();
-            outChannel = outStream.getChannel();
-
-            long size = inChannel.size();
-            inChannel.transferTo(0, size, outChannel);
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if( outChannel != null ) outChannel.close();
-                if( inChannel != null ) inChannel.close();
-                if( outStream != null ) outStream.close();
-                if( inChannel != null ) inChannel.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    public void FileDelete(String inFile) {
-        File file = new File(inFile);
-        if( !file.delete() ) {
-            Log.i(VD_DTAG, String.format(Locale.US, "Fail, Delete File. ( %s )", inFile));
-        }
-    }
-
-    private String[] CheckFile( String topdir, String regularExpression ) {
-        String[] result = new String[0];
-        File topfolder = new File( topdir );
-        File[] toplist = topfolder.listFiles();
-        if( toplist == null || toplist.length == 0 )
-            return result;
-
-        Pattern pattern = Pattern.compile( regularExpression );
-        for( File file : toplist ) {
-            if( !file.isFile() )
-                continue;
-
-            Matcher matcher = pattern.matcher(file.getName());
-            if( matcher.matches() ) {
-                String[] temp = Arrays.copyOf( result, result.length + 1);
-                temp[result.length] = file.getAbsolutePath();
-                result = temp;
-            }
-        }
-
-        return result;
-    }
-
-    private String[] CheckFileInUsb( String topdir, String regularExpression ) {
-        String[] result = new String[0];
-        for( int i = 0; i < 10; i++ ) {
-            File topfolder = new File( String.format(Locale.US, "/storage/usbdisk%d/%s", i, topdir) );
-            File[] toplist = topfolder.listFiles();
-            if( toplist == null || toplist.length == 0 )
-                continue;
-
-            Pattern pattern = Pattern.compile( regularExpression );
-            for( File file : toplist ) {
-                if( !file.isFile() )
-                    continue;
-
-                Matcher matcher = pattern.matcher(file.getName());
-                if( matcher.matches() ) {
-                    String[] temp = Arrays.copyOf( result, result.length + 1);
-                    temp[result.length] = file.getAbsolutePath();
-                    result = temp;
-                }
-            }
-        }
-
-        return result;
     }
 
     private class AsyncTaskImageQuality extends AsyncTask<Void, Void, Void> {
@@ -372,41 +303,62 @@ public class TopActivity extends AppCompatActivity {
                 if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
             }
 
-            byte[] resultLvds = ctrl.Send( mCabinet[0], NxCinemaCtrl.CMD_TCON_LVDS_STATUS, null );
-            if (resultLvds == null || resultLvds.length == 0 ) {
-                Log.i(VD_DTAG, "LVDS Signal is not valid.");
-                return null;
-            }
-
-            if( resultLvds[0] == (byte)0x00 ) {
-                Log.i(VD_DTAG, "LVDS Signal is not valid.");
-                return null;
+            if( ((CinemaInfo)getApplicationContext()).IsCheckTconLvds() ) {
+                byte[] resultLvds = ctrl.Send( mCabinet[0], NxCinemaCtrl.CMD_TCON_LVDS_STATUS, null );
+                if (resultLvds == null || resultLvds.length == 0 || resultLvds[0] == (byte)0x00 ) {
+                    Log.i(VD_DTAG, "Fail, TCON LVDS is not valid.");
+                    return null;
+                }
             }
 
             ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x01} );
 
             String[] result;
-            result = CheckFile(LedQualityInfo.PATH_TARGET, LedQualityInfo.NAME);
+            boolean[] gammaEnable = {false, };
+
+            result = FileManager.CheckFile(ConfigPfpgaInfo.PATH_TARGET, ConfigPfpgaInfo.NAME);
             for( String file : result ) {
-                LedQualityInfo info = new LedQualityInfo();
+                ConfigPfpgaInfo info = new ConfigPfpgaInfo();
                 if( info.Parse( file ) ) {
-                    for( int i = 0; i < info.GetRegister().length; i++ ) {
-                        byte[] reg = ctrl.IntToByteArray(info.GetRegister()[i], NxCinemaCtrl.FORMAT_INT8);
+                    for( int i = 0; i < info.GetRegister(mIndexQuality).length; i++ ) {
+                        byte[] reg = ctrl.IntToByteArray(info.GetRegister(mIndexQuality)[i], NxCinemaCtrl.FORMAT_INT8);
                         byte[] data = ctrl.IntToByteArray(info.GetData(mIndexQuality)[i], NxCinemaCtrl.FORMAT_INT16);
                         byte[] inData = ctrl.AppendByteArray(reg, data);
 
-                        if( bValidPort0 ) ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_QUALITY, inData);
-                        if( bValidPort1 ) ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_QUALITY, inData);
-
-                        Log.i(VD_DTAG, String.format(Locale.US, ">> [%d] reg(0x%02x), data(0x%02x%02x)", mIndexQuality, reg[0], data[0], data[1]));
+                        ctrl.Send( NxCinemaCtrl.CMD_PFPGA_WRITE_CONFIG, inData );
                     }
                 }
             }
 
-            result = CheckFile(LedQualityInfo.PATH_TARGET, LedGammaInfo.PATTERN_NAME);
+            result = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET, ConfigTconInfo.NAME);
+            for( String file : result ) {
+                ConfigTconInfo info = new ConfigTconInfo();
+                if( info.Parse( file ) ) {
+                    gammaEnable = info.GetEnableUpdateGamma(mIndexQuality);
+
+                    for( int i = 0; i < info.GetRegister(mIndexQuality).length; i++ ) {
+                        byte[] reg = ctrl.IntToByteArray(info.GetRegister(mIndexQuality)[i], NxCinemaCtrl.FORMAT_INT8);
+                        byte[] data = ctrl.IntToByteArray(info.GetData(mIndexQuality)[i], NxCinemaCtrl.FORMAT_INT16);
+                        byte[] inData = ctrl.AppendByteArray(reg, data);
+
+                        if( bValidPort0 ) ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_WRITE_CONFIG, inData);
+                        if( bValidPort1 ) ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_WRITE_CONFIG, inData);
+                    }
+                }
+            }
+
+            result = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET, LedGammaInfo.PATTERN_NAME);
             for( String file : result ) {
                 LedGammaInfo info = new LedGammaInfo();
                 if( info.Parse( file ) ) {
+                    if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !gammaEnable[0]) ||
+                        (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && !gammaEnable[1]) ||
+                        (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !gammaEnable[2]) ||
+                        (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && !gammaEnable[3]) ) {
+                        Log.i(VD_DTAG, String.format( "Skip. Update Gamma. ( %s )", file ));
+                        continue;
+                    }
+
                     int cmd;
                     if( info.GetType() == LedGammaInfo.TYPE_TARGET )
                         cmd = NxCinemaCtrl.CMD_TCON_TGAM_R;

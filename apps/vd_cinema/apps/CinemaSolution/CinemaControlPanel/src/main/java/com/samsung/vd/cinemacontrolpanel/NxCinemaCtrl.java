@@ -39,6 +39,7 @@ public class NxCinemaCtrl {
     public static final int CMD_TCON_DGAM_G           = 0x0038;
     public static final int CMD_TCON_DGAM_B           = 0x0039;
     public static final int CMD_TCON_DOT_CORRECTION   = 0x0040;
+    public static final int CMD_TCON_WRITE_CONFIG     = 0x0041;
 
     public static final int CMD_TCON_ELAPSED_TIME     = 0x0051;
     public static final int CMD_TCON_ACCUMULATE_TIME  = 0x0052;
@@ -53,6 +54,7 @@ public class NxCinemaCtrl {
     public static final int CMD_PFPGA_UNIFORMITY_WR   = 0x0111;
     public static final int CMD_PFPGA_UNIFORMITY_RD   = 0x0112;
     public static final int CMD_PFPGA_UNIFORMITY_DATA = 0x0113;
+    public static final int CMD_PFPGA_WRITE_CONFIG    = 0x0114;
     public static final int CMD_PFPGA_MUTE            = 0x0121;
 
     public static final int CMD_PFPGA_SOURCE          = 0x0102;

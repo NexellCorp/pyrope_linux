@@ -89,6 +89,7 @@ private:
 	int32_t	TCON_TargetGamma( int32_t fd, uint32_t cmd, uint32_t index, uint8_t *data, int32_t size );
 	int32_t	TCON_DeviceGamma( int32_t fd, uint32_t cmd, uint32_t index, uint8_t *data, int32_t size );
 	int32_t TCON_DotCorrection( int32_t fd, uint32_t cmd, uint32_t index, uint8_t *data, int32_t size );
+	int32_t TCON_WriteConfig( int32_t fd, uint32_t cmd, uint8_t index, uint8_t reg, uint8_t msb, uint8_t lsb );
 	int32_t TCON_InputSource( int32_t fd, uint32_t cmd, uint32_t index, uint8_t resolIndex, uint8_t srcIndex );
 	int32_t TCON_OptionalData( int32_t fd, uint32_t cmd, uint8_t index, uint8_t module );
 	int32_t TCON_Multi( int32_t fd, uint32_t cmd, uint8_t index, uint8_t data );
@@ -99,6 +100,7 @@ private:
 	int32_t PFPGA_UniformityEnableRead( int32_t fd );
 	int32_t PFPGA_UniformityEnableWrite( int32_t fd, uint8_t data );
 	int32_t PFPGA_UniformityData( int32_t fd, uint8_t *data, int32_t size );
+	int32_t PFPGA_WriteConfig( int32_t fd, uint8_t reg, uint8_t msb, uint8_t lsb );
 	int32_t PFPGA_Source( int32_t fd, uint8_t *index );
 	int32_t PFPGA_Version( int32_t fd) ;
 
@@ -1766,6 +1768,43 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
+int32_t CNX_IPCServer::TCON_WriteConfig( int32_t fd, uint32_t cmd, uint8_t index, uint8_t reg, uint8_t msb, uint8_t lsb )
+{
+	int32_t sendSize;
+
+	int32_t port	= (index & 0x80) >> 7;
+	uint8_t slave	= (index & 0x7F);
+
+	int16_t inValue = ((int16_t)(msb << 8) & 0xFF00) + (int16_t)lsb;
+
+	CNX_I2C i2c( port );
+
+	if( 0 > i2c.Open() )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port );
+		goto ERROR_TCON;
+	}
+
+	if( 0 > i2c.Write( slave, reg, inValue ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, reg, inValue );
+		goto ERROR_TCON;
+	}
+
+	NxDbgMsg( NX_DBG_INFO, "Write Data. ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, reg, inValue );
+
+ERROR_TCON:
+	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
+
+	write( fd, m_SendBuf, sendSize );
+	// NX_HexDump( m_SendBuf, sendSize );
+
+	return 0;
+}
+
+//------------------------------------------------------------------------------
 int32_t CNX_IPCServer::TCON_InputSource( int32_t fd, uint32_t cmd, uint32_t index, uint8_t resolIndex, uint8_t srcIndex )
 {
 	int32_t sendSize;
@@ -2191,6 +2230,43 @@ ERROR_PFPGA:
 }
 
 //------------------------------------------------------------------------------
+int32_t CNX_IPCServer::PFPGA_WriteConfig( int32_t fd, uint8_t reg, uint8_t msb, uint8_t lsb )
+{
+	int32_t sendSize;
+
+	int32_t port	= PFPGA_I2C_PORT;
+	uint8_t slave	= PFPGA_I2C_SLAVE;
+
+	int16_t inValue = ((int16_t)(msb << 8) & 0xFF00) + (int16_t)lsb;
+
+	CNX_I2C i2c( port );
+
+	if( 0 > i2c.Open() )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port );
+		goto ERROR_PFPGA;
+	}
+
+	if( 0 > i2c.Write( slave, reg, inValue ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, reg, inValue );
+		goto ERROR_PFPGA;
+	}
+
+	NxDbgMsg( NX_DBG_INFO, "Write Data. ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, reg, inValue );
+
+ERROR_PFPGA:
+	sendSize = TMS_MakePacket( SEC_KEY_VALUE, PFPGA_CMD_WRITE_CONFIG, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
+
+	write( fd, m_SendBuf, sendSize );
+	// NX_HexDump( m_SendBuf, sendSize );
+
+	return 0;
+}
+
+//------------------------------------------------------------------------------
 int32_t CNX_IPCServer::PFPGA_Source( int32_t fd, uint8_t * /*index*/ )
 {
 	int32_t sendSize, sent;
@@ -2370,6 +2446,9 @@ int32_t CNX_IPCServer::ProcessCommand( int32_t fd, uint32_t cmd, void *pPayload,
 	case TCON_CMD_DOT_CORRECTION:
 		return TCON_DotCorrection( fd, cmd, pData[0], pData + 1, payloadSize );
 
+	case TCON_CMD_WRITE_CONFIG:
+		return TCON_WriteConfig( fd, cmd, pData[0], pData[1], pData[2], pData[3] );
+
 	case TCON_CMD_ELAPSED_TIME:
 	case TCON_CMD_ACCUMULATE_TIME:
 	case TCON_CMD_VERSION:
@@ -2393,6 +2472,9 @@ int32_t CNX_IPCServer::ProcessCommand( int32_t fd, uint32_t cmd, void *pPayload,
 
 	case PFPGA_CMD_UNIFORMITY_DATA:
 		return PFPGA_UniformityData( fd, pData, payloadSize );
+
+	case PFPGA_CMD_WRITE_CONFIG:
+		return PFPGA_WriteConfig( fd, pData[0], pData[1], pData[2] );
 
 	case PFPGA_CMD_SOURCE:
 		return PFPGA_Source( fd, (uint8_t*)pPayload );

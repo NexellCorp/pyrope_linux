@@ -189,19 +189,22 @@ public class DisplayModeActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
 
-                String[] resultUnifomiry = CheckFileInUsb(LedUniformityCorrectInfo.PATH, LedUniformityCorrectInfo.NAME);
+                String[] resultUnifomiry = FileManager.CheckFileInUsb(LedUniformityCorrectInfo.PATH, LedUniformityCorrectInfo.NAME);
                 if( (resultUnifomiry != null && resultUnifomiry.length != 0) ) {
                     mBtnUniformityWrite.setEnabled(true);
                 }
 
-                String[] resultQuality = CheckFileInUsb(LedQualityInfo.PATH_SOURCE, LedQualityInfo.NAME);
-                String[] resultGamma = CheckFileInUsb(LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME);
+                String[] resultPfpga = FileManager.CheckFileInUsb(ConfigPfpgaInfo.PATH_SOURCE, ConfigPfpgaInfo.NAME);
+                String[] resultTcon = FileManager.CheckFileInUsb(ConfigTconInfo.PATH_SOURCE, ConfigTconInfo.NAME);
+                String[] resultGamma = FileManager.CheckFileInUsb(LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME);
 
-                if( (resultQuality != null && resultQuality.length != 0) || (resultGamma != null && resultGamma.length != 0) ) {
+                if( (resultPfpga != null && resultPfpga.length != 0) ||
+                    (resultTcon != null && resultTcon.length != 0) ||
+                    (resultGamma != null && resultGamma.length != 0) ) {
                     mBtnUpdateImageQuality.setEnabled(true);
                 }
 
-                String[] resultDot = CheckDirectoryInUsb(LedDotCorrectInfo.PATH, LedDotCorrectInfo.PATTERN_DIR);
+                String[] resultDot = FileManager.CheckDirectoryInUsb(LedDotCorrectInfo.PATH, LedDotCorrectInfo.PATTERN_DIR);
 
                 if( (resultDot != null && resultDot.length != 0) ) {
                     new AsyncTaskAdapterDotCorrection(mAdapterDotCorrect).execute();
@@ -393,19 +396,25 @@ public class DisplayModeActivity extends AppCompatActivity {
         mBtnUpdateImageQuality.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String[] resultQuality = CheckFileInUsb(LedQualityInfo.PATH_SOURCE, LedQualityInfo.NAME);
-                for( String path : resultQuality ) {
+                String[] resultPfpga = FileManager.CheckFileInUsb(ConfigPfpgaInfo.PATH_SOURCE, ConfigPfpgaInfo.NAME);
+                for( String path : resultPfpga ) {
                     Log.i(VD_DTAG, ">>" + path);
-                    FileCopy(path, LedQualityInfo.PATH_TARGET + "/" + path.substring(path.lastIndexOf("/") + 1));
+                    FileManager.CopyFile(path, ConfigPfpgaInfo.PATH_TARGET + "/" + path.substring(path.lastIndexOf("/") + 1));
                 }
 
-                String[] resultGamma = CheckFileInUsb(LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME);
+                String[] resultTcon = FileManager.CheckFileInUsb(ConfigTconInfo.PATH_SOURCE, ConfigTconInfo.NAME);
+                for( String path : resultTcon ) {
+                    Log.i(VD_DTAG, ">>" + path);
+                    FileManager.CopyFile(path, ConfigTconInfo.PATH_TARGET + "/" + path.substring(path.lastIndexOf("/") + 1));
+                }
+
+                String[] resultGamma = FileManager.CheckFileInUsb(LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME);
                 for( String path : resultGamma ) {
                     Log.i(VD_DTAG, ">>" + path);
-                    FileCopy(path, LedGammaInfo.PATH_TARGET + "/" + path.substring(path.lastIndexOf("/") + 1));
+                    FileManager.CopyFile(path, LedGammaInfo.PATH_TARGET + "/" + path.substring(path.lastIndexOf("/") + 1));
                 }
 
-                if( (resultQuality.length != 0) || (resultGamma.length != 0) ) {
+                if( (resultPfpga.length != 0) || (resultTcon.length != 0) || (resultGamma.length != 0) ) {
                     ShowMessage( "Update Image Quality File.");
                     UpdateImageQuality();
                 }
@@ -733,7 +742,7 @@ public class DisplayModeActivity extends AppCompatActivity {
     }
 
     private void UpdateUniformityCorrection() {
-        String[] result = CheckFileInUsb(LedUniformityCorrectInfo.PATH, LedUniformityCorrectInfo.NAME);
+        String[] result = FileManager.CheckFileInUsb(LedUniformityCorrectInfo.PATH, LedUniformityCorrectInfo.NAME);
         if( result == null || result.length == 0 )
             return;
 
@@ -753,22 +762,28 @@ public class DisplayModeActivity extends AppCompatActivity {
         //
         //  Update Button
         //
-        String[] usbQuality = CheckFileInUsb(LedQualityInfo.PATH_SOURCE, LedQualityInfo.NAME);
-        String[] usbGamma = CheckFileInUsb(LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME);
-        String[] internalQuality = CheckFile(LedQualityInfo.PATH_TARGET, LedQualityInfo.NAME);
-        String[] internalGamma = CheckFile(LedGammaInfo.PATH_TARGET, LedGammaInfo.PATTERN_NAME);
+        String[] usbPfpga = FileManager.CheckFileInUsb(ConfigPfpgaInfo.PATH_SOURCE, ConfigPfpgaInfo.NAME);
+        String[] usbTcon = FileManager.CheckFileInUsb(ConfigTconInfo.PATH_SOURCE, ConfigTconInfo.NAME);
+        String[] usbGamma = FileManager.CheckFileInUsb(LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME);
+        String[] internalPfpga = FileManager.CheckFile(ConfigPfpgaInfo.PATH_TARGET, ConfigPfpgaInfo.NAME);
+        String[] internalQuality = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET, ConfigTconInfo.NAME);
+        String[] internalGamma = FileManager.CheckFile(LedGammaInfo.PATH_TARGET, LedGammaInfo.PATTERN_NAME);
 
-        if( (usbQuality != null && usbQuality.length != 0) || (usbGamma != null && usbGamma.length != 0) ) {
+        if( (usbPfpga != null && usbPfpga.length != 0 ) ||
+            (usbTcon != null && usbTcon.length != 0) ||
+            (usbGamma != null && usbGamma.length != 0) ) {
             mBtnUpdateImageQuality.setEnabled(true);
         }
 
-        if( (internalQuality != null && internalQuality.length != 0) || (internalGamma != null && internalGamma.length != 0) ) {
+        if( (internalPfpga != null && internalPfpga.length != 0) ||
+            (internalQuality != null && internalQuality.length != 0) ||
+            (internalGamma != null && internalGamma.length != 0) ) {
             mBtnApplyImageQuality.setEnabled(true);
         }
     }
 
     private void UpdateDotCorrection() {
-        String[] result = CheckDirectoryInUsb(LedDotCorrectInfo.PATH, LedDotCorrectInfo.PATTERN_DIR);
+        String[] result = FileManager.CheckDirectoryInUsb(LedDotCorrectInfo.PATH, LedDotCorrectInfo.PATTERN_DIR);
         if( result == null || result.length == 0 )
             return;
 
@@ -1147,119 +1162,13 @@ public class DisplayModeActivity extends AppCompatActivity {
         }
     }
 
-    //
-    //
-    //
-    public static void FileCopy(String inFile, String outFile) {
-        FileInputStream inStream = null;
-        FileOutputStream outStream = null;
-
-        FileChannel inChannel = null;
-        FileChannel outChannel = null;
-
-        try {
-            inStream = new FileInputStream(inFile);
-            outStream = new FileOutputStream(outFile);
-
-            inChannel = inStream.getChannel();
-            outChannel = outStream.getChannel();
-
-            long size = inChannel.size();
-            inChannel.transferTo(0, size, outChannel);
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                inChannel.close();
-                outChannel.close();
-                inStream.close();
-                outStream.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private String[] CheckDirectoryInUsb( String topdir, String regularExpression ) {
-        String[] result = new String[0];
-        for( int i = 0; i < 10; i++ ) {
-            File topfolder = new File( String.format(Locale.US, "/storage/usbdisk%d/%s", i, topdir) );
-            File[] toplist = topfolder.listFiles();
-            if( toplist == null || toplist.length == 0 )
-                continue;
-
-            Pattern pattern = Pattern.compile( regularExpression );
-            for( File dir : toplist) {
-                if( !dir.isDirectory() )
-                    continue;
-
-                Matcher matcher = pattern.matcher(dir.getName());
-                if( matcher.matches() ) {
-                    String[] temp = Arrays.copyOf( result, result.length + 1);
-                    temp[result.length] = dir.getAbsolutePath();
-                    result = temp;
-                }
-            }
-        }
-
-        return result;
-    }
-
-    private String[] CheckFileInUsb( String topdir, String regularExpression ) {
-        String[] result = new String[0];
-        for( int i = 0; i < 10; i++ ) {
-            File topfolder = new File( String.format(Locale.US, "/storage/usbdisk%d/%s", i, topdir) );
-            File[] toplist = topfolder.listFiles();
-            if( toplist == null || toplist.length == 0 )
-                continue;
-
-            Pattern pattern = Pattern.compile( regularExpression );
-            for( File file : toplist ) {
-                if( !file.isFile() )
-                    continue;
-
-                Matcher matcher = pattern.matcher(file.getName());
-                if( matcher.matches() ) {
-                    String[] temp = Arrays.copyOf( result, result.length + 1);
-                    temp[result.length] = file.getAbsolutePath();
-                    result = temp;
-                }
-            }
-        }
-
-        return result;
-    }
-
-    private String[] CheckFile( String topdir, String regularExpression ) {
-        String[] result = new String[0];
-        File topfolder = new File( topdir );
-        File[] toplist = topfolder.listFiles();
-        if( toplist == null || toplist.length == 0 )
-            return result;
-
-        Pattern pattern = Pattern.compile( regularExpression );
-        for( File file : toplist ) {
-            if( !file.isFile() )
-                continue;
-
-            Matcher matcher = pattern.matcher(file.getName());
-            if( matcher.matches() ) {
-                String[] temp = Arrays.copyOf( result, result.length + 1);
-                temp[result.length] = file.getAbsolutePath();
-                result = temp;
-            }
-        }
-
-        return result;
-    }
-
     private class AsyncTaskUniformityCorrection extends AsyncTask<Void, Void, Void> {
         @Override
         protected Void doInBackground(Void... voids) {
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
 
             String[] result;
-            result = CheckFileInUsb(LedUniformityCorrectInfo.PATH, LedUniformityCorrectInfo.NAME);
+            result = FileManager.CheckFileInUsb(LedUniformityCorrectInfo.PATH, LedUniformityCorrectInfo.NAME);
             for( String file : result ) {
                 LedUniformityCorrectInfo info = new LedUniformityCorrectInfo();
                 if( info.Parse(file) ) {
@@ -1300,35 +1209,62 @@ public class DisplayModeActivity extends AppCompatActivity {
                 if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
             }
 
-            byte[] resultLvds = ctrl.Send( mCabinet[0], NxCinemaCtrl.CMD_TCON_LVDS_STATUS, null );
-            if (resultLvds == null || resultLvds.length == 0 )
-                return null;
-
-            if( resultLvds[0] == (byte)0x00 )
-                return null;
+            if( ((CinemaInfo)getApplicationContext()).IsCheckTconLvds() ) {
+                byte[] resultLvds = ctrl.Send( mCabinet[0], NxCinemaCtrl.CMD_TCON_LVDS_STATUS, null );
+                if (resultLvds == null || resultLvds.length == 0 || resultLvds[0] == (byte)0x00 ) {
+                    Log.i(VD_DTAG, "Fail, TCON LVDS is not valid.");
+                    return null;
+                }
+            }
 
             ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x01} );
 
             String[] result;
-            result = CheckFile(LedQualityInfo.PATH_TARGET, LedQualityInfo.NAME);
+            boolean[] gammaEnable = {false, };
+
+            result = FileManager.CheckFile(ConfigPfpgaInfo.PATH_TARGET, ConfigPfpgaInfo.NAME);
             for( String file : result ) {
-                LedQualityInfo info = new LedQualityInfo();
+                ConfigPfpgaInfo info = new ConfigPfpgaInfo();
                 if( info.Parse( file ) ) {
-                    for( int i = 0; i < info.GetRegister().length; i++ ) {
-                        byte[] reg = ctrl.IntToByteArray(info.GetRegister()[i], NxCinemaCtrl.FORMAT_INT8);
+                    for( int i = 0; i < info.GetRegister(mIndexQuality).length; i++ ) {
+                        byte[] reg = ctrl.IntToByteArray(info.GetRegister(mIndexQuality)[i], NxCinemaCtrl.FORMAT_INT8);
                         byte[] data = ctrl.IntToByteArray(info.GetData(mIndexQuality)[i], NxCinemaCtrl.FORMAT_INT16);
                         byte[] inData = ctrl.AppendByteArray(reg, data);
 
-                        if( bValidPort0 ) ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_QUALITY, inData);
-                        if( bValidPort1 ) ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_QUALITY, inData);
+                        ctrl.Send( NxCinemaCtrl.CMD_PFPGA_WRITE_CONFIG, inData );
                     }
                 }
             }
 
-            result = CheckFile(LedGammaInfo.PATH_TARGET, LedGammaInfo.PATTERN_NAME);
+            result = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET, ConfigTconInfo.NAME);
+            for( String file : result ) {
+                ConfigTconInfo info = new ConfigTconInfo();
+                if( info.Parse( file ) ) {
+                    gammaEnable = info.GetEnableUpdateGamma(mIndexQuality);
+
+                    for( int i = 0; i < info.GetRegister(mIndexQuality).length; i++ ) {
+                        byte[] reg = ctrl.IntToByteArray(info.GetRegister(mIndexQuality)[i], NxCinemaCtrl.FORMAT_INT8);
+                        byte[] data = ctrl.IntToByteArray(info.GetData(mIndexQuality)[i], NxCinemaCtrl.FORMAT_INT16);
+                        byte[] inData = ctrl.AppendByteArray(reg, data);
+
+                        if( bValidPort0 ) ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_WRITE_CONFIG, inData);
+                        if( bValidPort1 ) ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_WRITE_CONFIG, inData);
+                    }
+                }
+            }
+
+            result = FileManager.CheckFile(LedGammaInfo.PATH_TARGET, LedGammaInfo.PATTERN_NAME);
             for( String file : result ) {
                 LedGammaInfo info = new LedGammaInfo();
                 if( info.Parse( file ) ) {
+                    if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !gammaEnable[0]) ||
+                        (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && !gammaEnable[1]) ||
+                        (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !gammaEnable[2]) ||
+                        (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && !gammaEnable[3]) ) {
+                        Log.i(VD_DTAG, String.format( "Skip. Update Gamma. ( %s )", file ));
+                        continue;
+                    }
+
                     int cmd;
                     if( info.GetType() == LedGammaInfo.TYPE_TARGET )
                         cmd = NxCinemaCtrl.CMD_TCON_TGAM_R;
@@ -1371,7 +1307,7 @@ public class DisplayModeActivity extends AppCompatActivity {
 
         @Override
         protected Void doInBackground(Void... voids) {
-            String[] resultDir = CheckDirectoryInUsb(LedDotCorrectInfo.PATH, LedDotCorrectInfo.PATTERN_DIR);
+            String[] resultDir = FileManager.CheckDirectoryInUsb(LedDotCorrectInfo.PATH, LedDotCorrectInfo.PATTERN_DIR);
             for( String dir : resultDir ) {
                 if( isCancelled() ) {
                     return null;
@@ -1383,7 +1319,7 @@ public class DisplayModeActivity extends AppCompatActivity {
 
         @Override
         protected void onProgressUpdate(String... values) {
-            String[] resultFile = CheckFile(values[0], LedDotCorrectInfo.PATTERN_NAME);
+            String[] resultFile = FileManager.CheckFile(values[0], LedDotCorrectInfo.PATTERN_NAME);
             mAdapter.add( new CheckRunInfo(values[0].substring(values[0].lastIndexOf("/") + 1), String.format("total : %s", resultFile.length)) );
             Collections.sort(mAdapter.get(), new Comparator<CheckRunInfo>() {
                 @Override
@@ -1418,7 +1354,7 @@ public class DisplayModeActivity extends AppCompatActivity {
 
         @Override
         protected Void doInBackground(Void... params) {
-            String[] resultDir = CheckDirectoryInUsb(LedDotCorrectInfo.PATH, LedDotCorrectInfo.PATTERN_DIR);
+            String[] resultDir = FileManager.CheckDirectoryInUsb(LedDotCorrectInfo.PATH, LedDotCorrectInfo.PATTERN_DIR);
             if( resultDir == null || resultDir.length == 0 )
                 return null;
 
@@ -1433,7 +1369,7 @@ public class DisplayModeActivity extends AppCompatActivity {
                 if( !item.GetChecked() )
                     continue;
 
-                String[] result = CheckFile(topdir + item.GetTitle(), LedDotCorrectInfo.PATTERN_NAME);
+                String[] result = FileManager.CheckFile(topdir + item.GetTitle(), LedDotCorrectInfo.PATTERN_NAME);
                 for( String file : result ) {
                     Log.i(VD_DTAG, "Dot Correct Info : " + file);
 

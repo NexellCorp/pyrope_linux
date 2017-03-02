@@ -344,17 +344,35 @@ public class LoginActivity extends AppCompatActivity {
             //  Image Quality Function for Test
             //
             String[] resultPath;
-            resultPath = CheckFile(LedQualityInfo.PATH_TARGET, LedQualityInfo.NAME);
+            boolean[] gammaEnable = {false, };
+
+            resultPath = FileManager.CheckFile(ConfigPfpgaInfo.PATH_TARGET, ConfigPfpgaInfo.NAME);
             for( String file : resultPath ) {
-                LedQualityInfo info = new LedQualityInfo();
+                ConfigPfpgaInfo info = new ConfigPfpgaInfo();
                 if( info.Parse( file ) ) {
-                    for( int i = 0; i < info.GetRegister().length; i++ ) {
-                        byte[] reg = ctrl.IntToByteArray(info.GetRegister()[i], NxCinemaCtrl.FORMAT_INT8);
+                    for( int i = 0; i < info.GetRegister(0).length; i++ ) {
+                        byte[] reg = ctrl.IntToByteArray(info.GetRegister(0)[i], NxCinemaCtrl.FORMAT_INT8);
                         byte[] data = ctrl.IntToByteArray(info.GetData(0)[i], NxCinemaCtrl.FORMAT_INT16);
                         byte[] inData = ctrl.AppendByteArray(reg, data);
 
-                        if( bValidPort0 ) ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_QUALITY, inData);
-                        if( bValidPort1 ) ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_QUALITY, inData);
+                        ctrl.Send( NxCinemaCtrl.CMD_PFPGA_WRITE_CONFIG, inData );
+                    }
+                }
+            }
+
+            resultPath = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET, ConfigTconInfo.NAME);
+            for( String file : resultPath ) {
+                ConfigTconInfo info = new ConfigTconInfo();
+                if( info.Parse( file ) ) {
+                    gammaEnable = info.GetEnableUpdateGamma(0);
+
+                    for( int i = 0; i < info.GetRegister(0).length; i++ ) {
+                        byte[] reg = ctrl.IntToByteArray(info.GetRegister(0)[i], NxCinemaCtrl.FORMAT_INT8);
+                        byte[] data = ctrl.IntToByteArray(info.GetData(0)[i], NxCinemaCtrl.FORMAT_INT16);
+                        byte[] inData = ctrl.AppendByteArray(reg, data);
+
+                        if( bValidPort0 ) ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_WRITE_CONFIG, inData);
+                        if( bValidPort1 ) ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_WRITE_CONFIG, inData);
                     }
                 }
             }
@@ -362,10 +380,18 @@ public class LoginActivity extends AppCompatActivity {
             //
             //  Gamma Function for Test
             //
-            resultPath = CheckFile(LedGammaInfo.PATH_TARGET, LedGammaInfo.PATTERN_NAME);
+            resultPath = FileManager.CheckFile(LedGammaInfo.PATH_TARGET, LedGammaInfo.PATTERN_NAME);
             for( String file : resultPath ) {
                 LedGammaInfo info = new LedGammaInfo();
                 if( info.Parse( file ) ) {
+                    if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !gammaEnable[0]) ||
+                        (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && !gammaEnable[1]) ||
+                        (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !gammaEnable[2]) ||
+                        (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && !gammaEnable[3]) ) {
+                        Log.i(VD_DTAG, String.format( "Skip. Update Gamma. ( %s )", file ));
+                        continue;
+                    }
+
                     int cmd;
                     if( info.GetType() == LedGammaInfo.TYPE_TARGET )
                         cmd = NxCinemaCtrl.CMD_TCON_TGAM_R;
@@ -413,29 +439,6 @@ public class LoginActivity extends AppCompatActivity {
             CinemaLoading.Hide();
             finish();
         }
-    }
-
-    private String[] CheckFile( String topdir, String regularExpression ) {
-        String[] result = new String[0];
-        File topfolder = new File( topdir );
-        File[] toplist = topfolder.listFiles();
-        if( toplist == null || toplist.length == 0 )
-            return result;
-
-        Pattern pattern = Pattern.compile( regularExpression );
-        for( File file : toplist ) {
-            if( !file.isFile() )
-                continue;
-
-            Matcher matcher = pattern.matcher(file.getName());
-            if( matcher.matches() ) {
-                String[] temp = Arrays.copyOf( result, result.length + 1);
-                temp[result.length] = file.getAbsolutePath();
-                result = temp;
-            }
-        }
-
-        return result;
     }
 
     //

@@ -71,48 +71,48 @@ private:
 	int32_t ReadData(int32_t fd, uint8_t *pBuf, int32_t size);
 
 	//	TCON Commands
-	int32_t TCON_Init( int32_t fd, uint32_t cmd, uint8_t index );
-	int32_t TCON_Status( int32_t fd, uint32_t cmd, uint8_t index );
-	int32_t TCON_DoorStatus( int32_t fd, uint32_t cmd, uint8_t index );
-	int32_t TCON_LvdsStatus( int32_t fd, uint32_t cmd, uint8_t index );
-	int32_t TCON_BootingStatus( int32_t fd, uint32_t cmd, uint8_t index );
-	int32_t TCON_LedModeNormal( int32_t fd, uint32_t cmd, uint8_t index );
-	int32_t TCON_LedModeLod( int32_t fd, uint32_t cmd, uint8_t index );
-	int32_t TCON_LedOpenNum( int32_t fd, uint32_t cmd, uint8_t index );
-	int32_t TCON_LedOpenPos( int32_t fd, uint32_t cmd, uint8_t index );
-	int32_t TCON_LedShortNum( int32_t fd, uint32_t cmd, uint8_t index );
-	int32_t TCON_LedShortPos( int32_t fd, uint32_t cmd, uint8_t index );
-	int32_t TCON_TestPattern( int32_t fd, uint32_t cmd, uint8_t index, uint8_t funcIndex, uint8_t patternIndex );
-	int32_t TCON_MasteringRead( int32_t fd, uint32_t cmd, uint8_t index, uint8_t reg );
-	int32_t TCON_MasteringWrite( int32_t fd, uint32_t cmd, uint8_t index, uint8_t reg, uint8_t msb, uint8_t lsb );
-	int32_t TCON_Quality( int32_t fd, uint32_t cmd, uint8_t index, uint8_t reg, uint8_t msb, uint8_t lsb );
-	int32_t	TCON_TargetGamma( int32_t fd, uint32_t cmd, uint32_t index, uint8_t *data, int32_t size );
-	int32_t	TCON_DeviceGamma( int32_t fd, uint32_t cmd, uint32_t index, uint8_t *data, int32_t size );
-	int32_t TCON_DotCorrection( int32_t fd, uint32_t cmd, uint32_t index, uint8_t *data, int32_t size );
-	int32_t TCON_WriteConfig( int32_t fd, uint32_t cmd, uint8_t index, uint8_t reg, uint8_t msb, uint8_t lsb );
-	int32_t TCON_InputSource( int32_t fd, uint32_t cmd, uint32_t index, uint8_t resolIndex, uint8_t srcIndex );
-	int32_t TCON_OptionalData( int32_t fd, uint32_t cmd, uint8_t index, uint8_t module );
-	int32_t TCON_Multi( int32_t fd, uint32_t cmd, uint8_t index, uint8_t data );
+	int32_t TCON_Init( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t TCON_Status( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t TCON_DoorStatus( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t TCON_LvdsStatus( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t TCON_BootingStatus( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t TCON_LedModeNormal( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t TCON_LedModeLod( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t TCON_LedOpenNum( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t TCON_LedOpenPos( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t TCON_LedShortNum( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t TCON_LedShortPos( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t TCON_TestPattern( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t TCON_MasteringRead( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t TCON_MasteringWrite( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t TCON_Quality( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t	TCON_TargetGamma( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t	TCON_DeviceGamma( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t TCON_DotCorrection( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t TCON_WriteConfig( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t TCON_InputSource( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t TCON_OptionalData( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t TCON_Multi( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
 
 	//	PFPGA Commands
-	int32_t PFPGA_Status( int32_t fd );
-	int32_t PFPGA_Mute( int32_t fd, uint8_t data );
-	int32_t PFPGA_UniformityEnableRead( int32_t fd );
-	int32_t PFPGA_UniformityEnableWrite( int32_t fd, uint8_t data );
-	int32_t PFPGA_UniformityData( int32_t fd, uint8_t *data, int32_t size );
-	int32_t PFPGA_WriteConfig( int32_t fd, uint8_t reg, uint8_t msb, uint8_t lsb );
-	int32_t PFPGA_Source( int32_t fd, uint8_t *index );
-	int32_t PFPGA_Version( int32_t fd) ;
+	int32_t PFPGA_Status( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t PFPGA_Mute( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t PFPGA_UniformityEnableRead( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t PFPGA_UniformityEnableWrite( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t PFPGA_UniformityData( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t PFPGA_WriteConfig( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t PFPGA_Source( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t PFPGA_Version( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
 
 	//	Battery Commands
-	int32_t BAT_Status( int32_t fd );
+	int32_t BAT_Status( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
 
 	//	IMB Commands
-	int32_t IMB_Status( int32_t fd );
-	int32_t IMB_Version( int32_t fd );
+	int32_t IMB_Status( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t IMB_Version( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
 
 	//	IPC Commands
-	int32_t IPC_Version( int32_t fd );
+	int32_t IPC_Version( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
 
 	int32_t ProcessCommand( int32_t clientSocket, uint32_t cmd, void *pPayload, int32_t payloadSize );
 
@@ -125,8 +125,9 @@ private:
 	pthread_t	m_hThread;
 
 	int32_t		m_hSocket;
-	uint8_t		m_PayloadBuf[MAX_PAYLOAD_SIZE];
-	uint8_t		m_SendBuf[MAX_PAYLOAD_SIZE+12];
+	//	Key(4bytes) + Length(2bytes) + Command(2bytes) + Payload(MAX 65533bytes)
+	uint8_t		m_SendBuf[MAX_PAYLOAD_SIZE + 8];
+	uint8_t		m_ReceiveBuf[MAX_PAYLOAD_SIZE + 8];
 
 	int32_t		(*m_pTestPatternFunc[6])( CNX_I2C*, uint8_t, uint8_t );
 
@@ -212,7 +213,7 @@ void CNX_IPCServer::ThreadProc()
 
 	while( !m_ExitLoop )
 	{
-		uint8_t *pBuf = m_PayloadBuf;
+		uint8_t *pBuf = m_ReceiveBuf;
 		int32_t clientSocket = WaitClient();
 		if( 0 > clientSocket )	//	Error
 		{
@@ -247,7 +248,7 @@ void CNX_IPCServer::ThreadProc()
 		len = TMS_GET_LENGTH(pBuf[0], pBuf[1]);
 
 		//	Size Check
-		if( len+6 > MAX_PAYLOAD_SIZE )
+		if( len+8 > sizeof(m_ReceiveBuf) )
 		{
 			NxErrMsg("Error : Data size\n");
 			goto ERROR;
@@ -255,7 +256,7 @@ void CNX_IPCServer::ThreadProc()
 
 		//	Read all data
 		readSize = ReadData ( clientSocket, pBuf+2, len );
-		if( readSize <=0 )
+		if( readSize <= 0 )
 		{
 			NxErrMsg("Error : Read Data\n");
 			goto ERROR;
@@ -342,11 +343,16 @@ int32_t CNX_IPCServer::ReadData(int32_t fd, uint8_t *pBuf, int32_t size)
 //
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_Init( int32_t fd, uint32_t cmd, uint8_t index )
+int32_t CNX_IPCServer::TCON_Init( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t /*iSize*/ )
 {
-	uint8_t result = 0xFF;
+	//
+	//	pBuf[0] : index
+	//
+
+	uint8_t result	= 0xFF;
 	int32_t sendSize;
 
+	uint8_t index	= pBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
@@ -372,7 +378,7 @@ int32_t CNX_IPCServer::TCON_Init( int32_t fd, uint32_t cmd, uint8_t index )
 		goto ERROR_TCON;
 	}
 
-	result = 1;
+	result = 0x01;
 
 ERROR_TCON:
 	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
@@ -384,14 +390,19 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_Status( int32_t fd, uint32_t cmd, uint8_t index )
+int32_t CNX_IPCServer::TCON_Status( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t /*iSize*/ )
 {
-	uint8_t result = 0xFF;
+	//
+	//	pBuf[0] : index
+	//
+
+	uint8_t result	= 0xFF;
 	int32_t sendSize;
 
 #if FAKE_DATA
 	result = NX_GetRandomValue( 0, 1 );
 #else
+	uint8_t index	= pBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
@@ -432,14 +443,19 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_DoorStatus( int32_t fd, uint32_t cmd, uint8_t index )
+int32_t CNX_IPCServer::TCON_DoorStatus( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t /*iSize*/ )
 {
-	uint8_t result = 0xFF;
+	//
+	//	pBuf[0] : index
+	//
+
+	uint8_t result	= 0xFF;
 	int32_t sendSize;
 
 #if FAKE_DATA
 	result = NX_GetRandomValue( 0, 2 );
 #else
+	uint8_t index	= pBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
@@ -486,14 +502,19 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_LvdsStatus( int32_t fd, uint32_t cmd, uint8_t index )
+int32_t CNX_IPCServer::TCON_LvdsStatus( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t /*iSize*/ )
 {
-	uint8_t result = 0xFF;
+	//
+	//	pBuf[0] : index
+	//
+
+	uint8_t result	= 0xFF;
 	int32_t sendSize;
 
 #if FAKE_DATA
 	result = NX_GetRandomValue( 0, 1 );
 #else
+	uint8_t index	= pBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
@@ -526,14 +547,19 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_BootingStatus( int32_t fd, uint32_t cmd, uint8_t index )
+int32_t CNX_IPCServer::TCON_BootingStatus( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t /*iSize*/ )
 {
-	uint8_t result = 0xFF;
+	//
+	//	pBuf[0] : index
+	//
+
+	uint8_t result	= 0xFF;
 	int32_t sendSize;
 
 #if FAKE_DATA
 	result = NX_GetRandomValue( 0, 1 );
 #else
+	uint8_t index	= pBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
@@ -566,14 +592,19 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_LedModeNormal( int32_t fd, uint32_t cmd, uint8_t index )
+int32_t CNX_IPCServer::TCON_LedModeNormal( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t /*iSize*/ )
 {
-	uint8_t result = 0xFF;
+	//
+	//	pBuf[0] : index
+	//
+
+	uint8_t result	= 0xFF;
 	int32_t sendSize;
 
 #if FAKE_DATA
 	result = 0;
 #else
+	uint8_t index	= pBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
@@ -613,7 +644,7 @@ int32_t CNX_IPCServer::TCON_LedModeNormal( int32_t fd, uint32_t cmd, uint8_t ind
 		goto ERROR_TCON;
 	}
 
-	result = 0;
+	result = 0x01;
 #endif
 
 ERROR_TCON:
@@ -626,14 +657,19 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_LedModeLod( int32_t fd, uint32_t cmd, uint8_t index )
+int32_t CNX_IPCServer::TCON_LedModeLod( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t /*iSize*/ )
 {
-	uint8_t result = 0xFF;
+	//
+	//	pBuf[0] : index
+	//
+
+	uint8_t result	= 0xFF;
 	int32_t sendSize;
 
 #if FAKE_DATA
 	result = 0;
 #else
+	uint8_t index	= pBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
@@ -683,7 +719,7 @@ int32_t CNX_IPCServer::TCON_LedModeLod( int32_t fd, uint32_t cmd, uint8_t index 
 		goto ERROR_TCON;
 	}
 
-	result = 0;
+	result = 0x01;
 #endif
 
 ERROR_TCON:
@@ -696,13 +732,18 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_LedOpenNum( int32_t fd, uint32_t cmd, uint8_t index )
+int32_t CNX_IPCServer::TCON_LedOpenNum( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t /*iSize*/ )
 {
+	//
+	//	pBuf[0] : index
+	//
+
 	uint8_t result[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
 	int32_t sendSize;
 	int32_t iReadData = 0;
 	int32_t iErrorNum = 0;
 
+	uint8_t index	= pBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
@@ -763,13 +804,18 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_LedOpenPos( int32_t fd, uint32_t cmd, uint8_t index )
+int32_t CNX_IPCServer::TCON_LedOpenPos( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t /*iSize*/ )
 {
+	//
+	//	pBuf[0] : index
+	//
+
 	uint8_t result[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
 	int32_t sendSize;
 	int32_t iCoordinateX = 0, iCoordinateY = 0;
 	int32_t iErrorOutReady;
 
+	uint8_t index	= pBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
@@ -809,10 +855,16 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_LedShortNum( int32_t fd, uint32_t cmd, uint8_t index )
+int32_t CNX_IPCServer::TCON_LedShortNum( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t /*iSize*/ )
 {
+	//
+	//	pBuf[0] : index
+	//
+
+	uint8_t result	= 0xFF;
 	int32_t sendSize;
 
+	uint8_t index	= pBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
@@ -828,10 +880,12 @@ int32_t CNX_IPCServer::TCON_LedShortNum( int32_t fd, uint32_t cmd, uint8_t index
 	//
 	//
 	NxDbgMsg( NX_DBG_INFO, "Not Implementaion.\n" );
-	printf("index(%d)\n", slave);
+	printf("port( %d ), slave( %d )\n", port, slave);
+
+	result = 0x01;
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -840,10 +894,16 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_LedShortPos( int32_t fd, uint32_t cmd, uint8_t index )
+int32_t CNX_IPCServer::TCON_LedShortPos( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t /*iSize*/ )
 {
+	//
+	//	pBuf[0] : index
+	//
+
+	uint8_t result	= 0xFF;
 	int32_t sendSize;
 
+	uint8_t index	= pBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
@@ -859,10 +919,12 @@ int32_t CNX_IPCServer::TCON_LedShortPos( int32_t fd, uint32_t cmd, uint8_t index
 	//
 	//
 	NxDbgMsg( NX_DBG_INFO, "Not Implementaion.\n" );
-	printf("index(%d)\n", slave);
+	printf("port( %d ), slave( %d )\n", port, slave);
+
+	result = 0x01;
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -871,12 +933,21 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_TestPattern( int32_t fd, uint32_t cmd, uint8_t index, uint8_t funcIndex, uint8_t patternIndex )
+int32_t CNX_IPCServer::TCON_TestPattern( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t /*iSize*/ )
 {
+	//
+	//	pBuf[0] : index, pBuf[1] : function index, pBuf[2] : pattern index
+	//
+
+	uint8_t result	= 0xFF;
 	int32_t sendSize;
 
+	uint8_t index	= pBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
+
+	uint8_t funcIndex = pBuf[1];
+	uint8_t patternIndex = pBuf[2];
 
 	CNX_I2C i2c( port );
 
@@ -1003,8 +1074,10 @@ int32_t CNX_IPCServer::TCON_TestPattern( int32_t fd, uint32_t cmd, uint8_t index
 		}
 	}
 
+	result = 0x01;
+
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -1013,13 +1086,20 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_MasteringRead( int32_t fd, uint32_t cmd, uint8_t index, uint8_t reg )
+int32_t CNX_IPCServer::TCON_MasteringRead( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t /*iSize*/ )
 {
+	//
+	//	pBuf[0] : index, pBuf[1] : register
+	//
+
 	uint8_t result[2] = { 0xFF, 0xFF };
 	int32_t sendSize;
 
+	uint8_t index	= pBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
+
+	uint8_t reg		= pBuf[1];
 
 	CNX_I2C i2c( port );
 	int32_t iReadData = 0x0000;
@@ -1050,13 +1130,22 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_MasteringWrite( int32_t fd, uint32_t cmd, uint8_t index, uint8_t reg, uint8_t msb, uint8_t lsb )
+int32_t CNX_IPCServer::TCON_MasteringWrite( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t /*iSize*/ )
 {
+	//
+	//	pBuf[0] : index, pBuf[1] : register, pBuf[2] : msb data, pBuf[3] : lsb data
+	//
+
+	uint8_t result	= 0xFF;
 	int32_t sendSize;
 
+	uint8_t index	= pBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
+	uint8_t reg		= pBuf[1];
+	uint8_t msb		= pBuf[2];
+	uint8_t lsb		= pBuf[3];
 	int16_t inValue = ((int16_t)(msb << 8) & 0xFF00) + (int16_t)lsb;
 
 	CNX_I2C i2c( port );
@@ -1074,8 +1163,10 @@ int32_t CNX_IPCServer::TCON_MasteringWrite( int32_t fd, uint32_t cmd, uint8_t in
 		goto ERROR_TCON;
 	}
 
+	result = 0x01;
+
 ERROR_TCON:
-	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, cmd, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -1084,14 +1175,26 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_Quality( int32_t fd, uint32_t cmd, uint8_t index, uint8_t reg, uint8_t msb, uint8_t lsb )
+int32_t CNX_IPCServer::TCON_Quality( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t /*iSize*/ )
 {
+	//
+	//	pBuf[0] : index, pBuf[1] : msg reg, pBuf[2] : lsb reg, pBuf[3] : msb data, pBuf[4] : lsb data
+	//
+
+	uint8_t result	= 0xFF;
 	int32_t sendSize;
 
+	uint8_t index	= pBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
-	int16_t inValue = ((int16_t)(msb << 8) & 0xFF00) + (int16_t)lsb;
+	uint8_t msbReg	= pBuf[1];
+	uint8_t lsbReg	= pBuf[2];
+	uint8_t msbData	= pBuf[3];
+	uint8_t lsbData	= pBuf[4];
+
+	uint16_t inReg	= ((int16_t)(msbReg << 8) & 0xFF00) + (int16_t)lsbReg;
+	uint16_t inData	= ((int16_t)(msbData << 8) & 0xFF00) + (int16_t)lsbData;
 
 	CNX_I2C i2c( port );
 
@@ -1101,15 +1204,17 @@ int32_t CNX_IPCServer::TCON_Quality( int32_t fd, uint32_t cmd, uint8_t index, ui
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( slave, reg, inValue ) )
+	if( 0 > i2c.Write( slave, inReg, inData ) )
 	{
 		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
-			port, slave, reg, inValue );
+			port, slave, inReg, inData );
 		goto ERROR_TCON;
 	}
 
+	result = 0x01;
+
 ERROR_TCON:
-	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, cmd, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -1118,12 +1223,21 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_TargetGamma( int32_t fd, uint32_t cmd, uint32_t index, uint8_t *data, int32_t size )
+int32_t CNX_IPCServer::TCON_TargetGamma( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
 {
+	//
+	//	pBuf[0] : index, pBuf[1] .. : data ( num of data : iSize - 1 )
+	//
+
+	uint8_t result	= 0xFF;
 	int32_t sendSize;
 
+	uint8_t index	= pBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
+
+	uint8_t *data	= pBuf + 1;
+	int32_t size	= iSize - 1;
 
 	uint16_t dataReg;
 	uint16_t wrSel, burstSel;
@@ -1254,8 +1368,10 @@ int32_t CNX_IPCServer::TCON_TargetGamma( int32_t fd, uint32_t cmd, uint32_t inde
 	}
 	usleep(100000);
 
+	result = 0x01;
+
 ERROR_TCON:
-	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, cmd, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -1267,12 +1383,21 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_DeviceGamma( int32_t fd, uint32_t cmd, uint32_t index, uint8_t *data, int32_t size )
+int32_t CNX_IPCServer::TCON_DeviceGamma( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
 {
+	//
+	//	pBuf[0] : index, pBuf[1] .. : data ( num of data : iSize - 1 )
+	//
+
+	uint8_t result	= 0xFF;
 	int32_t sendSize;
 
+	uint8_t index	= pBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
+
+	uint8_t *data	= pBuf + 1;
+	int32_t size	= iSize - 1;
 
 	uint16_t dataReg;
 	uint16_t wrSel, burstSel;
@@ -1403,8 +1528,10 @@ int32_t CNX_IPCServer::TCON_DeviceGamma( int32_t fd, uint32_t cmd, uint32_t inde
 	}
 	usleep(100000);
 
+	result = 0x01;
+
 ERROR_TCON:
-	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, cmd, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -1416,13 +1543,21 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_DotCorrection( int32_t fd, uint32_t cmd, uint32_t index, uint8_t *data, int32_t size )
+int32_t CNX_IPCServer::TCON_DotCorrection( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
 {
-	uint8_t result = 0xFF;
+	//
+	//	pBuf[0] : index, pBuf[1] .. : data ( num of data : iSize - 1 )
+	//
+
+	uint8_t result	= 0xFF;
 	int32_t sendSize;
 
+	uint8_t index	= pBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
+
+	uint8_t *data	= pBuf + 1;
+	int32_t size	= iSize - 1;
 
 	uint16_t flashSel = (uint16_t)data[0];
 	int32_t iDataSize = (size-1) / 2;
@@ -1447,6 +1582,13 @@ int32_t CNX_IPCServer::TCON_DotCorrection( int32_t fd, uint32_t cmd, uint32_t in
 	//
 	// 1. Read Screen Correction Data.
 	//
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, flashSel >> 1 ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, TCON_REG_FLASH_SEL, flashSel >> 1 );
+		goto ERROR_TCON;
+	}
+
 	if( 0 > i2c.Write( slave, TCON_REG_F_CC_RD_EN, 0x0001 ) )
 	{
 		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
@@ -1458,13 +1600,6 @@ int32_t CNX_IPCServer::TCON_DotCorrection( int32_t fd, uint32_t cmd, uint32_t in
 	{
 		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_F_CC_RD_EN, 0x0000 );
-		goto ERROR_TCON;
-	}
-
-	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, flashSel >> 1 ) )
-	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
-			port, slave, TCON_REG_FLASH_SEL, flashSel >> 1 );
 		goto ERROR_TCON;
 	}
 
@@ -1542,7 +1677,7 @@ int32_t CNX_IPCServer::TCON_DotCorrection( int32_t fd, uint32_t cmd, uint32_t in
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_FLASH_STATUS_WRITE, 0x0001 ) )
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_STATUS_WRITE, 0x0002 ) )
 	{
 		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0001 );
@@ -1605,11 +1740,9 @@ int32_t CNX_IPCServer::TCON_DotCorrection( int32_t fd, uint32_t cmd, uint32_t in
 			port, slave, TCON_REG_LUT_BURST_SEL, 0x0040 );
 		goto ERROR_TCON;
 	}
+	usleep(100000);
 
 #if I2C_SEPARATE_BURST
-	// printf("0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x\n",
-	// 	pData[0], pData[1], pData[2], pData[3], pData[4], pData[5], pData[6], pData[7] );
-
 	for( int32_t i = 0; i < 30; i++ )
 	{
 		if( 0 > i2c.Write( slave, TCON_REG_FLASH_WDATA, pData + iDataSize / 30 * i, iDataSize / 30) )
@@ -1634,6 +1767,7 @@ int32_t CNX_IPCServer::TCON_DotCorrection( int32_t fd, uint32_t cmd, uint32_t in
 			port, slave, TCON_REG_LUT_BURST_SEL, 0x0000 );
 		goto ERROR_TCON;
 	}
+	usleep(100000);
 
 	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, 0x001F) )
 	{
@@ -1688,7 +1822,7 @@ int32_t CNX_IPCServer::TCON_DotCorrection( int32_t fd, uint32_t cmd, uint32_t in
 	//
 	for( int32_t i = 0; i < (int32_t)(sizeof(opData) / sizeof(opData[0])); i++ )
 	{
-		if( 0 > i2c.Write( slave, TCON_REG_F_LED_DATA00, opData[i] ) )
+		if( 0 > i2c.Write( slave, TCON_REG_F_LED_DATA00 + i, opData[i] ) )
 		{
 			NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_F_LED_DATA00 + i, opData[i] );
@@ -1734,10 +1868,10 @@ int32_t CNX_IPCServer::TCON_DotCorrection( int32_t fd, uint32_t cmd, uint32_t in
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_FLASH_STATUS_WRITE, 0x0002 ) )
+	if( 0 > i2c.Write( slave, TCON_REG_FLASH_STATUS_WRITE, 0x0003 ) )
 	{
 		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
-			port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0001 );
+			port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0003 );
 		goto ERROR_TCON;
 	}
 
@@ -1768,14 +1902,26 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_WriteConfig( int32_t fd, uint32_t cmd, uint8_t index, uint8_t reg, uint8_t msb, uint8_t lsb )
+int32_t CNX_IPCServer::TCON_WriteConfig( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t /*iSize*/ )
 {
+	//
+	//	pBuf[0] : index, pBuf[1] : msg reg, pBuf[2] : lsb reg, pBuf[3] : msb data, pBuf[4] : lsb data
+	//
+
+	uint8_t result	= 0xFF;
 	int32_t sendSize;
 
+	uint8_t index	= pBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
-	int16_t inValue = ((int16_t)(msb << 8) & 0xFF00) + (int16_t)lsb;
+	uint8_t msbReg	= pBuf[1];
+	uint8_t lsbReg	= pBuf[2];
+	uint8_t msbData	= pBuf[3];
+	uint8_t lsbData	= pBuf[4];
+
+	uint16_t inReg	= ((int16_t)(msbReg << 8) & 0xFF00) + (int16_t)lsbReg;
+	uint16_t inData	= ((int16_t)(msbData << 8) & 0xFF00) + (int16_t)lsbData;
 
 	CNX_I2C i2c( port );
 
@@ -1785,18 +1931,20 @@ int32_t CNX_IPCServer::TCON_WriteConfig( int32_t fd, uint32_t cmd, uint8_t index
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( slave, reg, inValue ) )
+	if( 0 > i2c.Write( slave, inReg, inData ) )
 	{
 		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
-			port, slave, reg, inValue );
+			port, slave, inReg, inData );
 		goto ERROR_TCON;
 	}
 
 	NxDbgMsg( NX_DBG_INFO, "Write Data. ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
-			port, slave, reg, inValue );
+			port, slave, inReg, inData );
+
+	result = 0x01;
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -1805,12 +1953,21 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_InputSource( int32_t fd, uint32_t cmd, uint32_t index, uint8_t resolIndex, uint8_t srcIndex )
+int32_t CNX_IPCServer::TCON_InputSource( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t /*iSize*/ )
 {
+	//
+	//	pBuf[0] : index, pBuf[1] : reoslution index, pBuf[2] : source index
+	//
+
+	uint8_t	result	= 0xFF;
 	int32_t sendSize;
 
+	uint8_t index	= pBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
+
+	uint8_t resolIndex	= pBuf[1];
+	uint8_t srcIndex	= pBuf[2];
 
 	CNX_I2C i2c( port );
 
@@ -1821,9 +1978,10 @@ int32_t CNX_IPCServer::TCON_InputSource( int32_t fd, uint32_t cmd, uint32_t inde
 	}
 
 	NxDbgMsg( NX_DBG_INFO, "Not Implementaion. ( i2c-%d, %d, %d, %d )\n", port, slave, resolIndex, srcIndex );
+	result = 0x01;
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -1832,13 +1990,20 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_OptionalData( int32_t fd, uint32_t cmd, uint8_t index, uint8_t module )
+int32_t CNX_IPCServer::TCON_OptionalData( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t /*iSize*/ )
 {
+	//
+	//	pBuf[0] : index, pBuf[1] : module
+	//
+
 	uint8_t result[32] = { 0xFF, };
 	int32_t sendSize;
 
+	uint8_t index	= pBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
+
+	uint8_t module	= pBuf[1];
 
 	uint16_t iOptionalData[16] = { 0x0000, };
 
@@ -1920,12 +2085,20 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_Multi( int32_t fd, uint32_t cmd, uint8_t index, uint8_t data )
+int32_t CNX_IPCServer::TCON_Multi( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t /*iSize*/ )
 {
+	//
+	//	pBuf[0] : index, pBuf[1] : data
+	//
+
+	uint8_t	result	= 0xFF;
 	int32_t sendSize;
 
+	uint8_t index	= pBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
+
+	uint8_t data	= pBuf[1];
 
 	CNX_I2C i2c( port );
 
@@ -1962,7 +2135,7 @@ int32_t CNX_IPCServer::TCON_Multi( int32_t fd, uint32_t cmd, uint8_t index, uint
 #endif
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -1977,8 +2150,12 @@ ERROR_TCON:
 //
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::PFPGA_Status( int32_t fd )
+int32_t CNX_IPCServer::PFPGA_Status( int32_t fd, uint32_t cmd, uint8_t */*pBuf*/, int32_t /*iSize*/ )
 {
+	//
+	//	pBuf : not used
+	//
+
 	uint8_t result = 0xFF;
 	int32_t sendSize;
 
@@ -2007,10 +2184,8 @@ int32_t CNX_IPCServer::PFPGA_Status( int32_t fd )
 	result = ((PFPGA_VAL_CHECK_STATUS == iReadData) ? 1 : 0);
 #endif
 
-	printf("port(%d), slave(%02x), reg(%02x), data(%d)\n", port, slave, PFPGA_VAL_CHECK_STATUS, result);
-
 ERROR_PFPGA:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, PFPGA_CMD_STATUS, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -2019,8 +2194,12 @@ ERROR_PFPGA:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::PFPGA_Mute( int32_t fd, uint8_t data )
+int32_t CNX_IPCServer::PFPGA_Mute( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t /*iSize*/ )
 {
+	//
+	//	pBuf[0] : data
+	//
+
 	uint8_t result = 0xFF;
 	int32_t sendSize;
 
@@ -2029,6 +2208,8 @@ int32_t CNX_IPCServer::PFPGA_Mute( int32_t fd, uint8_t data )
 #else
 	int32_t port	= PFPGA_I2C_PORT;
 	uint8_t slave	= PFPGA_I2C_SLAVE;
+
+	uint8_t data	= pBuf[0];
 
 	CNX_I2C i2c( port );
 
@@ -2048,10 +2229,8 @@ int32_t CNX_IPCServer::PFPGA_Mute( int32_t fd, uint8_t data )
 	result = 0x01;
 #endif
 
-	printf("port(%d), slave(0x%02x), reg(0x%02x), data(0x%02x)\n", port, slave, PFPGA_REG_MUTE, data);
-
 ERROR_PFPGA:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, PFPGA_REG_MUTE, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -2059,10 +2238,13 @@ ERROR_PFPGA:
 	return 0;
 }
 
-
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::PFPGA_UniformityEnableRead( int32_t fd )
+int32_t CNX_IPCServer::PFPGA_UniformityEnableRead( int32_t fd, uint32_t cmd, uint8_t */*pBuf*/, int32_t /*iSize*/ )
 {
+	//
+	//	pBuf : not used
+	//
+
 	uint8_t result = 0xFF;
 	int32_t sendSize;
 
@@ -2092,7 +2274,7 @@ int32_t CNX_IPCServer::PFPGA_UniformityEnableRead( int32_t fd )
 #endif
 
 ERROR_PFPGA:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, PFPGA_CMD_UNIFORMITY_RD, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -2101,8 +2283,12 @@ ERROR_PFPGA:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::PFPGA_UniformityEnableWrite( int32_t fd, uint8_t data )
+int32_t CNX_IPCServer::PFPGA_UniformityEnableWrite( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t /*iSize*/ )
 {
+	//
+	//	pBuf[0] : data
+	//
+
 	uint8_t result = 0xFF;
 	int32_t sendSize;
 
@@ -2111,6 +2297,8 @@ int32_t CNX_IPCServer::PFPGA_UniformityEnableWrite( int32_t fd, uint8_t data )
 #else
 	int32_t port	= PFPGA_I2C_PORT;
 	uint8_t slave	= PFPGA_I2C_SLAVE;
+
+	uint8_t data	= pBuf[0];
 
 	CNX_I2C i2c( port );
 
@@ -2150,7 +2338,7 @@ int32_t CNX_IPCServer::PFPGA_UniformityEnableWrite( int32_t fd, uint8_t data )
 #endif
 
 ERROR_PFPGA:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, PFPGA_CMD_UNIFORMITY_WR, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -2159,13 +2347,20 @@ ERROR_PFPGA:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::PFPGA_UniformityData( int32_t fd, uint8_t *data, int32_t size )
+int32_t CNX_IPCServer::PFPGA_UniformityData( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
 {
+	//
+	//	pBuf[0] - : data
+	//
+
 	uint8_t result = 0xFF;
 	int32_t sendSize;
 
 	int32_t port	= PFPGA_I2C_PORT;
 	uint8_t slave	= PFPGA_I2C_SLAVE;
+
+	uint8_t *data	= pBuf;
+	int32_t size	= iSize;
 
 	int32_t iDataSize = size / 2;
 	uint16_t *pData = (uint16_t*)malloc( sizeof(uint16_t) * iDataSize );
@@ -2189,6 +2384,7 @@ int32_t CNX_IPCServer::PFPGA_UniformityData( int32_t fd, uint8_t *data, int32_t 
 			port, slave, PFPGA_REG_LUT_BURST_SEL, 0x0080 );
 		goto ERROR_PFPGA;
 	}
+	usleep(100000);
 
 #if I2C_SEPARATE_BURST
 	for( int32_t i = 0; i < 4; i++ )
@@ -2215,11 +2411,12 @@ int32_t CNX_IPCServer::PFPGA_UniformityData( int32_t fd, uint8_t *data, int32_t 
 			port, slave, PFPGA_REG_LUT_BURST_SEL, 0x0000 );
 		goto ERROR_PFPGA;
 	}
+	usleep(100000);
 
 	result = 0x01;
 
 ERROR_PFPGA:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, PFPGA_CMD_UNIFORMITY_DATA, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -2230,14 +2427,24 @@ ERROR_PFPGA:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::PFPGA_WriteConfig( int32_t fd, uint8_t reg, uint8_t msb, uint8_t lsb )
+int32_t CNX_IPCServer::PFPGA_WriteConfig( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t /*iSize*/ )
 {
+	//
+	//	pBuf[0] : msg reg, pBuf[1] : lsb reg, pBuf[2] : msb data, pBuf[3] : lsb data
+	//
+	uint8_t	result	= 0xFF;
 	int32_t sendSize;
 
 	int32_t port	= PFPGA_I2C_PORT;
 	uint8_t slave	= PFPGA_I2C_SLAVE;
 
-	int16_t inValue = ((int16_t)(msb << 8) & 0xFF00) + (int16_t)lsb;
+	uint8_t msbReg	= pBuf[0];
+	uint8_t lsbReg	= pBuf[1];
+	uint8_t msbData	= pBuf[2];
+	uint8_t lsbData	= pBuf[3];
+
+	uint16_t inReg	= ((int16_t)(msbReg << 8) & 0xFF00) + (int16_t)lsbReg;
+	uint16_t inData	= ((int16_t)(msbData << 8) & 0xFF00) + (int16_t)lsbData;
 
 	CNX_I2C i2c( port );
 
@@ -2247,18 +2454,20 @@ int32_t CNX_IPCServer::PFPGA_WriteConfig( int32_t fd, uint8_t reg, uint8_t msb, 
 		goto ERROR_PFPGA;
 	}
 
-	if( 0 > i2c.Write( slave, reg, inValue ) )
+	if( 0 > i2c.Write( slave, inReg, inData ) )
 	{
 		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
-			port, slave, reg, inValue );
+			port, slave, inReg, inData );
 		goto ERROR_PFPGA;
 	}
 
 	NxDbgMsg( NX_DBG_INFO, "Write Data. ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
-			port, slave, reg, inValue );
+			port, slave, inReg, inData );
+
+	result = 0x01;
 
 ERROR_PFPGA:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, PFPGA_CMD_WRITE_CONFIG, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -2267,7 +2476,7 @@ ERROR_PFPGA:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::PFPGA_Source( int32_t fd, uint8_t * /*index*/ )
+int32_t CNX_IPCServer::PFPGA_Source( int32_t fd, uint32_t cmd, uint8_t */*pBuf*/, int32_t /*iSize*/ )
 {
 	int32_t sendSize, sent;
 
@@ -2275,7 +2484,7 @@ int32_t CNX_IPCServer::PFPGA_Source( int32_t fd, uint8_t * /*index*/ )
 	//	TODO : Need real access routine.
 	//
 
-	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, PFPGA_CMD_SOURCE, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, cmd, NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
 	sent = write( fd, m_SendBuf, sendSize );
 	NxDbgMsg(NX_DBG_VBS, "Write Reply = %d/%d\n", sent, sendSize);
 	// NX_HexDump( m_SendBuf, sent );
@@ -2283,7 +2492,7 @@ int32_t CNX_IPCServer::PFPGA_Source( int32_t fd, uint8_t * /*index*/ )
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::PFPGA_Version( int32_t fd )
+int32_t CNX_IPCServer::PFPGA_Version( int32_t fd, uint32_t cmd, uint8_t */*pBuf*/, int32_t /*iSize*/ )
 {
 	uint8_t version[4] = {0, 1, 10, 20};
 	int32_t sendSize, sent;
@@ -2292,7 +2501,7 @@ int32_t CNX_IPCServer::PFPGA_Version( int32_t fd )
 	//	TODO : Need real access routine.
 	//
 
-	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, PFPGA_CMD_VERSION, version, sizeof(version), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, cmd, version, sizeof(version), m_SendBuf, sizeof(m_SendBuf) );
 	sent = write( fd, m_SendBuf, sendSize );
 	NxDbgMsg(NX_DBG_VBS, "Write Reply = %d/%d\n", sent, sendSize);
 	// NX_HexDump( m_SendBuf, sent );
@@ -2306,7 +2515,7 @@ int32_t CNX_IPCServer::PFPGA_Version( int32_t fd )
 //
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::BAT_Status( int32_t fd )
+int32_t CNX_IPCServer::BAT_Status( int32_t fd, uint32_t cmd, uint8_t */*pBuf*/, int32_t /*iSize*/ )
 {
 	uint32_t voltage = 1158;
 	uint32_t currnet = 1500;
@@ -2319,7 +2528,7 @@ int32_t CNX_IPCServer::BAT_Status( int32_t fd )
 	data[0] = voltage;
 	data[1] = currnet;
 
-	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, BAT_CMD_STATUS, data, sizeof(data), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, cmd, data, sizeof(data), m_SendBuf, sizeof(m_SendBuf) );
 	sent = write( fd, m_SendBuf, sendSize );
 	NxDbgMsg(NX_DBG_VBS, "Write Reply = %d/%d\n", sent, sendSize);
 	// NX_HexDump( m_SendBuf, sent );
@@ -2333,7 +2542,7 @@ int32_t CNX_IPCServer::BAT_Status( int32_t fd )
 //
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::IMB_Status( int32_t fd )
+int32_t CNX_IPCServer::IMB_Status( int32_t fd, uint32_t cmd, uint8_t */*pBuf*/, int32_t /*iSize*/ )
 {
 	uint8_t state[1] = {1};
 	int32_t sendSize, sent;
@@ -2342,7 +2551,7 @@ int32_t CNX_IPCServer::IMB_Status( int32_t fd )
 	//	TODO : Need real access routine.
 	//
 
-	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, IMB_CMD_STATUS, state, 1, m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, cmd, state, 1, m_SendBuf, sizeof(m_SendBuf) );
 	sent = write( fd, m_SendBuf, sendSize );
 	NxDbgMsg(NX_DBG_VBS, "Write Reply = %d/%d\n", sent, sendSize);
 	// NX_HexDump( m_SendBuf, sent );
@@ -2350,7 +2559,7 @@ int32_t CNX_IPCServer::IMB_Status( int32_t fd )
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::IMB_Version( int32_t fd )
+int32_t CNX_IPCServer::IMB_Version( int32_t fd, uint32_t cmd, uint8_t */*pBuf*/, int32_t /*iSize*/ )
 {
 	uint8_t version[4] = {0, 1, 10, 20};
 	int32_t sendSize, sent;
@@ -2359,7 +2568,7 @@ int32_t CNX_IPCServer::IMB_Version( int32_t fd )
 	//	TODO : Need real access routine.
 	//
 
-	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, IMB_CMD_VERSION, version, sizeof(version), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, cmd, version, sizeof(version), m_SendBuf, sizeof(m_SendBuf) );
 	sent = write( fd, m_SendBuf, sendSize );
 	NxDbgMsg(NX_DBG_VBS, "Write Reply = %d/%d\n", sent, sendSize);
 	// NX_HexDump( m_SendBuf, sent );
@@ -2367,14 +2576,14 @@ int32_t CNX_IPCServer::IMB_Version( int32_t fd )
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::IPC_Version( int32_t fd )
+int32_t CNX_IPCServer::IPC_Version( int32_t fd, uint32_t cmd, uint8_t */*pBuf*/, int32_t /*iSize*/ )
 {
 	uint8_t version[32];
 	int32_t sendSize;
 
 	sprintf( (char*)version, "%s, %s", __TIME__, __DATE__ );
 
-	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, IPC_CMD_VERSION_SERVER, version, strlen((const char*)version), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, cmd, version, strlen((const char*)version), m_SendBuf, sizeof(m_SendBuf) );
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sent );
 	return 0;
@@ -2383,116 +2592,125 @@ int32_t CNX_IPCServer::IPC_Version( int32_t fd )
 //------------------------------------------------------------------------------
 int32_t CNX_IPCServer::ProcessCommand( int32_t fd, uint32_t cmd, void *pPayload, int32_t payloadSize )
 {
-	uint8_t *pData = (uint8_t*)pPayload;
 	switch( cmd )
 	{
+	//
 	//	TCON Commands
+	//
 	case TCON_CMD_INIT:
-		return TCON_Init( fd, cmd, pData[0] );
+		return TCON_Init( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case TCON_CMD_STATUS:
-		return TCON_Status( fd, cmd, pData[0] );
+		return TCON_Status( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case TCON_CMD_DOOR_STATUS:
-		return TCON_DoorStatus( fd, cmd, pData[0] );
+		return TCON_DoorStatus( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case TCON_CMD_LVDS_STATUS:
-		return TCON_LvdsStatus( fd, cmd, pData[0] );
+		return TCON_LvdsStatus( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case TCON_CMD_BOOTING_STATUS:
-		return TCON_BootingStatus( fd, cmd, pData[0] );
+		return TCON_BootingStatus( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case TCON_CMD_MODE_NORMAL:
-		return TCON_LedModeNormal( fd, cmd, pData[0] );
+		return TCON_LedModeNormal( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case TCON_CMD_MODE_LOD:
-		return TCON_LedModeLod( fd, cmd, pData[0] );
+		return TCON_LedModeLod( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case TCON_CMD_OPEN_NUM:
-		return TCON_LedOpenNum( fd, cmd, pData[0] );
+		return TCON_LedOpenNum( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case TCON_CMD_OPEN_POS:
-		return TCON_LedOpenPos( fd, cmd, pData[0] );
+		return TCON_LedOpenPos( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case TCON_CMD_SHORT_NUM:
-		return TCON_LedShortNum( fd, cmd, pData[0] );
+		return TCON_LedShortNum( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case TCON_CMD_SHORT_POS:
-		return TCON_LedShortPos( fd, cmd, pData[0] );
+		return TCON_LedShortPos( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case TCON_CMD_PATTERN_RUN:
 	case TCON_CMD_PATTERN_STOP:
-		return TCON_TestPattern( fd, cmd, pData[0], pData[1], pData[2] );
+		return TCON_TestPattern( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case TCON_CMD_MASTERING_RD:
-		return TCON_MasteringRead( fd, cmd, pData[0], pData[1] );
+		return TCON_MasteringRead( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case TCON_CMD_MASTERING_WR:
-		return TCON_MasteringWrite( fd, cmd, pData[0], pData[1], pData[2], pData[3] );
+		return TCON_MasteringWrite( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case TCON_CMD_QUALITY:
-		return TCON_Quality( fd, cmd, pData[0], pData[1], pData[2], pData[3] );
+		return TCON_Quality( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case TCON_CMD_TGAM_R:
 	case TCON_CMD_TGAM_G:
 	case TCON_CMD_TGAM_B:
-		return TCON_TargetGamma( fd, cmd, pData[0], pData + 1, payloadSize );
+		return TCON_TargetGamma( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case TCON_CMD_DGAM_R:
 	case TCON_CMD_DGAM_G:
 	case TCON_CMD_DGAM_B:
-		return TCON_DeviceGamma( fd, cmd, pData[0], pData + 1, payloadSize );
+		return TCON_DeviceGamma( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case TCON_CMD_DOT_CORRECTION:
-		return TCON_DotCorrection( fd, cmd, pData[0], pData + 1, payloadSize );
+		return TCON_DotCorrection( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case TCON_CMD_WRITE_CONFIG:
-		return TCON_WriteConfig( fd, cmd, pData[0], pData[1], pData[2], pData[3] );
+		return TCON_WriteConfig( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case TCON_CMD_ELAPSED_TIME:
 	case TCON_CMD_ACCUMULATE_TIME:
 	case TCON_CMD_VERSION:
-		return TCON_OptionalData( fd, cmd, pData[0], pData[1] );
+		return TCON_OptionalData( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case TCON_CMD_MULTI:
-		return TCON_Multi( fd, cmd, pData[0], pData[1] );
+		return TCON_Multi( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
+	//
 	//	PFPGA Commands
+	//
 	case PFPGA_CMD_STATUS:
-		return PFPGA_Status( fd );
+		return PFPGA_Status( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case PFPGA_CMD_MUTE:
-		return PFPGA_Mute( fd, pData[0] );
+		return PFPGA_Mute( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case PFPGA_CMD_UNIFORMITY_RD:
-		return PFPGA_UniformityEnableRead( fd );
+		return PFPGA_UniformityEnableRead( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case PFPGA_CMD_UNIFORMITY_WR:
-		return PFPGA_UniformityEnableWrite( fd, pData[0] );
+		return PFPGA_UniformityEnableWrite( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case PFPGA_CMD_UNIFORMITY_DATA:
-		return PFPGA_UniformityData( fd, pData, payloadSize );
+		return PFPGA_UniformityData( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case PFPGA_CMD_WRITE_CONFIG:
-		return PFPGA_WriteConfig( fd, pData[0], pData[1], pData[2] );
+		return PFPGA_WriteConfig( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case PFPGA_CMD_SOURCE:
-		return PFPGA_Source( fd, (uint8_t*)pPayload );
+		return PFPGA_Source( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case PFPGA_CMD_VERSION:
-		return PFPGA_Version( fd );
+		return PFPGA_Version( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
+	//
 	//	BAT Commands
+	//
 	case BAT_CMD_STATUS:
-		return BAT_Status( fd );
+		return BAT_Status( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
+	//
 	//	IMB Commands
+	//
 	case IMB_CMD_STATUS:
-		return IMB_Status( fd );
+		return IMB_Status( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
+	//
 	//	IPC Commands
+	//
 	case IPC_CMD_VERSION_SERVER:
-		return IPC_Version( fd );
+		return IPC_Version( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	default:
 		return -1;

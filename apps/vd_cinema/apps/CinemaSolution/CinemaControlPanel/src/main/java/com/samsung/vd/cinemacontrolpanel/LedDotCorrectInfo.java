@@ -21,7 +21,7 @@ public class LedDotCorrectInfo {
     public static final String PATH = "DCI/DOT";
     public static final String PATTERN_DIR  = "ID(\\d*)";
     public static final String PATTERN_NAME = "RGB_P2_5_ID(\\d*)_(L|R)(\\d)(A|B).txt";
-    public static final String PATTERN_DATA = "(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*)";
+    public static final String PATTERN_DATA = "\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*)\\s*";
 
     private int[] mRegister = {
         0x0047,	0x0048,	0x0049,     // REG_IN_CC_00, REG_IN_CC_01, REG_IN_CC_02,
@@ -104,14 +104,14 @@ public class LedDotCorrectInfo {
         int [][][] tmpData = new int [64][60][mRegister.length-1];  // 16bit Aligned Data
         for( int i = 0; i < oriData.length; i++ ) {
             for( int j = 0; j < oriData[0].length; j++ ) {
-                tmpData[i][j][0] = (( oriData[i][j][0]       ) & 0x3FFF);
-                tmpData[i][j][1] = (( oriData[i][j][1] <<  2 ) & 0xFFFC) | (( oriData[i][j][2] >> 12 ) & 0x0003);
-                tmpData[i][j][2] = (( oriData[i][j][2] <<  4 ) & 0xFFF0) | (( oriData[i][j][3] >> 10 ) & 0x000F);
-                tmpData[i][j][3] = (( oriData[i][j][3] <<  6 ) & 0xFFC0) | (( oriData[i][j][4] >>  8 ) & 0x003F);
-                tmpData[i][j][4] = (( oriData[i][j][4] <<  8 ) & 0xFF00) | (( oriData[i][j][5] >>  6 ) & 0x00FF);
-                tmpData[i][j][5] = (( oriData[i][j][5] << 10 ) & 0xFC00) | (( oriData[i][j][6] >>  4 ) & 0x03FF);
-                tmpData[i][j][6] = (( oriData[i][j][6] << 12 ) & 0xF000) | (( oriData[i][j][7] >>  2 ) & 0x0FFF);
-                tmpData[i][j][7] = (( oriData[i][j][7] << 14 ) & 0xC000) | (( oriData[i][j][8]       ) & 0x3FFF);
+                tmpData[i][j][0] = ((oriData[i][j][7] & 0x0003) << 14) | ((oriData[i][j][8] & 0x3FFF)      );
+                tmpData[i][j][1] = ((oriData[i][j][6] & 0x000F) << 12) | ((oriData[i][j][7] & 0x3FFC) >>  2);
+                tmpData[i][j][2] = ((oriData[i][j][5] & 0x003F) << 10) | ((oriData[i][j][6] & 0x3FF0) >>  4);
+                tmpData[i][j][3] = ((oriData[i][j][4] & 0x00FF) <<  8) | ((oriData[i][j][5] & 0x3FC0) >>  6);
+                tmpData[i][j][4] = ((oriData[i][j][3] & 0x03FF) <<  6) | ((oriData[i][j][4] & 0x3F00) >>  8);
+                tmpData[i][j][5] = ((oriData[i][j][2] & 0x0FFF) <<  4) | ((oriData[i][j][3] & 0x3C00) >> 10);
+                tmpData[i][j][6] = ((oriData[i][j][1] & 0x3FFF) <<  2) | ((oriData[i][j][2] & 0x3000) >> 12);
+                tmpData[i][j][7] =                                       ((oriData[i][j][0] & 0x3FFF)      );
             }
         }
 

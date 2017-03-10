@@ -137,8 +137,10 @@ public class DisplayModeActivity extends AppCompatActivity {
     private String mMasteringMode = mStrModeMastering[0];
     private int mMasteringModePos = 0;
 
-    private Button mBtnUniformityEnable;
-    private Button mBtnUniformityWrite;
+    private Spinner mSpinnerUniformity;
+    private Button mBtnEnableUniformity;
+    private Button mBtnUpdateUniformity;
+    private Button mBtnApplyUniformity;
 
     private Spinner mSpinnerImageQuality;
     private Button mBtnUpdateImageQuality;
@@ -189,33 +191,36 @@ public class DisplayModeActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
 
-                String[] resultUnifomiry = FileManager.CheckFileInUsb(LedUniformityCorrectInfo.PATH, LedUniformityCorrectInfo.NAME);
-                if( (resultUnifomiry != null && resultUnifomiry.length != 0) ) {
-                    mBtnUniformityWrite.setEnabled(true);
+                String[] resultPfpga = FileManager.CheckFileInUsb(ConfigPfpgaInfo.PATH_SOURCE, ConfigPfpgaInfo.NAME);
+                String[] resultUniformity = FileManager.CheckFileInUsb(ConfigPfpgaInfo.PATH_SOURCE, ConfigPfpgaInfo.NAME);
+                if( (resultPfpga != null && resultPfpga.length != 0) || (resultUniformity != null && resultUniformity.length != 0 ) ) {
+                    mBtnUpdateUniformity.setEnabled(true);
                 }
 
-                String[] resultPfpga = FileManager.CheckFileInUsb(ConfigPfpgaInfo.PATH_SOURCE, ConfigPfpgaInfo.NAME);
                 String[] resultTcon = FileManager.CheckFileInUsb(ConfigTconInfo.PATH_SOURCE, ConfigTconInfo.NAME);
                 String[] resultGamma = FileManager.CheckFileInUsb(LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME);
-
-                if( (resultPfpga != null && resultPfpga.length != 0) ||
-                    (resultTcon != null && resultTcon.length != 0) ||
-                    (resultGamma != null && resultGamma.length != 0) ) {
+                if( (resultTcon != null && resultTcon.length != 0) || (resultGamma != null && resultGamma.length != 0) ) {
                     mBtnUpdateImageQuality.setEnabled(true);
                 }
 
                 String[] resultDot = FileManager.CheckDirectoryInUsb(LedDotCorrectInfo.PATH, LedDotCorrectInfo.PATTERN_DIR);
-
                 if( (resultDot != null && resultDot.length != 0) ) {
                     new AsyncTaskAdapterDotCorrection(mAdapterDotCorrect).execute();
                     mBtnDotCorrectCheckAll.setEnabled(true);
                     mBtnDotCorrectUnCheckAll.setEnabled(true);
                     mBtnDotCorrectApply.setEnabled(true);
                 }
+
+                if( resultPfpga != null ) for(String file : resultPfpga) Log.i(VD_DTAG, String.format("Detection File. ( %s )", file ));
+                if( resultUniformity != null ) for(String file : resultUniformity) Log.i(VD_DTAG, String.format("Detection File. ( %s )", file ));
+                if( resultTcon != null ) for(String file : resultTcon) Log.i(VD_DTAG, String.format("Detection File. ( %s )", file ));
+                if( resultGamma != null ) for(String file : resultGamma) Log.i(VD_DTAG, String.format("Detection File. ( %s )", file ));
             }
+
             if( intent.getAction().equals(Intent.ACTION_MEDIA_EJECT) ) {
-                mBtnUniformityWrite.setEnabled(false);
+                mBtnUpdateUniformity.setEnabled(false);
                 mBtnUpdateImageQuality.setEnabled(false);
+
                 mBtnDotCorrectCheckAll.setEnabled(false);
                 mBtnDotCorrectUnCheckAll.setEnabled(false);
                 mBtnDotCorrectApply.setEnabled(false);
@@ -352,29 +357,53 @@ public class DisplayModeActivity extends AppCompatActivity {
             }
         });
 
-
         //
         //  Uniformity Correction
         //
-        mBtnUniformityEnable = (Button)findViewById(R.id.btnUniformityEnable);
-        mBtnUniformityWrite = (Button)findViewById(R.id.btnUniformityWrite);
+        mSpinnerUniformity = (Spinner)findViewById(R.id.spinnerUniformity);
+        mSpinnerUniformity.setAdapter( new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, new String[]{"1", "2", "3", "4"}));
 
-        mBtnUniformityEnable.setOnClickListener(new View.OnClickListener() {
+        mBtnUpdateUniformity = (Button)findViewById(R.id.btnUpdateUniformity);
+        mBtnUpdateUniformity.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-                if( mBtnUniformityEnable.getText().toString().equals("ENABLE") ) {
-                    ctrl.Send(NxCinemaCtrl.CMD_PFPGA_UNIFORMITY_WR, new byte[]{(byte) 0x00});
-                    mBtnUniformityEnable.setText("DISABLE");
+                String[] resultPfpga = FileManager.CheckFileInUsb(ConfigPfpgaInfo.PATH_SOURCE, ConfigPfpgaInfo.NAME);
+                for( String path : resultPfpga ) {
+                    Log.i(VD_DTAG, ">>" + path);
+                    FileManager.CopyFile(path, ConfigPfpgaInfo.PATH_TARGET + "/" + path.substring(path.lastIndexOf("/") + 1));
                 }
-                else {
-                    ctrl.Send(NxCinemaCtrl.CMD_PFPGA_UNIFORMITY_WR, new byte[]{(byte) 0x01});
-                    mBtnUniformityEnable.setText("ENABLE");
+
+                String[] resultUniformity = FileManager.CheckFileInUsb(LedUniformityInfo.PATH_SOURCE, LedUniformityInfo.NAME);
+                for( String path : resultUniformity ) {
+                    Log.i(VD_DTAG, ">>" + path);
+                    FileManager.CopyFile(path, LedUniformityInfo.PATH_TARGET + "/" + path.substring(path.lastIndexOf("/") + 1));
+                }
+
+                if( (resultPfpga.length != 0) || (resultUniformity.length != 0) ) {
+                    ShowMessage( "Update Image Quality File.");
+                    UpdateImageQuality();
                 }
             }
         });
 
-        mBtnUniformityWrite.setOnClickListener(new View.OnClickListener() {
+        mBtnEnableUniformity = (Button)findViewById(R.id.btnEnableUniformity);
+        mBtnEnableUniformity.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+                if( mBtnEnableUniformity.getText().toString().equals("ENABLE") ) {
+                    ctrl.Send(NxCinemaCtrl.CMD_PFPGA_UNIFORMITY_WR, new byte[]{(byte) 0x00});
+                    mBtnEnableUniformity.setText("DISABLE");
+                }
+                else {
+                    ctrl.Send(NxCinemaCtrl.CMD_PFPGA_UNIFORMITY_WR, new byte[]{(byte) 0x01});
+                    mBtnEnableUniformity.setText("ENABLE");
+                }
+            }
+        });
+
+        mBtnApplyUniformity = (Button)findViewById(R.id.btnApplyUniformity);
+        mBtnApplyUniformity.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 new AsyncTaskUniformityCorrection().execute();
@@ -385,23 +414,13 @@ public class DisplayModeActivity extends AppCompatActivity {
         //
         //  IMAGE QUALITY
         //
-        String[] strImageQuality = {
-                "1", "2", "3", "4"
-        };
-
         mSpinnerImageQuality = (Spinner)findViewById(R.id.spinnerImageQuality);
-        mSpinnerImageQuality.setAdapter( new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, strImageQuality));
+        mSpinnerImageQuality.setAdapter( new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, new String[]{"1", "2", "3", "4"}));
 
         mBtnUpdateImageQuality = (Button)findViewById(R.id.btnUpdateImageQuality);
         mBtnUpdateImageQuality.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String[] resultPfpga = FileManager.CheckFileInUsb(ConfigPfpgaInfo.PATH_SOURCE, ConfigPfpgaInfo.NAME);
-                for( String path : resultPfpga ) {
-                    Log.i(VD_DTAG, ">>" + path);
-                    FileManager.CopyFile(path, ConfigPfpgaInfo.PATH_TARGET + "/" + path.substring(path.lastIndexOf("/") + 1));
-                }
-
                 String[] resultTcon = FileManager.CheckFileInUsb(ConfigTconInfo.PATH_SOURCE, ConfigTconInfo.NAME);
                 for( String path : resultTcon ) {
                     Log.i(VD_DTAG, ">>" + path);
@@ -414,7 +433,7 @@ public class DisplayModeActivity extends AppCompatActivity {
                     FileManager.CopyFile(path, LedGammaInfo.PATH_TARGET + "/" + path.substring(path.lastIndexOf("/") + 1));
                 }
 
-                if( (resultPfpga.length != 0) || (resultTcon.length != 0) || (resultGamma.length != 0) ) {
+                if( (resultTcon.length != 0) || (resultGamma.length != 0) ) {
                     ShowMessage( "Update Image Quality File.");
                     UpdateImageQuality();
                 }
@@ -742,19 +761,26 @@ public class DisplayModeActivity extends AppCompatActivity {
     }
 
     private void UpdateUniformityCorrection() {
-        String[] result = FileManager.CheckFileInUsb(LedUniformityCorrectInfo.PATH, LedUniformityCorrectInfo.NAME);
-        if( result == null || result.length == 0 )
-            return;
+        String[] usbPfpga = FileManager.CheckFileInUsb(ConfigPfpgaInfo.PATH_SOURCE, ConfigPfpgaInfo.NAME);
+        String[] usbUniformity = FileManager.CheckFileInUsb(LedUniformityInfo.PATH_SOURCE, LedUniformityInfo.NAME);
+        String[] internalPfpga = FileManager.CheckFile(ConfigPfpgaInfo.PATH_TARGET, ConfigPfpgaInfo.NAME);
+        String[] internalUniformity =FileManager.CheckFile(LedUniformityInfo.PATH_TARGET, LedUniformityInfo.NAME);
 
-        mBtnUniformityWrite.setEnabled(true);
+        if( (usbPfpga != null && usbPfpga.length != 0) || (usbUniformity != null && usbUniformity.length != 0) ) {
+            mBtnUpdateUniformity.setEnabled(true);
+        }
+
+        if( (internalPfpga != null && internalPfpga.length != 0) || (internalUniformity != null && internalUniformity.length != 0) ) {
+            mBtnApplyUniformity.setEnabled(true);
+        }
 
         NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
         byte[] resultEnable = ctrl.Send( NxCinemaCtrl.CMD_PFPGA_UNIFORMITY_RD, null );
         if( resultEnable[0] == (byte)1 ) {
-            mBtnUniformityEnable.setText("ENABLE");
+            mBtnEnableUniformity.setText("ENABLE");
         }
         else {
-            mBtnUniformityEnable.setText("DISABLE");
+            mBtnEnableUniformity.setText("DISABLE");
         }
     }
 
@@ -762,22 +788,16 @@ public class DisplayModeActivity extends AppCompatActivity {
         //
         //  Update Button
         //
-        String[] usbPfpga = FileManager.CheckFileInUsb(ConfigPfpgaInfo.PATH_SOURCE, ConfigPfpgaInfo.NAME);
         String[] usbTcon = FileManager.CheckFileInUsb(ConfigTconInfo.PATH_SOURCE, ConfigTconInfo.NAME);
         String[] usbGamma = FileManager.CheckFileInUsb(LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME);
-        String[] internalPfpga = FileManager.CheckFile(ConfigPfpgaInfo.PATH_TARGET, ConfigPfpgaInfo.NAME);
         String[] internalQuality = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET, ConfigTconInfo.NAME);
         String[] internalGamma = FileManager.CheckFile(LedGammaInfo.PATH_TARGET, LedGammaInfo.PATTERN_NAME);
 
-        if( (usbPfpga != null && usbPfpga.length != 0 ) ||
-            (usbTcon != null && usbTcon.length != 0) ||
-            (usbGamma != null && usbGamma.length != 0) ) {
+        if( (usbTcon != null && usbTcon.length != 0) || (usbGamma != null && usbGamma.length != 0) ) {
             mBtnUpdateImageQuality.setEnabled(true);
         }
 
-        if( (internalPfpga != null && internalPfpga.length != 0) ||
-            (internalQuality != null && internalQuality.length != 0) ||
-            (internalGamma != null && internalGamma.length != 0) ) {
+        if( (internalQuality != null && internalQuality.length != 0) || (internalGamma != null && internalGamma.length != 0) ) {
             mBtnApplyImageQuality.setEnabled(true);
         }
     }
@@ -971,8 +991,11 @@ public class DisplayModeActivity extends AppCompatActivity {
         NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
         byte[] inData = new byte[] { (byte)indexResolution, (byte)indexSource };
 
-        if( bValidPort0 ) ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData );
-        if( bValidPort1 ) ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData );
+        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+        if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData0 );
+        if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData1 );
     }
 
     private void ApplyMasteringMode( int itemIdx, int value ) {
@@ -985,8 +1008,11 @@ public class DisplayModeActivity extends AppCompatActivity {
         NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
         byte[] inData = ctrl.AppendByteArray( new byte[]{(byte)mRegMastering[itemIdx]}, ctrl.IntToByteArray(value, NxCinemaCtrl.FORMAT_INT16) );
 
-        if( bValidPort0 ) ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData );
-        if( bValidPort1 ) ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData );
+        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+        if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData0 );
+        if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData1 );
     }
 
     //
@@ -999,7 +1025,8 @@ public class DisplayModeActivity extends AppCompatActivity {
                 if( (i & 0x7F) < 0x10 )
                     continue;
 
-                byte[] result = NxCinemaCtrl.GetInstance().Send(i, NxCinemaCtrl.CMD_TCON_STATUS, null);
+                NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+                byte[] result = ctrl.Send(NxCinemaCtrl.CMD_TCON_STATUS, new byte[]{(byte)i});
                 if (result == null || result.length == 0)
                     continue;
 
@@ -1062,32 +1089,41 @@ public class DisplayModeActivity extends AppCompatActivity {
 
             if( IsMasterMode() ) {
                 for( int i = 0; i < mRegHideMastering.length; i++ ) {
-                    byte[] reg = ctrl.IntToByteArray( mRegHideMastering[i], NxCinemaCtrl.FORMAT_INT8 );
+                    byte[] reg = ctrl.IntToByteArray( mRegHideMastering[i], NxCinemaCtrl.FORMAT_INT16 );
                     byte[] data = ctrl.IntToByteArray( mDataHideMastering[mMasteringModePos][i], NxCinemaCtrl.FORMAT_INT16 );
                     byte[] inData = ctrl.AppendByteArray(reg, data);
 
-                    if( bValidPort0 ) ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData);
-                    if( bValidPort1 ) ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData);
+                    byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+                    byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+                    if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData0);
+                    if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData1);
                 }
                 return null;
             }
 
             for( int i = 0; i < mRegHideMastering.length; i++ ) {
-                byte[] reg = ctrl.IntToByteArray( mRegHideMastering[i], NxCinemaCtrl.FORMAT_INT8 );
+                byte[] reg = ctrl.IntToByteArray( mRegHideMastering[i], NxCinemaCtrl.FORMAT_INT16 );
                 byte[] data = ctrl.IntToByteArray( mDataHideMastering[mMasteringModePos][i], NxCinemaCtrl.FORMAT_INT16 );
                 byte[] inData = ctrl.AppendByteArray(reg, data);
 
-                if( bValidPort0 ) ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData);
-                if( bValidPort1 ) ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData);
+                byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+                byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+                if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData0);
+                if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData1);
             }
 
             for( int i = 0; i < mRegMastering.length; i++ ) {
-                byte[] reg = ctrl.IntToByteArray( mRegMastering[i], NxCinemaCtrl.FORMAT_INT8 );
+                byte[] reg = ctrl.IntToByteArray( mRegMastering[i], NxCinemaCtrl.FORMAT_INT16 );
                 byte[] data = ctrl.IntToByteArray( mDataMastering[mMasteringModePos][i], NxCinemaCtrl.FORMAT_INT16 );
                 byte[] inData = ctrl.AppendByteArray(reg, data);
 
-                if( bValidPort0 ) ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData);
-                if( bValidPort1 ) ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData);
+                byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+                byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+                if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData0);
+                if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData1);
             }
 
             return null;
@@ -1122,8 +1158,9 @@ public class DisplayModeActivity extends AppCompatActivity {
 
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
             for (int i = 0; i < mRegMastering.length; i++) {
-                byte[] inData = new byte[] { (byte)mRegMastering[i], (byte)0xFF };
-                byte[] result = ctrl.Send( mCabinet[0], NxCinemaCtrl.CMD_TCON_MASTERING_RD, inData );
+                byte[] reg = ctrl.IntToByteArray( mRegMastering[i], NxCinemaCtrl.FORMAT_INT16 );
+                byte[] inData = ctrl.AppendByteArray(new byte[]{mCabinet[0]}, reg);
+                byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_MASTERING_RD, inData );
 
                 if( result == null || result.length == 0 )
                     continue;
@@ -1163,15 +1200,41 @@ public class DisplayModeActivity extends AppCompatActivity {
     }
 
     private class AsyncTaskUniformityCorrection extends AsyncTask<Void, Void, Void> {
+        private int mIndexUniformity = mSpinnerUniformity.getSelectedItemPosition();
+
         @Override
         protected Void doInBackground(Void... voids) {
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
 
             String[] result;
-            result = FileManager.CheckFileInUsb(LedUniformityCorrectInfo.PATH, LedUniformityCorrectInfo.NAME);
+            boolean enableUniformity = false;
+
+            result = FileManager.CheckFile(ConfigPfpgaInfo.PATH_TARGET, ConfigPfpgaInfo.NAME);
             for( String file : result ) {
-                LedUniformityCorrectInfo info = new LedUniformityCorrectInfo();
+                ConfigPfpgaInfo info = new ConfigPfpgaInfo();
+                if( info.Parse( file ) ) {
+                    enableUniformity = info.GetEnableUpdateUniformity(mIndexUniformity);
+
+                    for( int i = 0; i < info.GetRegister(mIndexUniformity).length; i++ ) {
+                        byte[] reg = ctrl.IntToByteArray(info.GetRegister(mIndexUniformity)[i], NxCinemaCtrl.FORMAT_INT8);
+                        byte[] data = ctrl.IntToByteArray(info.GetData(mIndexUniformity)[i], NxCinemaCtrl.FORMAT_INT16);
+                        byte[] inData = ctrl.AppendByteArray(reg, data);
+
+                        ctrl.Send( NxCinemaCtrl.CMD_PFPGA_WRITE_CONFIG, inData );
+                    }
+                }
+
+            }
+
+            result = FileManager.CheckFile(LedUniformityInfo.PATH_TARGET, LedUniformityInfo.NAME);
+            for( String file : result ) {
+                LedUniformityInfo info = new LedUniformityInfo();
                 if( info.Parse(file) ) {
+                    if( !enableUniformity ) {
+                        Log.i(VD_DTAG, String.format( "Skip. Update Uniformity Correction. ( %s )", file ));
+                        continue;
+                    }
+
                     byte[] inData = ctrl.IntArrayToByteArray( info.GetData(), NxCinemaCtrl.FORMAT_INT16 );
                     ctrl.Send( NxCinemaCtrl.CMD_PFPGA_UNIFORMITY_DATA, inData );
                 }
@@ -1210,7 +1273,7 @@ public class DisplayModeActivity extends AppCompatActivity {
             }
 
             if( ((CinemaInfo)getApplicationContext()).IsCheckTconLvds() ) {
-                byte[] resultLvds = ctrl.Send( mCabinet[0], NxCinemaCtrl.CMD_TCON_LVDS_STATUS, null );
+                byte[] resultLvds = ctrl.Send( NxCinemaCtrl.CMD_TCON_LVDS_STATUS, new byte[]{mCabinet[0]} );
                 if (resultLvds == null || resultLvds.length == 0 || resultLvds[0] == (byte)0x00 ) {
                     Log.i(VD_DTAG, "Fail, TCON LVDS is not valid.");
                     return null;
@@ -1220,7 +1283,7 @@ public class DisplayModeActivity extends AppCompatActivity {
             ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x01} );
 
             String[] result;
-            boolean[] gammaEnable = {false, };
+            boolean[] enableGamma = {false, };
 
             result = FileManager.CheckFile(ConfigPfpgaInfo.PATH_TARGET, ConfigPfpgaInfo.NAME);
             for( String file : result ) {
@@ -1240,15 +1303,18 @@ public class DisplayModeActivity extends AppCompatActivity {
             for( String file : result ) {
                 ConfigTconInfo info = new ConfigTconInfo();
                 if( info.Parse( file ) ) {
-                    gammaEnable = info.GetEnableUpdateGamma(mIndexQuality);
+                    enableGamma = info.GetEnableUpdateGamma(mIndexQuality);
 
                     for( int i = 0; i < info.GetRegister(mIndexQuality).length; i++ ) {
                         byte[] reg = ctrl.IntToByteArray(info.GetRegister(mIndexQuality)[i], NxCinemaCtrl.FORMAT_INT8);
                         byte[] data = ctrl.IntToByteArray(info.GetData(mIndexQuality)[i], NxCinemaCtrl.FORMAT_INT16);
                         byte[] inData = ctrl.AppendByteArray(reg, data);
 
-                        if( bValidPort0 ) ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_WRITE_CONFIG, inData);
-                        if( bValidPort1 ) ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_WRITE_CONFIG, inData);
+                        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+                        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+                        if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_WRITE_CONFIG, inData0);
+                        if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_WRITE_CONFIG, inData1);
                     }
                 }
             }
@@ -1257,10 +1323,10 @@ public class DisplayModeActivity extends AppCompatActivity {
             for( String file : result ) {
                 LedGammaInfo info = new LedGammaInfo();
                 if( info.Parse( file ) ) {
-                    if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !gammaEnable[0]) ||
-                        (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && !gammaEnable[1]) ||
-                        (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !gammaEnable[2]) ||
-                        (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && !gammaEnable[3]) ) {
+                    if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !enableGamma[0]) ||
+                        (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && !enableGamma[1]) ||
+                        (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !enableGamma[2]) ||
+                        (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && !enableGamma[3]) ) {
                         Log.i(VD_DTAG, String.format( "Skip. Update Gamma. ( %s )", file ));
                         continue;
                     }
@@ -1275,8 +1341,11 @@ public class DisplayModeActivity extends AppCompatActivity {
                     byte[] data = ctrl.IntArrayToByteArray(info.GetData(), NxCinemaCtrl.FORMAT_INT24);
                     byte[] inData = ctrl.AppendByteArray(table, data);
 
-                    if( bValidPort0 ) ctrl.Send( 0x09, cmd + info.GetChannel(), inData );
-                    if( bValidPort1 ) ctrl.Send( 0x89, cmd + info.GetChannel(), inData );
+                    byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+                    byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+                    if( bValidPort0 ) ctrl.Send( cmd + info.GetChannel(), inData0 );
+                    if( bValidPort1 ) ctrl.Send( cmd + info.GetChannel(), inData1 );
                 }
             }
 
@@ -1379,7 +1448,7 @@ public class DisplayModeActivity extends AppCompatActivity {
                         byte[] data = ctrl.IntArrayToByteArray( info.GetData(), NxCinemaCtrl.FORMAT_INT16 );    // size: 61440
                         byte[] inData =  ctrl.AppendByteArray( sel, data );
 
-                        byte[] res = ctrl.Send( info.GetIndex(), NxCinemaCtrl.CMD_TCON_DOT_CORRECTION, inData );
+                        byte[] res = ctrl.Send( NxCinemaCtrl.CMD_TCON_DOT_CORRECTION, ctrl.AppendByteArray( new byte[]{(byte)info.GetIndex()}, inData ) );
                         if( res == null || res.length == 0 ) {
                             publishProgress(i, result.length, success, ++fail);
                             continue;
@@ -1415,6 +1484,7 @@ public class DisplayModeActivity extends AppCompatActivity {
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
             CinemaLoading.Hide();
+            Log.i(VD_DTAG, ">>> Dot Correction Done. ");
         }
     }
 

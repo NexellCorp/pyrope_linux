@@ -44,8 +44,8 @@
 //	TMS <--> N.AP Coomunication Packet Format
 //
 //	Key       ( 4 Bytes )
-//	Length    ( 4 Bytes )
-//	Command   ( 4 Bytes )
+//	Length    ( 2 Bytes )
+//	Command   ( 2 Bytes )
 //	Payload   ( n Bytes )
 //
 //	Description
@@ -53,7 +53,7 @@
 //			a. TMS --> SEC : TMS_KEY_VALUE "TMS "
 //			b. SEC --> TMS : SEC_KEY_VALUE "SEC "
 //		Length :
-//			Command ( 4 bytes ) + Payload ( n Bytes )
+//			Command ( 2 bytes ) + Payload ( n Bytes )
 
 //	APIs
 int32_t TMS_MakePacket (

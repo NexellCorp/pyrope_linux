@@ -59,6 +59,15 @@
                     android:layout_weight="0.5" />
 
                 <TextView
+                    android:id="@+id/textPathUniformity"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:paddingLeft="40dp"
+                    android:textStyle=""
+                    android:layout_weight="0.5" />
+
+                <TextView
                     android:id="@+id/textPathConfigTcon"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
@@ -92,7 +101,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:text="Image Quality"
+                    android:text="Initial Value"
                     android:gravity="center"
                     android:paddingTop="15dp"
                     android:paddingBottom="15dp"
@@ -107,7 +116,7 @@
                     android:layout_weight="0.55">
 
                     <Spinner
-                        android:id="@+id/spinnerImageQuality"
+                        android:id="@+id/spinnerInitialValue"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:layout_marginLeft="180dp"
@@ -124,7 +133,7 @@
                     android:paddingBottom="3dp"
                     android:layout_weight="0.1">
                     <Button
-                        android:id="@+id/btnUpdateImageQuality"
+                        android:id="@+id/btnUpdateInitialValue"
                         android:text="Update"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -140,7 +149,7 @@
                     android:paddingBottom="3dp"
                     android:layout_weight="0.1">
                     <Button
-                        android:id="@+id/btnApplyImageQuality"
+                        android:id="@+id/btnApplyInitialValue"
                         android:text="Apply"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"

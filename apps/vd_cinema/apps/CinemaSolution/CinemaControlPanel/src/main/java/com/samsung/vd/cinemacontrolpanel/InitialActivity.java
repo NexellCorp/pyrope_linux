@@ -185,7 +185,7 @@ public class InitialActivity extends AppCompatActivity {
                 if( (i & 0x7F) < CinemaInfo.OFFSET_TCON )
                     continue;
 
-                byte[] result = NxCinemaCtrl.GetInstance().Send(i, NxCinemaCtrl.CMD_TCON_STATUS, null);
+                byte[] result = NxCinemaCtrl.GetInstance().Send(NxCinemaCtrl.CMD_TCON_STATUS, new byte[]{(byte)i});
                 if (result == null || result.length == 0)
                     continue;
 

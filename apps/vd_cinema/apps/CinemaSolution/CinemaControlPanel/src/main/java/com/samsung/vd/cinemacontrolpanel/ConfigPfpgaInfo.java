@@ -23,10 +23,12 @@ public class ConfigPfpgaInfo {
     public static final String NAME = "P_REG.txt";
 
     private static final int NUM_INDEX = 1;
+    private static final int NUM_ENABLE = 1;
     private static final int NUM_REG_NUMBER = 1;
 
-    public static final String PATTERN_DATA = "\\w+\\s*\\s*\\s*(\\d*)\\s*\\s*(\\d*)\\s*\\s*(\\d*)\\s*\\s*(\\d*)\\s*";
+    public static final String PATTERN_DATA = "\\w+\\s*(\\d*)\\s*(\\d*)\\s*(\\d*)\\s*(\\d*)\\s*";
 
+    public boolean[] mEnable = new boolean[4];
     public int[] mDataNum = new int[4];
     public int[][][] mData = new int[4][2][];
 
@@ -47,7 +49,7 @@ public class ConfigPfpgaInfo {
             FileInputStream inStream = new FileInputStream( filePath );
             BufferedReader bufferedReader = new BufferedReader( new InputStreamReader(inStream) );
 
-            for( int i = 0; i < NUM_INDEX + NUM_REG_NUMBER; i++ ) {
+            for( int i = 0; i < NUM_INDEX + NUM_ENABLE + NUM_REG_NUMBER; i++ ) {
                 String strLine = bufferedReader.readLine();
                 if( strLine == null ) {
                     Log.i(VD_DTAG, String.format(Locale.US, "Fail, Read Configuration. ( idx = %d )", i));
@@ -59,10 +61,18 @@ public class ConfigPfpgaInfo {
 
                 Matcher matcher = pattern.matcher(strLine);
                 if( matcher.matches() ) {
-                    mDataNum[0] = Integer.parseInt( matcher.group(1), 10 );
-                    mDataNum[1] = Integer.parseInt( matcher.group(2), 10 );
-                    mDataNum[2] = Integer.parseInt( matcher.group(3), 10 );
-                    mDataNum[3] = Integer.parseInt( matcher.group(4), 10 );
+                    if( i < NUM_INDEX + NUM_ENABLE ) {
+                        mEnable[0] = (Integer.parseInt( matcher.group(1), 10 ) == 1);
+                        mEnable[1] = (Integer.parseInt( matcher.group(2), 10 ) == 1);
+                        mEnable[2] = (Integer.parseInt( matcher.group(3), 10 ) == 1);
+                        mEnable[3] = (Integer.parseInt( matcher.group(4), 10 ) == 1);
+                    }
+                    else {
+                        mDataNum[0] = Integer.parseInt(matcher.group(1), 10);
+                        mDataNum[1] = Integer.parseInt(matcher.group(2), 10);
+                        mDataNum[2] = Integer.parseInt(matcher.group(3), 10);
+                        mDataNum[3] = Integer.parseInt(matcher.group(4), 10);
+                    }
                 }
             }
         } catch (IOException e) {
@@ -82,7 +92,7 @@ public class ConfigPfpgaInfo {
             int dataOffset = 0;
             while( bufferedReader.readLine() != null )
             {
-                if (dataOffset++ >= NUM_INDEX + NUM_REG_NUMBER - 1)
+                if (dataOffset++ >= NUM_INDEX + NUM_ENABLE + NUM_REG_NUMBER - 1)
                     break;
             }
 
@@ -96,8 +106,8 @@ public class ConfigPfpgaInfo {
                     break;
                 }
 
-                String[] strRegSplit = strLineReg.split("\t");
-                String[] strDataSplit = strLineData.split("\t");
+                String[] strRegSplit = strLineReg.split("\\s+");
+                String[] strDataSplit = strLineData.split("\\s+");
 
                 int curPos = 0;
                 for( int i = 0; i < strRegSplit.length; i++ )
@@ -126,6 +136,7 @@ public class ConfigPfpgaInfo {
         //
         for( int i = 0; i < 4; i++ ) {
             Log.i(VD_DTAG, String.format("* mode %d", i));
+            Log.i(VD_DTAG, String.format("-. Uniformity Correction ( %b )", mEnable[i] ));
             Log.i(VD_DTAG, String.format("> register number for writing : %d", mData[i][0].length));
             for( int j = 0; j < mData[i][0].length; j++ ) {
                 Log.i(VD_DTAG, String.format("-. reg( %3d, 0x%02x ), data( %4d, 0x%04x )",
@@ -134,6 +145,10 @@ public class ConfigPfpgaInfo {
         }
 
         return true;
+    }
+
+    boolean GetEnableUpdateUniformity( int mode ) {
+        return mEnable[mode];
     }
 
     int[] GetRegister( int mode ) {

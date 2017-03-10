@@ -38,7 +38,7 @@ int32_t TMS_MakePacket (
 	// uint8_t *pCrcStart;
 
 	//	Check pointer & buffer size
-	if( !pOutBuf || payloadSize+8 >= outBufSize )
+	if( !pOutBuf || payloadSize+8 > outBufSize )
 	{
 		return -1;
 	}

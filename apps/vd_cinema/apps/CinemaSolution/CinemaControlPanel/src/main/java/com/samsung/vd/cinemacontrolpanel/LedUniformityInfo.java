@@ -13,15 +13,18 @@ import java.util.StringTokenizer;
  * Created by doriya on 12/23/16.
  */
 
-public class LedUniformityCorrectInfo {
-    public static final String PATH = "DCI";
+public class LedUniformityInfo {
+    private static final String VD_DTAG = "LedUniformityInfo";
+
+    public static final String PATH_SOURCE = "DCI";
+    public static final String PATH_TARGET = "/storage/sdcard0";
     public static final String NAME = "UC_COEF.txt";
 
-    public int[] mData = new int[64*64];
+    public int[] mData = new int[4096];
 
-    public LedUniformityCorrectInfo() {
+    public LedUniformityInfo() {
         for( int i = 0; i < mData.length; i++ ) {
-            mData[i] = 0;
+            mData[i] = 65535;
         }
     }
 
@@ -31,7 +34,7 @@ public class LedUniformityCorrectInfo {
             return false;
 
         String fileName = filePath.substring( filePath.lastIndexOf("/") + 1 );
-        if( !fileName.equals(NAME) )
+        if( !fileName.equals( NAME ) )
             return false;
 
         try {

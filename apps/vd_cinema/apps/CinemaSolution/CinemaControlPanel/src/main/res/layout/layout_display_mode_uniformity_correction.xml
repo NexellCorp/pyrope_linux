@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
     <LinearLayout
         android:background="#FFE0E0E0"
@@ -19,12 +19,24 @@
             android:layout_width="0px"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="Control Panel"
+            android:text="@string/txt_item"
             android:textStyle="bold"
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="1" />
+            android:layout_weight="0.25" />
+
+        <TextView
+            android:background="@drawable/draw_line_border"
+            android:layout_width="0px"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="@string/txt_control"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:paddingTop="15dp"
+            android:paddingBottom="15dp"
+            android:layout_weight="0.75" />
     </LinearLayout>
 
     <LinearLayout
@@ -36,6 +48,17 @@
         android:gravity="center"
         android:weightSum="1">
 
+        <TextView
+            android:background="@drawable/draw_line_border"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="Uniformity Correct"
+            android:gravity="center"
+            android:paddingTop="15dp"
+            android:paddingBottom="15dp"
+            android:layout_weight="0.25"/>
+
         <LinearLayout
             android:background="@drawable/draw_line_border"
             android:layout_width="0dp"
@@ -43,9 +66,27 @@
             android:gravity="center"
             android:paddingTop="4dp"
             android:paddingBottom="3dp"
-            android:layout_weight="0.5">
+            android:layout_weight="0.45">
+
+            <Spinner
+                android:id="@+id/spinnerUniformity"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="180dp"
+                android:layout_marginRight="180dp"
+                android:gravity="center"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:background="@drawable/draw_line_border"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:paddingTop="4dp"
+            android:paddingBottom="3dp"
+            android:layout_weight="0.1">
             <Button
-                android:id="@+id/btnUniformityEnable"
+                android:id="@+id/btnEnableUniformity"
                 android:text="Enable"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -59,10 +100,27 @@
             android:gravity="center"
             android:paddingTop="4dp"
             android:paddingBottom="3dp"
-            android:layout_weight="0.5">
+            android:layout_weight="0.1">
             <Button
-                android:id="@+id/btnUniformityWrite"
-                android:text="Write"
+                android:id="@+id/btnUpdateUniformity"
+                android:text="Update"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:enabled="false"
+                android:gravity="center" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:background="@drawable/draw_line_border"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:paddingTop="4dp"
+            android:paddingBottom="3dp"
+            android:layout_weight="0.1">
+            <Button
+                android:id="@+id/btnApplyUniformity"
+                android:text="Apply"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:enabled="false"

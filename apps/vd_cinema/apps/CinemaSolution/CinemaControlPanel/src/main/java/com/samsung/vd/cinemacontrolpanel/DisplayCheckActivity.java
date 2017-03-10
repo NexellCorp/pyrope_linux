@@ -224,8 +224,11 @@ public class DisplayCheckActivity extends AppCompatActivity {
             if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
         }
 
-        if( bValidPort0 ) ctrl.Send( 0x09, status ? NxCinemaCtrl.CMD_TCON_PATTERN_RUN : NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data );
-        if( bValidPort1 ) ctrl.Send( 0x89, status ? NxCinemaCtrl.CMD_TCON_PATTERN_RUN : NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data );
+        byte[] data0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, data);
+        byte[] data1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, data);
+
+        if( bValidPort0 ) ctrl.Send( status ? NxCinemaCtrl.CMD_TCON_PATTERN_RUN : NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data0 );
+        if( bValidPort1 ) ctrl.Send( status ? NxCinemaCtrl.CMD_TCON_PATTERN_RUN : NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data1 );
 
         String strLog;
         if( mPatternName[funcIndex].length == 0 ) {
@@ -252,9 +255,11 @@ public class DisplayCheckActivity extends AppCompatActivity {
         }
 
         for( int i = 0; i < mFuncName.length; i++ ) {
-            byte[] data = { (byte)i, (byte)0x00 };
-            if( bValidPort0 ) ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data );
-            if( bValidPort1 ) ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data );
+            byte[] data0 = { (byte)0x09, (byte)i, (byte)0x00 };
+            byte[] data1 = { (byte)0x89, (byte)i, (byte)0x00 };
+
+            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data0 );
+            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data1 );
         }
     }
 
@@ -277,11 +282,7 @@ public class DisplayCheckActivity extends AppCompatActivity {
                 mAdapter.addGroup( new StatusDescribeExpandableInfo(String.format( Locale.US, "Cabinet %02d", (mCabinet[i] & 0x7F) - CinemaInfo.OFFSET_TCON )) );
 
                 for( int j = 0; j < 24; j++ ) {
-                    byte[] module = ctrl.IntToByteArray( j, NxCinemaCtrl.FORMAT_INT8 );
-                    byte[] inData = new byte[32];
-                    inData[0] = module[0];
-
-                    byte[] result = ctrl.Send( mCabinet[i], NxCinemaCtrl.CMD_TCON_ACCUMULATE_TIME, inData );
+                    byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_ACCUMULATE_TIME, new byte[] { mCabinet[i], (byte)j } );
                     if( result == null || result.length == 0 ) {
                         mAdapter.addChild(i, new StatusDescribeInfo(String.format( Locale.US, "Module #%02d", j), String.valueOf("Error")) );
                         continue;

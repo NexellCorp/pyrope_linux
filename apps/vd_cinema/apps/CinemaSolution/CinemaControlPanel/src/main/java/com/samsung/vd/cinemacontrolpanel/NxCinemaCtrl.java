@@ -83,25 +83,8 @@ public class NxCinemaCtrl {
         return mInstance;
     }
 
-    public synchronized byte[] Send( int id, int cmd, byte[] data ) {
-        if( CMD_TCON == (cmd & 0xFF00) ) {
-            return NX_CinemaCtrlTCON( id, cmd, data );
-        }
-        return null;
-    }
-
     public synchronized byte[] Send( int cmd, byte[] data ) {
-        if( CMD_PFPGA == (cmd & 0xFF00) ) {
-            return NX_CinemaCtrlPFPGA( cmd, data );
-        }
-        if( CMD_BAT == (cmd & 0xFF00) ) {
-            return NX_CinemaCtrlBAT( cmd, data );
-        }
-        if( CMD_IPC == (cmd & 0xFF00) ) {
-            return NX_CinemaCtrlIPC( cmd, data );
-        }
-
-        return null;
+        return NX_CinemaCtrl( cmd, data );
     }
 
     public static final int FORMAT_INT8     = 1;
@@ -230,8 +213,5 @@ public class NxCinemaCtrl {
         System.loadLibrary("nxcinemactrl");
     }
 
-    public native byte[] NX_CinemaCtrlTCON( int id, int cmd, byte[] inData );
-    public native byte[] NX_CinemaCtrlPFPGA( int cmd, byte[] inData );
-    public native byte[] NX_CinemaCtrlBAT( int cmd, byte[] inData );
-    public native byte[] NX_CinemaCtrlIPC( int cmd, byte[] inData );
+    public native byte[] NX_CinemaCtrl( int cmd, byte[] inData );
 }

@@ -74,12 +74,8 @@ public class CinemaInfo extends Application {
         return true;
     }
 
-    public boolean IsBootDelay() {
-		return true;
-	}
-
-    public int GetBootDelay() {
-        return 15;
+    public int GetBootTime() {
+        return 30;
     }
 
     //

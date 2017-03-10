@@ -26,9 +26,9 @@ public class ConfigTconInfo {
     private static final int NUM_ENABLE = 4;
     private static final int NUM_REG_NUMBER = 1;
 
-    public static final String PATTERN_DATA = "\\w+\\s*\\s*\\s*(\\d*)\\s*\\s*(\\d*)\\s*\\s*(\\d*)\\s*\\s*(\\d*)\\s*";
+    public static final String PATTERN_DATA = "\\w+\\s*(\\d*)\\s*(\\d*)\\s*(\\d*)\\s*(\\d*)\\s*";
 
-    public boolean[][] mGammaEnable = new boolean[4][4];
+    public boolean[][] mEnable = new boolean[4][4];
     public int[] mDataNum = new int[4];
     public int[][][] mData = new int[4][2][];
 
@@ -62,10 +62,10 @@ public class ConfigTconInfo {
                 Matcher matcher = pattern.matcher(strLine);
                 if( matcher.matches() ) {
                     if( i < NUM_INDEX + NUM_ENABLE ) {
-                        mGammaEnable[0][i - NUM_INDEX] = (Integer.parseInt( matcher.group(1), 10 ) == 1);
-                        mGammaEnable[1][i - NUM_INDEX] = (Integer.parseInt( matcher.group(2), 10 ) == 1);
-                        mGammaEnable[2][i - NUM_INDEX] = (Integer.parseInt( matcher.group(3), 10 ) == 1);
-                        mGammaEnable[3][i - NUM_INDEX] = (Integer.parseInt( matcher.group(4), 10 ) == 1);
+                        mEnable[0][i - NUM_INDEX] = (Integer.parseInt( matcher.group(1), 10 ) == 1);
+                        mEnable[1][i - NUM_INDEX] = (Integer.parseInt( matcher.group(2), 10 ) == 1);
+                        mEnable[2][i - NUM_INDEX] = (Integer.parseInt( matcher.group(3), 10 ) == 1);
+                        mEnable[3][i - NUM_INDEX] = (Integer.parseInt( matcher.group(4), 10 ) == 1);
                     }
                     else {
                         mDataNum[0] = Integer.parseInt( matcher.group(1), 10 );
@@ -106,8 +106,8 @@ public class ConfigTconInfo {
                     break;
                 }
 
-                String[] strRegSplit = strLineReg.split("\t");
-                String[] strDataSplit = strLineData.split("\t");
+                String[] strRegSplit = strLineReg.split("\\s+");
+                String[] strDataSplit = strLineData.split("\\s+");
 
                 int curPos = 0;
                 for( int i = 0; i < strRegSplit.length; i++ )
@@ -137,7 +137,7 @@ public class ConfigTconInfo {
         for( int i = 0; i < 4; i++ ) {
             Log.i(VD_DTAG, String.format("* mode %d", i));
             Log.i(VD_DTAG, String.format("-. TGAM0 ( %b ), TGAM1 ( %b ), DGAM0 ( %b ), DGAM1 ( %b )",
-                    mGammaEnable[i][0], mGammaEnable[i][1], mGammaEnable[i][2], mGammaEnable[i][3]) );
+                    mEnable[i][0], mEnable[i][1], mEnable[i][2], mEnable[i][3]) );
             Log.i(VD_DTAG, String.format("> register number for writing : %d", mData[i][0].length));
             for( int j = 0; j < mData[i][0].length; j++ ) {
                 Log.i(VD_DTAG, String.format("-. reg( %3d, 0x%02x ), data( %4d, 0x%04x )",
@@ -149,7 +149,7 @@ public class ConfigTconInfo {
     }
 
     boolean[] GetEnableUpdateGamma( int mode ) {
-        return mGammaEnable[mode];
+        return mEnable[mode];
     }
 
     int[] GetRegister( int mode ) {

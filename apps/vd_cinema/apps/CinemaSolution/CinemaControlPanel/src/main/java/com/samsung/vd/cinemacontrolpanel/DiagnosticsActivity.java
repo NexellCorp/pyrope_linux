@@ -339,8 +339,9 @@ public class DiagnosticsActivity extends AppCompatActivity {
 
         @Override
         protected Void doInBackground(Void... params) {
+            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
             for( byte cabinet : mCabinet ) {
-                byte[] result = NxCinemaCtrl.GetInstance().Send(cabinet, NxCinemaCtrl.CMD_TCON_STATUS, null);
+                byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_STATUS, new byte[]{cabinet} );
                 if (result == null || result.length == 0) {
                     Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / slave : 0x%02x )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet));
                     publishProgress((cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, -1);
@@ -393,8 +394,9 @@ public class DiagnosticsActivity extends AppCompatActivity {
 
         @Override
         protected Void doInBackground(Void... params) {
+            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
             for( byte cabinet : mCabinet ) {
-                byte[] result = NxCinemaCtrl.GetInstance().Send(cabinet, NxCinemaCtrl.CMD_TCON_LVDS_STATUS, null);
+                byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_LVDS_STATUS, new byte[]{cabinet} );
                 if (result == null || result.length == 0) {
                     Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / slave : 0x%02x )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet));
                     publishProgress((cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, -1);
@@ -455,28 +457,26 @@ public class DiagnosticsActivity extends AppCompatActivity {
                 if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
             }
 
-            if( bValidPort0 )   ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_MODE_LOD, null);
-            if( bValidPort1 )   ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_MODE_LOD, null);
+            if( bValidPort0 )   ctrl.Send( NxCinemaCtrl.CMD_TCON_MODE_LOD, new byte[]{(byte)0x09} );
+            if( bValidPort1 )   ctrl.Send( NxCinemaCtrl.CMD_TCON_MODE_LOD, new byte[]{(byte)0x89} );
 
             for( byte cabinet : mCabinet ) {
-                byte[] result = ctrl.Send( cabinet, NxCinemaCtrl.CMD_TCON_OPEN_NUM, null);
-                if (result == null || result.length == 0)
-                    continue;
-
-                int value = ctrl.ByteArrayToInt16(result, NxCinemaCtrl.FORMAT_INT16);
-
-                if( value == 0xFFFF ) {
+                byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_OPEN_NUM, new byte[]{cabinet} );
+                if (result == null || result.length == 0) {
                     Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / slave : 0x%02x )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet ));
                     publishProgress(cabinet & 0xFF, (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, -1);
+                    continue;
                 }
-                else if( value != 0 ) {
+
+                int value = ctrl.ByteArrayToInt16( result, NxCinemaCtrl.FORMAT_INT16 );
+                if( value != 0 ) {
                     Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x / result : %d)", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet, value ));
                     publishProgress(cabinet & 0xFF, (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, value);
                 }
             }
 
-            if( bValidPort0 )   ctrl.Send( 0x09, NxCinemaCtrl.CMD_TCON_MODE_NORMAL, null);
-            if( bValidPort1 )   ctrl.Send( 0x89, NxCinemaCtrl.CMD_TCON_MODE_NORMAL, null);
+            if( bValidPort0 )   ctrl.Send( NxCinemaCtrl.CMD_TCON_MODE_NORMAL, new byte[]{(byte)0x09} );
+            if( bValidPort1 )   ctrl.Send( NxCinemaCtrl.CMD_TCON_MODE_NORMAL, new byte[]{(byte)0x89} );
 
             return null;
         }
@@ -527,8 +527,9 @@ public class DiagnosticsActivity extends AppCompatActivity {
 
         @Override
         protected Void doInBackground(Void... params) {
+            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
             for( byte cabinet : mCabinet ) {
-                byte[] result = NxCinemaCtrl.GetInstance().Send(cabinet, NxCinemaCtrl.CMD_TCON_DOOR_STATUS, null);
+                byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_DOOR_STATUS, new byte[]{cabinet} );
                 if (result == null || result.length == 0) {
                     Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / slave : 0x%02x )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet));
                     publishProgress((cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, -1);
@@ -621,7 +622,8 @@ public class DiagnosticsActivity extends AppCompatActivity {
                 StatusSimpleInfo info = mAdapter.getItem(1);
                 info.SetStatus(StatusSimpleInfo.ERROR);
 
-                byte[] result = NxCinemaCtrl.GetInstance().Send(NxCinemaCtrl.CMD_PFPGA_STATUS, null);
+                NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+                byte[] result = ctrl.Send(NxCinemaCtrl.CMD_PFPGA_STATUS, null);
                 if( result == null || result.length == 0 ) {
                     Log.i(VD_DTAG,  "Unknown Error.");
                     info.SetStatus(StatusSimpleInfo.ERROR);
@@ -719,10 +721,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
 
                 for( int j = 0; j < 24; j++ ) {
                     byte[] module = ctrl.IntToByteArray( j, NxCinemaCtrl.FORMAT_INT8 );
-                    byte[] inData = new byte[32];
-                    inData[0] = module[0];
-
-                    byte[] result = ctrl.Send( mCabinet[i], NxCinemaCtrl.CMD_TCON_VERSION, inData );
+                       byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_VERSION, new byte[] { mCabinet[i], (byte)j } );
                     if( result == null || result.length == 0 ) {
                         mAdapter.addChild(i, new StatusDescribeInfo(String.format( Locale.US, "Module #%02d", j), String.valueOf("Error")) );
                         continue;

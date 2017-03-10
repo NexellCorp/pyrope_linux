@@ -49,60 +49,60 @@ int gNxFilterDebugLevel     = NX_DBG_ERR;
                                 }                                       \
                             } while(0);
 
-#define MAX_BUF_SIZE        64 * 1024
+#define MAX_PAYLOAD_SIZE    65533
 
 //------------------------------------------------------------------------------
 #if ENABLE_HEX_DUMP
 void NX_HexDump( const void *data, int32_t size )
 {
-	int32_t i=0, offset = 0;
-	char tmp[32];
-	static char lineBuf[1024];
-	const uint8_t *_data = (const uint8_t*)data;
-	while( offset < size )
-	{
-		sprintf( lineBuf, "%08lx :  ", (unsigned long)offset );
-		for( i=0 ; i<16 ; ++i )
-		{
-			if( i == 8 ){
-				strcat( lineBuf, " " );
-			}
-			if( offset+i >= size )
-			{
-				strcat( lineBuf, "   " );
-			}
-			else{
-				sprintf(tmp, "%02x ", _data[offset+i]);
-				strcat( lineBuf, tmp );
-			}
-		}
-		strcat( lineBuf, "   " );
+    int32_t i=0, offset = 0;
+    char tmp[32];
+    static char lineBuf[1024];
+    const uint8_t *_data = (const uint8_t*)data;
+    while( offset < size )
+    {
+        sprintf( lineBuf, "%08lx :  ", (unsigned long)offset );
+        for( i=0 ; i<16 ; ++i )
+        {
+            if( i == 8 ){
+                strcat( lineBuf, " " );
+            }
+            if( offset+i >= size )
+            {
+                strcat( lineBuf, "   " );
+            }
+            else{
+                sprintf(tmp, "%02x ", _data[offset+i]);
+                strcat( lineBuf, tmp );
+            }
+        }
+        strcat( lineBuf, "   " );
 
-		//     Add ACSII A~Z, & Number & String
-		for( i=0 ; i<16 ; ++i )
-		{
-			if( offset+i >= size )
-			{
-				break;
-			}
-			else{
-				if( isprint(_data[offset+i]) )
-				{
-					sprintf(tmp, "%c", _data[offset+i]);
-					strcat(lineBuf, tmp);
-				}
-				else
-				{
-					strcat( lineBuf, "." );
-				}
-			}
-		}
+        //     Add ACSII A~Z, & Number & String
+        for( i=0 ; i<16 ; ++i )
+        {
+            if( offset+i >= size )
+            {
+                break;
+            }
+            else{
+                if( isprint(_data[offset+i]) )
+                {
+                    sprintf(tmp, "%c", _data[offset+i]);
+                    strcat(lineBuf, tmp);
+                }
+                else
+                {
+                    strcat( lineBuf, "." );
+                }
+            }
+        }
 
-		strcat(lineBuf, "\n");
-		__android_log_print(ANDROID_LOG_DEBUG, NX_DTAG, "%s", lineBuf );
+        strcat(lineBuf, "\n");
+        __android_log_print(ANDROID_LOG_DEBUG, NX_DTAG, "%s", lineBuf );
 
-		offset += 16;
-	}
+        offset += 16;
+    }
 }
 #else
 void NX_HexDump( const void * /*data*/, int32_t /*size*/ )
@@ -111,12 +111,14 @@ void NX_HexDump( const void * /*data*/, int32_t /*size*/ )
 #endif
 
 //------------------------------------------------------------------------------
-JNIEXPORT jbyteArray JNICALL NX_CinemaCtrlTCON( JNIEnv *env, jclass obj, jint id, jint cmd, jbyteArray inArray )
+JNIEXPORT jbyteArray JNICALL NX_CinemaCtrl( JNIEnv *env, jclass obj, jint cmd, jbyteArray inArray )
 {
     NxDbgMsg( NX_DBG_VBS, "%s()++", __FUNCTION__ );
 
-    uint8_t* pTmpBuf = NULL;
-    int32_t iTmpSize = 0;
+    uint8_t*    pTmpBuf = (uint8_t*)malloc( sizeof(uint8_t) * MAX_PAYLOAD_SIZE );
+    int32_t     iTmpSize = 0;
+
+    memset( pTmpBuf, 0x00, sizeof(uint8_t) * MAX_PAYLOAD_SIZE );
 
     if( NULL != inArray )
     {
@@ -124,23 +126,16 @@ JNIEXPORT jbyteArray JNICALL NX_CinemaCtrlTCON( JNIEnv *env, jclass obj, jint id
         jint dataSize = env->GetArrayLength( inArray );
 
         iTmpSize = dataSize;
-        pTmpBuf = (uint8_t*)malloc( sizeof(uint8_t) * iTmpSize );
-
         memcpy( pTmpBuf, (uint8_t*)pData, dataSize );
         env->ReleaseByteArrayElements( inArray, pData, 0 );
     }
-    else
-    {
-        iTmpSize = MAX_BUF_SIZE;
-        pTmpBuf = (uint8_t*)malloc( sizeof(uint8_t) * iTmpSize );
-    }
 
-	if( 0 > NX_TCONCommand( id, cmd, (uint8_t*)pTmpBuf, &iTmpSize ) )
-	{
-	    NxDbgMsg( NX_DBG_ERR, "Fail, NX_TCONCommand().\n" );
-	    NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
-	    return NULL;
-	}
+    if( 0 > NX_IPCSendCommand( cmd, (uint8_t*)pTmpBuf, &iTmpSize ) )
+    {
+       NxDbgMsg( NX_DBG_ERR, "Fail, NX_IPCSendCommand().\n" );
+       NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
+       return NULL;
+    }
 
     jbyteArray outArray = env->NewByteArray( iTmpSize );
     if( NULL == outArray )
@@ -159,153 +154,9 @@ JNIEXPORT jbyteArray JNICALL NX_CinemaCtrlTCON( JNIEnv *env, jclass obj, jint id
 }
 
 //------------------------------------------------------------------------------
-JNIEXPORT jbyteArray JNICALL NX_CinemaCtrlPFPGA( JNIEnv *env, jclass obj, jint cmd, jbyteArray inArray )
-{
-    NxDbgMsg( NX_DBG_VBS, "%s()++", __FUNCTION__ );
-
-    uint8_t* pTmpBuf = NULL;
-    int32_t iTmpSize = 0;
-
-    if( NULL != inArray )
-    {
-        jbyte* pData = env->GetByteArrayElements( inArray, NULL );
-        jint dataSize = env->GetArrayLength( inArray );
-
-        iTmpSize = dataSize;
-        pTmpBuf = (uint8_t*)malloc( sizeof(uint8_t) * iTmpSize );
-
-        memcpy( pTmpBuf, (uint8_t*)pData, dataSize );
-        env->ReleaseByteArrayElements( inArray, pData, 0 );
-    }
-    else
-    {
-        iTmpSize = MAX_BUF_SIZE;
-        pTmpBuf = (uint8_t*)malloc( sizeof(uint8_t) * iTmpSize );
-    }
-
-	if( 0 > NX_PFPGACommand( cmd, (uint8_t*)pTmpBuf, &iTmpSize ) )
-	{
-	    NxDbgMsg( NX_DBG_ERR, "Fail, NX_PFPGACommand().\n" );
-	    NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
-	    return NULL;
-	}
-
-    jbyteArray outArray = env->NewByteArray( iTmpSize );
-    if( NULL == outArray )
-    {
-        NxDbgMsg( NX_DBG_ERR, "Fail, NewCharArray().\n" );
-        NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
-        return NULL;
-    }
-
-    env->SetByteArrayRegion( outArray, 0, iTmpSize, (jbyte*)pTmpBuf );
-    NX_HexDump( pTmpBuf, iTmpSize );
-
-    NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
-    return outArray;
-}
-
-//------------------------------------------------------------------------------
-JNIEXPORT jbyteArray JNICALL NX_CinemaCtrlBAT( JNIEnv *env, jclass obj, jint cmd, jbyteArray inArray )
-{
-    NxDbgMsg( NX_DBG_VBS, "%s()++", __FUNCTION__ );
-
-    uint8_t* pTmpBuf = NULL;
-    int32_t iTmpSize = 0;
-
-    if( NULL != inArray )
-    {
-        jbyte* pData = env->GetByteArrayElements( inArray, NULL );
-        jint dataSize = env->GetArrayLength( inArray );
-
-        iTmpSize = dataSize;
-        pTmpBuf = (uint8_t*)malloc( sizeof(uint8_t) * iTmpSize );
-
-        memcpy( pTmpBuf, (uint8_t*)pData, dataSize );
-        env->ReleaseByteArrayElements( inArray, pData, 0 );
-    }
-    else
-    {
-        iTmpSize = MAX_BUF_SIZE;
-        pTmpBuf = (uint8_t*)malloc( sizeof(uint8_t) * iTmpSize );
-    }
-
-	if( 0 > NX_BATCommand( cmd, (uint8_t*)pTmpBuf, &iTmpSize ) )
-	{
-	    NxDbgMsg( NX_DBG_ERR, "Fail, NX_BATCommand().\n" );
-	    NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
-	    return NULL;
-	}
-
-    jbyteArray outArray = env->NewByteArray( iTmpSize );
-    if( NULL == outArray )
-    {
-        NxDbgMsg( NX_DBG_ERR, "Fail, NewCharArray().\n" );
-        NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
-        return NULL;
-    }
-
-    env->SetByteArrayRegion( outArray, 0, iTmpSize, (jbyte*)pTmpBuf );
-    NX_HexDump( pTmpBuf, iTmpSize );
-
-    NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
-    return outArray;
-}
-
-//------------------------------------------------------------------------------
-JNIEXPORT jbyteArray JNICALL NX_CinemaCtrlIPC( JNIEnv *env, jclass obj, jint cmd, jbyteArray inArray )
-{
-    NxDbgMsg( NX_DBG_VBS, "%s()++", __FUNCTION__ );
-
-    uint8_t* pTmpBuf = NULL;
-    int32_t iTmpSize = 0;
-
-    if( NULL != inArray )
-    {
-        jbyte* pData = env->GetByteArrayElements( inArray, NULL );
-        jint dataSize = env->GetArrayLength( inArray );
-
-        iTmpSize = dataSize;
-        pTmpBuf = (uint8_t*)malloc( sizeof(uint8_t) * iTmpSize );
-
-        memcpy( pTmpBuf, (uint8_t*)pData, dataSize );
-        env->ReleaseByteArrayElements( inArray, pData, 0 );
-    }
-    else
-    {
-        iTmpSize = MAX_BUF_SIZE;
-        pTmpBuf = (uint8_t*)malloc( sizeof(uint8_t) * iTmpSize );
-    }
-
-	if( 0 > NX_IPCCommand( cmd, (uint8_t*)pTmpBuf, &iTmpSize ) )
-	{
-	    NxDbgMsg( NX_DBG_ERR, "Fail, NX_IPCCommand().\n" );
-	    NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
-	    return NULL;
-	}
-
-    jbyteArray outArray = env->NewByteArray( iTmpSize );
-    if( NULL == outArray )
-    {
-        NxDbgMsg( NX_DBG_ERR, "Fail, NewCharArray().\n" );
-        NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
-        return NULL;
-    }
-
-    env->SetByteArrayRegion( outArray, 0, iTmpSize, (jbyte*)pTmpBuf );
-    NX_HexDump( pTmpBuf, iTmpSize );
-
-    NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
-    return outArray;
-}
-
-//------------------------------------------------------------------------------
 static JNINativeMethod sMethods[] = {
     //  Native Function Name,           Signature,                          C++ Function Name
-    { "NX_CinemaCtrlTCON",              "(II[B)[B",                         (void*)NX_CinemaCtrlTCON    },
-    { "NX_CinemaCtrlPFPGA",             "(I[B)[B",                          (void*)NX_CinemaCtrlPFPGA   },
-    { "NX_CinemaCtrlBAT",               "(I[B)[B",                          (void*)NX_CinemaCtrlBAT     },
-    { "NX_CinemaCtrlIPC",               "(I[B)[B",                          (void*)NX_CinemaCtrlIPC     },
+    { "NX_CinemaCtrl",                  "(I[B)[B",                          (void*)NX_CinemaCtrl        },
 };
 
 //------------------------------------------------------------------------------
@@ -374,5 +225,3 @@ void JNI_OnUnload( JavaVM *vm, void *reserved )
 FAIL:
     NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
 }
-
-

@@ -179,10 +179,9 @@ public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
         @Override
         protected Void doInBackground(Void... params) {
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-            ctrl.Send( mId, NxCinemaCtrl.CMD_TCON_MODE_LOD, null );
+            ctrl.Send( NxCinemaCtrl.CMD_TCON_MODE_LOD, new byte[]{mId} );
 
-            byte[] resultNum;
-            resultNum = ctrl.Send( mId, mCmd1, null);
+            byte[] resultNum = ctrl.Send( mCmd1, new byte[]{mId});
             if (resultNum == null || resultNum.length == 0)
                 return null;
 
@@ -192,7 +191,7 @@ public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
                     return null;
                 }
 
-                byte[] resultPos = ctrl.Send( mId, mCmd2, null );
+                byte[] resultPos = ctrl.Send( mCmd2, new byte[]{mId} );
                 if (resultPos == null || resultPos.length == 0)
                     continue;
 
@@ -201,7 +200,7 @@ public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
                 mAdapter.add( new LedPosInfo(String.valueOf(i), String.valueOf(posX), String.valueOf(posY)));
             }
 
-            ctrl.Send( mId, NxCinemaCtrl.CMD_TCON_MODE_NORMAL, null );
+            ctrl.Send( NxCinemaCtrl.CMD_TCON_MODE_NORMAL, new byte[]{mId} );
             return null;
         }
 

@@ -245,7 +245,7 @@ void CNX_VideoDecoder::ThreadLoop( void )
 				
 				pVideoSample->Lock();
 				pVideoSample->SetOwner(this);
-				pVideoSample->SetTimeStamp( decOut.timeStamp );
+				pVideoSample->SetTimeStamp( decOut.timeStamp[0] );
 				pVideoSample->SetVideoMemory( &decOut.outImg );
 				pVideoSample->SetVideoMemoryIndex( decOut.outImgIdx );
 				Deliver( pVideoSample );
@@ -258,7 +258,7 @@ void CNX_VideoDecoder::ThreadLoop( void )
 				
 					pVideoSample->Lock();
 					pVideoSample->SetOwner(this);
-					pVideoSample->SetTimeStamp( decOut.timeStamp );
+					pVideoSample->SetTimeStamp( decOut.timeStamp[0] );
 					pVideoSample->SetVideoMemory( &decOut.outImg );
 					pVideoSample->SetVideoMemoryIndex( decOut.outImgIdx );
 					Deliver( pVideoSample );

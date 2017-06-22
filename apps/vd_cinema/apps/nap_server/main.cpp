@@ -40,6 +40,7 @@
 #include <NX_Pwm.h>
 
 #include <Board_Port.h>
+#include <NX_Version.h>
 
 #include <cutils/android_reboot.h>
 
@@ -391,16 +392,26 @@ static int32_t SendRemote( const char *pSockName, const char *pMsg )
 }
 
 //------------------------------------------------------------------------------
-static int32_t SecurelinkeEventCallback( void * /*pParam*/, int32_t eventCode, void * /*pEvtData*/, int32_t /*dataSize*/ )
+static int32_t SecurelinkeEventCallback( void * /*pParam*/, int32_t eventCode, void *pEvtData, int32_t dataSize )
 {
 	NxDbgMsg(NX_DBG_VBS, "Receive Event Message ( 0x%08x )\n", eventCode);
+	static int32_t bSetVersion = false;
 
-	const char *pResult[4] = { "BootDone", "Alive", "Marriage", "Divorce" };
+	const char *pResult[5] = { "BootDone", "Alive", "Marriage", "Divorce" };
 
-	if( eventCode == 0x00000001 ) SendRemote( "cinema.secure", pResult[0] );	// CMD_BOOT_DONE
-	if( eventCode == 0x00000002 ) SendRemote( "cinema.secure", pResult[1] );	// CMD_ALIVE
-	if( eventCode == 0x00000101 ) SendRemote( "cinema.secure", pResult[2] );	// CMD_MARRIAGE
-	if( eventCode == 0x00000102 ) SendRemote( "cinema.secure", pResult[3] );	// CMD_DIVORCE
+	if( eventCode == 0x00000001 ) SendRemote( "cinema.secure", pResult[0] );			// CMD_BOOT_DONE
+	if( eventCode == 0x00000002 ) SendRemote( "cinema.secure", pResult[1] );			// CMD_ALIVE
+	if( eventCode == 0x00000101 ) SendRemote( "cinema.secure", pResult[2] );			// CMD_MARRIAGE
+	if( eventCode == 0x00000102 ) SendRemote( "cinema.secure", pResult[3] );			// CMD_DIVORCE
+
+	if( eventCode == 0x00000701 && pEvtData != NULL && dataSize != 0 && !bSetVersion )	// CMD_VERSION
+	{
+		char version[64] = { 0x00, };
+		memcpy( version, pEvtData, dataSize );
+
+		NX_SetSapVersion( (uint8_t*)version, strlen(version) );
+		bSetVersion = true;
+	}
 
 	return 0;
 }
@@ -409,10 +420,16 @@ static int32_t SecurelinkeEventCallback( void * /*pParam*/, int32_t eventCode, v
 static int32_t TamperCheckerCallback( void * /*pPrivate*/, uint32_t iTamperIndex, uint32_t iTamperValue )
 {
 	const char *pTamperIndex[2] = {	"DoorTamper", "MarriageTamper" };
+	char msg[1024] = {0x00, };
 
-	if( iTamperValue == 0 )
+	if( iTamperIndex == 0 && iTamperValue == 1 )
 	{
-		char msg[1024];
+		sprintf( msg, "Error %s", pTamperIndex[iTamperIndex] );
+		SendRemote( "cinema.tamper", msg );
+	}
+
+	if( iTamperIndex == 1 && iTamperValue == 0 )
+	{
 		sprintf( msg, "Error %s", pTamperIndex[iTamperIndex] );
 		SendRemote( "cinema.tamper", msg );
 	}
@@ -425,10 +442,13 @@ int32_t main( void )
 {
 	register_signal();
 
+	//	Set Version Information
+	NX_SetNapVersion( (uint8_t*)NX_VERSION_NAP, strlen(NX_VERSION_NAP) );
+
 	//	Start TMS Server
 	if( 0 != NX_IPCServerStart() )
 	{
-		NxErrMsg("TMS service demon start failed!!!\n");
+		NxErrMsg("IPC service demon start failed!!!\n");
 		exit(-1);
 	}
 

@@ -26,6 +26,7 @@
 #define CMD_ALIVE			0x00000002
 #define CMD_MARRIAGE		0x00000101
 #define CMD_DIVORCE			0x00000102
+#define CMD_VERSION			0x00000701
 
 struct _NX_UART_PACKET{
 	uint32_t startCode;

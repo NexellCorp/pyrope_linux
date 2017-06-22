@@ -109,7 +109,6 @@
 //
 //	Version
 //
-#define TCON_REG_FPGA_MODE_NAME			0x0013
 #define TCON_REG_FLASH_SEL				0x008D
 #define TCON_REG_F_LED_WR_EN			0x0140
 
@@ -229,6 +228,22 @@
 
 
 //
+//	Dot Corretion Extract
+//
+#define TCON_REG_ADDR_CC_POS_X			0x0045
+#define TCON_REG_ADDR_CC_POS_Y			0x0046
+#define TCON_REG_ADDR_CC_IN_CC00		0x0047
+#define TCON_REG_ADDR_CC_IN_CC01		0x0048
+#define TCON_REG_ADDR_CC_IN_CC02		0x0049
+#define TCON_REG_ADDR_CC_IN_CC10		0x004A
+#define TCON_REG_ADDR_CC_IN_CC11		0x004B
+#define TCON_REG_ADDR_CC_IN_CC12		0x004C
+#define TCON_REG_ADDR_CC_IN_CC20		0x004D
+#define TCON_REG_ADDR_CC_IN_CC21		0x004E
+#define TCON_REG_ADDR_CC_IN_CC22		0x004F
+
+
+//
 //	Input Source
 //
 #define TCON_REG_MUTE					0x0064
@@ -244,9 +259,24 @@
 
 
 //
-//	TCON Multi Mode
+//	TCON White Seam
 //
-#define TCON_REG_MULTI					0x0018
+#define TCON_REG_SEAM_TOP				0x0180
+#define TCON_REG_SEAM_BOTTOM			0x0181
+#define TCON_REG_SEAM_LEFT				0x0182
+#define TCON_REG_SEAM_RIGHT				0x0183
+
+#define TCON_REG_F_LED_DATA00			0x0142
+#define TCON_REG_F_LED_DATA01			0x0143
+#define TCON_REG_F_LED_DATA02			0x0144
+#define TCON_REG_F_LED_DATA03			0x0145
+
+
+//
+//	TCON Version
+//
+#define TCON_REG_FPGA_MODE_NAME			0x0013
+#define TCON_REG_FPGA_TIME1				0x000D
 
 
 //
@@ -263,5 +293,8 @@
 #define PFPGA_REG_LUT_BURST_SEL			0x0001
 #define PFPGA_REG_NUC_EN				0x01B0
 #define PFPGA_REG_NUC_WDATA				0x01BA
+
+#define PFPGA_REG_PF_VERSION			0x018F
+#define PFPGA_REG_PF_FPGA_TIME			0x018E
 
 #endif	// __NX_I2CREGISTER_H__

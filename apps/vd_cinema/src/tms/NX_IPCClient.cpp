@@ -29,6 +29,8 @@
 #include <NX_IPCClient.h>
 #include <NX_IPCCommand.h>
 
+#include <NX_Version.h>
+
 #define NX_DTAG	"[IPC Client]"
 #include <NX_DbgMsg.h>
 
@@ -82,7 +84,13 @@ CNX_IPCClient* CNX_IPCClient::m_psInstance = NULL;
 //------------------------------------------------------------------------------
 int32_t CNX_IPCClient::SendCommand( uint32_t iCmd, uint8_t *pBuf, int32_t *iSize )
 {
-	return (IPC_CMD_VERSION_CLIENT == iCmd) ? GetVersion( iCmd, pBuf, iSize ) : Send( iCmd, pBuf, iSize );
+	if( (iCmd == PLATFORM_CMD_IPC_CLIENT_VERSION) ||
+		(iCmd == GDC_COMMAND(CMD_TYPE_PLATFORM, PLATFORM_CMD_IPC_CLIENT_VERSION)) )
+	{
+		return GetVersion( iCmd, pBuf, iSize );
+	}
+
+	return Send( iCmd, pBuf, iSize );
 }
 
 //------------------------------------------------------------------------------
@@ -142,7 +150,7 @@ int32_t CNX_IPCClient::Send( uint32_t iCmd, uint8_t *pBuf, int32_t *iSize )
 int32_t CNX_IPCClient::GetVersion( uint32_t /*iCmd*/, uint8_t *pBuf, int32_t *iSize )
 {
 	uint8_t version[1024];
-	sprintf( (char*)version, "%s, %s", __TIME__, __DATE__ );
+	snprintf( (char*)version, sizeof(version), "%s ( %s, %s )", NX_VERSION_IPC_CLIENT, __TIME__, __DATE__ );
 
 	int32_t payloadSize = (int32_t)strlen((const char*)version);
 

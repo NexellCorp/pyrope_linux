@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //
-//	Copyright (C) 2016 Nexell Co. All Rights Reserved
+//	Copyright (C) 2017 Nexell Co. All Rights Reserved
 //	Nexell Co. Proprietary & Confidential
 //
 //	NEXELL INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
@@ -17,18 +17,12 @@
 //
 //------------------------------------------------------------------------------
 
-#ifndef __NX_IPCSERVER_H__
-#define __NX_IPCSERVER_H__
+#ifndef __NX_VERSION_H__
+#define __NX_VERSION_H__
 
-#include <stdint.h>
+#define NX_VERSION_NAP			"Version 1.0.0"
+#define NX_VERSION_SAP			"Version 1.0.0"
+#define NX_VERSION_IPC_SERVER	"IPC_SER_v1.00.00"
+#define NX_VERSION_IPC_CLIENT	"IPC_CLI_v1.00.00"
 
-#define	IPC_SERVER_FILE		"/data/local/tmp/ipc_server"
-#define	MAX_PAYLOAD_SIZE	65533
-
-int32_t NX_IPCServerStart();
-void	NX_IPCServerStop();
-
-void	NX_SetNapVersion( uint8_t *pVersion, int iSize );
-void	NX_SetSapVersion( uint8_t *pVersion, int iSize );
-
-#endif	// __NX_IPCSERVER_H__
+#endif	// __NX_VERSION_H__

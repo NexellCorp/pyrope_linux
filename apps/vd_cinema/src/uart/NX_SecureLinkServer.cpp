@@ -193,8 +193,8 @@ void CNX_SLinkServer::ThreadProc()
 
 		if( m_CbEventCallback )
 		{
-			NxDbgMsg( NX_DBG_VBS, "Callback(%d, NULL, 0)\n", rcvPacket.command);
-			m_CbEventCallback( m_hEvtParam, rcvPacket.command, NULL, 0 );
+			NxDbgMsg( NX_DBG_VBS, "Callback(%d, %p, %d)\n", rcvPacket.command, rcvPacket.payload, rcvPacket.payloadSize );
+			m_CbEventCallback( m_hEvtParam, rcvPacket.command, rcvPacket.payload, rcvPacket.payloadSize );
 		}
 
 		switch( rcvPacket.command )

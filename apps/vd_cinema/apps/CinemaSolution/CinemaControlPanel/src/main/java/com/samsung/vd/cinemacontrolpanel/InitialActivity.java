@@ -182,7 +182,7 @@ public class InitialActivity extends AppCompatActivity {
         @Override
         protected Void doInBackground(Void... params) {
             for( int i = 0; i < 255; i++ ) {
-                if( (i & 0x7F) < CinemaInfo.OFFSET_TCON )
+                if( (i & 0x7F) < CinemaInfo.TCON_ID_OFFSET )
                     continue;
 
                 byte[] result = NxCinemaCtrl.GetInstance().Send(NxCinemaCtrl.CMD_TCON_STATUS, new byte[]{(byte)i});

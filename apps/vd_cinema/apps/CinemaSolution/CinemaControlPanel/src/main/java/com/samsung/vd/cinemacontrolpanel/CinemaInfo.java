@@ -23,7 +23,8 @@ public class CinemaInfo extends Application {
     public static final String KEY_MASTERING_MODE   = "mastering.mode";
     public static final String KEY_SCREEN_ROTATE    = "screen.rotate";
 
-    public static final int OFFSET_TCON = 16;
+    public static final int TCON_ID_OFFSET = 16;
+    public static final int TCON_MODULE_NUM = 24;
 
     private VdPreference mPrefConfig;
     private CinemaLog mLog;
@@ -61,10 +62,6 @@ public class CinemaInfo extends Application {
     public boolean IsDetectTamper() {
 		return true;
 	}
-
-    public boolean IsStandAlone() {
-        return false;
-    }
 
     public boolean IsEnableExit() {
         return false;

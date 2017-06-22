@@ -69,18 +69,6 @@
                 </RelativeLayout>
 
                 <RelativeLayout
-                    android:id="@+id/tabLedShort"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical">
-
-                    <include
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        layout="@layout/layout_diagnostics_led_short" />
-                </RelativeLayout>
-
-                <RelativeLayout
                     android:id="@+id/tabCabinetDoor"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
@@ -90,18 +78,6 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         layout="@layout/layout_diagnostics_cabinet_door" />
-                </RelativeLayout>
-
-                <RelativeLayout
-                    android:id="@+id/tabBattery"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical">
-
-                    <include
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        layout="@layout/layout_diagnostics_battery" />
                 </RelativeLayout>
 
                 <RelativeLayout

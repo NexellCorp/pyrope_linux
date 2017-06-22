@@ -80,14 +80,25 @@
                 </RelativeLayout>
 
                 <RelativeLayout
-                    android:id="@+id/tabInputSource"
+                    android:id="@+id/tabDotCorrectionExtract"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:orientation="vertical">
                     <include
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        layout="@layout/layout_display_mode_input" />
+                        layout="@layout/layout_display_mode_dot_correction_extract" />
+                </RelativeLayout>
+
+                <RelativeLayout
+                    android:id="@+id/tabWhiteSeamValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical">
+                    <include
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        layout="@layout/layout_display_mode_white_seam" />
                 </RelativeLayout>
 
                 <RelativeLayout

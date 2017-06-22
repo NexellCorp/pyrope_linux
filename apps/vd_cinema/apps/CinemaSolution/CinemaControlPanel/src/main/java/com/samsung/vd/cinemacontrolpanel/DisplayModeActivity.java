@@ -11,6 +11,7 @@ import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -32,22 +33,18 @@ import android.widget.TabHost;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.samsung.vd.baseutils.VdSpinCtrl;
 import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTitleBar;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Map;
 
 /**
  * Created by doriya on 8/16/16.
@@ -150,36 +147,16 @@ public class DisplayModeActivity extends AppCompatActivity {
 
     private EditText mEditCabinet;
 
-    private String[] strInputEnable = {
-            "Enable",   "Disable",
-    };
-
-    private String[] mStrInputResolution = {
-            "FHD ( 1920 x 1080 )",  "2K ( 2048 x 1080 ",    "4K ( 4096 x 2160 )",
-    };
-
-    private String[] mStrInputSource = {
-            "IMB",  "HDMI", "3G-SDI",
-    };
-
-    private String mInputResolution;
-    private String mInputSource;
-
-    private Spinner mSpinnerInputEnable;
-    private Spinner mSpinnerInputReoslution;
-    private Spinner mSpinnerInputSource;
-
     private Button mBtnDotCorrectCheckAll;
     private Button mBtnDotCorrectUnCheckAll;
     private Button mBtnDotCorrectApply;
 
-    private Spinner mSpinnerYear;
-    private Spinner mSpinnerMonth;
-    private Spinner mSpinnerDay;
-    private Spinner mSpinnerHour;
-    private Spinner mSpinnerMin;
+    private Spinner mSpinnerDotCorrectExtract;
+    private Button mBtnDotCorrectExtract;
 
     private Spinner mSpinnerSuspendTime;
+
+    private static final boolean DIRECT_WRITE = true;
 
     private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -215,6 +192,11 @@ public class DisplayModeActivity extends AppCompatActivity {
                 if( resultUniformity != null ) for(String file : resultUniformity) Log.i(VD_DTAG, String.format("Detection File. ( %s )", file ));
                 if( resultTcon != null ) for(String file : resultTcon) Log.i(VD_DTAG, String.format("Detection File. ( %s )", file ));
                 if( resultGamma != null ) for(String file : resultGamma) Log.i(VD_DTAG, String.format("Detection File. ( %s )", file ));
+
+                String strIndex = mSpinnerDotCorrectExtract.getSelectedItem().toString();
+                if( strIndex != null && !strIndex.equals("") ) {
+                    mBtnDotCorrectExtract.setEnabled(true);
+                }
             }
 
             if( intent.getAction().equals(Intent.ACTION_MEDIA_EJECT) ) {
@@ -224,6 +206,8 @@ public class DisplayModeActivity extends AppCompatActivity {
                 mBtnDotCorrectCheckAll.setEnabled(false);
                 mBtnDotCorrectUnCheckAll.setEnabled(false);
                 mBtnDotCorrectApply.setEnabled(false);
+
+                mBtnDotCorrectExtract.setEnabled(false);
 
                 mAdapterDotCorrect.clear();
             }
@@ -312,6 +296,20 @@ public class DisplayModeActivity extends AppCompatActivity {
         mCabinet = ((CinemaInfo)getApplicationContext()).GetCabinet();
         AddTabs();
 
+        //
+        //  Cabinet ID String
+        //
+        String [] strCabinetId;
+        if( mCabinet.length == 0 ) {
+            strCabinetId = new String[]{""};
+        }
+        else {
+            strCabinetId = new String[mCabinet.length];
+            for( int i = 0; i < mCabinet.length; i++ ) {
+                strCabinetId[i] = String.valueOf(mCabinet[i]&0x7F - CinemaInfo.TCON_ID_OFFSET);
+            }
+        }
+
 
         //
         //  MASTERING
@@ -392,11 +390,21 @@ public class DisplayModeActivity extends AppCompatActivity {
             public void onClick(View view) {
                 NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
                 if( mBtnEnableUniformity.getText().toString().equals("ENABLE") ) {
-                    ctrl.Send(NxCinemaCtrl.CMD_PFPGA_UNIFORMITY_WR, new byte[]{(byte) 0x00});
+                    byte[] reg = ctrl.IntToByteArray(NxCinemaCtrl.REG_PFPGA_NUC_EN , NxCinemaCtrl.FORMAT_INT16);
+                    byte[] dat = ctrl.IntToByteArray(0x0000, NxCinemaCtrl.FORMAT_INT16);
+                    byte[] inData = ctrl.AppendByteArray(reg, dat);
+
+                    byte[] res = ctrl.Send(NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData);
+
                     mBtnEnableUniformity.setText("DISABLE");
                 }
                 else {
-                    ctrl.Send(NxCinemaCtrl.CMD_PFPGA_UNIFORMITY_WR, new byte[]{(byte) 0x01});
+                    byte[] reg = ctrl.IntToByteArray(NxCinemaCtrl.REG_PFPGA_NUC_EN , NxCinemaCtrl.FORMAT_INT16);
+                    byte[] dat = ctrl.IntToByteArray(0x0001, NxCinemaCtrl.FORMAT_INT16);
+                    byte[] inData = ctrl.AppendByteArray(reg, dat);
+
+                    byte[] res = ctrl.Send(NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData);
+
                     mBtnEnableUniformity.setText("ENABLE");
                 }
             }
@@ -491,112 +499,178 @@ public class DisplayModeActivity extends AppCompatActivity {
             }
         });
 
+
         //
-        //  INPUT SOURCE
+        //  DOT CORRECTION EXTRACT
         //
-        mInputResolution = ((CinemaInfo)getApplicationContext()).GetValue( CinemaInfo.KEY_MASTERING_MODE );
-        if( mInputResolution == null ) {
-            mInputResolution = mStrInputResolution[0];
-            ((CinemaInfo) getApplicationContext()).SetValue(CinemaInfo.KEY_INPUT_RESOLUTION, mInputResolution);
-        }
+        mSpinnerDotCorrectExtract = (Spinner)findViewById(R.id.spinnerDotCorrectionExtract);
+        mSpinnerDotCorrectExtract.setAdapter( new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, strCabinetId) );
 
-        mInputSource = ((CinemaInfo)getApplicationContext()).GetValue( CinemaInfo.KEY_MASTERING_MODE );
-        if( mInputSource == null ) {
-            mInputSource = mStrInputSource[0];
-            ((CinemaInfo) getApplicationContext()).SetValue(CinemaInfo.KEY_INPUT_SOURCE, mInputSource);
-        }
-
-        mSpinnerInputEnable = (Spinner)findViewById(R.id.spinnerInputSourceEnable);
-        mSpinnerInputReoslution = (Spinner)findViewById(R.id.spinnerInputResolution);
-        mSpinnerInputSource = (Spinner)findViewById(R.id.spinnerInputSource);
-
-        mSpinnerInputEnable.setAdapter( new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, strInputEnable) );
-        mSpinnerInputReoslution.setAdapter( new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, mStrInputResolution) );
-        mSpinnerInputSource.setAdapter( new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, mStrInputSource) );
-
-        for( int i = 0; i < mStrInputResolution.length; i++ ) {
-            if( mInputResolution.equals(mStrInputResolution[i]) ) {
-                mSpinnerInputReoslution.setSelection(i);
-                break;
-            }
-        }
-
-        for( int i = 0; i < mStrInputSource.length; i++ ) {
-            if( mInputSource.equals(mStrInputSource[i]) ) {
-                mSpinnerInputSource.setSelection(i);
-                break;
-            }
-        }
-
-        Button btnInputSourceEnableApply = (Button)findViewById(R.id.btnInputSourceEnableApply);
-        btnInputSourceEnableApply.setOnClickListener(new View.OnClickListener() {
+        mBtnDotCorrectExtract = (Button)findViewById(R.id.btnDotCorrectionExtract);
+        mBtnDotCorrectExtract.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                ApplyInputSourceEnable(mSpinnerInputEnable.getSelectedItemPosition());
+            public void onClick(View view) {
+                String strIndex = mSpinnerDotCorrectExtract.getSelectedItem().toString();
+                if( strIndex == null || strIndex.equals("") )
+                    return;
+
+                int index = Integer.parseInt(strIndex, 10);
+                Log.i(VD_DTAG, String.format("index = %d", index));
+
+                new AsyncTaskDotCorrectionExtract( mCabinet[mSpinnerDotCorrectExtract.getSelectedItemPosition()] ).execute();
             }
         });
 
-        Button btnInputSourceSelectApply = (Button)findViewById(R.id.btnInputSourceSelectApply);
-        btnInputSourceSelectApply.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mInputResolution = mSpinnerInputReoslution.getSelectedItem().toString();
-                mInputSource = mSpinnerInputSource.getSelectedItem().toString();
-
-                ((CinemaInfo) getApplicationContext()).SetValue(CinemaInfo.KEY_INPUT_RESOLUTION, mInputResolution);
-                ((CinemaInfo) getApplicationContext()).SetValue(CinemaInfo.KEY_INPUT_SOURCE, mInputSource);
-
-                ApplyInputSourceSelect(mSpinnerInputReoslution.getSelectedItemPosition(), mSpinnerInputSource.getSelectedItemPosition() );
-
-                ((CinemaInfo)getApplicationContext()).InsertLog(String.format( Locale.US, "Change Input Source. ( %s / %s )", mInputResolution, mInputSource ));
-            }
-        });
 
         //
-        //  Spinner Time
+        //  WHITE SEAM VALUE
         //
-        String[] strYear = new String[100];
-        String[] strDay = new String[31];
-        String[] strHour = new String[24];
-        String[] strMin = new String[60];
-        final String[] strMonth = {
-            "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-        };
+        final Spinner spinnerWhiteSeamCabinetId = (Spinner)findViewById(R.id.spinnerWhiteSeamCabinetId);
+        spinnerWhiteSeamCabinetId.setAdapter( new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, strCabinetId) );
 
-        for( int i = 0; i < strYear.length; i++ )   strYear[i] = String.valueOf(2000 + i);
-        for( int i = 0; i < strDay.length; i++ )    strDay[i] = String.valueOf(1 + i);
-        for( int i = 0; i < strHour.length; i++ )   strHour[i] = String.valueOf(i);
-        for( int i = 0; i < strMin.length; i++ )    strMin[i] = String.valueOf(i);
+        final VdSpinCtrl spinWhiteSeamTop = (VdSpinCtrl)findViewById(R.id.spinWhiteSeamTop);
+        final VdSpinCtrl spinWhiteSeamBottom = (VdSpinCtrl)findViewById(R.id.spinWhiteSeamBottom);
+        final VdSpinCtrl spinWhiteSeamLeft = (VdSpinCtrl)findViewById(R.id.spinWhiteSeamLeft);
+        final VdSpinCtrl spinWhiteSeamRight = (VdSpinCtrl)findViewById(R.id.spinWhiteSeamRight);
 
-        mSpinnerYear = (Spinner)findViewById(R.id.spinnerYear);
-        mSpinnerMonth = (Spinner)findViewById(R.id.spinnerMonth);
-        mSpinnerDay = (Spinner)findViewById(R.id.spinnerDay);
-        mSpinnerHour = (Spinner)findViewById(R.id.spinnerHour);
-        mSpinnerMin = (Spinner)findViewById(R.id.spinnerMinute);
+        spinWhiteSeamTop.SetRange(0, 32767);
+        spinWhiteSeamBottom.SetRange(0, 32767);
+        spinWhiteSeamLeft.SetRange(0, 32767);
+        spinWhiteSeamRight.SetRange(0, 32767);
 
-        mSpinnerYear.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, strYear));
-        mSpinnerMonth.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, strMonth));
-        mSpinnerDay.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, strDay));
-        mSpinnerHour.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, strHour));
-        mSpinnerMin.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, strMin));
-
-        Button btnTime = (Button)findViewById(R.id.btnTimeApply);
-        btnTime.setOnClickListener(new View.OnClickListener() {
+        spinWhiteSeamTop.SetOnChangeListener(new VdSpinCtrl.OnChangeListener() {
             @Override
-            public void onClick(View v) {
-                String cmd = String.format( Locale.US, "busybox date -s \"%04d-%02d-%02d %02d:%02d:00\"",
-                    mSpinnerYear.getSelectedItemPosition() + 2000,
-                    mSpinnerMonth.getSelectedItemPosition() + 1,
-                    mSpinnerDay.getSelectedItemPosition() + 1,
-                    mSpinnerHour.getSelectedItemPosition(),
-                    mSpinnerMin.getSelectedItemPosition()
-                );
+            public void onChange(int value) {
+                int id = Integer.parseInt(spinnerWhiteSeamCabinetId.getSelectedItem().toString(), 10);
+                int reg = 0x0180;
 
-                try {
-                    WriteHelper( cmd );
-                } catch (IOException e) {
-                    e.printStackTrace();
+                if( !DIRECT_WRITE ) {
+                    new AsyncTaskRegisterWrite( id, reg, value ).execute();
                 }
+                else {
+                    NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+                    byte[] inData = new byte[] { (byte)id };
+                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray( reg, NxCinemaCtrl.FORMAT_INT16));
+                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray( value, NxCinemaCtrl.FORMAT_INT16));
+
+                    byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData );
+                    if( result == null || result.length == 0 || ctrl.ByteArrayToInt(result) == 0xFFFF ) {
+                        Log.i(VD_DTAG, String.format(Locale.US, "i2c write fail.( id: %d, reg: %d, val: %d )", id, reg, value ));
+                    }
+                }
+            }
+        });
+
+        spinWhiteSeamBottom.SetOnChangeListener(new VdSpinCtrl.OnChangeListener() {
+            @Override
+            public void onChange(int value) {
+                int id = Integer.parseInt(spinnerWhiteSeamCabinetId.getSelectedItem().toString(), 10);
+                int reg = 0x0181;
+
+                if( !DIRECT_WRITE ) {
+                    new AsyncTaskRegisterWrite( id, reg, value ).execute();
+                }
+                else {
+                    NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+                    byte[] inData = new byte[] { (byte)id };
+                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray( reg, NxCinemaCtrl.FORMAT_INT16));
+                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray( value, NxCinemaCtrl.FORMAT_INT16));
+
+                    byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData );
+                    if( result == null || result.length == 0 || ctrl.ByteArrayToInt(result) == 0xFFFF ) {
+                        Log.i(VD_DTAG, String.format(Locale.US, "i2c write fail.( id: %d, reg: %d, val: %d )", id, reg, value ));
+                    }
+                }
+            }
+        });
+
+        spinWhiteSeamLeft.SetOnChangeListener(new VdSpinCtrl.OnChangeListener() {
+            @Override
+            public void onChange(int value) {
+                int id = Integer.parseInt(spinnerWhiteSeamCabinetId.getSelectedItem().toString(), 10);
+                int reg = 0x0182;
+
+                if( !DIRECT_WRITE ) {
+                    new AsyncTaskRegisterWrite( id, reg, value ).execute();
+                }
+                else {
+                    NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+                    byte[] inData = new byte[] { (byte)id };
+                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray( reg, NxCinemaCtrl.FORMAT_INT16));
+                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray( value, NxCinemaCtrl.FORMAT_INT16));
+
+                    byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData );
+                    if( result == null || result.length == 0 || ctrl.ByteArrayToInt(result) == 0xFFFF ) {
+                        Log.i(VD_DTAG, String.format(Locale.US, "i2c write fail.( id: %d, reg: %d, val: %d )", id, reg, value ));
+                    }
+                }
+            }
+        });
+
+        spinWhiteSeamRight.SetOnChangeListener(new VdSpinCtrl.OnChangeListener() {
+            @Override
+            public void onChange(int value) {
+                int id = Integer.parseInt(spinnerWhiteSeamCabinetId.getSelectedItem().toString(), 10);
+                int reg = 0x0183;
+
+                if( !DIRECT_WRITE ) {
+                    new AsyncTaskRegisterWrite( id, reg, value ).execute();
+                }
+                else {
+                    NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+                    byte[] inData = new byte[] { (byte)id };
+                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray( reg, NxCinemaCtrl.FORMAT_INT16));
+                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray( value, NxCinemaCtrl.FORMAT_INT16));
+
+                    byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData );
+                    if( result == null || result.length == 0 || ctrl.ByteArrayToInt(result) == 0xFFFF ) {
+                        Log.i(VD_DTAG, String.format(Locale.US, "i2c write fail.( id: %d, reg: %d, val: %d )", id, reg, value ));
+                    }
+                }
+            }
+        });
+
+        (findViewById(R.id.btnWhiteSeamTopApply)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                int id = Integer.parseInt(spinnerWhiteSeamCabinetId.getSelectedItem().toString(), 10);
+                int value = spinWhiteSeamTop.GetValue();
+
+                Log.i(VD_DTAG, String.format("id( %d ), value( %d )", id, value));
+                new AsyncTaskWhiteSeam(id, AsyncTaskWhiteSeam.TCON_SEAM_TOP, value).execute();
+            }
+        });
+
+        (findViewById(R.id.btnWhiteSeamBottomApply)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                int id = Integer.parseInt(spinnerWhiteSeamCabinetId.getSelectedItem().toString(), 10);
+                int value = spinWhiteSeamBottom.GetValue();
+
+                Log.i(VD_DTAG, String.format("id( %d ), value( %d )", id, value));
+                new AsyncTaskWhiteSeam(id, AsyncTaskWhiteSeam.TCON_SEAM_BOTTOM, value).execute();
+            }
+        });
+
+        (findViewById(R.id.btnWhiteSeamLeftApply)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                int id = Integer.parseInt(spinnerWhiteSeamCabinetId.getSelectedItem().toString(), 10);
+                int value = spinWhiteSeamLeft.GetValue();
+
+                Log.i(VD_DTAG, String.format("id( %d ), value( %d )", id, value));
+                new AsyncTaskWhiteSeam(id, AsyncTaskWhiteSeam.TCON_SEAM_LEFT, value).execute();
+            }
+        });
+
+        (findViewById(R.id.btnWhiteSeamRightApply)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                int id = Integer.parseInt(spinnerWhiteSeamCabinetId.getSelectedItem().toString(), 10);
+                int value = spinWhiteSeamRight.GetValue();
+
+                Log.i(VD_DTAG, String.format("id( %d ), value( %d )", id, value));
+                new AsyncTaskWhiteSeam(id, AsyncTaskWhiteSeam.TCON_SEAM_RIGHT, value).execute();
             }
         });
 
@@ -616,6 +690,7 @@ public class DisplayModeActivity extends AppCompatActivity {
                 new AsyncTaskCheckCabinet().execute();
             }
         });
+
 
         //
         //  Spinner Suspend Time
@@ -646,6 +721,10 @@ public class DisplayModeActivity extends AppCompatActivity {
         parent.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+//                InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+//                imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
+//                getCurrentFocus().clearFocus();
+
                 InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(mEditCabinet.getWindowToken(), 0);
 
@@ -698,12 +777,16 @@ public class DisplayModeActivity extends AppCompatActivity {
         tabSpec3.setContent(R.id.tabDotCorrection);
 
         TabHost.TabSpec tabSpec4 = tabHost.newTabSpec("TAB4");
-        tabSpec4.setIndicator("Input Source");
-        tabSpec4.setContent(R.id.tabInputSource);
+        tabSpec4.setIndicator("Dot Correction Extract");
+        tabSpec4.setContent(R.id.tabDotCorrectionExtract);
 
-        TabHost.TabSpec tabSpec5 = tabHost.newTabSpec("TAB5");
-        tabSpec5.setIndicator("Set up");
-        tabSpec5.setContent(R.id.tabSetup);
+        TabHost.TabSpec tabSpec5 = tabHost.newTabSpec("TAB4");
+        tabSpec5.setIndicator("White Seam Value");
+        tabSpec5.setContent(R.id.tabWhiteSeamValue);
+
+        TabHost.TabSpec tabSpec6 = tabHost.newTabSpec("TAB6");
+        tabSpec6.setIndicator("Set up");
+        tabSpec6.setContent(R.id.tabSetup);
 
         tabHost.addTab(tabSpec0);
         tabHost.addTab(tabSpec1);
@@ -711,12 +794,10 @@ public class DisplayModeActivity extends AppCompatActivity {
         tabHost.addTab(tabSpec3);
         tabHost.addTab(tabSpec4);
         tabHost.addTab(tabSpec5);
+        tabHost.addTab(tabSpec6);
 
         tabHost.setOnTabChangedListener(mTabChange);
         tabHost.setCurrentTab(0);
-
-        tabHost.getTabWidget().getChildTabViewAt(4).setEnabled(false);
-        ((TextView)tabHost.getTabWidget().getChildAt(4).findViewById(android.R.id.title)).setTextColor(0xFFDCDCDC);
     }
 
     private TabHost.OnTabChangeListener mTabChange = new TabHost.OnTabChangeListener() {
@@ -726,8 +807,9 @@ public class DisplayModeActivity extends AppCompatActivity {
             if( tabId.equals("TAB1") ) UpdateUniformityCorrection();
             if( tabId.equals("TAB2") ) UpdateImageQuality();
             if( tabId.equals("TAB3") ) UpdateDotCorrection();
-            if( tabId.equals("TAB4") ) UpdateInputSource();
-            if( tabId.equals("TAB5") ) UpdateSetup();
+            if( tabId.equals("TAB4") ) UpdateDotCorrectionExtract();
+            if( tabId.equals("TAB5") ) UpdateWhiteSeamValue();
+            if( tabId.equals("TAB6") ) UpdateSetup();
         }
     };
 
@@ -775,8 +857,8 @@ public class DisplayModeActivity extends AppCompatActivity {
         }
 
         NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-        byte[] resultEnable = ctrl.Send( NxCinemaCtrl.CMD_PFPGA_UNIFORMITY_RD, null );
-        if( resultEnable[0] == (byte)1 ) {
+        byte[] resultEnable = ctrl.Send( NxCinemaCtrl.CMD_PFPGA_REG_READ, ctrl.IntToByteArray(NxCinemaCtrl.REG_PFPGA_NUC_EN, NxCinemaCtrl.FORMAT_INT16) );
+        if( (resultEnable != null) && resultEnable[3] == (byte)1 ) {
             mBtnEnableUniformity.setText("ENABLE");
         }
         else {
@@ -813,36 +895,23 @@ public class DisplayModeActivity extends AppCompatActivity {
         mBtnDotCorrectApply.setEnabled(true);
     }
 
-    private void UpdateInputSource() {
-        for( int i = 0; i < mStrInputResolution.length; i++ ) {
-            if( mInputResolution.equals(mStrInputResolution[i]) ) {
-                mSpinnerInputReoslution.setSelection(i);
-                break;
-            }
-        }
+    private void UpdateWhiteSeamValue()
+    {
 
-        for( int i = 0; i < mStrInputSource.length; i++ ) {
-            if( mInputSource.equals(mStrInputSource[i]) ) {
-                mSpinnerInputSource.setSelection(i);
-                break;
-            }
+    }
+
+    private void UpdateDotCorrectionExtract()
+    {
+        String result = GetExternalStorage();
+        if( result != null ) {
+            mBtnDotCorrectExtract.setEnabled(true);
+        }
+        else {
+            mBtnDotCorrectExtract.setEnabled(false);
         }
     }
 
     private void UpdateSetup() {
-        Date date = new Date( System.currentTimeMillis() );
-        String curYear = new SimpleDateFormat("yyyy", Locale.US).format(date);
-        String curMonth = new SimpleDateFormat("MM", Locale.US).format(date);
-        String curDay = new SimpleDateFormat("dd", Locale.US).format(date);
-        String curHour= new SimpleDateFormat("HH", Locale.US).format(date);
-        String curMin = new SimpleDateFormat("mm", Locale.US).format(date);
-
-        mSpinnerYear.setSelection( (Integer.parseInt(curYear, 10) < 2000) ? 0 : Integer.parseInt(curYear, 10) - 2000 );
-        mSpinnerMonth.setSelection(Integer.parseInt(curMonth, 10) - 1);
-        mSpinnerDay.setSelection(Integer.parseInt(curDay, 10) - 1);
-        mSpinnerHour.setSelection(Integer.parseInt(curHour, 10));
-        mSpinnerMin.setSelection(Integer.parseInt(curMin, 10));
-
         mEditCabinet.setText(((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_CABINET_NUM));
 
         for( int i = 0; i < CinemaService.OFF_TIME.length; i++ ) {
@@ -861,6 +930,11 @@ public class DisplayModeActivity extends AppCompatActivity {
         sender.connect(new LocalSocketAddress("cinema.helper"));
         sender.getOutputStream().write(message.getBytes());
         sender.getOutputStream().close();
+    }
+
+    private String GetExternalStorage() {
+        String[] result = FileManager.GetExternalPath();
+        return (result != null && result.length != 0) ? result[0] : null;
     }
 
     //
@@ -975,29 +1049,6 @@ public class DisplayModeActivity extends AppCompatActivity {
     //
     //
     //
-    private void ApplyInputSourceEnable( int index ) {
-        Log.i(VD_DTAG,  String.format( "Apply( %d )", index ) );
-    }
-
-    private void ApplyInputSourceSelect( int indexResolution, int indexSource ) {
-        Log.i(VD_DTAG,  String.format( "Apply( %d, %d )", indexResolution, indexSource) );
-
-        boolean bValidPort0 = false, bValidPort1 = false;
-        for( byte id : mCabinet ) {
-            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-        }
-
-        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-        byte[] inData = new byte[] { (byte)indexResolution, (byte)indexSource };
-
-        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-        if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData0 );
-        if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData1 );
-    }
-
     private void ApplyMasteringMode( int itemIdx, int value ) {
         boolean bValidPort0 = false, bValidPort1 = false;
         for( byte id : mCabinet ) {
@@ -1006,13 +1057,16 @@ public class DisplayModeActivity extends AppCompatActivity {
         }
 
         NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-        byte[] inData = ctrl.AppendByteArray( new byte[]{(byte)mRegMastering[itemIdx]}, ctrl.IntToByteArray(value, NxCinemaCtrl.FORMAT_INT16) );
+
+        byte[] reg = ctrl.IntToByteArray(mRegMastering[itemIdx], NxCinemaCtrl.FORMAT_INT16);
+        byte[] data = ctrl.IntToByteArray(value, NxCinemaCtrl.FORMAT_INT16);
+        byte[] inData = ctrl.AppendByteArray(reg ,data);
 
         byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
         byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
 
-        if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData0 );
-        if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData1 );
+        if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
+        if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
     }
 
     //
@@ -1096,8 +1150,8 @@ public class DisplayModeActivity extends AppCompatActivity {
                     byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
                     byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
 
-                    if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData0);
-                    if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData1);
+                    if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
+                    if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
                 }
                 return null;
             }
@@ -1110,8 +1164,8 @@ public class DisplayModeActivity extends AppCompatActivity {
                 byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
                 byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
 
-                if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData0);
-                if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData1);
+                if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
+                if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
             }
 
             for( int i = 0; i < mRegMastering.length; i++ ) {
@@ -1122,8 +1176,8 @@ public class DisplayModeActivity extends AppCompatActivity {
                 byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
                 byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
 
-                if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData0);
-                if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MASTERING_WR, inData1);
+                if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
+                if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
             }
 
             return null;
@@ -1160,7 +1214,7 @@ public class DisplayModeActivity extends AppCompatActivity {
             for (int i = 0; i < mRegMastering.length; i++) {
                 byte[] reg = ctrl.IntToByteArray( mRegMastering[i], NxCinemaCtrl.FORMAT_INT16 );
                 byte[] inData = ctrl.AppendByteArray(new byte[]{mCabinet[0]}, reg);
-                byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_MASTERING_RD, inData );
+                byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_READ, inData );
 
                 if( result == null || result.length == 0 )
                     continue;
@@ -1220,7 +1274,7 @@ public class DisplayModeActivity extends AppCompatActivity {
                         byte[] data = ctrl.IntToByteArray(info.GetData(mIndexUniformity)[i], NxCinemaCtrl.FORMAT_INT16);
                         byte[] inData = ctrl.AppendByteArray(reg, data);
 
-                        ctrl.Send( NxCinemaCtrl.CMD_PFPGA_WRITE_CONFIG, inData );
+                        ctrl.Send( NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData );
                     }
                 }
 
@@ -1294,7 +1348,7 @@ public class DisplayModeActivity extends AppCompatActivity {
                         byte[] data = ctrl.IntToByteArray(info.GetData(mIndexQuality)[i], NxCinemaCtrl.FORMAT_INT16);
                         byte[] inData = ctrl.AppendByteArray(reg, data);
 
-                        ctrl.Send( NxCinemaCtrl.CMD_PFPGA_WRITE_CONFIG, inData );
+                        ctrl.Send( NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData );
                     }
                 }
             }
@@ -1313,8 +1367,8 @@ public class DisplayModeActivity extends AppCompatActivity {
                         byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
                         byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
 
-                        if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_WRITE_CONFIG, inData0);
-                        if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_WRITE_CONFIG, inData1);
+                        if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
+                        if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
                     }
                 }
             }
@@ -1444,7 +1498,7 @@ public class DisplayModeActivity extends AppCompatActivity {
 
                     LedDotCorrectInfo info = new LedDotCorrectInfo();
                     if( info.Parse(file) ) {
-                        byte[] sel = ctrl.IntToByteArray( info.GetFlashSel(), NxCinemaCtrl.FORMAT_INT8 );       // size: 1
+                        byte[] sel = ctrl.IntToByteArray( info.GetModule(), NxCinemaCtrl.FORMAT_INT8 );       // size: 1
                         byte[] data = ctrl.IntArrayToByteArray( info.GetData(), NxCinemaCtrl.FORMAT_INT16 );    // size: 61440
                         byte[] inData =  ctrl.AppendByteArray( sel, data );
 
@@ -1485,6 +1539,138 @@ public class DisplayModeActivity extends AppCompatActivity {
             super.onPostExecute(aVoid);
             CinemaLoading.Hide();
             Log.i(VD_DTAG, ">>> Dot Correction Done. ");
+        }
+    }
+
+    private class AsyncTaskDotCorrectionExtract extends AsyncTask<Void, Void, Void> {
+        private int mId;
+
+        public AsyncTaskDotCorrectionExtract( int id ) {
+            mId = id;
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+
+            LedDotCorrectInfo info = new LedDotCorrectInfo();
+
+//            for( int i = 0; i < LedDotCorrectInfo.MAX_MODULE_NUM; i++ ) {
+            for( int i = 0; i < 1; i++ ) {
+                byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_DOT_CORRECTION_EXTRACT, new byte[]{(byte)mId, (byte)i} );
+
+                if( result == null || result.length == 0)
+                    continue;
+
+                String strDir = String.format(Locale.US, "%s/Dot Correction_%03d", GetExternalStorage(), mId);
+                if( !FileManager.MakeDirectory( strDir ) ) {
+                    Log.i(VD_DTAG, String.format(Locale.US, "Fail, Create Directory. ( %s )", strDir));
+                    continue;
+                }
+
+                info.Make( mId, i, result, strDir);
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            CinemaLoading.Show( DisplayModeActivity.this );
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            CinemaLoading.Hide();
+            Log.i(VD_DTAG, ">>> Dot Correction Extract Done. ");
+        }
+    }
+
+
+    private class AsyncTaskRegisterWrite extends AsyncTask<Void, Void, Void> {
+        private int mId;
+        private int mReg;
+        private int mVal;
+
+        public AsyncTaskRegisterWrite( int id, int reg, int val ) {
+            mId  = id;
+            mReg = reg;
+            mVal = val;
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+
+            byte[] inData = new byte[] { (byte)mId };
+            inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray( mReg, NxCinemaCtrl.FORMAT_INT16));
+            inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray( mVal, NxCinemaCtrl.FORMAT_INT16));
+
+            byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData );
+            if( result == null || result.length == 0 || ctrl.ByteArrayToInt(result) == 0xFFFF ) {
+                Log.i(VD_DTAG, String.format(Locale.US, "i2c write fail.( id: %d, reg: %d, val: %d )", mId, mReg, mVal ));
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            CinemaLoading.Show( DisplayModeActivity.this );
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            CinemaLoading.Hide();
+        }
+    }
+
+    private class AsyncTaskWhiteSeam extends AsyncTask<Void, Void, Void> {
+        public static final int TCON_SEAM_TOP   = 0;
+        public static final int TCON_SEAM_BOTTOM= 1;
+        public static final int TCON_SEAM_LEFT  = 2;
+        public static final int TCON_SEAM_RIGHT = 3;
+
+        private int mId;
+        private int mPos;
+        private int mValue;
+
+        public AsyncTaskWhiteSeam( int id, int pos, int value ) {
+            mId     = id;
+            mPos    = pos;
+            mValue  = value;
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+
+            byte[] index = new byte[] { (byte)mId, (byte)mPos };
+            byte[] value = ctrl.IntToByteArray( mValue, NxCinemaCtrl.FORMAT_INT16);
+
+            byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_WHITE_SEAM, ctrl.AppendByteArray(index, value) );
+            if( result == null || result.length == 0 ) {
+                Log.i(VD_DTAG, String.format(Locale.US, "Seam data write failed. ( id: %d, pos: %d )", mId, mPos));
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            CinemaLoading.Show( DisplayModeActivity.this );
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            CinemaLoading.Hide();
+            Log.i(VD_DTAG, ">>> White Seam Done.");
         }
     }
 
@@ -1581,5 +1767,4 @@ public class DisplayModeActivity extends AppCompatActivity {
             mServiceRun = false;
         }
     };
-
 }

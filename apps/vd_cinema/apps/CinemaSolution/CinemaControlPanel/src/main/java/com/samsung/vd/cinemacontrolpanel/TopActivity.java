@@ -353,7 +353,7 @@ public class TopActivity extends AppCompatActivity {
                         byte[] data = ctrl.IntToByteArray(info.GetData(mIndexInitialValue)[i], NxCinemaCtrl.FORMAT_INT16);
                         byte[] inData = ctrl.AppendByteArray(reg, data);
 
-                        ctrl.Send( NxCinemaCtrl.CMD_PFPGA_WRITE_CONFIG, inData );
+                        ctrl.Send( NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData );
                     }
                 }
             }
@@ -386,8 +386,8 @@ public class TopActivity extends AppCompatActivity {
                         byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
                         byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
 
-                        if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_WRITE_CONFIG, inData0);
-                        if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_WRITE_CONFIG, inData1);
+                        if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
+                        if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
                     }
                 }
             }

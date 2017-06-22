@@ -6,8 +6,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -145,5 +149,73 @@ public class FileManager {
         }
 
         return file.delete();
+    }
+
+    public static boolean MakeDirectory(String dir) {
+        File file = new File(dir);
+
+        if( file.exists() )
+            return true;
+
+        return !file.exists() ? file.mkdirs() : true;
+    }
+
+    //
+    //
+    //
+    public static String[] GetExternalPath() {
+        final HashSet<String> hashSet = new HashSet<>();
+
+        String strPath = "";
+        try {
+            final Process process = new ProcessBuilder().command("mount")
+                    .redirectErrorStream(true).start();
+            process.waitFor();
+            final InputStream is = process.getInputStream();
+            final byte[] buffer = new byte[1024];
+            while (is.read(buffer) != -1) {
+                strPath = strPath + new String(buffer);
+            }
+            is.close();
+        } catch (final Exception e) {
+            e.printStackTrace();
+        }
+
+        String pattern = "(?i).*fuse.*fuse.*rw.*";
+        final String[] strLine = strPath.split("\n");
+        for( String line : strLine ) {
+            if( line.toLowerCase(Locale.US).contains("asec"))
+                continue;
+
+            if( !line.matches((pattern)) )
+                continue;
+
+            String[] strParts = line.split(" ");
+            for( String part : strParts ) {
+                if( !part.startsWith("/") )
+                    continue;
+
+                if( part.toLowerCase(Locale.US).contains("fuse") )
+                    continue;
+
+                if( part.toLowerCase(Locale.US).contains("emulated") )
+                    continue;
+
+                hashSet.add(part);
+            }
+        }
+
+        String[] result = new String[0];
+
+        Iterator<String> iterator = hashSet.iterator();
+        while( iterator.hasNext() )
+        {
+            String[] tmpData = new String[result.length + 1];
+            System.arraycopy( result, 0, tmpData, 0, result.length);
+            tmpData[result.length] = iterator.next();
+            result = tmpData;
+        }
+
+        return result;
     }
 }

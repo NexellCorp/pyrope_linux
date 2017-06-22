@@ -36,7 +36,7 @@
             android:layout_weight="0.6"/>
     </LinearLayout>
 
-    <ExpandableListView
+    <ListView
         android:id="@+id/listview_version"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

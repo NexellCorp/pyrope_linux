@@ -279,9 +279,9 @@ public class DisplayCheckActivity extends AppCompatActivity {
                 return null;
 
             for( int i = 0; i < mCabinet.length; i++ ) {
-                mAdapter.addGroup( new StatusDescribeExpandableInfo(String.format( Locale.US, "Cabinet %02d", (mCabinet[i] & 0x7F) - CinemaInfo.OFFSET_TCON )) );
+                mAdapter.addGroup( new StatusDescribeExpandableInfo(String.format( Locale.US, "Cabinet %02d", (mCabinet[i] & 0x7F) - CinemaInfo.TCON_ID_OFFSET )) );
 
-                for( int j = 0; j < 24; j++ ) {
+                for( int j = 0; j < CinemaInfo.TCON_MODULE_NUM; j++ ) {
                     byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_ACCUMULATE_TIME, new byte[] { mCabinet[i], (byte)j } );
                     if( result == null || result.length == 0 ) {
                         mAdapter.addChild(i, new StatusDescribeInfo(String.format( Locale.US, "Module #%02d", j), String.valueOf("Error")) );

@@ -19,13 +19,11 @@ import java.util.ArrayList;
 public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
     private ArrayList<StatusDetailInfo> mData;
     private int mResource;
-    private int mType;
 
-    public StatusDetailAdapter (Context context, int resource, int type) {
+    public StatusDetailAdapter (Context context, int resource) {
         super(context, resource);
         mData = new ArrayList<>();
         mResource = resource;
-        mType = type;
     }
 
     @Override
@@ -108,7 +106,7 @@ public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                new AsyncTaskLedPos(context, mData.get(pos).GetSlave(), mType).execute();
+                new AsyncTaskLedPos(context, mData.get(pos).GetSlave()).execute();
             }
         });
 
@@ -147,26 +145,14 @@ public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
         private LedPosAdapter mAdapter;
 
         private byte mId;
-        private int mCmd1;
-        private int mCmd2;
 
-        public AsyncTaskLedPos( Context context, int position, int type ) {
+        public AsyncTaskLedPos( Context context, int position ) {
             mContext = context;
             mAdapter = new LedPosAdapter(mContext.getApplicationContext(), R.layout.listview_row_info_led);
 
 //            byte[] cabinet = ((CinemaInfo)(context.getApplicationContext())).GetCabinet();
 //            mId = cabinet[position];
             mId = (byte)(position & 0xFF);
-
-            if( type == NxCinemaCtrl.CMD_TCON_OPEN_NUM || type == NxCinemaCtrl.CMD_TCON_OPEN_POS ) {
-                mCmd1 = NxCinemaCtrl.CMD_TCON_OPEN_NUM;
-                mCmd2 = NxCinemaCtrl.CMD_TCON_OPEN_POS;
-            }
-
-            if( type == NxCinemaCtrl.CMD_TCON_SHORT_NUM || type == NxCinemaCtrl.CMD_TCON_SHORT_POS ) {
-                mCmd1 = NxCinemaCtrl.CMD_TCON_SHORT_NUM;
-                mCmd2 = NxCinemaCtrl.CMD_TCON_SHORT_POS;
-            }
         }
 
         @Override
@@ -181,7 +167,7 @@ public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
             ctrl.Send( NxCinemaCtrl.CMD_TCON_MODE_LOD, new byte[]{mId} );
 
-            byte[] resultNum = ctrl.Send( mCmd1, new byte[]{mId});
+            byte[] resultNum = ctrl.Send( NxCinemaCtrl.CMD_TCON_OPEN_NUM, new byte[]{mId});
             if (resultNum == null || resultNum.length == 0)
                 return null;
 
@@ -191,7 +177,7 @@ public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
                     return null;
                 }
 
-                byte[] resultPos = ctrl.Send( mCmd2, new byte[]{mId} );
+                byte[] resultPos = ctrl.Send( NxCinemaCtrl.CMD_TCON_OPEN_POS, new byte[]{mId} );
                 if (resultPos == null || resultPos.length == 0)
                     continue;
 

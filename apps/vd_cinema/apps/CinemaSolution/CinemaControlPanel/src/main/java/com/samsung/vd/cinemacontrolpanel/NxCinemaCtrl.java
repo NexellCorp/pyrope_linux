@@ -12,64 +12,54 @@ import java.util.Random;
 public class NxCinemaCtrl {
     private static final String NX_DTAG = "NxCinemaCtrl";
 
-    public static final int CMD_TCON                  = 0x0000;
-    public static final int CMD_TCON_INIT             = 0x0001;
-    public static final int CMD_TCON_STATUS           = 0x0002;
-    public static final int CMD_TCON_DOOR_STATUS      = 0x0003;
-    public static final int CMD_TCON_LVDS_STATUS      = 0x0004;
-    public static final int CMD_TCON_BOOTING_STATUS   = 0x0005;
+    //
+    //  Command Set
+    //
+    public static final int CMD_TCON_REG_WRITE				= 0x0000;
+    public static final int CMD_TCON_REG_READ				= 0x0001;
+    public static final int CMD_TCON_REG_BURST_WRITE		= 0x0002;
+    public static final int CMD_TCON_INIT					= 0x0010;
+    public static final int CMD_TCON_STATUS					= 0x0011;
+    public static final int CMD_TCON_DOOR_STATUS			= 0x0012;
+    public static final int CMD_TCON_LVDS_STATUS			= 0x0013;
+    public static final int CMD_TCON_BOOTING_STATUS			= 0x0014;
+    public static final int CMD_TCON_MODE_NORMAL			= 0x0015;
+    public static final int CMD_TCON_MODE_LOD				= 0x0016;
+    public static final int CMD_TCON_OPEN_NUM				= 0x0017;
+    public static final int CMD_TCON_OPEN_POS				= 0x0018;
+    public static final int CMD_TCON_PATTERN_RUN			= 0x0019;
+    public static final int CMD_TCON_PATTERN_STOP			= 0x001A;
+    public static final int CMD_TCON_TGAM_R					= 0x001B;
+    public static final int CMD_TCON_TGAM_G					= 0x001C;
+    public static final int CMD_TCON_TGAM_B					= 0x001D;
+    public static final int CMD_TCON_DGAM_R					= 0x001E;
+    public static final int CMD_TCON_DGAM_G					= 0x001F;
+    public static final int CMD_TCON_DGAM_B					= 0x0020;
+    public static final int CMD_TCON_DOT_CORRECTION			= 0x0021;
+    public static final int CMD_TCON_DOT_CORRECTION_EXTRACT	= 0x0022;
+    public static final int CMD_TCON_WHITE_SEAM				= 0x0023;
+    public static final int CMD_TCON_ELAPSED_TIME			= 0x0024;
+    public static final int CMD_TCON_ACCUMULATE_TIME		= 0x0025;
+    public static final int CMD_TCON_VERSION				= 0x0026;
 
-    public static final int CMD_TCON_MODE_NORMAL      = 0x0011;
-    public static final int CMD_TCON_MODE_LOD         = 0x0012;
-    public static final int CMD_TCON_OPEN_NUM         = 0x0013;
-    public static final int CMD_TCON_OPEN_POS         = 0x0014;
-    public static final int CMD_TCON_SHORT_NUM        = 0x0015;
-    public static final int CMD_TCON_SHORT_POS        = 0x0016;
+    public static final int CMD_PFPGA_REG_WRITE				= 0x0100;
+    public static final int CMD_PFPGA_REG_READ				= 0x0101;
+    public static final int CMD_PFPGA_REG_BURST_WRITE		= 0x0102;
+    public static final int CMD_PFPGA_STATUS				= 0x0110;
+    public static final int CMD_PFPGA_UNIFORMITY_DATA		= 0x0111;
+    public static final int CMD_PFPGA_MUTE					= 0x0112;
+    public static final int CMD_PFPGA_VERSION				= 0x0113;
 
-    public static final int CMD_TCON_PATTERN_RUN      = 0x0021;
-    public static final int CMD_TCON_PATTERN_STOP     = 0x0022;
+    public static final int CMD_PLATFORM_NAP_VERSION		= 0x0210;
+    public static final int CMD_PLATFORM_SAP_VERSION		= 0x0211;
+    public static final int CMD_PLATFORM_IPC_SERVER_VERSION	= 0x0212;
+    public static final int CMD_PLATFORM_IPC_CLIENT_VERSION	= 0x0213;
 
-    public static final int CMD_TCON_MASTERING_RD     = 0x0031;
-    public static final int CMD_TCON_MASTERING_WR     = 0x0032;
-    public static final int CMD_TCON_QUALITY          = 0x0033;
-    public static final int CMD_TCON_TGAM_R           = 0x0034;
-    public static final int CMD_TCON_TGAM_G           = 0x0035;
-    public static final int CMD_TCON_TGAM_B           = 0x0036;
-    public static final int CMD_TCON_DGAM_R           = 0x0037;
-    public static final int CMD_TCON_DGAM_G           = 0x0038;
-    public static final int CMD_TCON_DGAM_B           = 0x0039;
-    public static final int CMD_TCON_DOT_CORRECTION   = 0x0040;
-    public static final int CMD_TCON_WRITE_CONFIG     = 0x0041;
+    //
 
-    public static final int CMD_TCON_ELAPSED_TIME     = 0x0051;
-    public static final int CMD_TCON_ACCUMULATE_TIME  = 0x0052;
-
-    public static final int CMD_TCON_INPUT_SOURCE     = 0x0061;
-
-    public static final int CMD_TCON_VERSION          = 0x0070;
-    public static final int CMD_TCON_MULTI            = 0x00FF;
-
-    public static final int CMD_PFPGA                 = 0x0100;
-    public static final int CMD_PFPGA_STATUS          = 0x0101;
-    public static final int CMD_PFPGA_UNIFORMITY_WR   = 0x0111;
-    public static final int CMD_PFPGA_UNIFORMITY_RD   = 0x0112;
-    public static final int CMD_PFPGA_UNIFORMITY_DATA = 0x0113;
-    public static final int CMD_PFPGA_WRITE_CONFIG    = 0x0114;
-    public static final int CMD_PFPGA_MUTE            = 0x0121;
-
-    public static final int CMD_PFPGA_SOURCE          = 0x0102;
-    public static final int CMD_PFPGA_VERSION         = 0x0170;
-
-    public static final int CMD_BAT                   = 0x0200;
-    public static final int CMD_BAT_STATUS            = 0x0201;
-
-    public static final int CMD_IMB                   = 0x0300;
-    public static final int CMD_IMB_STATUS            = 0x0301;
-    public static final int CMD_IMB_VERSION           = 0x0302;
-
-    public static final int CMD_IPC                   = 0x0400;
-    public static final int CMD_IPC_SERVER_VERSION    = 0x0401;
-    public static final int CMD_IPC_CLIENT_VERSION    = 0x0402;
+    //  Register
+    //
+    public static final int REG_PFPGA_NUC_EN                = 0x01B0;
 
     private static NxCinemaCtrl mInstance;
 

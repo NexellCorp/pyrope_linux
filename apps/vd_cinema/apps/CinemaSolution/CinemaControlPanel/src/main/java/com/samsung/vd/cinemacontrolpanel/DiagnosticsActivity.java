@@ -45,10 +45,9 @@ public class DiagnosticsActivity extends AppCompatActivity {
     private StatusSimpleAdapter mAdapterTconStatus;
     private StatusSimpleAdapter mAdapterTconLvds;
     private StatusDetailAdapter mAdapterLedOpen;
-    private StatusDetailAdapter mAdapterLedShort;
     private StatusSimpleAdapter mAdapterCabinetDoor;
     private StatusSimpleAdapter mAdapterPeripheral;
-    private StatusDescribeExpandableAdapter mAdapterVersion;
+    private StatusDescribeAdapter mAdapterVersion;
 
     private byte[]  mCabinet;
 
@@ -134,26 +133,11 @@ public class DiagnosticsActivity extends AppCompatActivity {
         ListView listViewLedOpen = (ListView)findViewById(R.id.listview_led_open);
         listViewLedOpen.addFooterView(listViewFooter);
 
-        mAdapterLedOpen = new StatusDetailAdapter(this, R.layout.listview_row_status_detail, NxCinemaCtrl.CMD_TCON_OPEN_NUM);
+        mAdapterLedOpen = new StatusDetailAdapter(this, R.layout.listview_row_status_detail);
         listViewLedOpen.setAdapter( mAdapterLedOpen );
 
         mTextLedOpen = (TextView)findViewById(R.id.listview_led_open_text);
         mTextLedOpen.setVisibility(View.GONE);
-
-        //
-        //  LED SHORT
-        //
-        ListView listViewLedShort = (ListView)findViewById(R.id.listview_led_short);
-        listViewLedShort.addFooterView(listViewFooter);
-
-        mAdapterLedShort = new StatusDetailAdapter(this, R.layout.listview_row_status_detail, NxCinemaCtrl.CMD_TCON_SHORT_NUM);
-        listViewLedShort.setAdapter( mAdapterLedShort );
-
-//        for(int i = 0; i < mCabinet.length; i++ )
-//        {
-//            mAdapterLedShort.add( new StatusDetailInfo( String.format( Locale.US, "Cabinet %02d", (mCabinet[i] & 0x7F) - CinemaInfo.OFFSET_TCON ) ));
-//            mAdapterLedShort.notifyDataSetChanged();
-//        }
 
         //
         //  CABINET DOOR
@@ -191,10 +175,10 @@ public class DiagnosticsActivity extends AppCompatActivity {
         //
         //  VERSION
         //
-        ExpandableListView listViewVersion = (ExpandableListView)findViewById(R.id.listview_version);
+        ListView listViewVersion = (ListView)findViewById(R.id.listview_version);
         listViewVersion.addFooterView(listViewFooter);
 
-        mAdapterVersion = new StatusDescribeExpandableAdapter(this, R.layout.listview_row_status_describe, R.layout.listview_row_status_describe);
+        mAdapterVersion = new StatusDescribeAdapter(this, R.layout.listview_row_status_describe);
         listViewVersion.setAdapter( mAdapterVersion );
 
         //
@@ -202,12 +186,6 @@ public class DiagnosticsActivity extends AppCompatActivity {
         //
         AddTabs();
         UpdateTconStatus();
-
-        mTabHost.getTabWidget().getChildTabViewAt(3).setEnabled(false);
-        ((TextView)mTabHost.getTabWidget().getChildAt(3).findViewById(android.R.id.title)).setTextColor(0xFFDCDCDC);
-
-        mTabHost.getTabWidget().getChildTabViewAt(5).setEnabled(false);
-        ((TextView)mTabHost.getTabWidget().getChildAt(5).findViewById(android.R.id.title)).setTextColor(0xFFDCDCDC);
 
         //
         //  System Information
@@ -249,24 +227,16 @@ public class DiagnosticsActivity extends AppCompatActivity {
         tabSpec2.setContent(R.id.tabLedOpen);
 
         TabHost.TabSpec tabSpec3 = mTabHost.newTabSpec( "TAB3" );
-        tabSpec3.setIndicator("LED SHORT");
-        tabSpec3.setContent(R.id.tabLedShort);
+        tabSpec3.setIndicator("CABINET DOOR");
+        tabSpec3.setContent(R.id.tabCabinetDoor);
 
         TabHost.TabSpec tabSpec4 = mTabHost.newTabSpec( "TAB4" );
-        tabSpec4.setIndicator("CABINET DOOR");
-        tabSpec4.setContent(R.id.tabCabinetDoor);
+        tabSpec4.setIndicator("PERIPHERAL");
+        tabSpec4.setContent(R.id.tabPeripheral);
 
         TabHost.TabSpec tabSpec5 = mTabHost.newTabSpec( "TAB5" );
-        tabSpec5.setIndicator("BATTERY");
-        tabSpec5.setContent(R.id.tabBattery);
-
-        TabHost.TabSpec tabSpec6 = mTabHost.newTabSpec( "TAB6" );
-        tabSpec6.setIndicator("PERIPHERAL");
-        tabSpec6.setContent(R.id.tabPeripheral);
-
-        TabHost.TabSpec tabSpec7 = mTabHost.newTabSpec( "TAB7" );
-        tabSpec7.setIndicator("VERSION");
-        tabSpec7.setContent(R.id.tabVersion);
+        tabSpec5.setIndicator("VERSION");
+        tabSpec5.setContent(R.id.tabVersion);
 
         mTabHost.addTab(tabSpec0);
         mTabHost.addTab(tabSpec1);
@@ -274,8 +244,6 @@ public class DiagnosticsActivity extends AppCompatActivity {
         mTabHost.addTab(tabSpec3);
         mTabHost.addTab(tabSpec4);
         mTabHost.addTab(tabSpec5);
-        mTabHost.addTab(tabSpec6);
-        mTabHost.addTab(tabSpec7);
 
         mTabHost.setOnTabChangedListener(mDiagnosticsTabChange);
         mTabHost.setCurrentTab(0);
@@ -287,11 +255,9 @@ public class DiagnosticsActivity extends AppCompatActivity {
             if( tabId.equals("TAB0") ) UpdateTconStatus();
             if( tabId.equals("TAB1") ) UpdateTconLvds();
             if( tabId.equals("TAB2") ) UpdateLedOpen();
-            if( tabId.equals("TAB3") ) UpdateLedShort();
-            if( tabId.equals("TAB4") ) UpdateCabinetDoor();
-            if( tabId.equals("TAB5") ) UpdateBattery();
-            if( tabId.equals("TAB6") ) UpdatePeripheral();
-            if( tabId.equals("TAB7") ) UpdateVersion();
+            if( tabId.equals("TAB3") ) UpdateCabinetDoor();
+            if( tabId.equals("TAB4") ) UpdatePeripheral();
+            if( tabId.equals("TAB5") ) UpdateVersion();
         }
     };
 
@@ -307,16 +273,8 @@ public class DiagnosticsActivity extends AppCompatActivity {
         new AsyncTaskLedOpenNum(mAdapterLedOpen).execute();
     }
 
-    private void UpdateLedShort() {
-        Log.i(VD_DTAG, "Not Implementation.");
-    }
-
     private void UpdateCabinetDoor() {
         new AsyncTaskCabinetDoor(mAdapterCabinetDoor).execute();
-    }
-
-    private void UpdateBattery() {
-        Log.i(VD_DTAG, "Not Implementation.");
     }
 
     private void UpdatePeripheral() {
@@ -343,14 +301,14 @@ public class DiagnosticsActivity extends AppCompatActivity {
             for( byte cabinet : mCabinet ) {
                 byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_STATUS, new byte[]{cabinet} );
                 if (result == null || result.length == 0) {
-                    Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / slave : 0x%02x )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet));
-                    publishProgress((cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, -1);
+                    Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / slave : 0x%02x )", (cabinet & 0x7F) - CinemaInfo.TCON_ID_OFFSET, cabinet));
+                    publishProgress((cabinet & 0x7F) - CinemaInfo.TCON_ID_OFFSET, -1);
                     continue;
                 }
 
                 if( result[0] != StatusSimpleInfo.PASS ) {
-                    Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x / result : %d )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet, result[0] ));
-                    publishProgress((cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, (int)result[0]);
+                    Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x / result : %d )", (cabinet & 0x7F) - CinemaInfo.TCON_ID_OFFSET, cabinet, result[0] ));
+                    publishProgress((cabinet & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (int)result[0]);
                 }
             }
             return null;
@@ -360,6 +318,16 @@ public class DiagnosticsActivity extends AppCompatActivity {
         protected void onProgressUpdate(Integer... values) {
             mAdapter.add( new StatusSimpleInfo( String.format( Locale.US, "Cabinet %02d", values[0] ), values[1] ));
             mAdapter.notifyDataSetChanged();
+
+            if( values[1] == StatusSimpleInfo.ERROR ) {
+                String strLog = String.format( Locale.US, "[ Cabinet%02d ] TCON Status is Error.", values[0] );
+                ((CinemaInfo)getApplicationContext()).InsertLog(strLog);
+            }
+            if( values[1] == StatusSimpleInfo.FAIL ) {
+                String strLog = String.format( Locale.US, "[ Cabinet%02d ] TCON Status is Failed.", values[0] );
+                ((CinemaInfo)getApplicationContext()).InsertLog(strLog);
+            }
+
             super.onProgressUpdate(values);
         }
 
@@ -398,14 +366,14 @@ public class DiagnosticsActivity extends AppCompatActivity {
             for( byte cabinet : mCabinet ) {
                 byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_LVDS_STATUS, new byte[]{cabinet} );
                 if (result == null || result.length == 0) {
-                    Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / slave : 0x%02x )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet));
-                    publishProgress((cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, -1);
+                    Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / slave : 0x%02x )", (cabinet & 0x7F) - CinemaInfo.TCON_ID_OFFSET, cabinet));
+                    publishProgress((cabinet & 0x7F) - CinemaInfo.TCON_ID_OFFSET, -1);
                     continue;
                 }
 
                 if( result[0] != StatusSimpleInfo.PASS ) {
-                    Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x / result : %d )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet, result[0] ));
-                    publishProgress((cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, (int)result[0]);
+                    Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x / result : %d )", (cabinet & 0x7F) - CinemaInfo.TCON_ID_OFFSET, cabinet, result[0] ));
+                    publishProgress((cabinet & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (int)result[0]);
                 }
             }
             return null;
@@ -415,6 +383,16 @@ public class DiagnosticsActivity extends AppCompatActivity {
         protected void onProgressUpdate(Integer... values) {
             mAdapter.add( new StatusSimpleInfo( String.format( Locale.US, "Cabinet %02d", values[0] ), values[1] ));
             mAdapter.notifyDataSetChanged();
+
+            if( values[1] == StatusSimpleInfo.ERROR ) {
+                String strLog = String.format( Locale.US, "[ Cabinet%02d ] TCON LVDS is Error.", values[0] );
+                ((CinemaInfo)getApplicationContext()).InsertLog(strLog);
+            }
+            if( values[1] == StatusSimpleInfo.FAIL ) {
+                String strLog = String.format( Locale.US, "[ Cabinet%02d ] TCON LVDS is Failed.", values[0] );
+                ((CinemaInfo)getApplicationContext()).InsertLog(strLog);
+            }
+
             super.onProgressUpdate(values);
         }
 
@@ -463,15 +441,15 @@ public class DiagnosticsActivity extends AppCompatActivity {
             for( byte cabinet : mCabinet ) {
                 byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_OPEN_NUM, new byte[]{cabinet} );
                 if (result == null || result.length == 0) {
-                    Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / slave : 0x%02x )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet ));
-                    publishProgress(cabinet & 0xFF, (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, -1);
+                    Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / slave : 0x%02x )", (cabinet & 0x7F) - CinemaInfo.TCON_ID_OFFSET, cabinet ));
+                    publishProgress(cabinet & 0xFF, (cabinet & 0x7F) - CinemaInfo.TCON_ID_OFFSET, -1);
                     continue;
                 }
 
                 int value = ctrl.ByteArrayToInt16( result, NxCinemaCtrl.FORMAT_INT16 );
                 if( value != 0 ) {
-                    Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x / result : %d)", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet, value ));
-                    publishProgress(cabinet & 0xFF, (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, value);
+                    Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x / result : %d)", (cabinet & 0x7F) - CinemaInfo.TCON_ID_OFFSET, cabinet, value ));
+                    publishProgress(cabinet & 0xFF, (cabinet & 0x7F) - CinemaInfo.TCON_ID_OFFSET, value);
                 }
             }
 
@@ -486,13 +464,9 @@ public class DiagnosticsActivity extends AppCompatActivity {
             //
             //  values[0] : Cabinet ID, values[1] : Slave Address, values[2] : Result
             //
-            if( 0 > values[2] ) {
-                mAdapter.add(new StatusDetailInfo(String.format(Locale.US, "Cabinet %02d", values[1]), values[0], -1, "-"));
-            } else {
-                mAdapter.add(new StatusDetailInfo(String.format(Locale.US, "Cabinet %02d", values[1]), values[0], 0, String.valueOf(values[2])));
-            }
-
+            mAdapter.add(new StatusDetailInfo(String.format(Locale.US, "Cabinet %02d", values[1]), values[0], 0, (0 > values[2]) ? "-" : String.valueOf(values[2])));
             mAdapter.notifyDataSetChanged();
+
             super.onProgressUpdate(values);
         }
 
@@ -531,17 +505,17 @@ public class DiagnosticsActivity extends AppCompatActivity {
             for( byte cabinet : mCabinet ) {
                 byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_DOOR_STATUS, new byte[]{cabinet} );
                 if (result == null || result.length == 0) {
-                    Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / slave : 0x%02x )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet));
-                    publishProgress((cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, -1);
+                    Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / slave : 0x%02x )", (cabinet & 0x7F) - CinemaInfo.TCON_ID_OFFSET, cabinet));
+                    publishProgress((cabinet & 0x7F) - CinemaInfo.TCON_ID_OFFSET, -1);
                     continue;
                 }
                 if( 0 > result[0] ) {
-                    Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x / result : %d )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet, result[0] ));
-                    publishProgress((cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, StatusSimpleInfo.ERROR);
+                    Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x / result : %d )", (cabinet & 0x7F) - CinemaInfo.TCON_ID_OFFSET, cabinet, result[0] ));
+                    publishProgress((cabinet & 0x7F) - CinemaInfo.TCON_ID_OFFSET, StatusSimpleInfo.ERROR);
                 }
                 else if( result[0] == 0 || result[0] == 2 ) {
-                    Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x / result : %d )", (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, cabinet, result[0] ));
-                    publishProgress( (cabinet & 0x7F) - CinemaInfo.OFFSET_TCON, StatusSimpleInfo.FAIL );
+                    Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x / result : %d )", (cabinet & 0x7F) - CinemaInfo.TCON_ID_OFFSET, cabinet, result[0] ));
+                    publishProgress( (cabinet & 0x7F) - CinemaInfo.TCON_ID_OFFSET, StatusSimpleInfo.FAIL );
                 }
             }
             return null;
@@ -701,48 +675,43 @@ public class DiagnosticsActivity extends AppCompatActivity {
         }
     }
 
-    private class AsyncTaskVersion extends AsyncTask<Void, Void, Void> {
-        private StatusDescribeExpandableAdapter mAdapter;
+    private class AsyncTaskVersion extends AsyncTask<Void, Integer, Void> {
+        private StatusDescribeAdapter mAdapter;
 
-        public AsyncTaskVersion( StatusDescribeExpandableAdapter adapter) {
+        public AsyncTaskVersion( StatusDescribeAdapter adapter) {
             mAdapter = adapter;
-            mAdapter.clear();
         }
 
         @Override
         protected Void doInBackground(Void... params) {
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
 
-            if( mCabinet == null )
-                return null;
-
-            for( int i = 0; i < mCabinet.length; i++ ) {
-                mAdapter.addGroup( new StatusDescribeExpandableInfo(String.format( Locale.US, "Cabinet %02d", (mCabinet[i] & 0x7F) - CinemaInfo.OFFSET_TCON )) );
-
-                for( int j = 0; j < 24; j++ ) {
-                    byte[] module = ctrl.IntToByteArray( j, NxCinemaCtrl.FORMAT_INT8 );
-                       byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_VERSION, new byte[] { mCabinet[i], (byte)j } );
-                    if( result == null || result.length == 0 ) {
-                        mAdapter.addChild(i, new StatusDescribeInfo(String.format( Locale.US, "Module #%02d", j), String.valueOf("Error")) );
-                        continue;
-                    }
-                    mAdapter.addChild(i, new StatusDescribeInfo(String.format( Locale.US, "Module #%02d", j), new String(result) ));
+            for( byte cabinet : mCabinet ) {
+                byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_VERSION, new byte[]{cabinet} );
+                if (result == null || result.length == 0) {
+                    publishProgress((cabinet & 0x7F) - CinemaInfo.TCON_ID_OFFSET, -1);
+                    continue;
                 }
-            	publishProgress();
+
+                int version1 = ctrl.ByteArrayToInt32(result, NxCinemaCtrl.MASK_INT32_MSB);
+                int version2 = ctrl.ByteArrayToInt32(result, NxCinemaCtrl.MASK_INT32_LSB);
+                publishProgress((cabinet & 0x7F) - CinemaInfo.TCON_ID_OFFSET, version1, version2);
             }
             return null;
         }
 
         @Override
-        protected void onProgressUpdate(Void... values) {
+        protected void onProgressUpdate(Integer... values) {
+            mAdapter.add( new StatusDescribeInfo( String.format( Locale.US, "Cabinet %02d", values[0] ), String.format( Locale.US, "%05d-%05d", values[1], values[2] )));
             mAdapter.notifyDataSetChanged();
             super.onProgressUpdate(values);
         }
 
         @Override
         protected void onPreExecute() {
+            CinemaLoading.Show( DiagnosticsActivity.this );
+            mAdapter.clear();
             super.onPreExecute();
-            CinemaLoading.Show(DiagnosticsActivity.this);
         }
 
         @Override

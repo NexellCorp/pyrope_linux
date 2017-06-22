@@ -28,11 +28,12 @@
 #include <sys/reboot.h>
 #include <linux/reboot.h>
 
-#include <CNX_Uart.h>
+#include <Board_Port.h>
+#include <NX_Version.h>
 #include <NX_UartProtocol.h>
 #include <NX_Utils.h>
 #include <NX_Queue.h>
-#include <Board_Port.h>
+#include <CNX_Uart.h>
 #include <CNX_BaseClass.h>
 
 #include <NX_GDCServer.h>
@@ -149,9 +150,9 @@ public:
 	{
 		m_ExitLoop = false;
 		Start();
-		return 0;		
+		return 0;
 	}
-	
+
 	void StopService()
 	{
 		m_ExitLoop = true;
@@ -212,7 +213,7 @@ void SlinkClient::ThreadProc()
 				NxDbgMsg( NX_DBG_VBS, "CMD_BOOT_DONE\n" );
 				break;
 			}
-			
+
 			case CMD_ALIVE:
 			{
 				NX_InitPacket( &pkt );
@@ -263,6 +264,25 @@ void SlinkClient::ThreadProc()
 				NxDbgMsg( NX_DBG_VBS, "CMD_DIVORCE\n" );
 			}
 
+			case CMD_VERSION:
+			{
+				char version[64] = { 0x00, };
+				sprintf( version, "%s", NX_VERSION_SAP );
+
+				NX_InitPacket( &pkt );
+				pkt.command = CMD_VERSION;
+				pkt.payload = (void*)version;
+				pkt.payloadSize = strlen(version);
+				sendBufSize = NX_GetSendBufferSize( &pkt );
+				pkt.frameNumber = m_FrameCounter++;
+				sendSize = NX_MakeUartPacket(&pkt, m_SendBuf, sendBufSize );
+				written = m_hUart->Write(m_SendBuf, sendSize);
+				if( 0 >= written) {
+					NxDbgMsg( NX_DBG_VBS, "Fail, write().\n" );
+				}
+				NxDbgMsg( NX_DBG_VBS, "CMD_VERSION\n" );
+			}
+
 			default:
 				break;
 		}
@@ -304,7 +324,7 @@ static void signal_handler( int32_t signal )
 	if( gstSapGpio )
 	{
 		gstSapGpio->StopMonitor();
-		delete gstSapGpio;	
+		delete gstSapGpio;
 	}
 
 	if( gstSlinkClient )
@@ -366,7 +386,7 @@ static int32_t MarriageVerboseCallbackFunction( void *pObj, int32_t iEventCode, 
 		printf("%s", (char*)pData);
 		printf("======================================================================\n");
 		break;
-	
+
 	case EVENT_RECEIVE_PLANE_DATA :
 		printf("======================================================================\n");
 		printf(">> Receive Plane Data.\n");
@@ -374,13 +394,13 @@ static int32_t MarriageVerboseCallbackFunction( void *pObj, int32_t iEventCode, 
 		NX_HexDump( pData, iSize );
 		printf("======================================================================\n");
 		break;
-	
+
 	case EVENT_RECEIVE_MARRIAGE_OK :
 		printf("======================================================================\n");
 		printf(">> Receive Marriage OK.\n");
 		printf("======================================================================\n");
 		break;
-	
+
 	case EVENT_ACK_CERTIFICATE :
 		printf("======================================================================\n");
 		printf(">> Transfer Ceriticate.\n");
@@ -388,7 +408,7 @@ static int32_t MarriageVerboseCallbackFunction( void *pObj, int32_t iEventCode, 
 		NX_HexDump( pData, iSize );
 		printf("======================================================================\n");
 		break;
-	
+
 	case EVENT_ACK_SIGN_PLANE_TEXT :
 		printf("======================================================================\n");
 		printf(">> Transfer Sign Data.\n");
@@ -396,7 +416,7 @@ static int32_t MarriageVerboseCallbackFunction( void *pObj, int32_t iEventCode, 
 		NX_HexDump( pData, iSize );
 		printf("======================================================================\n");
 		break;
-	
+
 	case EVENT_ACK_MARRIAGE_OK :
 		printf("======================================================================\n");
 		printf(">> Transfer Marriage OK.\n");
@@ -405,15 +425,15 @@ static int32_t MarriageVerboseCallbackFunction( void *pObj, int32_t iEventCode, 
 		printf("======================================================================\n");
 		*bMarriaged = true;
 		break;
-	
+
 	case ERROR_MAKE_PACKET :
 		printf("Error, Make Packet.\n");
 		break;
-	
+
 	case ERROR_SIGN_PLANE_TEXT :
 		printf("Error, Sign Data.\n");
 		break;
-	
+
 	default:
 		break;
 	}
@@ -430,7 +450,7 @@ static void GpioCallbackFunction( void *pPrivate, uint32_t gpioPort, uint32_t va
 		if( 0 == value )
 		{
 			sync();
-			reboot( LINUX_REBOOT_CMD_POWER_OFF );	
+			reboot( LINUX_REBOOT_CMD_POWER_OFF );
 		}
 	}
 }
@@ -476,8 +496,10 @@ int32_t main( int32_t argc, char *argv[] )
 	{
 		if( !bMarriaged )	gstSlinkClient->AddCommand( CMD_DIVORCE );
 		else				gstSlinkClient->AddCommand( CMD_MARRIAGE );
-		
+
 		gstSlinkClient->AddCommand( CMD_ALIVE );
+		gstSlinkClient->AddCommand( CMD_VERSION );
+
 		usleep( 1000000 );
 	}
 

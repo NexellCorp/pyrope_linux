@@ -37,10 +37,11 @@ public class NxCinemaCtrl {
     public static final int CMD_TCON_DGAM_B					= 0x0020;
     public static final int CMD_TCON_DOT_CORRECTION			= 0x0021;
     public static final int CMD_TCON_DOT_CORRECTION_EXTRACT	= 0x0022;
-    public static final int CMD_TCON_WHITE_SEAM				= 0x0023;
-    public static final int CMD_TCON_ELAPSED_TIME			= 0x0024;
-    public static final int CMD_TCON_ACCUMULATE_TIME		= 0x0025;
-    public static final int CMD_TCON_VERSION				= 0x0026;
+    public static final int CMD_TCON_WHITE_SEAM_READ    	= 0x0023;
+    public static final int CMD_TCON_WHITE_SEAM_WRITE       = 0x0024;
+    public static final int CMD_TCON_ELAPSED_TIME			= 0x0025;
+    public static final int CMD_TCON_ACCUMULATE_TIME		= 0x0026;
+    public static final int CMD_TCON_VERSION				= 0x0027;
 
     public static final int CMD_PFPGA_REG_WRITE				= 0x0100;
     public static final int CMD_PFPGA_REG_READ				= 0x0101;
@@ -56,10 +57,11 @@ public class NxCinemaCtrl {
     public static final int CMD_PLATFORM_IPC_CLIENT_VERSION	= 0x0213;
 
     //
-
     //  Register
     //
     public static final int REG_PFPGA_NUC_EN                = 0x01B0;
+    public static final int REG_TCON_SEAM_EN                = 0x0192;
+    public static final int REG_TCON_SEAM_TEST              = 0x0186;
 
     private static NxCinemaCtrl mInstance;
 

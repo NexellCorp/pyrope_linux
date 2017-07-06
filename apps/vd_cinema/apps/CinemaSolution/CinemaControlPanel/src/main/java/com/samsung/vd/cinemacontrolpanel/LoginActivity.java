@@ -365,6 +365,11 @@ public class LoginActivity extends AppCompatActivity {
                 }
 
                 //
+                //  PFPGA Mute on
+                //
+                ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x01} );
+
+                //
                 //  Parse P_REG.txt
                 //
                 String[] resultPath;
@@ -388,14 +393,16 @@ public class LoginActivity extends AppCompatActivity {
                 }
 
                 //
-                //  Auto Uniformity Correction Writing.
+                //  Auto Uniformity Correction Writing
                 //
                 resultPath = FileManager.CheckFile(LedUniformityInfo.PATH_TARGET, LedUniformityInfo.NAME);
                 for( String file : resultPath ) {
                     LedUniformityInfo info = new LedUniformityInfo();
                     if( info.Parse(file) ) {
-                        if( !enableUniformity )
+                        if( !enableUniformity ) {
+                            Log.i(VD_DTAG, String.format( "Skip. Update Uniformity. ( %s )", file ));
                             continue;
+                        }
 
                         byte[] inData = ctrl.IntArrayToByteArray( info.GetData(), NxCinemaCtrl.FORMAT_INT16 );
                         ctrl.Send( NxCinemaCtrl.CMD_PFPGA_UNIFORMITY_DATA, inData );
@@ -426,7 +433,7 @@ public class LoginActivity extends AppCompatActivity {
                 }
 
                 //
-                //  Auto Gamma Writing.
+                //  Write Gamma
                 //
                 resultPath = FileManager.CheckFile(LedGammaInfo.PATH_TARGET, LedGammaInfo.PATTERN_NAME);
                 for( String file : resultPath ) {
@@ -458,6 +465,14 @@ public class LoginActivity extends AppCompatActivity {
                     }
                 }
 
+                //
+                //  PFPGA Mute off
+                //
+                ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x00} );
+
+                //
+                //  TCON Initialize
+                //
                 if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_INIT, new byte[]{(byte)0x09});
                 if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_INIT, new byte[]{(byte)0x89});
             }

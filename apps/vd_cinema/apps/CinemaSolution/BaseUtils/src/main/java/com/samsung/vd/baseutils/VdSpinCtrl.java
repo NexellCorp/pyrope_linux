@@ -20,6 +20,9 @@ import java.util.Locale;
 
 public class VdSpinCtrl extends LinearLayout {
     private static final String VD_DTAG = "VdSpinCtrl";
+
+    private Button mBtnUp;
+    private Button mBtnDn;
     private EditText mEditText;
 
     private int mMinValue = 0;
@@ -61,13 +64,19 @@ public class VdSpinCtrl extends LinearLayout {
         mMaxValue = (maxValue > 65535) ? 65535 : maxValue;
     }
 
+    public void setEnabled( boolean bEnable ) {
+        mBtnUp.setEnabled( bEnable );
+        mBtnDn.setEnabled( bEnable );
+        mEditText.setEnabled( bEnable );
+    }
+
     private void InitView() {
         LayoutInflater inflater = (LayoutInflater)getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         View view = inflater.inflate( R.layout.vd_spin_ctrl, this, false );
         addView( view );
 
-        Button btnUp = (Button)findViewById( R.id.btnUp );
-        btnUp.setOnClickListener(new View.OnClickListener() {
+        mBtnUp = (Button)findViewById(R.id.btnUp);
+        mBtnUp.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 int value = Integer.parseInt( mEditText.getText().toString(), 10 ) + 1;
@@ -79,8 +88,8 @@ public class VdSpinCtrl extends LinearLayout {
             }
         });
 
-        Button btnDn = (Button)findViewById( R.id.btnDn );
-        btnDn.setOnClickListener(new View.OnClickListener() {
+        mBtnDn = (Button)findViewById(R.id.btnDn);
+        mBtnDn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 int value = Integer.parseInt( mEditText.getText().toString(), 10 ) - 1;

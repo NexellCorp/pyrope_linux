@@ -38,6 +38,10 @@ public class CinemaInfo extends Application {
     private String mSecureBootDone  = "false";
     private String mSecureAlive     = "false";
 
+    //
+    //  Cabinet Number = slave address - offset(16) :: 0, 1, 2, .., 96
+    //  Cabinet ID = slave address                  :: 16, 17, 18, .., 112
+    //
     private byte[] mCabinet = new byte[0];
 
     //

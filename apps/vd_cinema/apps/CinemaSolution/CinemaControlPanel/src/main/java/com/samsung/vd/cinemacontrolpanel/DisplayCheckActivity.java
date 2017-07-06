@@ -17,6 +17,7 @@ import android.widget.ExpandableListView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TabHost;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.samsung.vd.baseutils.VdStatusBar;
@@ -192,6 +193,9 @@ public class DisplayCheckActivity extends AppCompatActivity {
 
         tabHost.setOnTabChangedListener(mDiagnosticsTabChange);
         tabHost.setCurrentTab(0);
+
+        tabHost.getTabWidget().getChildTabViewAt(1).setEnabled(false);
+        ((TextView)tabHost.getTabWidget().getChildAt(1).findViewById(android.R.id.title)).setTextColor(0xFFDCDCDC);
     }
 
     private TabHost.OnTabChangeListener mDiagnosticsTabChange = new TabHost.OnTabChangeListener() {

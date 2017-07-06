@@ -65,14 +65,22 @@ public class LedGammaInfo {
         int index = 0;
         try {
             FileInputStream inStream = new FileInputStream( filePath );
-            BufferedReader bufferedReader = new BufferedReader( new InputStreamReader(inStream) );
+            InputStreamReader inStreamReader = new InputStreamReader( inStream );
+            BufferedReader bufferedReader = new BufferedReader( inStreamReader );
 
             String strValue;
             while( (strValue = bufferedReader.readLine()) != null )
             {
                 mData[index] = Integer.parseInt(strValue, 10);
                 index++;
+
+                if( index >= mData.length )
+                    break;
             }
+
+            inStream.close();
+            inStreamReader.close();
+            bufferedReader.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

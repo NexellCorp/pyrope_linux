@@ -164,15 +164,14 @@ public class TopActivity extends AppCompatActivity {
         //
         //
         //
-        TextView textPathConfigPfpga = (TextView)findViewById(R.id.textPathConfigPfpga);
-        TextView textPathUniformity = (TextView)findViewById(R.id.textPathUniformity);
-        TextView textPathConfigTcon = (TextView)findViewById(R.id.textPathConfigTcon);
-        TextView textPathGamma = (TextView)findViewById(R.id.textPathGamma);
-
-        textPathConfigPfpga.setText("-. PFPGA Config Path : [USB_TOP]/" + ConfigPfpgaInfo.PATH_SOURCE + "/" + ConfigPfpgaInfo.NAME);
-        textPathUniformity.setText("-. Uniformity Path : [USB_TOP]/" + LedUniformityInfo.PATH_SOURCE + "/" + LedUniformityInfo.NAME);
-        textPathConfigTcon.setText("-. TCON Config Path : [USB_TOP]/" + ConfigTconInfo.PATH_SOURCE + "/" + ConfigTconInfo.NAME);
-        textPathGamma.setText("-. Gamma Path : [USB_TOP]/" + LedGammaInfo.PATH_SOURCE + "/" + LedGammaInfo.PATTERN_NAME);
+        TextView textComment = (TextView)findViewById(R.id.textCommentTop);
+        textComment.setText("");
+        textComment.append(String.format(Locale.US, "-. TCON Config File\t\t\t\t: [USB_TOP]/%s/%s\n", ConfigTconInfo.PATH_SOURCE, ConfigTconInfo.NAME));
+        textComment.append(String.format(Locale.US, "-. PFPGA Config File\t\t\t\t: [USB_TOP]/%s/%s\n", ConfigPfpgaInfo.PATH_SOURCE, ConfigPfpgaInfo.NAME));
+        textComment.append(String.format(Locale.US, "-. Uniformity File\t\t\t\t\t: [USB_TOP]/%s/%s\n", LedUniformityInfo.PATH_SOURCE, LedUniformityInfo.NAME));
+        textComment.append(String.format(Locale.US, "-. Gamma File\t\t\t\t\t\t: [USB_TOP]/%s/%s\n", LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME));
+        textComment.append(String.format(Locale.US, "-. Dot Correct Path\t\t\t\t: [USB_TOP]/%s/\n", LedDotCorrectInfo.PATH));
+        textComment.append(String.format(Locale.US, "-. Dot Correct Extract Path\t: [USB_TOP]/DOT_CORRECTION_IDxxx/\n"));
 
         //
         //
@@ -329,22 +328,45 @@ public class TopActivity extends AppCompatActivity {
                 if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
             }
 
-            if( ((CinemaInfo)getApplicationContext()).IsCheckTconLvds() ) {
-                byte[] resultLvds = ctrl.Send( NxCinemaCtrl.CMD_TCON_LVDS_STATUS, new byte[]{(byte)mCabinet[0]} );
-                if (resultLvds == null || resultLvds.length == 0 || resultLvds[0] == (byte)0x00 ) {
-                    Log.i(VD_DTAG, "Fail, TCON LVDS is not valid.");
+            //
+            //  Check TCON Booting Status
+            //
+            if( ((CinemaInfo)getApplicationContext()).IsCheckTconBooting() ) {
+                boolean bTconBooting = true;
+                for( byte id : mCabinet ) {
+                    byte[] result;
+                    result = ctrl.Send(NxCinemaCtrl.CMD_TCON_BOOTING_STATUS, new byte[]{id});
+                    if (result == null || result.length == 0) {
+                        Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / slave : 0x%02x )", (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET, id));
+                        continue;
+                    }
+
+                    if( result[0] == 0 ) {
+                        Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x / result : %d )", (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET, id, result[0] ));
+                        bTconBooting = false;
+                    }
+                }
+
+                if( !bTconBooting ) {
+                    Log.i(VD_DTAG, "Fail, TCON booting.");
                     return null;
                 }
             }
 
+            //
+            //  PFPGA Mute on
+            //
             ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x01} );
 
-            String[] result;
+            //
+            //  Parse P_REG.txt
+            //
+            String[] resultPath;
             boolean enableUniformity = false;
             boolean[] enableGamma = {false, };
 
-            result = FileManager.CheckFile(ConfigPfpgaInfo.PATH_TARGET, ConfigPfpgaInfo.NAME);
-            for( String file : result ) {
+            resultPath = FileManager.CheckFile(ConfigPfpgaInfo.PATH_TARGET, ConfigPfpgaInfo.NAME);
+            for( String file : resultPath ) {
                 ConfigPfpgaInfo info = new ConfigPfpgaInfo();
                 if( info.Parse( file ) ) {
                     enableUniformity = info.GetEnableUpdateUniformity(mIndexInitialValue);
@@ -358,8 +380,11 @@ public class TopActivity extends AppCompatActivity {
                 }
             }
 
-            result = FileManager.CheckFile(LedUniformityInfo.PATH_TARGET, LedUniformityInfo.NAME);
-            for( String file : result ) {
+            //
+            //  Auto Uniformity Correction Writing
+            //
+            resultPath = FileManager.CheckFile(LedUniformityInfo.PATH_TARGET, LedUniformityInfo.NAME);
+            for( String file : resultPath ) {
                 LedUniformityInfo info = new LedUniformityInfo();
                 if( info.Parse( file ) ) {
                     if( !enableUniformity ) {
@@ -372,8 +397,11 @@ public class TopActivity extends AppCompatActivity {
                 }
             }
 
-            result = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET, ConfigTconInfo.NAME);
-            for( String file : result ) {
+            //
+            //  Parse T_REG.txt
+            //
+            resultPath = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET, ConfigTconInfo.NAME);
+            for( String file : resultPath ) {
                 ConfigTconInfo info = new ConfigTconInfo();
                 if( info.Parse( file ) ) {
                     enableGamma = info.GetEnableUpdateGamma(mIndexInitialValue);
@@ -392,8 +420,11 @@ public class TopActivity extends AppCompatActivity {
                 }
             }
 
-            result = FileManager.CheckFile(LedGammaInfo.PATH_TARGET, LedGammaInfo.PATTERN_NAME);
-            for( String file : result ) {
+            //
+            //  Write Gamma
+            //
+            resultPath = FileManager.CheckFile(LedGammaInfo.PATH_TARGET, LedGammaInfo.PATTERN_NAME);
+            for( String file : resultPath ) {
                 LedGammaInfo info = new LedGammaInfo();
                 if( info.Parse( file ) ) {
                     if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !enableGamma[0]) ||
@@ -422,6 +453,9 @@ public class TopActivity extends AppCompatActivity {
                 }
             }
 
+            //
+            //  PFPGA Mute off
+            //
             ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x00} );
             return null;
 

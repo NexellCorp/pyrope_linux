@@ -134,11 +134,13 @@ public class LedDotCorrectInfo {
             return false;
         }
 
+
+
         String strLine = String.valueOf(module/4);
         String strSide = ((module % 4) < 2) ? "L" : "R";
         String strType = (((module % 4) % 2) == 0) ? "A" : "B";
 
-        String strFile = String.format(Locale.US, "%s/RGB_P2_5_ID%03d_%s%s%s.txt", outPath, index, strSide, strLine, strType);
+        String strFile = String.format(Locale.US, "%s/RGB_P2_5_ID%03d_%s%s%s.txt", outPath, (index & 0x7F), strSide, strLine, strType);
 
         Log.i(VD_DTAG, String.format("Target File : %s", strFile));
 

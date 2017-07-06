@@ -28,13 +28,13 @@ public class FileManager {
 
     public static String[] CheckFile( String topdir, String regularExpression ) {
         String[] result = new String[0];
-        File topfolder = new File( topdir );
-        File[] toplist = topfolder.listFiles();
-        if( toplist == null || toplist.length == 0 )
+        File topFolder = new File( topdir );
+        File[] topList = topFolder.listFiles();
+        if( topList == null || topList.length == 0 )
             return result;
 
         Pattern pattern = Pattern.compile( regularExpression );
-        for( File file : toplist ) {
+        for( File file : topList ) {
             if( !file.isFile() )
                 continue;
 
@@ -42,6 +42,29 @@ public class FileManager {
             if( matcher.matches() ) {
                 String[] temp = Arrays.copyOf( result, result.length + 1);
                 temp[result.length] = file.getAbsolutePath();
+                result = temp;
+            }
+        }
+
+        return result;
+    }
+
+    public static String[] CheckDirectory( String topDir, String regularExpression ) {
+        String[] result = new String[0];
+        File topFolder = new File( topDir );
+        File[] topList = topFolder.listFiles();
+        if( topList == null || topList.length == 0 )
+            return result;
+
+        Pattern pattern = Pattern.compile( regularExpression );
+        for( File dir : topList ) {
+            if( !dir.isDirectory() )
+                continue;
+
+            Matcher matcher = pattern.matcher(dir.getName());
+            if( matcher.matches() ) {
+                String[] temp = Arrays.copyOf( result, result.length + 1);
+                temp[result.length] = dir.getAbsolutePath();
                 result = temp;
             }
         }

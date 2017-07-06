@@ -57,10 +57,11 @@
 #define TCON_CMD_DGAM_B					0x0020	//	TCON Device Gamma Blue				// 0x00 | 0x20
 #define TCON_CMD_DOT_CORRECTION			0x0021	//	TCON Dot Correction					// 0x00 | 0x21
 #define TCON_CMD_DOT_CORRECTION_EXTRACT	0x0022	//	TCON Dot Correction Extract			// 0x00 | 0x22
-#define TCON_CMD_WHITE_SEAM				0x0023	//	TCON White Seam						// 0x00 | 0x23
-#define TCON_CMD_ELAPSED_TIME			0x0024	//	LED Elapsed Time					// 0x00 | 0x24
-#define TCON_CMD_ACCUMULATE_TIME		0x0025	//	Total LED Accumulate Time			// 0x00 | 0x25
-#define TCON_CMD_VERSION				0x0026	//	TCON Version						// 0x00 | 0x26
+#define TCON_CMD_WHITE_SEAM_READ		0x0023	//	TCON White Seam	Read				// 0x00 | 0x23
+#define TCON_CMD_WHITE_SEAM_WRITE		0x0024	//	TCON White Seam Write				// 0x00 | 0x24
+#define TCON_CMD_ELAPSED_TIME			0x0025	//	LED Elapsed Time					// 0x00 | 0x25
+#define TCON_CMD_ACCUMULATE_TIME		0x0026	//	Total LED Accumulate Time			// 0x00 | 0x26
+#define TCON_CMD_VERSION				0x0027	//	TCON Version						// 0x00 | 0x27
 
 
 //
@@ -86,11 +87,8 @@
 
 
 //
-//	Reserved Command
+//	IMB Command
 //
-#define RESERVED_CMD_0					0x0C10	//	Reserved Command					// 0xC0 | 0x10
-#define RESERVED_CMD_1					0x0C11	//	Reserved Command					// 0xC0 | 0x11
-#define RESERVED_CMD_2					0x0C12	//	Reserved Command					// 0xC0 | 0x12
-#define RESERVED_CMD_3					0x0C13	//	Reserved Command					// 0xC0 | 0x13
+#define IMB_CMD_CHANGE_CONTENTS			0x0C10	//	IMB Change Contents					// 0xC0 | 0x10
 
 #endif	// __NX_IPCCOMMAND_H__

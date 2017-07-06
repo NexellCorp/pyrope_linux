@@ -23,7 +23,7 @@
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.25" />
+            android:layout_weight="0.2" />
 
         <TextView
             android:background="@drawable/draw_line_border"
@@ -35,7 +35,19 @@
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.75" />
+            android:layout_weight="0.6" />
+
+        <TextView
+            android:background="@drawable/draw_line_border"
+            android:layout_width="0px"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="Control"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:paddingTop="15dp"
+            android:paddingBottom="15dp"
+            android:layout_weight="0.2" />
     </LinearLayout>
 
     <LinearLayout
@@ -53,7 +65,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:layout_weight="0.25">
+            android:layout_weight="0.2">
 
             <Spinner
                 android:id="@+id/spinnerWhiteSeamCabinetId"
@@ -65,7 +77,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:layout_weight="0.75"
+            android:layout_weight="0.8"
             android:orientation="vertical">
 
             <!-- Top White Seam  -->
@@ -93,7 +105,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:layout_weight="0.70">
+                    android:layout_weight="0.6">
 
                     <com.samsung.vd.baseutils.VdSpinCtrl
                         android:layout_width="wrap_content"
@@ -108,7 +120,7 @@
                     android:gravity="center"
                     android:paddingTop="4dp"
                     android:paddingBottom="3dp"
-                    android:layout_weight="0.15">
+                    android:layout_weight="0.25">
 
                     <Button
                         android:id="@+id/btnWhiteSeamTopApply"
@@ -144,7 +156,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:layout_weight="0.70">
+                    android:layout_weight="0.6">
 
                     <com.samsung.vd.baseutils.VdSpinCtrl
                         android:layout_width="wrap_content"
@@ -160,7 +172,7 @@
                     android:gravity="center"
                     android:paddingTop="4dp"
                     android:paddingBottom="3dp"
-                    android:layout_weight="0.15">
+                    android:layout_weight="0.25">
 
                     <Button
                         android:id="@+id/btnWhiteSeamBottomApply"
@@ -196,7 +208,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:layout_weight="0.70">
+                    android:layout_weight="0.6">
 
                     <com.samsung.vd.baseutils.VdSpinCtrl
                         android:layout_width="wrap_content"
@@ -211,7 +223,7 @@
                     android:gravity="center"
                     android:paddingTop="4dp"
                     android:paddingBottom="3dp"
-                    android:layout_weight="0.15">
+                    android:layout_weight="0.25">
 
                     <Button
                         android:id="@+id/btnWhiteSeamLeftApply"
@@ -247,7 +259,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:layout_weight="0.70">
+                    android:layout_weight="0.6">
 
                     <com.samsung.vd.baseutils.VdSpinCtrl
                         android:layout_width="wrap_content"
@@ -262,7 +274,7 @@
                     android:gravity="center"
                     android:paddingTop="4dp"
                     android:paddingBottom="3dp"
-                    android:layout_weight="0.15">
+                    android:layout_weight="0.25">
 
                     <Button
                         android:id="@+id/btnWhiteSeamRightApply"
@@ -273,6 +285,23 @@
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="end" >
+        <Button
+            android:id="@+id/btnWhiteSeamEnable"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ENABLE" />
+
+        <Button
+            android:id="@+id/btnWhiteSeamTest"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="TEST" />
     </LinearLayout>
 
 </LinearLayout>

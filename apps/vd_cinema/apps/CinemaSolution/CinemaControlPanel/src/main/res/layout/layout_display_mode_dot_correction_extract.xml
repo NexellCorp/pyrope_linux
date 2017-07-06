@@ -24,7 +24,19 @@
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.5" />
+            android:layout_weight="0.2" />
+
+        <TextView
+            android:background="@drawable/draw_line_border"
+            android:layout_width="0px"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="Module Number"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:paddingTop="15dp"
+            android:paddingBottom="15dp"
+            android:layout_weight="0.3" />
 
         <TextView
             android:background="@drawable/draw_line_border"
@@ -54,12 +66,27 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:layout_weight="0.5">
+            android:layout_weight="0.2">
 
             <Spinner
                 android:layout_width="100dp"
                 android:layout_height="wrap_content"
-                android:id="@+id/spinnerDotCorrectionExtract" />
+                android:id="@+id/spinnerDotCorrectionExtractId" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:background="@drawable/draw_line_border"
+            android:paddingTop="2dp"
+            android:paddingBottom="5dp"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_weight="0.3">
+
+            <Spinner
+                android:layout_width="150dp"
+                android:layout_height="wrap_content"
+                android:id="@+id/spinnerDotCorrectionExtractModule" />
         </LinearLayout>
 
         <LinearLayout

@@ -689,7 +689,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
             for( byte cabinet : mCabinet ) {
                 byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_VERSION, new byte[]{cabinet} );
                 if (result == null || result.length == 0) {
-                    publishProgress((cabinet & 0x7F) - CinemaInfo.TCON_ID_OFFSET, -1);
+                    publishProgress((cabinet & 0x7F) - CinemaInfo.TCON_ID_OFFSET, -1, -1);
                     continue;
                 }
 
@@ -702,7 +702,13 @@ public class DiagnosticsActivity extends AppCompatActivity {
 
         @Override
         protected void onProgressUpdate(Integer... values) {
-            mAdapter.add( new StatusDescribeInfo( String.format( Locale.US, "Cabinet %02d", values[0] ), String.format( Locale.US, "%05d-%05d", values[1], values[2] )));
+            if( values[1] == -1 || values[2] == -1 ) {
+                mAdapter.add( new StatusDescribeInfo( String.format( Locale.US, "Cabinet %02d", values[0] ), "Unknown Version") );
+            }
+            else {
+                mAdapter.add( new StatusDescribeInfo( String.format( Locale.US, "Cabinet %02d", values[0] ), String.format( Locale.US, "%05d-%05d", values[1], values[2] )));
+            }
+
             mAdapter.notifyDataSetChanged();
             super.onProgressUpdate(values);
         }

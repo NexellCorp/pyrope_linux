@@ -98,7 +98,8 @@ private:
 	int32_t	TCON_DeviceGamma( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
 	int32_t TCON_DotCorrection( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
 	int32_t TCON_DotCorrectionExtract( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t TCON_WhiteSeam( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t TCON_WhiteSeamRead( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	int32_t TCON_WhiteSeamWrite( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
 	int32_t TCON_AccumulateTime( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
 	int32_t TCON_OptionalData( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
 	int32_t TCON_Version( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
@@ -119,14 +120,14 @@ private:
 	int32_t PLAT_SapVersion( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
 	int32_t PLAT_IpcVersion( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
 
-	//	Reserved Commands
-	int32_t Reserved_CommandSet( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	//	IMB Commands
+	int32_t IMB_ChangeContents( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
 
 	int32_t ProcessCommand( int32_t clientSocket, uint32_t cmd, void *pPayload, int32_t payloadSize );
 
 private:
 	//	Private Member Variables
-	enum { MAX_LOD_MODULE = 12 };
+	enum { MAX_LOD_MODULE = 12, MAX_STR_SIZE = 1024 };
 
 	bool		m_IsRunning;
 	bool		m_ExitLoop;
@@ -139,9 +140,9 @@ private:
 
 	int32_t		(*m_pTestPatternFunc[6])( CNX_I2C*, uint8_t, uint8_t );
 
-	uint8_t		m_NapVersion[1024];
-	uint8_t		m_SapVersion[1024];
-	uint8_t		m_IpcVersion[1024];
+	uint8_t		m_NapVersion[MAX_STR_SIZE];
+	uint8_t		m_SapVersion[MAX_STR_SIZE];
+	uint8_t		m_IpcVersion[MAX_STR_SIZE];
 
 private:
 	//	For Singletone
@@ -1938,6 +1939,8 @@ int32_t CNX_IPCServer::TCON_DotCorrectionExtract( int32_t fd, uint32_t cmd, uint
 {
 	UNUSED( iSize );
 
+	uint64_t iStartTime = NX_GetTickCount();
+
 	//
 	//	pBuf[0] : index, pBuf[1] : module index
 	//
@@ -2046,6 +2049,12 @@ int32_t CNX_IPCServer::TCON_DotCorrectionExtract( int32_t fd, uint32_t cmd, uint
 				pPtr[k * 2 + 1] = (uint8_t)((ccData16[k] >> 0) & 0xFF);
 			}
 			pPtr += 16;
+
+			//	Print Progress Debugging
+			fprintf( stdout, "> %4d / %4d ( %3d %% )\r",
+				i * 64 + j + 1, 60 * 64,
+				(int)((float)((i * 64) + j + 1) / (float)(64 * 60) * (float)100) );
+			fflush( stdout );
 		}
 	}
 
@@ -2056,6 +2065,8 @@ ERROR_TCON:
 	// NX_HexDump( m_SendBuf, sendSize );
 
 	if( pResult ) free( pResult );
+
+	printf("\nDotCorrection Extract Done. ( %lld mSec )\n", NX_GetTickCount() - iStartTime );
 	return 0;
 }
 
@@ -2070,7 +2081,122 @@ ERROR_TCON:
 #define TCON_MODULE_LEFT				2
 #define TCON_MODULE_RIGHT				3
 
-int32_t CNX_IPCServer::TCON_WhiteSeam( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+//------------------------------------------------------------------------------
+int32_t CNX_IPCServer::TCON_WhiteSeamRead( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+{
+	UNUSED( iSize );
+
+	//
+	//	pBuf[0] : index, pBuf[1] : : 0(top)/1(bottom)/2(left)/3(right)
+	//
+
+	uint8_t result[2] = { 0xFF, 0xFF };
+	int32_t sendSize;
+
+	uint8_t index	= pBuf[0];
+	int32_t port	= (index & 0x80) >> 7;
+	uint8_t slave	= (index & 0x7F);
+
+	uint8_t seamPos = pBuf[1];
+	uint16_t opData[16]	= { 0x0000, };
+
+	CNX_I2C i2c( port );
+
+	if( 0 > i2c.Open() )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port );
+		goto ERROR_TCON;
+	}
+
+	for( int32_t module = 0; module < 24; module++ )
+	{
+		memset( result, 0xFF, sizeof(result) );
+
+		if( seamPos == TCON_MODULE_TOP )
+		{
+			if( !IS_TCON_MODULE_TOP(module) ) continue;
+		}
+		else if( seamPos == TCON_MODULE_BOTTOM )
+		{
+			if( !IS_TCON_MODULE_BOTTOM(module) ) continue;
+		}
+		else if( seamPos == TCON_MODULE_LEFT )
+		{
+			if( !IS_TCON_MODULE_LEFT(module) ) continue;
+		}
+		else if( seamPos == TCON_MODULE_RIGHT )
+		{
+			if( !IS_TCON_MODULE_RIGHT(module) ) continue;
+		}
+
+		printf("port(%d), slave(%d), module(%d), seamPos(%d)\n", port, slave, module, seamPos );
+
+		//
+		//	1. Read Optional Data
+		//
+		if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, module ) )
+		{
+			NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+				port, slave, TCON_REG_FLASH_SEL, module );
+			goto ERROR_TCON;
+		}
+		usleep(50000);
+
+		if( 0 > i2c.Write( slave, TCON_REG_F_LED_RD_EN, 0x0001 ) )
+		{
+			NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+				port, slave, TCON_REG_F_LED_RD_EN, 0x0001 );
+			goto ERROR_TCON;
+		}
+
+		if( 0 > i2c.Write( slave, TCON_REG_F_LED_RD_EN, 0x0000 ) )
+		{
+			NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+				port, slave, TCON_REG_F_LED_RD_EN, 0x0000 );
+			goto ERROR_TCON;
+		}
+		usleep(50000);
+
+		for( int32_t i = 0; i < (int32_t)(sizeof(opData) / sizeof(opData[0])); i++ )
+		{
+			int32_t iReadData = 0x0000;
+			if( 0 > (iReadData = i2c.Read( slave, TCON_REG_F_LED_DATA00_READ + i )) )
+			{
+				NxDbgMsg( NX_DBG_VBS, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
+					port, slave, TCON_REG_F_LED_DATA00_READ + i );
+				goto ERROR_TCON;
+			}
+
+			opData[i] = (uint16_t)(iReadData & 0x0000FFFF);
+			usleep(50000);
+		}
+
+		if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, 0x001F ) )
+		{
+			NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+				port, slave, TCON_REG_FLASH_SEL, 0x001F );
+			goto ERROR_TCON;
+		}
+		usleep(50000);
+
+		printf("[RD] data[0]=%d, data[1]=%d, data[2]=%d, data[3]=%d, data[4]=%d, data[5]=%d, data[6]=%d, data[7]=%d, data[8]=%d\n",
+			opData[0], opData[1], opData[2], opData[3], opData[4], opData[5], opData[6], opData[7], opData[8]);
+
+		result[0] = (uint8_t)((opData[seamPos] >> 8 ) & 0xFF);
+		result[1] = (uint8_t)((opData[seamPos] >> 0 ) & 0xFF);
+	}
+
+ERROR_TCON:
+	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+
+	write( fd, m_SendBuf, sendSize );
+	// NX_HexDump( m_SendBuf, sendSize );
+
+	return 0;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_IPCServer::TCON_WhiteSeamWrite( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
 {
 	UNUSED( iSize );
 
@@ -2967,7 +3093,8 @@ int32_t CNX_IPCServer::PLAT_IpcVersion( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 	return 0;
 }
 
-int32_t CNX_IPCServer::Reserved_CommandSet( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+//------------------------------------------------------------------------------
+int32_t CNX_IPCServer::IMB_ChangeContents( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
 {
 	UNUSED( pBuf );
 	UNUSED( iSize );
@@ -3056,8 +3183,11 @@ int32_t CNX_IPCServer::ProcessCommand( int32_t fd, uint32_t cmd, void *pPayload,
 	case TCON_CMD_DOT_CORRECTION_EXTRACT:
 		return TCON_DotCorrectionExtract( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
-	case TCON_CMD_WHITE_SEAM:
-		return TCON_WhiteSeam( fd, cmd, (uint8_t*)pPayload, payloadSize );
+	case TCON_CMD_WHITE_SEAM_READ:
+		return TCON_WhiteSeamRead( fd, cmd, (uint8_t*)pPayload, payloadSize );
+
+	case TCON_CMD_WHITE_SEAM_WRITE:
+		return TCON_WhiteSeamWrite( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	case TCON_CMD_ELAPSED_TIME:
 	case TCON_CMD_ACCUMULATE_TIME:
@@ -3109,13 +3239,10 @@ int32_t CNX_IPCServer::ProcessCommand( int32_t fd, uint32_t cmd, void *pPayload,
 		return PLAT_IpcVersion( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	//
-	//	Reserved Commands
+	//	IMB Commands
 	//
-	case RESERVED_CMD_0:
-	case RESERVED_CMD_1:
-	case RESERVED_CMD_2:
-	case RESERVED_CMD_3:
-		return Reserved_CommandSet( fd, cmd, (uint8_t*)pPayload, payloadSize );
+	case IMB_CMD_CHANGE_CONTENTS:
+		return IMB_ChangeContents( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	default:
 		return -1;

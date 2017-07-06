@@ -71,6 +71,8 @@ public:
 			m_GpioValue[i] = 0;
 		}
 
+		m_GpioValue[DOOR_TAMPER] = 1;
+
 		m_bThreadRun = true;
 		Start();
 	}

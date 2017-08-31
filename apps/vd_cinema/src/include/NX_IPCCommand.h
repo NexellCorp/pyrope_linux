@@ -21,7 +21,7 @@
 #define __NX_IPCCOMMAND_H__
 
 //
-//	Re-mapping Command for Cinema LED Protocol.
+//	Re-mapping Command for Cinema LED Protocol. ( 4 byte command -> 1byte command )
 //
 #define CMD_TYPE_TCON					0x00	// 0000 0000
 #define CMD_TYPE_PFPGA					0x40	// 0100 0000

@@ -26,6 +26,7 @@
 #include <tms_protocol.h>
 #include <SockUtils.h>
 
+#include <NX_IPCServer.h>
 #include <NX_IPCClient.h>
 #include <NX_IPCCommand.h>
 
@@ -33,9 +34,6 @@
 
 #define NX_DTAG	"[IPC Client]"
 #include <NX_DbgMsg.h>
-
-#define	IPC_SERVER_FILE "/data/local/tmp/ipc_server"
-
 
 //------------------------------------------------------------------------------
 //
@@ -60,7 +58,6 @@ private:
 private:
 	//	Rx/Tx Buffer
 	//	Key(4bytes) + Length(2bytes) + Command(2bytes) + Payload(MAX 65533bytes )
-	enum { MAX_PAYLOAD_SIZE = 65533 };
 	uint8_t m_SendBuf[MAX_PAYLOAD_SIZE + 8];
 	uint8_t m_ReceiveBuf[MAX_PAYLOAD_SIZE + 8];
 
@@ -101,7 +98,11 @@ int32_t CNX_IPCClient::Send( uint32_t iCmd, uint8_t *pBuf, int32_t *iSize )
 	uint32_t key;
 	void *payload;
 
+#if IPC_CONNECT_TCP
+	clntSock = TCP_Connect( "127.0.0.1", IPC_SERVER_PORT );
+#else
 	clntSock = LS_Connect( IPC_SERVER_FILE );
+#endif
 	if( -1 == clntSock)
 	{
 		NxErrMsg( "Error : LS_Connect (%s)\n", IPC_SERVER_FILE );

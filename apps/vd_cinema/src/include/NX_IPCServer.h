@@ -22,7 +22,11 @@
 
 #include <stdint.h>
 
+#define IPC_CONNECT_TCP		1
+
 #define	IPC_SERVER_FILE		"/data/local/tmp/ipc_server"
+#define IPC_SERVER_PORT		7434
+
 #define	MAX_PAYLOAD_SIZE	65533
 
 int32_t NX_IPCServerStart();

@@ -14,6 +14,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -24,15 +25,7 @@ import android.widget.Toast;
 import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTitleBar;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.channels.FileChannel;
-import java.util.Arrays;
 import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Created by doriya on 8/17/16.
@@ -45,6 +38,8 @@ public class TopActivity extends AppCompatActivity {
     private Spinner mSpinnerInitialValue;
     private Button mBtnUpdateInitialValue;
     private Button mBtnApplyInitialValue;
+    private TextView mTextInitModeCurrent;
+    private TextView mTextInitModeDescription;
 
     private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -170,7 +165,7 @@ public class TopActivity extends AppCompatActivity {
         textComment.append(String.format(Locale.US, "-. PFPGA Config File\t\t\t\t: [USB_TOP]/%s/%s\n", ConfigPfpgaInfo.PATH_SOURCE, ConfigPfpgaInfo.NAME));
         textComment.append(String.format(Locale.US, "-. Uniformity File\t\t\t\t\t: [USB_TOP]/%s/%s\n", LedUniformityInfo.PATH_SOURCE, LedUniformityInfo.NAME));
         textComment.append(String.format(Locale.US, "-. Gamma File\t\t\t\t\t\t: [USB_TOP]/%s/%s\n", LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME));
-        textComment.append(String.format(Locale.US, "-. Dot Correct Path\t\t\t\t: [USB_TOP]/%s/\n", LedDotCorrectInfo.PATH));
+        textComment.append(String.format(Locale.US, "-. Dot Correct Path\t\t\t\t: [USB_TOP]/%s/IDxxx/\n", LedDotCorrectInfo.PATH));
         textComment.append(String.format(Locale.US, "-. Dot Correct Extract Path\t: [USB_TOP]/DOT_CORRECTION_IDxxx/\n"));
 
         //
@@ -178,6 +173,26 @@ public class TopActivity extends AppCompatActivity {
         //
         mSpinnerInitialValue= (Spinner)findViewById(R.id.spinnerInitialValue);
         mSpinnerInitialValue.setAdapter( new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, new String[] { "1", "2", "3", "4"}));
+
+        String strTemp = ((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_INITIAL_MODE);
+        mSpinnerInitialValue.setSelection( (strTemp == null) ? 0 : Integer.parseInt(strTemp));
+        mSpinnerInitialValue.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                mTextInitModeDescription.setText(String.format(Locale.US, "This is mode #%d", i + 1));
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+
+            }
+        });
+
+        mTextInitModeCurrent = (TextView)findViewById(R.id.textInitModeCurrent);
+        mTextInitModeCurrent.setText(String.format(Locale.US, "-. Current Mode : Mode #%d", mSpinnerInitialValue.getSelectedItemPosition() + 1));
+
+        mTextInitModeDescription = (TextView)findViewById(R.id.textInitModeDescription);
+        mTextInitModeDescription.setText(String.format(Locale.US, "This is mode #%d", mSpinnerInitialValue.getSelectedItemPosition() + 1));
 
         mBtnUpdateInitialValue = (Button)findViewById(R.id.btnUpdateInitialValue);
         mBtnUpdateInitialValue.setOnClickListener(new View.OnClickListener() {
@@ -241,6 +256,9 @@ public class TopActivity extends AppCompatActivity {
 
         CinemaInfo info = ((CinemaInfo)getApplicationContext());
         Log.i(VD_DTAG, "--> Login Group : " + info.GetUserGroup());
+
+        if( !info.IsCheckLogin() )
+            btnMenuAccount.setEnabled(false);
 
         if( info.GetUserGroup().equals(AccountPreference.GROUP_OPERATOR) ) {
             btnMenuDiagnostics.setEnabled(false);
@@ -337,12 +355,12 @@ public class TopActivity extends AppCompatActivity {
                     byte[] result;
                     result = ctrl.Send(NxCinemaCtrl.CMD_TCON_BOOTING_STATUS, new byte[]{id});
                     if (result == null || result.length == 0) {
-                        Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / slave : 0x%02x )", (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET, id));
+                        Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / port: %d / slave : 0x%02x )", (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (id & 0x80), id));
                         continue;
                     }
 
                     if( result[0] == 0 ) {
-                        Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x / result : %d )", (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET, id, result[0] ));
+                        Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / port: %d / slave : 0x%02x / result : %d )", (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (id & 0x80), id, result[0] ));
                         bTconBooting = false;
                     }
                 }
@@ -471,6 +489,8 @@ public class TopActivity extends AppCompatActivity {
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
             CinemaLoading.Hide();
+            mTextInitModeCurrent.setText(String.format(Locale.US, "-. Current Mode : Mode #%d", mIndexInitialValue + 1));
+            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_INITIAL_MODE, String.valueOf(mIndexInitialValue));
         }
     }
 

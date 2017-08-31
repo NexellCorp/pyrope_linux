@@ -20,9 +20,11 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -153,21 +155,10 @@ public class DisplayModeActivity extends AppCompatActivity {
 
     private Spinner mSpinnerWhiteSeamCabinetId;
 
-    private VdSpinCtrl mSpinWhiteSeamTop;
-    private VdSpinCtrl mSpinWhiteSeamBottom;
-    private VdSpinCtrl mSpinWhiteSeamLeft;
-    private VdSpinCtrl mSpinWhiteSeamRight;
-
-    private Button mBtnWhiteSeamTopApply;
-    private Button mBtnWhiteSeamBottomApply;
-    private Button mBtnWhiteSeamLeftApply;
-    private Button mBtnWhiteSeamRightApply;
-
-    private Button mBtnWhiteSeamEnable;
-    private Button mBtnWhiteSeamTest;
-
+    private VdSpinCtrl[] mSpinWhiteSeam = new VdSpinCtrl[4];
+    private CheckBox mCheckWhiteSeamEmulation;
+    private Button mBtnWhiteSeamApply;
     private Spinner mSpinnerSuspendTime;
-    private boolean mWhiteSeamTest = false;
 
     private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -275,6 +266,8 @@ public class DisplayModeActivity extends AppCompatActivity {
         titleBar.SetListener(VdTitleBar.BTN_BACK, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                InitWhiteSeamValue();
+
                 startActivity( new Intent(v.getContext(), TopActivity.class) );
                 overridePendingTransition(0, 0);
                 finish();
@@ -283,6 +276,8 @@ public class DisplayModeActivity extends AppCompatActivity {
         titleBar.SetListener(VdTitleBar.BTN_EXIT, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                InitWhiteSeamValue();
+
                 mService.TurnOff();
             }
         });
@@ -308,23 +303,36 @@ public class DisplayModeActivity extends AppCompatActivity {
         AddTabs();
 
         //
-        //  Cabinet ID & Module Number String
+        //  Cabinet Number & Module Number String
         //
-        String [] strCabinetId;
+        String[] strCabinetNumber;
         if( mCabinet.length == 0 ) {
-            strCabinetId = new String[]{""};
+            strCabinetNumber = new String[]{ "" };
         }
         else {
-            strCabinetId = new String[mCabinet.length];
+            strCabinetNumber = new String[mCabinet.length];
             for( int i = 0; i < mCabinet.length; i++ ) {
-                strCabinetId[i] = String.valueOf(mCabinet[i]&0x7F - CinemaInfo.TCON_ID_OFFSET);
+                strCabinetNumber[i] = String.valueOf((mCabinet[i] & 0x7F) - CinemaInfo.TCON_ID_OFFSET);
             }
         }
 
-        String [] strModule =  new String[25];
-        strModule[0] = "ALL";
+        String[] strCabinetNumberWithAll = new String[mCabinet.length+1];
+        strCabinetNumberWithAll[0] = "ALL";
+        if( mCabinet.length == 0 ) {
+            strCabinetNumberWithAll = new String[]{ "" };
+        }
+        else {
+            strCabinetNumberWithAll = new String[mCabinet.length+1];
+            strCabinetNumberWithAll[0] = "ALL";
+            for( int i = 0; i < mCabinet.length; i++ ) {
+                strCabinetNumberWithAll[i+1] = String.valueOf((mCabinet[i] & 0x7F) - CinemaInfo.TCON_ID_OFFSET);
+            }
+        }
+
+        String [] strModuleWithAll =  new String[25];
+        strModuleWithAll[0] = "ALL";
         for( int i = 0; i < 24; i++ ) {
-            strModule[i+1] = String.format(Locale.US, "MODULE #%d", i);
+            strModuleWithAll[i+1] = String.format(Locale.US, "MODULE #%d", i);
         }
 
         //
@@ -520,10 +528,10 @@ public class DisplayModeActivity extends AppCompatActivity {
         //  DOT CORRECTION EXTRACT
         //
         mSpinnerDotCorrectExtractId = (Spinner)findViewById(R.id.spinnerDotCorrectionExtractId);
-        mSpinnerDotCorrectExtractId.setAdapter( new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, strCabinetId) );
+        mSpinnerDotCorrectExtractId.setAdapter( new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, strCabinetNumber) );
 
         mSpinnerDotCorrectExtractModule = (Spinner)findViewById(R.id.spinnerDotCorrectionExtractModule);
-        mSpinnerDotCorrectExtractModule.setAdapter( new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, strModule) );
+        mSpinnerDotCorrectExtractModule.setAdapter( new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, strModuleWithAll) );
 
         mBtnDotCorrectExtract = (Button)findViewById(R.id.btnDotCorrectionExtract);
         mBtnDotCorrectExtract.setOnClickListener(new View.OnClickListener() {
@@ -533,7 +541,7 @@ public class DisplayModeActivity extends AppCompatActivity {
                 if( strIndex == null || strIndex.equals("") )
                     return;
 
-                int index = Integer.parseInt(strIndex, 10);
+                int index = mCabinet[mSpinnerDotCorrectExtractId.getSelectedItemPosition()];
                 int module= (mSpinnerDotCorrectExtractModule.getSelectedItemPosition() == 0 ) ?
                         LedDotCorrectInfo.MAX_MODULE_NUM : mSpinnerDotCorrectExtractModule.getSelectedItemPosition() - 1;
 
@@ -545,268 +553,97 @@ public class DisplayModeActivity extends AppCompatActivity {
         //
         //  WHITE SEAM VALUE
         //
-        mBtnWhiteSeamTopApply = (Button)findViewById(R.id.btnWhiteSeamTopApply);
-        mBtnWhiteSeamBottomApply = (Button)findViewById(R.id.btnWhiteSeamBottomApply);
-        mBtnWhiteSeamLeftApply = (Button)findViewById(R.id.btnWhiteSeamLeftApply);
-        mBtnWhiteSeamRightApply = (Button)findViewById(R.id.btnWhiteSeamRightApply);
-
-        mBtnWhiteSeamEnable = (Button)findViewById(R.id.btnWhiteSeamEnable);
-        mBtnWhiteSeamTest = (Button)findViewById(R.id.btnWhiteSeamTest);
+        mBtnWhiteSeamApply = (Button)findViewById(R.id.btnWhiteSeamApply);
+        mCheckWhiteSeamEmulation = (CheckBox)findViewById(R.id.checkWhiteSeamEmulation);
 
         mSpinnerWhiteSeamCabinetId = (Spinner)findViewById(R.id.spinnerWhiteSeamCabinetId);
-        mSpinnerWhiteSeamCabinetId.setAdapter( new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, strCabinetId) );
+        mSpinnerWhiteSeamCabinetId.setAdapter( new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, strCabinetNumberWithAll) );
+        mSpinnerWhiteSeamCabinetId.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                new AsyncTaskWhiteSeamRead(mCabinet, mSpinnerWhiteSeamCabinetId.getSelectedItemPosition(), mCheckWhiteSeamEmulation.isChecked()).execute();
+            }
 
-        mSpinWhiteSeamTop = (VdSpinCtrl)findViewById(R.id.spinWhiteSeamTop);
-        mSpinWhiteSeamBottom = (VdSpinCtrl)findViewById(R.id.spinWhiteSeamBottom);
-        mSpinWhiteSeamLeft = (VdSpinCtrl)findViewById(R.id.spinWhiteSeamLeft);
-        mSpinWhiteSeamRight = (VdSpinCtrl)findViewById(R.id.spinWhiteSeamRight);
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
 
-        mSpinWhiteSeamTop.SetRange(0, 32767);
-        mSpinWhiteSeamBottom.SetRange(0, 32767);
-        mSpinWhiteSeamLeft.SetRange(0, 32767);
-        mSpinWhiteSeamRight.SetRange(0, 32767);
+            }
+        });
 
-//        mSpinWhiteSeamTop.SetOnChangeListener(new VdSpinCtrl.OnChangeListener() {
-//            @Override
-//            public void onChange(int value) {
-//                String strId = mSpinnerWhiteSeamCabinetId.getSelectedItem().toString();
-//                if( strId == null || strId.equals("") ) {
-//                    return;
-//                }
-//
-//                int id = Integer.parseInt(mSpinnerWhiteSeamCabinetId.getSelectedItem().toString(), 10);
-//                if( mWhiteSeamTest )
-//                    new AsyncTaskRegisterWrite( id, 0x0180, value ).execute();
-//            }
-//        });
-//
-//        mSpinWhiteSeamBottom.SetOnChangeListener(new VdSpinCtrl.OnChangeListener() {
-//            @Override
-//            public void onChange(int value) {
-//                String strId = mSpinnerWhiteSeamCabinetId.getSelectedItem().toString();
-//                if( strId == null || strId.equals("") ) {
-//                    return;
-//                }
-//
-//                int id = Integer.parseInt(mSpinnerWhiteSeamCabinetId.getSelectedItem().toString(), 10);
-//                if( mWhiteSeamTest )
-//                    new AsyncTaskRegisterWrite( id, 0x0181, value ).execute();
-//            }
-//        });
-//
-//        mSpinWhiteSeamLeft.SetOnChangeListener(new VdSpinCtrl.OnChangeListener() {
-//            @Override
-//            public void onChange(int value) {
-//                String strId = mSpinnerWhiteSeamCabinetId.getSelectedItem().toString();
-//                if( strId == null || strId.equals("") ) {
-//                    return;
-//                }
-//
-//                int id = Integer.parseInt(mSpinnerWhiteSeamCabinetId.getSelectedItem().toString(), 10);
-//                if( mWhiteSeamTest )
-//                    new AsyncTaskRegisterWrite( id, 0x0182, value ).execute();
-//            }
-//        });
-//
-//        mSpinWhiteSeamRight.SetOnChangeListener(new VdSpinCtrl.OnChangeListener() {
-//            @Override
-//            public void onChange(int value) {
-//                String strId = mSpinnerWhiteSeamCabinetId.getSelectedItem().toString();
-//                if( strId == null || strId.equals("") ) {
-//                    return;
-//                }
-//
-//                int id = Integer.parseInt(mSpinnerWhiteSeamCabinetId.getSelectedItem().toString(), 10);
-//                if( mWhiteSeamTest )
-//                    new AsyncTaskRegisterWrite( id, 0x0183, value ).execute();
-//            }
-//        });
-//
-//        mBtnWhiteSeamTopApply.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                String strId = mSpinnerWhiteSeamCabinetId.getSelectedItem().toString();
-//                if( strId == null || strId.equals("") ) {
-//                    return;
-//                }
-//
-//                int id = Integer.parseInt(mSpinnerWhiteSeamCabinetId.getSelectedItem().toString(), 10);
-//                int value = mSpinWhiteSeamTop.GetValue();
-//
-//                Log.i(VD_DTAG, String.format("id( %d ), value( %d )", id, value));
-//                new AsyncTaskWhiteSeam(id, AsyncTaskWhiteSeam.TCON_SEAM_TOP, value).execute();
-//            }
-//        });
-//
-//        mBtnWhiteSeamBottomApply.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                String strId = mSpinnerWhiteSeamCabinetId.getSelectedItem().toString();
-//                if( strId == null || strId.equals("") ) {
-//                    return;
-//                }
-//
-//                int id = Integer.parseInt(mSpinnerWhiteSeamCabinetId.getSelectedItem().toString(), 10);
-//                int value = mSpinWhiteSeamBottom.GetValue();
-//
-//                Log.i(VD_DTAG, String.format("id( %d ), value( %d )", id, value));
-//                new AsyncTaskWhiteSeam(id, AsyncTaskWhiteSeam.TCON_SEAM_BOTTOM, value).execute();
-//            }
-//        });
-//
-//        mBtnWhiteSeamLeftApply.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                String strId = mSpinnerWhiteSeamCabinetId.getSelectedItem().toString();
-//                if( strId == null || strId.equals("") ) {
-//                    return;
-//                }
-//
-//                int id = Integer.parseInt(mSpinnerWhiteSeamCabinetId.getSelectedItem().toString(), 10);
-//                int value = mSpinWhiteSeamLeft.GetValue();
-//
-//                Log.i(VD_DTAG, String.format("id( %d ), value( %d )", id, value));
-//                new AsyncTaskWhiteSeam(id, AsyncTaskWhiteSeam.TCON_SEAM_LEFT, value).execute();
-//            }
-//        });
-//
-//        mBtnWhiteSeamRightApply.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                String strId = mSpinnerWhiteSeamCabinetId.getSelectedItem().toString();
-//                if( strId == null || strId.equals("") ) {
-//                    return;
-//                }
-//
-//                int id = Integer.parseInt(mSpinnerWhiteSeamCabinetId.getSelectedItem().toString(), 10);
-//                int value = mSpinWhiteSeamRight.GetValue();
-//
-//                Log.i(VD_DTAG, String.format("id( %d ), value( %d )", id, value));
-//                new AsyncTaskWhiteSeam(id, AsyncTaskWhiteSeam.TCON_SEAM_RIGHT, value).execute();
-//            }
-//        });
-//
-//        mBtnWhiteSeamEnable.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-//
-//                boolean bValidPort0 = false, bValidPort1 = false;
-//                for( byte id : mCabinet ) {
-//                    if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-//                    if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-//                }
-//
-//                if( mBtnWhiteSeamEnable.getText().toString().equals("ENABLE") ) {     // disable status
-//                    byte[] data0, data1;
-//                    byte[] reg = ctrl.IntToByteArray(NxCinemaCtrl.REG_TCON_SEAM_EN , NxCinemaCtrl.FORMAT_INT16);
-//                    byte[] val = ctrl.IntToByteArray(1, NxCinemaCtrl.FORMAT_INT16);
-//
-//                    data0 = ctrl.AppendByteArray(new byte[] {(byte)0x09}, reg);
-//                    data0 = ctrl.AppendByteArray(data0, val);
-//
-//                    data1 = ctrl.AppendByteArray(new byte[] {(byte)0x89}, reg);
-//                    data1 = ctrl.AppendByteArray(data1, val);
-//
-//                    if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, data0 );
-//                    if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, data1 );
-//
-//                    mBtnWhiteSeamEnable.setText("DISABLE");
-//                    mBtnWhiteSeamTest.setEnabled(true);
-//
-//                    mSpinWhiteSeamTop.setEnabled(true);
-//                    mSpinWhiteSeamBottom.setEnabled(true);
-//                    mSpinWhiteSeamLeft.setEnabled(true);
-//                    mSpinWhiteSeamRight.setEnabled(true);
-//
-//                    mBtnWhiteSeamTopApply.setEnabled(true);
-//                    mBtnWhiteSeamBottomApply.setEnabled(true);
-//                    mBtnWhiteSeamLeftApply.setEnabled(true);
-//                    mBtnWhiteSeamRightApply.setEnabled(true);
-//                }
-//                else {
-//                    byte[] data0, data1;
-//                    byte[] reg = ctrl.IntToByteArray(NxCinemaCtrl.REG_TCON_SEAM_EN , NxCinemaCtrl.FORMAT_INT16);
-//                    byte[] val = ctrl.IntToByteArray(0, NxCinemaCtrl.FORMAT_INT16);
-//
-//                    data0 = ctrl.AppendByteArray(new byte[] {(byte)0x09}, reg);
-//                    data0 = ctrl.AppendByteArray(data0, val);
-//
-//                    data1 = ctrl.AppendByteArray(new byte[] {(byte)0x89}, reg);
-//                    data1 = ctrl.AppendByteArray(data1, val);
-//
-//                    if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, data0 );
-//                    if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, data1 );
-//
-//                    mBtnWhiteSeamEnable.setText("ENABLE");
-//                    mBtnWhiteSeamTest.setEnabled(false);
-//
-//                    mSpinWhiteSeamTop.setEnabled(false);
-//                    mSpinWhiteSeamBottom.setEnabled(false);
-//                    mSpinWhiteSeamLeft.setEnabled(false);
-//                    mSpinWhiteSeamRight.setEnabled(false);
-//
-//                    mBtnWhiteSeamTopApply.setEnabled(false);
-//                    mBtnWhiteSeamBottomApply.setEnabled(false);
-//                    mBtnWhiteSeamLeftApply.setEnabled(false);
-//                    mBtnWhiteSeamRightApply.setEnabled(false);
-//                }
-//            }
-//        });
-//
-//        mBtnWhiteSeamTest.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-//
-//                boolean bValidPort0 = false, bValidPort1 = false;
-//                for( byte id : mCabinet ) {
-//                    if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-//                    if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-//                }
-//
-//                if( mBtnWhiteSeamTest.getText().toString().equals("TEST") ) {     // disable status
-//                    byte[] data0, data1;
-//                    byte[] reg = ctrl.IntToByteArray(NxCinemaCtrl.REG_TCON_SEAM_TEST, NxCinemaCtrl.FORMAT_INT16);
-//                    byte[] val = ctrl.IntToByteArray(1, NxCinemaCtrl.FORMAT_INT16);
-//
-//                    data0 = ctrl.AppendByteArray(new byte[] {(byte)0x09}, reg);
-//                    data0 = ctrl.AppendByteArray(data0, val);
-//
-//                    data1 = ctrl.AppendByteArray(new byte[] {(byte)0x89}, reg);
-//                    data1 = ctrl.AppendByteArray(data1, val);
-//
-//                    if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, data0 );
-//                    if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, data1 );
-//
-//                    mBtnWhiteSeamTest.setText("NOT TEST");
-//                    mWhiteSeamTest = true;
-//
-//                    int id = Integer.parseInt(mSpinnerWhiteSeamCabinetId.getSelectedItem().toString(), 10);
-//                    new AsyncTaskRegisterWrite( id, 0x0180, mSpinWhiteSeamTop.GetValue() ).execute();
-//                    new AsyncTaskRegisterWrite( id, 0x0181, mSpinWhiteSeamBottom.GetValue() ).execute();
-//                    new AsyncTaskRegisterWrite( id, 0x0182, mSpinWhiteSeamLeft.GetValue() ).execute();
-//                    new AsyncTaskRegisterWrite( id, 0x0183, mSpinWhiteSeamRight.GetValue() ).execute();
-//                }
-//                else {
-//                    byte[] data0, data1;
-//                    byte[] reg = ctrl.IntToByteArray(NxCinemaCtrl.REG_TCON_SEAM_TEST , NxCinemaCtrl.FORMAT_INT16);
-//                    byte[] val = ctrl.IntToByteArray(0, NxCinemaCtrl.FORMAT_INT16);
-//
-//                    data0 = ctrl.AppendByteArray(new byte[] {(byte)0x09}, reg);
-//                    data0 = ctrl.AppendByteArray(data0, val);
-//
-//                    data1 = ctrl.AppendByteArray(new byte[] {(byte)0x89}, reg);
-//                    data1 = ctrl.AppendByteArray(data1, val);
-//
-//                    if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, data0 );
-//                    if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, data1 );
-//
-//                    mBtnWhiteSeamTest.setText("TEST");
-//                    mWhiteSeamTest = false;
-//                }
-//            }
-//        });
+        mSpinWhiteSeam[0] = (VdSpinCtrl)findViewById(R.id.spinWhiteSeamTop);
+        mSpinWhiteSeam[1] = (VdSpinCtrl)findViewById(R.id.spinWhiteSeamBottom);
+        mSpinWhiteSeam[2] = (VdSpinCtrl)findViewById(R.id.spinWhiteSeamLeft);
+        mSpinWhiteSeam[3] = (VdSpinCtrl)findViewById(R.id.spinWhiteSeamRight);
+
+        for( VdSpinCtrl spin : mSpinWhiteSeam ) {
+            spin.SetRange(0, 32767);
+            spin.SetOnChangeListener(new VdSpinCtrl.OnChangeListener() {
+                @Override
+                public void onChange(int value) {
+                    new AsyncTaskWhiteSeamEmulate(mCabinet, mSpinnerWhiteSeamCabinetId.getSelectedItemPosition()).execute();
+                }
+            });
+            spin.SetOnEditorActionListener(new TextView.OnEditorActionListener() {
+                @Override
+                public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+                    new AsyncTaskWhiteSeamEmulate(mCabinet, mSpinnerWhiteSeamCabinetId.getSelectedItemPosition()).execute();
+                    return false;
+                }
+            });
+        }
+
+        mBtnWhiteSeamApply.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                new AsyncTaskWhiteSeamWrite(mCabinet, mSpinnerWhiteSeamCabinetId.getSelectedItemPosition()).execute();
+            }
+        });
+
+        mCheckWhiteSeamEmulation.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                Log.i(VD_DTAG, String.format(Locale.US, "Change WhiteSeam Emulation. ( %b )", mCheckWhiteSeamEmulation.isChecked()));
+
+                mBtnWhiteSeamApply.setEnabled(b);
+                for( VdSpinCtrl spin : mSpinWhiteSeam ) {
+                    spin.setEnabled(b);
+                }
+
+                NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+
+                if( mSpinnerWhiteSeamCabinetId.getSelectedItemPosition() == 0 ) {
+                    boolean bValidPort0 = false, bValidPort1 = false;
+                    for( byte id : mCabinet ) {
+                        if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
+                        if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
+                    }
+
+                    byte[] reg = ctrl.IntToByteArray(0x0189, NxCinemaCtrl.FORMAT_INT16);
+                    byte[] dat = ctrl.IntToByteArray(mCheckWhiteSeamEmulation.isChecked() ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
+                    byte[] inData = ctrl.AppendByteArray(reg, dat);
+
+                    byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+                    byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+                    if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
+                    if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
+                }
+                else {
+                    int pos = mSpinnerWhiteSeamCabinetId.getSelectedItemPosition() - 1;
+                    byte slave = ((mCabinet[pos] % 16) < 8) ? (mCabinet[pos]) : (byte)(mCabinet[pos] | 0x80);
+                    byte[] inData;
+                    inData = new byte[] { slave };
+                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(0x0189, NxCinemaCtrl.FORMAT_INT16));
+                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mCheckWhiteSeamEmulation.isChecked() ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16));
+
+                    ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData );
+                }
+
+                new AsyncTaskWhiteSeamRead(mCabinet, mSpinnerWhiteSeamCabinetId.getSelectedItemPosition(), mCheckWhiteSeamEmulation.isChecked()).execute();
+            }
+        });
+
+
 
         //
         //  Spinner Cabinet Number
@@ -931,12 +768,6 @@ public class DisplayModeActivity extends AppCompatActivity {
 
         tabHost.setOnTabChangedListener(mTabChange);
         tabHost.setCurrentTab(0);
-
-        tabHost.getTabWidget().getChildTabViewAt(3).setEnabled(false);
-        ((TextView)tabHost.getTabWidget().getChildAt(3).findViewById(android.R.id.title)).setTextColor(0xFFDCDCDC);
-
-        tabHost.getTabWidget().getChildTabViewAt(5).setEnabled(false);
-        ((TextView)tabHost.getTabWidget().getChildAt(5).findViewById(android.R.id.title)).setTextColor(0xFFDCDCDC);
     }
 
     private TabHost.OnTabChangeListener mTabChange = new TabHost.OnTabChangeListener() {
@@ -957,6 +788,8 @@ public class DisplayModeActivity extends AppCompatActivity {
     }
 
     private void UpdateMasteringMode() {
+        InitWhiteSeamValue();
+
         for( int i = 0; i < mStrModeMastering.length; i++ ) {
             if( mMasteringMode.equals(mStrModeMastering[i]) ) {
                 mSpinnerMastering.setSelection(i);
@@ -982,6 +815,8 @@ public class DisplayModeActivity extends AppCompatActivity {
     }
 
     private void UpdateUniformityCorrection() {
+        InitWhiteSeamValue();
+
         String[] usbPfpga = FileManager.CheckFileInUsb(ConfigPfpgaInfo.PATH_SOURCE, ConfigPfpgaInfo.NAME);
         String[] usbUniformity = FileManager.CheckFileInUsb(LedUniformityInfo.PATH_SOURCE, LedUniformityInfo.NAME);
         String[] internalPfpga = FileManager.CheckFile(ConfigPfpgaInfo.PATH_TARGET, ConfigPfpgaInfo.NAME);
@@ -1006,6 +841,8 @@ public class DisplayModeActivity extends AppCompatActivity {
     }
 
     private void UpdateImageQuality() {
+        InitWhiteSeamValue();
+
         //
         //  Update Button
         //
@@ -1024,6 +861,8 @@ public class DisplayModeActivity extends AppCompatActivity {
     }
 
     private void UpdateDotCorrection() {
+        InitWhiteSeamValue();
+
         String[] result = FileManager.CheckDirectoryInUsb(LedDotCorrectInfo.PATH, LedDotCorrectInfo.PATTERN_DIR);
         if( result == null || result.length == 0 )
             return;
@@ -1034,18 +873,41 @@ public class DisplayModeActivity extends AppCompatActivity {
         mBtnDotCorrectApply.setEnabled(true);
     }
 
-    private void UpdateWhiteSeamValue() {
-//        String strId = mSpinnerWhiteSeamCabinetId.getSelectedItem().toString();
-//        if( strId == null || strId.equals("") ) {
-//            return;
-//        }
-//
-//        int id = Integer.parseInt(mSpinnerWhiteSeamCabinetId.getSelectedItem().toString(), 10);
-//        new AsyncTaskWhiteSeamInit(id).execute();
+    private void InitWhiteSeamValue() {
+        mCheckWhiteSeamEmulation.setChecked(false);
+
+        boolean bValidPort0 = false, bValidPort1 = false;
+        for( byte id : mCabinet ) {
+            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
+            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
+        }
+
+        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+
+        byte[] reg = ctrl.IntToByteArray(0x0189, NxCinemaCtrl.FORMAT_INT16);
+        byte[] dat = ctrl.IntToByteArray(0x0000, NxCinemaCtrl.FORMAT_INT16);
+        byte[] inData = ctrl.AppendByteArray(reg, dat);
+
+        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+        if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
+        if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
     }
 
-    private void UpdateDotCorrectionExtract()
-    {
+    private void UpdateWhiteSeamValue() {
+        InitWhiteSeamValue();
+
+        mBtnWhiteSeamApply.setEnabled(mCheckWhiteSeamEmulation.isChecked());
+        for( VdSpinCtrl spin : mSpinWhiteSeam )
+            spin.setEnabled(mCheckWhiteSeamEmulation.isChecked());
+
+        new AsyncTaskWhiteSeamRead(mCabinet, mSpinnerWhiteSeamCabinetId.getSelectedItemPosition(), mCheckWhiteSeamEmulation.isChecked()).execute();
+    }
+
+    private void UpdateDotCorrectionExtract() {
+        InitWhiteSeamValue();
+
         String result = GetExternalStorage();
         if( result != null ) {
             mBtnDotCorrectExtract.setEnabled(true);
@@ -1056,6 +918,8 @@ public class DisplayModeActivity extends AppCompatActivity {
     }
 
     private void UpdateSetup() {
+        InitWhiteSeamValue();
+
         mEditCabinet.setText(((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_CABINET_NUM));
 
         for( int i = 0; i < CinemaService.OFF_TIME.length; i++ ) {
@@ -1733,22 +1597,22 @@ public class DisplayModeActivity extends AppCompatActivity {
 
             int start   = (mModule != LedDotCorrectInfo.MAX_MODULE_NUM) ? mModule     : 0;
             int end     = (mModule != LedDotCorrectInfo.MAX_MODULE_NUM) ? mModule + 1 : LedDotCorrectInfo.MAX_MODULE_NUM;
-            int idx     = ((mId % 16) < 8 ) ? (mId) : (mId | 0x80);
+            int idx     = mId;
 
             for( int i = start; i < end; i++ ) {
-                Log.i(VD_DTAG, String.format(Locale.US, "Dot correction extract. ( id: %d, module: %d )", mId, i) );
+                Log.i(VD_DTAG, String.format(Locale.US, "Dot correction extract. ( slave: 0x%02X, module: %d )", (byte)idx, i) );
 
                 byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_DOT_CORRECTION_EXTRACT, new byte[]{(byte)idx, (byte)i} );
                 if( result == null || result.length == 0)
                     continue;
 
-                String strDir = String.format(Locale.US, "%s/DOT_CORRECTION_ID%03d", GetExternalStorage(), mId);
+                String strDir = String.format(Locale.US, "%s/DOT_CORRECTION_ID%03d", GetExternalStorage(), (idx & 0x7F) - CinemaInfo.TCON_ID_OFFSET);
                 if( !FileManager.MakeDirectory( strDir ) ) {
                     Log.i(VD_DTAG, String.format(Locale.US, "Fail, Create Directory. ( %s )", strDir));
                     continue;
                 }
 
-                new LedDotCorrectInfo().Make( idx, i, result, strDir);
+                new LedDotCorrectInfo().Make(idx, i, result, strDir);
             }
 
             return null;
@@ -1768,31 +1632,78 @@ public class DisplayModeActivity extends AppCompatActivity {
         }
     }
 
-    private class AsyncTaskRegisterWrite extends AsyncTask<Void, Void, Void> {
-        private int mId;
-        private int mReg;
-        private int mVal;
+    private class AsyncTaskWhiteSeamRead extends AsyncTask<Void, Integer, Void> {
+        private byte[] mCabinet;
+        private int mIndexPos;
+        private boolean mEmulate;
 
-        public AsyncTaskRegisterWrite( int id, int reg, int val ) {
-            mId  = id;
-            mReg = reg;
-            mVal = val;
+        private int[] mSeamReg = new int[]{ 0x0180, 0x0181, 0x0182, 0x0183 };
+        private int[] mSeamVal = new int[4];
+
+        public AsyncTaskWhiteSeamRead(byte[] cabinet, int indexPos, boolean emulate) {
+            Log.i(VD_DTAG, ">>> WhiteSeam Read Start.");
+
+            mCabinet = cabinet;
+            mIndexPos = indexPos;
+            mEmulate = emulate;
         }
 
         @Override
         protected Void doInBackground(Void... voids) {
+            //
+            //  Emulate is
+            //      true    : Emulate Register --> UI
+            //      false   : Flash Register --> Emulate Register --> UI
+
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
 
-            byte[] inData = new byte[] { (byte)mId };
-            inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray( mReg, NxCinemaCtrl.FORMAT_INT16));
-            inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray( mVal, NxCinemaCtrl.FORMAT_INT16));
+            int indexPos = (mIndexPos != 0) ? mIndexPos - 1 : 0;
+            byte slave = mCabinet[indexPos];
 
-            byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData );
-            if( result == null || result.length == 0 || ctrl.ByteArrayToInt(result) == 0xFFFF ) {
-                Log.i(VD_DTAG, String.format(Locale.US, "i2c write fail.( id: %d, reg: %d, val: %d )", mId, mReg, mVal ));
+            //
+            //  1. Read White Seam Value in Flash Memory.
+            //
+            if( !mEmulate ) {
+                Log.i(VD_DTAG, ">>> White Seam Read in Flash Memory.");
+                byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_WHITE_SEAM_READ, new byte[] {slave} );
+                if( result == null || result.length == 0 || result[0] != 0x01 ) {
+                    Log.i(VD_DTAG, "Fail, WhiteSeam Read.");
+                    return null;
+                }
             }
 
+            //
+            //  2. Read White Seam Value in Emulate Register.
+            //
+            Log.i(VD_DTAG, ">>> White Seam Read in Emulate Register.");
+            for( int i = 0; i < mSeamReg.length; i++ ) {
+                byte[] result, inData;
+                inData = new byte[] { slave };
+                inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mSeamReg[i], NxCinemaCtrl.FORMAT_INT16));
+
+                result = ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_READ, inData );
+                if( result == null || result.length == 0 ) {
+                    Log.i(VD_DTAG, String.format(Locale.US, "i2c read fail.( id: 0x%02X, reg: 0x%04X )", slave, mSeamReg[i] ));
+                    return null;
+                }
+
+                mSeamVal[i] = ctrl.ByteArrayToInt(result);
+            }
+
+            Log.i(VD_DTAG, String.format(Locale.US, ">>> WhiteSeam Read Done. ( pos: %d, slave: 0x%02X, emulate: %b, top: %d, bottom: %d, left: %d, right: %d )",
+                    indexPos, slave, mEmulate, mSeamVal[0], mSeamVal[1], mSeamVal[2], mSeamVal[3]));
+
+            publishProgress(mSeamVal[0], mSeamVal[1], mSeamVal[2], mSeamVal[3]);
             return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            for( int i = 0; i < mSeamVal.length; i++ ) {
+                mSpinWhiteSeam[i].SetValue(values[i]);
+            }
+
+            super.onProgressUpdate(values);
         }
 
         @Override
@@ -1808,87 +1719,195 @@ public class DisplayModeActivity extends AppCompatActivity {
         }
     }
 
-//    private class AsyncTaskWhiteSeamInit extends AsyncTask<Void, Void, Void> {
-//        private int mId;
-//
-//        public AsyncTaskWhiteSeamInit( int id ) {
-//            mId = id;
-//        }
-//
-//        @Override
-//        protected Void doInBackground(Void... voids) {
-//            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-//
-//            byte[] reg = ctrl.IntToByteArray(NxCinemaCtrl.REG_TCON_SEAM_EN, NxCinemaCtrl.FORMAT_INT16);
-//            byte[] inData = ctrl.AppendByteArray(new byte[]{(byte)mId}, reg);
-//            byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_READ, inData );
-//
-//            if( result == null || result.length == 0 )
-//                return null;
-//
-//
-//
-//            return null;
-//        }
-//
-//        @Override
-//        protected void onPreExecute() {
-//            super.onPreExecute();
-//            CinemaLoading.Show( DisplayModeActivity.this );
-//        }
-//
-//        @Override
-//        protected void onPostExecute(Void aVoid) {
-//            super.onPostExecute(aVoid);
-//            CinemaLoading.Hide();
-//            Log.i(VD_DTAG, ">>> WhiteSeam Init Done.");
-//        }
-//    }
-//
-//    private class AsyncTaskWhiteSeam extends AsyncTask<Void, Void, Void> {
-//        public static final int TCON_SEAM_TOP   = 0;
-//        public static final int TCON_SEAM_BOTTOM= 1;
-//        public static final int TCON_SEAM_LEFT  = 2;
-//        public static final int TCON_SEAM_RIGHT = 3;
-//
-//        private int mId;
-//        private int mPos;
-//        private int mValue;
-//
-//        public AsyncTaskWhiteSeam( int id, int pos, int value ) {
-//            mId     = id;
-//            mPos    = pos;
-//            mValue  = value;
-//        }
-//
-//        @Override
-//        protected Void doInBackground(Void... voids) {
-//            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-//
-//            byte[] index = new byte[] { (byte)mId, (byte)mPos };
-//            byte[] value = ctrl.IntToByteArray( mValue, NxCinemaCtrl.FORMAT_INT16);
-//
-//            byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_WHITE_SEAM_WRITE, ctrl.AppendByteArray(index, value) );
-//            if( result == null || result.length == 0 ) {
-//                Log.i(VD_DTAG, String.format(Locale.US, "Seam data write failed. ( id: %d, pos: %d )", mId, mPos));
-//            }
-//
-//            return null;
-//        }
-//
-//        @Override
-//        protected void onPreExecute() {
-//            super.onPreExecute();
-//            CinemaLoading.Show( DisplayModeActivity.this );
-//        }
-//
-//        @Override
-//        protected void onPostExecute(Void aVoid) {
-//            super.onPostExecute(aVoid);
-//            CinemaLoading.Hide();
-//            Log.i(VD_DTAG, ">>> White Seam Done.");
-//        }
-//    }
+    private class AsyncTaskWhiteSeamEmulate extends AsyncTask<Void, Void, Void> {
+        private byte[] mCabinet;
+        private int mIndexPos;
+
+        private int[] mSeamReg = new int[]{ 0x0180, 0x0181, 0x0182, 0x0183 };
+        private int[] mSeamVal = new int[4];
+
+        public AsyncTaskWhiteSeamEmulate(byte[] cabinet, int indexPos) {
+            Log.i(VD_DTAG, ">>> WhiteSeam Emulate Start.");
+
+            mCabinet = cabinet;
+            mIndexPos = indexPos;
+
+            for( int i = 0; i < mSeamVal.length; i++ )
+                mSeamVal[i] = mSpinWhiteSeam[i].GetValue();
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+            Log.i(VD_DTAG, String.format(Locale.US, "pos: %d", mIndexPos));
+
+            if( mIndexPos == 0 ) {
+                Log.i(VD_DTAG, "WhiteSeam Emulate. ( index: all )");
+
+                boolean bValidPort0 = false, bValidPort1 = false;
+                for( byte id : mCabinet ) {
+                    if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
+                    if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
+                }
+
+                for( int j = 0; j < mSeamReg.length; j++ ) {
+                    byte[] reg = ctrl.IntToByteArray(mSeamReg[j], NxCinemaCtrl.FORMAT_INT16);
+                    byte[] val = ctrl.IntToByteArray(mSeamVal[j], NxCinemaCtrl.FORMAT_INT16);
+
+                    byte[] inData1 = new byte[] {(byte)0x09};
+                    inData1 = ctrl.AppendByteArray(inData1, reg);
+                    inData1 = ctrl.AppendByteArray(inData1, val);
+
+                    byte[] inData2 = new byte[] {(byte)0x89};
+                    inData2 = ctrl.AppendByteArray(inData2, reg);
+                    inData2 = ctrl.AppendByteArray(inData2, val);
+
+                    if( bValidPort0 )   ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
+                    if( bValidPort1 )   ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData2 );
+                }
+            }
+            else {
+                int pos = mIndexPos - 1;
+                byte slave = mCabinet[pos];
+                Log.i(VD_DTAG, String.format(Locale.US, "WhiteSeam Emulate. ( index: %d, slave: 0x%02x )", pos, slave));
+
+                for( int j = 0; j < mSeamReg.length; j++ ) {
+                    byte[] inData;
+                    inData = new byte[] { slave };
+                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mSeamReg[j], NxCinemaCtrl.FORMAT_INT16));
+                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mSeamVal[j], NxCinemaCtrl.FORMAT_INT16));
+
+                    ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData );
+                }
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Void... values) {
+            super.onProgressUpdate(values);
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            CinemaLoading.Show( DisplayModeActivity.this );
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            CinemaLoading.Hide();
+            Log.i(VD_DTAG, ">>> WhiteSeam Emulation Done.");
+        }
+    }
+
+    private class AsyncTaskWhiteSeamWrite extends  AsyncTask<Void, Void, Void> {
+        private byte[] mCabinet;
+        private int mIndexPos;
+
+        private int[] mSeamReg = new int[]{ 0x0180, 0x0181, 0x0182, 0x0183 };
+        private int[] mSeamVal = new int[4];
+
+        public AsyncTaskWhiteSeamWrite(byte[] cabinet, int indexPos) {
+            mCabinet = cabinet;
+            mIndexPos = indexPos;
+
+            for( int i = 0; i < mSeamVal.length; i++ )
+                mSeamVal[i] = mSpinWhiteSeam[i].GetValue();
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+
+            //
+            //  1. Update White Seam in Emulate Register.
+            //
+            if( mIndexPos == 0 ) {
+                boolean bValidPort0 = false, bValidPort1 = false;
+                for( byte id : mCabinet ) {
+                    if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
+                    if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
+                }
+
+                for( int j = 0; j < mSeamReg.length; j++ ) {
+                    byte[] reg = ctrl.IntToByteArray(mSeamReg[j], NxCinemaCtrl.FORMAT_INT16);
+                    byte[] val = ctrl.IntToByteArray(mSeamVal[j], NxCinemaCtrl.FORMAT_INT16);
+
+                    byte[] inData1 = new byte[] {(byte)0x09};
+                    inData1 = ctrl.AppendByteArray(inData1, reg);
+                    inData1 = ctrl.AppendByteArray(inData1, val);
+
+                    byte[] inData2 = new byte[] {(byte)0x89};
+                    inData2 = ctrl.AppendByteArray(inData2, reg);
+                    inData2 = ctrl.AppendByteArray(inData2, val);
+
+                    if( bValidPort0 )   ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
+                    if( bValidPort1 )   ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData2 );
+                }
+            }
+            else {
+                int pos = mIndexPos - 1;
+                byte slave = mCabinet[pos];
+                for( int j = 0; j < mSeamReg.length; j++ ) {
+                    byte[] inData;
+                    inData = new byte[] { slave };
+                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mSeamReg[j], NxCinemaCtrl.FORMAT_INT16));
+                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mSeamVal[j], NxCinemaCtrl.FORMAT_INT16));
+
+                    ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData );
+                }
+            }
+
+
+            //
+            //  2. Update White Seam in Flash Data.
+            //
+            int start   = (mIndexPos != 0) ? mIndexPos - 1  : 0;
+            int end     = (mIndexPos != 0) ? mIndexPos      : mCabinet.length;
+
+            for( int i = start; i < end; i++ ) {
+                byte slave = mCabinet[i];
+                byte[] result, inData;
+                inData = new byte[] { slave };
+                inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mSeamVal[0], NxCinemaCtrl.FORMAT_INT16));
+                inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mSeamVal[1], NxCinemaCtrl.FORMAT_INT16));
+                inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mSeamVal[2], NxCinemaCtrl.FORMAT_INT16));
+                inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mSeamVal[3], NxCinemaCtrl.FORMAT_INT16));
+
+                result = ctrl.Send(NxCinemaCtrl.CMD_TCON_WHITE_SEAM_WRITE, inData);
+                if( result == null || result.length == 0 || ctrl.ByteArrayToInt(result) != 0x01 ) {
+                    Log.i(VD_DTAG, "Fail, Write WhiteSeam.");
+                    return null;
+                }
+
+                Log.i(VD_DTAG, String.format(Locale.US, "WhiteSeam Write. ( pos: %d, slave: 0x%02x, top: %d, bottom: %d, left: %d, right: %d )",
+                        i, slave, mSeamVal[0], mSeamVal[1], mSeamVal[2], mSeamVal[3]));
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Void... values) {
+            super.onProgressUpdate(values);
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            CinemaLoading.Show( DisplayModeActivity.this );
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            CinemaLoading.Hide();
+            Log.i(VD_DTAG, ">>> WhiteSeam Write Done.");
+        }
+    }
 
     //
     //  For Screen Rotation

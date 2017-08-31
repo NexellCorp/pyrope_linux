@@ -11,6 +11,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import java.util.Locale;
 
@@ -50,9 +51,9 @@ public class VdSpinCtrl extends LinearLayout {
         mCurValue = value;
         mEditText.setText( String.format(Locale.US, "%d", value ) );
 
-        if( mChangeListener != null ) {
-            mChangeListener.onChange( mCurValue );
-        }
+//        if( mChangeListener != null ) {
+//            mChangeListener.onChange( mCurValue );
+//        }
     }
 
     public int GetValue() {
@@ -151,5 +152,9 @@ public class VdSpinCtrl extends LinearLayout {
 
     public void SetOnChangeListener( OnChangeListener listener ) {
         mChangeListener = listener;
+    }
+
+    public void SetOnEditorActionListener(TextView.OnEditorActionListener listener) {
+        mEditText.setOnEditorActionListener( listener );
     }
 }

@@ -39,6 +39,10 @@ public class DisplayCheckActivity extends AppCompatActivity {
             "Dot Pattern / Checker Board",
             "Diagonal Pattern",
             "Cabinet ID",
+            "Dot Correction",
+            "Gamut Mapping",
+            "XYZ to RGB",
+            "White Seam Value",
     };
 
     private String[] mDci = {
@@ -77,6 +81,17 @@ public class DisplayCheckActivity extends AppCompatActivity {
             new String[0],
             mDiagonalPattern,
             new String[0],
+            new String[0],
+            new String[0],
+            new String[0],
+            new String[0],
+    };
+
+    private int[] mPatternReg = {
+            0x0044,     // REG_FLASH_CC
+            0x0052,     // REG_CC_MODULE
+            0x0004,     // REG_XYZ_TO_RGB
+            0x0192,     // REG_SEAM_ON
     };
 
     private SelectRunAdapter mAdapterTestPattern;
@@ -155,8 +170,11 @@ public class DisplayCheckActivity extends AppCompatActivity {
         //
         //
         for(int i = 0; i < mFuncName.length; i++ ) {
-            boolean isToggle = mFuncName[i].equals("Cabinet ID");
-            mAdapterTestPattern.add( new SelectRunInfo(mFuncName[i], mPatternName[i], isToggle, new SelectRunAdapter.OnClickListener() {
+            boolean toggle = (i >= 6);
+            String[] btnText = (i >= 7) ? new String[]{"ENABLE", "DISABLE"} : new String[]{"RUN", "STOP"};
+            boolean status = (i >= 7);
+
+            mAdapterTestPattern.add( new SelectRunInfo(mFuncName[i], mPatternName[i], btnText, toggle, status, new SelectRunAdapter.OnClickListener() {
                 @Override
                 public void onClickListener(int index, int spinnerIndex, boolean status ) {
                     RunTestPattern( index, spinnerIndex, status );
@@ -219,8 +237,8 @@ public class DisplayCheckActivity extends AppCompatActivity {
     private void RunTestPattern( int funcIndex, int patternIndex, boolean status ) {
         Log.i(VD_DTAG, String.format( "funcIndex(%d), patternIndex(%d), status(%s)", funcIndex, patternIndex, String.valueOf(status)) );
 
+        String strLog;
         NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-        byte[] data = { (byte)funcIndex, (byte)patternIndex };
 
         boolean bValidPort0 = false, bValidPort1 = false;
         for( byte id : mCabinet ) {
@@ -228,18 +246,33 @@ public class DisplayCheckActivity extends AppCompatActivity {
             if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
         }
 
-        byte[] data0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, data);
-        byte[] data1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, data);
+        if( funcIndex < 7 ) {
+            byte[] data = { (byte)funcIndex, (byte)patternIndex };
 
-        if( bValidPort0 ) ctrl.Send( status ? NxCinemaCtrl.CMD_TCON_PATTERN_RUN : NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data0 );
-        if( bValidPort1 ) ctrl.Send( status ? NxCinemaCtrl.CMD_TCON_PATTERN_RUN : NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data1 );
+            byte[] data0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, data);
+            byte[] data1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, data);
 
-        String strLog;
-        if( mPatternName[funcIndex].length == 0 ) {
-            strLog = String.format( "%s pattern test. ( %s )", status ? "Run" : "Stop", mFuncName[funcIndex] );
+            if( bValidPort0 ) ctrl.Send( status ? NxCinemaCtrl.CMD_TCON_PATTERN_RUN : NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data0 );
+            if( bValidPort1 ) ctrl.Send( status ? NxCinemaCtrl.CMD_TCON_PATTERN_RUN : NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data1 );
+
+            if( mPatternName[funcIndex].length == 0 ) {
+                strLog = String.format( "%s pattern test. ( %s )", status ? "Run" : "Stop", mFuncName[funcIndex] );
+            }
+            else {
+                strLog = String.format( "%s pattern test. ( %s / %s )", status ? "Run" : "Stop", mFuncName[funcIndex], mPatternName[funcIndex][patternIndex] );
+            }
         }
         else {
-            strLog = String.format( "%s pattern test. ( %s / %s )", status ? "Run" : "Stop", mFuncName[funcIndex], mPatternName[funcIndex][patternIndex] );
+            byte[] reg = ctrl.IntToByteArray(mPatternReg[funcIndex-7], NxCinemaCtrl.FORMAT_INT16);
+            byte[] dat = ctrl.IntToByteArray(status ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
+            byte[] data = ctrl.AppendByteArray(reg, dat);
+            byte[] data0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, data);
+            byte[] data1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, data);
+
+            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, data0 );
+            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, data1 );
+
+            strLog = String.format( "%s %s", mFuncName[funcIndex], status ? "Enable" : "Disable" );
         }
 
         ((CinemaInfo)getApplicationContext()).InsertLog(strLog);
@@ -259,11 +292,23 @@ public class DisplayCheckActivity extends AppCompatActivity {
         }
 
         for( int i = 0; i < mFuncName.length; i++ ) {
-            byte[] data0 = { (byte)0x09, (byte)i, (byte)0x00 };
-            byte[] data1 = { (byte)0x89, (byte)i, (byte)0x00 };
+            if( i < 7 ) {
+                byte[] data0 = { (byte)0x09, (byte)i, (byte)0x00 };
+                byte[] data1 = { (byte)0x89, (byte)i, (byte)0x00 };
 
-            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data0 );
-            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data1 );
+                if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data0 );
+                if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data1 );
+            }
+            else {
+                byte[] reg = ctrl.IntToByteArray(mPatternReg[i-7], NxCinemaCtrl.FORMAT_INT16);
+                byte[] dat = ctrl.IntToByteArray(0x0001, NxCinemaCtrl.FORMAT_INT16);
+                byte[] data = ctrl.AppendByteArray(reg, dat);
+                byte[] data0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, data);
+                byte[] data1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, data);
+
+                if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, data0 );
+                if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, data1 );
+            }
         }
     }
 

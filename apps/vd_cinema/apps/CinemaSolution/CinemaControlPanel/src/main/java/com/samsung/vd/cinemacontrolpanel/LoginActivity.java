@@ -255,6 +255,9 @@ public class LoginActivity extends AppCompatActivity {
     //
     private class AsyncTaskCheckCabinet extends AsyncTask<Void, Void, Void> {
         private CinemaInfo mCinemaInfo = (CinemaInfo)getApplicationContext();
+        private int mIndexInitialValue =
+                (((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_INITIAL_MODE) == null) ?
+                0 : Integer.parseInt(((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_INITIAL_MODE));
 
         @Override
         protected Void doInBackground(Void... params) {
@@ -348,12 +351,12 @@ public class LoginActivity extends AppCompatActivity {
                         byte[] result;
                         result = ctrl.Send(NxCinemaCtrl.CMD_TCON_BOOTING_STATUS, new byte[]{id});
                         if (result == null || result.length == 0) {
-                            Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / slave : 0x%02x )", (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET, id));
+                            Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / port: %d / slave : 0x%02x )", (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (id & 0x80), id));
                             continue;
                         }
 
                         if( result[0] == 0 ) {
-                            Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / slave : 0x%02x / result : %d )", (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET, id, result[0] ));
+                            Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / port: %d / slave : 0x%02x / result : %d )", (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (id & 0x80), id, result[0] ));
                             bTconBooting = false;
                         }
                     }
@@ -380,11 +383,10 @@ public class LoginActivity extends AppCompatActivity {
                 for( String file : resultPath ) {
                     ConfigPfpgaInfo info = new ConfigPfpgaInfo();
                     if( info.Parse( file ) ) {
-                        enableUniformity = info.GetEnableUpdateUniformity(0);
-
-                        for( int i = 0; i < info.GetRegister(0).length; i++ ) {
-                            byte[] reg = ctrl.IntToByteArray(info.GetRegister(0)[i], NxCinemaCtrl.FORMAT_INT8);
-                            byte[] data = ctrl.IntToByteArray(info.GetData(0)[i], NxCinemaCtrl.FORMAT_INT16);
+                        enableUniformity = info.GetEnableUpdateUniformity(mIndexInitialValue);
+                        for( int i = 0; i < info.GetRegister(mIndexInitialValue).length; i++ ) {
+                            byte[] reg = ctrl.IntToByteArray(info.GetRegister(mIndexInitialValue)[i], NxCinemaCtrl.FORMAT_INT8);
+                            byte[] data = ctrl.IntToByteArray(info.GetData(mIndexInitialValue)[i], NxCinemaCtrl.FORMAT_INT16);
                             byte[] inData = ctrl.AppendByteArray(reg, data);
 
                             ctrl.Send( NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData );
@@ -416,11 +418,11 @@ public class LoginActivity extends AppCompatActivity {
                 for( String file : resultPath ) {
                     ConfigTconInfo info = new ConfigTconInfo();
                     if( info.Parse( file ) ) {
-                        enableGamma = info.GetEnableUpdateGamma(0);
+                        enableGamma = info.GetEnableUpdateGamma(mIndexInitialValue);
 
-                        for( int i = 0; i < info.GetRegister(0).length; i++ ) {
-                            byte[] reg = ctrl.IntToByteArray(info.GetRegister(0)[i], NxCinemaCtrl.FORMAT_INT16);
-                            byte[] data = ctrl.IntToByteArray(info.GetData(0)[i], NxCinemaCtrl.FORMAT_INT16);
+                        for( int i = 0; i < info.GetRegister(mIndexInitialValue).length; i++ ) {
+                            byte[] reg = ctrl.IntToByteArray(info.GetRegister(mIndexInitialValue)[i], NxCinemaCtrl.FORMAT_INT16);
+                            byte[] data = ctrl.IntToByteArray(info.GetData(mIndexInitialValue)[i], NxCinemaCtrl.FORMAT_INT16);
                             byte[] inData = ctrl.AppendByteArray(reg, data);
 
                             byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);

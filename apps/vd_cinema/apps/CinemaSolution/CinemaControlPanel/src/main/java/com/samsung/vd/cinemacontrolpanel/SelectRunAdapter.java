@@ -82,20 +82,25 @@ public class SelectRunAdapter extends ArrayAdapter<SelectRunInfo> {
             mSpinner.setEnabled(true);
         }
 
-        mButton.setText( !mData.get(mPosition).GetStatus() ? R.string.txt_run : R.string.txt_stop );
+        String[] text = mData.get(mPosition).GetBtnText();
+        boolean status = mData.get(mPosition).GetStatus();
+        mButton.setText( status ? text[1] : text[0] );
+
         mButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 SelectRunAdapter.OnClickListener listener = mData.get(mPosition).GetOnClickListener();
                 if( listener != null ) {
                     boolean status = mData.get(mPosition).GetStatus();
-                    if( mData.get(mPosition).GetIsToggle() ) {
+                    if( mData.get(mPosition).GetToggle() ) {
                         status = !status;
-                        mButton.setText(status ? R.string.txt_stop : R.string.txt_run);
+                        String[] text = mData.get(mPosition).GetBtnText();
+
+                        mButton.setText( status ? text[1] : text[0] );
                         mData.get(mPosition).SetStatus( status );
                     }
 
-                    listener.onClickListener( mPosition, mSpinner.getSelectedItemPosition(), !mData.get(mPosition).GetIsToggle() || status );
+                    listener.onClickListener( mPosition, mSpinner.getSelectedItemPosition(), !mData.get(mPosition).GetToggle() || status );
                 }
             }
         });

@@ -18,8 +18,7 @@ public class CinemaInfo extends Application {
     public static final String KEY_TS_CALIBRATION   = "touch.calibration";
     public static final String KEY_CABINET_NUM      = "cabinet.num";
     public static final String KEY_SCREEN_SAVING    = "screen.saving";
-    public static final String KEY_INPUT_SOURCE     = "input.source";
-    public static final String KEY_INPUT_RESOLUTION = "input.resolution";
+    public static final String KEY_INITIAL_MODE     = "initial.mode";
     public static final String KEY_MASTERING_MODE   = "mastering.mode";
     public static final String KEY_SCREEN_ROTATE    = "screen.rotate";
 
@@ -39,8 +38,8 @@ public class CinemaInfo extends Application {
     private String mSecureAlive     = "false";
 
     //
-    //  Cabinet Number = slave address - offset(16) :: 0, 1, 2, .., 96
-    //  Cabinet ID = slave address                  :: 16, 17, 18, .., 112
+    //  Cabinet Number  = (slave address & 0x7F ) - offset(16)      :: 0, 1, 2, .., 95
+    //  Cabinet ID      = (slave address        ) & (0x00 or 0x80 ) :: 16, 17, 18, .., 112
     //
     private byte[] mCabinet = new byte[0];
 

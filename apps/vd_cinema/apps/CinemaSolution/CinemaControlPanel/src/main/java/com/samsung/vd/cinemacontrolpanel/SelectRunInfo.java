@@ -10,7 +10,8 @@ import android.widget.Spinner;
 public class SelectRunInfo {
     private String mTitle;
     private String[] mSpinnerItem;
-    private boolean mIsToggle;
+    private String[] mBtnText = new String[]{"RUN"};
+    private boolean mToggle = false;
     private boolean mStatus = false;
 
     private SelectRunAdapter.OnClickListener mOnClickListener;
@@ -24,10 +25,12 @@ public class SelectRunInfo {
         mSpinnerItem = spinnerItem;
     }
 
-    public SelectRunInfo(String title, String[] spinnerItem, boolean isToggle, SelectRunAdapter.OnClickListener listener) {
+    public SelectRunInfo(String title, String[] spinnerItem, String[] btnText, boolean toggle, boolean status, SelectRunAdapter.OnClickListener listener) {
         mTitle = title;
         mSpinnerItem = spinnerItem;
-        mIsToggle = isToggle;
+        mBtnText = btnText;
+        mToggle = toggle;
+        mStatus = status;
         mOnClickListener = listener;
     }
 
@@ -55,12 +58,20 @@ public class SelectRunInfo {
         return mOnClickListener;
     }
 
-    public void SetIsToggle( boolean isToggle ) {
-        mIsToggle = isToggle;
+    public void SetToggle( boolean isToggle ) {
+        mToggle = isToggle;
     }
 
-    public boolean GetIsToggle() {
-        return mIsToggle;
+    public boolean GetToggle() {
+        return mToggle;
+    }
+
+    public void SetBtnText( String[] btnText ) {
+        mBtnText = btnText;
+    }
+
+    public String[] GetBtnText() {
+        return mBtnText;
     }
 
     public void SetStatus( boolean status ) {

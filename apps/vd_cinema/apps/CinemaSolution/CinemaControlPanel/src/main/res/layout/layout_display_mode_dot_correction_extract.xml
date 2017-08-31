@@ -19,7 +19,7 @@
             android:layout_width="0px"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="Cabinet ID"
+            android:text="Cabinet Number"
             android:textStyle="bold"
             android:gravity="center"
             android:paddingTop="15dp"

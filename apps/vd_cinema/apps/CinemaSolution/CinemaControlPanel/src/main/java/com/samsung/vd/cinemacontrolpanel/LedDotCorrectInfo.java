@@ -31,8 +31,8 @@ public class LedDotCorrectInfo {
     // Sending Data Format
     private int[] mData = new int[64*60*(MAX_REG_NUM-1)];
 
-    private int mIndex;
-    private int mModule;
+    private int mIndex;         // Slave Address
+    private int mModule;        // Module Number
 
     public LedDotCorrectInfo() {
     }
@@ -56,18 +56,11 @@ public class LedDotCorrectInfo {
         //  RGB_P2_5_ID009_R3B.txt : 009, R, 3, B -> 15
         //
         int idx = Integer.parseInt( matcher.group(1), 10 );
-		if( idx < CinemaInfo.TCON_ID_OFFSET ) {
-            Log.i(VD_DTAG, String.format("Fail, Invalid Index. ( name: %s, index: %d )", fileName, idx) );
-			return false;
-		}
-
         if( (idx % 16) < 8 ) {
-            // mIndex = idx + CinemaInfo.TCON_ID_OFFSET;
-            mIndex = idx;
+            mIndex = idx + CinemaInfo.TCON_ID_OFFSET;
         }
         else {
-            // mIndex = (idx | 0x80) + CinemaInfo.TCON_ID_OFFSET;
-            mIndex = (idx | 0x80);
+            mIndex = (idx | 0x80) + CinemaInfo.TCON_ID_OFFSET;
         }
 
         int side = matcher.group(2).equals("L") ? 0 : 1;
@@ -118,10 +111,9 @@ public class LedDotCorrectInfo {
             }
         }
 
-        Log.i(VD_DTAG, String.format(">>>>> slave: %d, module index: %d", mIndex, mModule) );
+        Log.i(VD_DTAG, String.format("Parse Done.( slave: 0x%02x, module: %d )", (byte)mIndex, mModule));
         return true;
     }
-
 
     public boolean Make( int index, int module, byte[] inData, String outPath ) {
         //
@@ -134,15 +126,10 @@ public class LedDotCorrectInfo {
             return false;
         }
 
-
-
         String strLine = String.valueOf(module/4);
         String strSide = ((module % 4) < 2) ? "L" : "R";
         String strType = (((module % 4) % 2) == 0) ? "A" : "B";
-
-        String strFile = String.format(Locale.US, "%s/RGB_P2_5_ID%03d_%s%s%s.txt", outPath, (index & 0x7F), strSide, strLine, strType);
-
-        Log.i(VD_DTAG, String.format("Target File : %s", strFile));
+        String strFile = String.format(Locale.US, "%s/RGB_P2_5_ID%03d_%s%s%s.txt", outPath, (index & 0x7F) - CinemaInfo.TCON_ID_OFFSET, strSide, strLine, strType);
 
         //
         // Convert Data
@@ -206,7 +193,9 @@ public class LedDotCorrectInfo {
             for( int i = 0; i < dstData.length / MAX_REG_NUM; i++ )
             {
                 int offset = MAX_REG_NUM * i;
-                String strData = String.format( Locale.US, "%5d,\t%5d,\t%5d,\t%5d,\t%5d,\t%5d,\t%5d,\t%5d,\t%5d\r\n",
+//                String strData = String.format( Locale.US, "%5d,\t%5d,\t%5d,\t%5d,\t%5d,\t%5d,\t%5d,\t%5d,\t%5d\r\n",
+//                String strData = String.format( Locale.US, "%5d, %5d, %5d, %5d, %5d, %5d, %5d, %5d, %5d\r\n",
+                String strData = String.format( Locale.US, "%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d\r\n",
                         dstData[offset  ], dstData[offset+1], dstData[offset+2], dstData[offset+3], dstData[offset+4],
                         dstData[offset+5], dstData[offset+6], dstData[offset+7], dstData[offset+8] );
 
@@ -218,6 +207,7 @@ public class LedDotCorrectInfo {
             e.printStackTrace();
         }
 
+        Log.i(VD_DTAG, String.format("Make Done. ( %s )", strFile));
         return true;
     }
 
@@ -226,7 +216,6 @@ public class LedDotCorrectInfo {
     }
 
     public int GetModule() {
-
         return mModule;
     }
 

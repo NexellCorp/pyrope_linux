@@ -26,7 +26,7 @@
 #define CMD_TYPE_TCON					0x00	// 0000 0000
 #define CMD_TYPE_PFPGA					0x40	// 0100 0000
 #define CMD_TYPE_PLATFORM				0x80	// 1000 0000
-#define CMD_TYPE_RESERVED				0xC0	// 1100 0000
+#define CMD_TYPE_IMB					0xC0	// 1100 0000
 
 #define GDC_COMMAND( type, cmd )		(type | (cmd & 0x00FF))
 

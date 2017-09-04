@@ -159,6 +159,8 @@ static int32_t TestPatternGrayScale( CNX_I2C *pI2c, uint8_t index, uint8_t patte
 static int32_t TestPatternDot( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex );
 static int32_t TestPatternDiagonal( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex );
 
+static int32_t SendRemote( const char *pSockName, const char *pMsg );
+
 //------------------------------------------------------------------------------
 CNX_IPCServer::CNX_IPCServer()
 	: m_IsRunning (false)
@@ -3077,18 +3079,45 @@ int32_t CNX_IPCServer::PLAT_IpcVersion( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 //------------------------------------------------------------------------------
 int32_t CNX_IPCServer::IMB_ChangeContents( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
 {
-	UNUSED( pBuf );
 	UNUSED( iSize );
-
+#if 0
 	//
-	//	pBuf : not used
+	//	pBuf[0] : color format,	pBuf[1] : Bit number,	pBuf[2] : Resolution, 	pBuf[3:4] : Frame rate,
+	//	pBuf[5] : Gamma curve,	pBuf[6:7] : Brightness,	pBuf[8] : Enhancement setting
 	//
 
 	uint8_t result	= 0xFF;
 	int32_t sendSize;
 
-	result = 0x01;
+	uint16_t iColorFormat	= (uint16_t)pBuf[0];
+	uint16_t iBitNumber		= (uint16_t)pBuf[1];
+	uint16_t iResolution	= (uint16_t)pBuf[2];
+	uint16_t iFrameRate		= ((int16_t)(pBuf[3] << 8) & 0xFF00) + (int16_t)pBuf[4];
+	uint16_t iGammaCurve	= (uint16_t)pBuf[5];
+	uint16_t iBrightness	= ((int16_t)(pBuf[6] << 8) & 0xFF00) + (int16_t)pBuf[7];
+	uint16_t iEnhancement	= (uint16_t)pBuf[8];
 
+	printf(">> iColorFormat	= %5d ( 0x%04x )\n", iColorFormat, iColorFormat );
+	printf(">> iBitNumber	= %5d ( 0x%04x )\n", iBitNumber, iBitNumber );
+	printf(">> iResolution	= %5d ( 0x%04x )\n", iResolution, iResolution );
+	printf(">> iFrameRate	= %5d ( 0x%04x )\n", iFrameRate, iFrameRate );
+	printf(">> iGammaCurve	= %5d ( 0x%04x )\n", iGammaCurve, iGammaCurve );
+	printf(">> iBrightness	= %5d ( 0x%04x )\n", iBrightness, iBrightness );
+	printf(">> iEnhancement	= %5d ( 0x%04x )\n", iEnhancement, iEnhancement );
+
+	result = 0x01;
+#else
+	uint8_t result = 0xFF;
+	int32_t sendSize;
+
+	printf(">> receive data : 0x%02x\n", pBuf[0]);
+
+	if( pBuf[0] == 0x00 || pBuf[0] == 0x01 )
+	{
+		SendRemote( "cinema.change.contents", (pBuf[0] == 0x00) ? "0" : "1" );
+		result = 0x01;
+	}
+#endif
 ERROR_RESERVED:
 	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
@@ -3223,6 +3252,7 @@ int32_t CNX_IPCServer::ProcessCommand( int32_t fd, uint32_t cmd, void *pPayload,
 	//	IMB Commands
 	//
 	case IMB_CMD_CHANGE_CONTENTS:
+	case GDC_COMMAND( CMD_TYPE_IMB, IMB_CMD_CHANGE_CONTENTS ):
 		return IMB_ChangeContents( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	default:
@@ -3611,6 +3641,42 @@ static int32_t TestPatternDiagonal( CNX_I2C *pI2c, uint8_t index, uint8_t patter
 		}
 	}
 #endif
+	return 0;
+}
+
+//------------------------------------------------------------------------------
+static int32_t SendRemote( const char *pSockName, const char *pMsg )
+{
+	int32_t sock, len;
+	struct sockaddr_un addr;
+
+	if( 0 > (sock = socket(AF_UNIX, SOCK_STREAM, 0)) )
+	{
+		printf("Fail, socket().\n");
+		return -1;
+	}
+
+	addr.sun_family  = AF_UNIX;
+	addr.sun_path[0] = '\0';	// for abstract namespace
+	strcpy( addr.sun_path + 1, pSockName );
+
+	len = 1 + strlen(pSockName) + offsetof(struct sockaddr_un, sun_path);
+
+	if( 0 > connect(sock, (struct sockaddr *) &addr, len))
+	{
+		printf("Fail, connect(). ( node: %s )\n", pSockName);
+		close( sock );
+		return -1;
+	}
+
+	if( 0 > write(sock, pMsg, strlen(pMsg)) )
+	{
+		printf("Fail, write().\n");
+		close( sock );
+		return -1;
+	}
+
+	close( sock );
 	return 0;
 }
 

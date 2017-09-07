@@ -36,6 +36,7 @@
 #include <CNX_GpioControl.h>
 
 #include <NX_IPCServer.h>
+#include <NX_TMSServer.h>
 #include <NX_SecureLinkServer.h>
 #include <NX_Pwm.h>
 
@@ -310,6 +311,7 @@ static void signal_handler( int32_t signal )
 	if( NULL != gstHelper ) delete gstHelper;
 
 	NX_SLinkServerStop();
+	NX_TMSServerStop();
 	NX_IPCServerStop();
 
 	exit(EXIT_FAILURE);
@@ -447,8 +449,15 @@ int32_t main( void )
 	//	Set Version Information
 	NX_SetNapVersion( (uint8_t*)NX_VERSION_NAP, strlen(NX_VERSION_NAP) );
 
-	//	Start TMS Server
+	//	Start IPC Server
 	if( 0 != NX_IPCServerStart() )
+	{
+		NxErrMsg("IPC service demon start failed!!!\n");
+		exit(-1);
+	}
+
+	//	Start TMS Server
+	if( 0 != NX_TMSServerStart() )
 	{
 		NxErrMsg("IPC service demon start failed!!!\n");
 		exit(-1);
@@ -504,6 +513,7 @@ int32_t main( void )
 	}
 
 	NX_SLinkServerStop();
+	NX_TMSServerStop();
 	NX_IPCServerStop();
 
 	return 0;

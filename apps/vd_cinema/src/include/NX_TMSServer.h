@@ -22,8 +22,9 @@
 
 #include <stdint.h>
 
-int32_t NX_TMSServerStart( int32_t iPort );
+#define TMS_SERVER_PORT		7434
+
+int32_t NX_TMSServerStart();
 void	NX_TMSServerStop();
-void	NX_TMSRegisterCallback( int32_t (*callback)( void *, int32_t , void *, int32_t ), void *pParam );
 
 #endif	// __NX_TMSSERVER_H__

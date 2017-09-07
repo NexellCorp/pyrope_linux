@@ -323,12 +323,12 @@ public class LoginActivity extends AppCompatActivity {
             for( byte value : cabinet ) {
                 byte[] tconVersion = ctrl.Send(NxCinemaCtrl.CMD_TCON_VERSION, null);
 
-                int msbVersion = (tconVersion != null && tconVersion.length != 0) ? ctrl.ByteArrayToInt32(tconVersion, NxCinemaCtrl.MASK_INT32_MSB) : -1;
-                int lsbVersion = (tconVersion != null && tconVersion.length != 0) ? ctrl.ByteArrayToInt32(tconVersion, NxCinemaCtrl.MASK_INT32_LSB) : -1;
+                int msbVersion = (tconVersion != null && tconVersion.length != 0) ? ctrl.ByteArrayToInt32(tconVersion, NxCinemaCtrl.MASK_INT32_MSB) : 0;
+                int lsbVersion = (tconVersion != null && tconVersion.length != 0) ? ctrl.ByteArrayToInt32(tconVersion, NxCinemaCtrl.MASK_INT32_LSB) : 0;
 
-                Log.i(VD_DTAG, String.format(Locale.US, "-. TCON #%d    : %d - %d", value - CinemaInfo.TCON_ID_OFFSET, msbVersion, lsbVersion));
+                Log.i(VD_DTAG, String.format(Locale.US, "-. TCON #%d    : %05d - %05d", (value & 0x7F) - CinemaInfo.TCON_ID_OFFSET, msbVersion, lsbVersion));
             }
-            Log.i(VD_DTAG, String.format(Locale.US, "-. PFPGA       : %d", (pfpgaVersion != null && pfpgaVersion.length != 0) ? ctrl.ByteArrayToInt(pfpgaVersion) : -1));
+            Log.i(VD_DTAG, String.format(Locale.US, "-. PFPGA       : %05d", (pfpgaVersion != null && pfpgaVersion.length != 0) ? ctrl.ByteArrayToInt(pfpgaVersion) : 0));
             Log.i(VD_DTAG, String.format(Locale.US, "-. IPC Server  : %s", (srvVersion != null && srvVersion.length != 0) ? new String(srvVersion) : "Unknown"));
             Log.i(VD_DTAG, String.format(Locale.US, "-. IPC Client  : %s", (clnVersion != null && clnVersion.length != 0) ? new String(clnVersion) : "Unknown"));
 
@@ -486,6 +486,7 @@ public class LoginActivity extends AppCompatActivity {
         protected void onPreExecute() {
             super.onPreExecute();
 
+            Log.i(VD_DTAG, "Cabinet Check Start.");
             CinemaLoading.Show( LoginActivity.this );
             mCinemaInfo.ClearCabinet();
         }
@@ -498,6 +499,8 @@ public class LoginActivity extends AppCompatActivity {
             overridePendingTransition(0, 0);
 
             CinemaLoading.Hide();
+            Log.i(VD_DTAG, "Cabinet Check Done.");
+
             finish();
         }
     }

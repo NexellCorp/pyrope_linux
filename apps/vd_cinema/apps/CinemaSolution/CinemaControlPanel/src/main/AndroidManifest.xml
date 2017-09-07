@@ -83,6 +83,11 @@
             android:configChanges="orientation|screenSize"
             android:theme="@android:style/Theme.Dialog">
         </activity>
+        <activity
+            android:name=".CinemaLoading2"
+            android:configChanges="orientation|screenSize"
+            android:theme="@style/TransparentDialog">
+        </activity>
         <service
             android:name=".CinemaService"
             android:screenOrientation="sensorLandscape">

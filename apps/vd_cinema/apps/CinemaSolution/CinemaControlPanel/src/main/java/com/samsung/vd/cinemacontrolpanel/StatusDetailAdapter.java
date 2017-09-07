@@ -17,6 +17,7 @@ import java.util.ArrayList;
  * Created by doriya on 8/19/16.
  */
 public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
+    private static final String VD_DTAG = "StatusDetailAdapter";
     private ArrayList<StatusDetailInfo> mData;
     private int mResource;
 
@@ -156,13 +157,6 @@ public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
         }
 
         @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            CinemaLoading.Show(mContext);
-        }
-
-        @Override
         protected Void doInBackground(Void... params) {
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
             ctrl.Send( NxCinemaCtrl.CMD_TCON_MODE_LOD, new byte[]{mId} );
@@ -191,11 +185,20 @@ public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
         }
 
         @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+            Log.i(VD_DTAG, "Led Open Position Check Start.");
+            CinemaLoading.Show( mContext );
+        }
+
+        @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
 
             new LedPosDialog(mContext, mAdapter).show();
             CinemaLoading.Hide();
+            Log.i(VD_DTAG, "Led Open Position Check Done.");
         }
     }
 }

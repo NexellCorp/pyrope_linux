@@ -20,7 +20,7 @@
 #include <stdio.h>	// printf
 #include <string.h>	// memcpy
 
-#include <tms_protocol.h>
+#include <ipc_protocol.h>
 //
 //	Prameters
 //		Input  : key, cmd, payload, payloadSize, outBufSize
@@ -29,7 +29,7 @@
 //		on success, the number of bytes is returned.
 //		otherwise, -1 is returned.
 //
-int32_t TMS_MakePacket (
+int32_t IPC_MakePacket (
 	uint32_t key, uint32_t cmd, void *payload, int32_t payloadSize,
 	void *pOutBuf, int32_t outBufSize )
 {
@@ -80,7 +80,7 @@ int32_t TMS_MakePacket (
 //			-1 : invalid argument.
 //			-2 : invalid length or size error.
 //
-int32_t TMS_ParsePacket (
+int32_t IPC_ParsePacket (
 	void *pInBuf, int32_t inBufSize,
 	uint32_t *key, uint32_t *cmd, void **payload, int32_t *playloadSize )
 {
@@ -109,17 +109,17 @@ int32_t TMS_ParsePacket (
 //
 //	Debug Packet Functions
 //
-void DumpTmsPacket(void *pData, int32_t dataSize, int32_t protocol)
+void DumpIpcPacket(void *pData, int32_t dataSize, int32_t protocol)
 {
 	if( protocol )
 	{
 		void *payload;
 		uint32_t key, cmd;
 		int32_t payloadSize, ret;
-		ret = TMS_ParsePacket( pData, dataSize, &key, &cmd, &payload, &payloadSize );
+		ret = IPC_ParsePacket( pData, dataSize, &key, &cmd, &payload, &payloadSize );
 		if( ret != 0 )
 		{
-			printf( "DumpTmsPacket : TMS_ParsePacket failed (%d)\n", ret );
+			printf( "DumpIpcPacket : IPC_ParsePacket failed (%d)\n", ret );
 		}
 
 		printf("==================================================\n");

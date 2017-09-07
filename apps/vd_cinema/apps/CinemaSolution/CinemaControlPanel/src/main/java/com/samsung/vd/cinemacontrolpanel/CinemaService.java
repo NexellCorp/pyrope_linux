@@ -185,7 +185,6 @@ public class CinemaService extends Service {
                     if( null != lSocket ) {
                         if( isDetectTamper ) {
                             String strEvent = Read(lSocket.getInputStream());
-                            Log.i(VD_DTAG, ">>> " + strEvent);
 
                             String[] strToken = strEvent.split(" ");
                             if( strToken[0].equals("Error") )
@@ -446,10 +445,12 @@ public class CinemaService extends Service {
     }
 
     private class AsyncTaskChangeContents extends AsyncTask<Void, Void, Void> {
+        private Context mContext;
         byte[] mCabinet;
         private int mMode;
 
         public AsyncTaskChangeContents(Context context, int mode ) {
+            mContext = context;
             mCabinet = ((CinemaInfo)getApplicationContext()).GetCabinet();
             mMode = mode;
         }
@@ -604,17 +605,14 @@ public class CinemaService extends Service {
         protected void onPreExecute() {
             super.onPreExecute();
             Log.i(VD_DTAG, String.format( Locale.US, "Change Contents. ( %d )", mMode));
-//            CinemaLoading.Show( CinemaService.this );
+            CinemaLoading2.Show( mContext );
         }
 
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
-//            CinemaLoading.Hide();
             Log.i(VD_DTAG, String.format( Locale.US, "Change Contents Done."));
+            CinemaLoading2.Hide();
         }
     }
-
-
 }
-

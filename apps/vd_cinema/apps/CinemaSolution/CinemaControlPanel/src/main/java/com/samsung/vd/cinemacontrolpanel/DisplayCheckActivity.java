@@ -121,7 +121,6 @@ public class DisplayCheckActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 StopTestPattern();
-
                 startActivity( new Intent(v.getContext(), TopActivity.class) );
                 overridePendingTransition(0, 0);
                 finish();
@@ -131,7 +130,6 @@ public class DisplayCheckActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 StopTestPattern();
-
                 mService.TurnOff();
             }
         });
@@ -177,7 +175,8 @@ public class DisplayCheckActivity extends AppCompatActivity {
             mAdapterTestPattern.add( new SelectRunInfo(mFuncName[i], mPatternName[i], btnText, toggle, status, new SelectRunAdapter.OnClickListener() {
                 @Override
                 public void onClickListener(int index, int spinnerIndex, boolean status ) {
-                    RunTestPattern( index, spinnerIndex, status );
+//                    RunTestPattern( index, spinnerIndex, status );
+                    new AsyncTaskTestPattern( index, spinnerIndex, status ).execute();
                 }
             }));
 
@@ -312,6 +311,84 @@ public class DisplayCheckActivity extends AppCompatActivity {
         }
     }
 
+    private class AsyncTaskTestPattern extends AsyncTask<Void, Void, Void> {
+        private int mFuncIndex;
+        private int mPatternIndex;
+        private boolean mStatus;
+
+        public AsyncTaskTestPattern( int funcIndex, int patternIndex, boolean status ) {
+            mFuncIndex = funcIndex;
+            mPatternIndex = patternIndex;
+            mStatus = status;
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            Log.i(VD_DTAG, String.format( "funcIndex(%d), patternIndex(%d), status(%s)", mFuncIndex, mPatternIndex, String.valueOf(mStatus)) );
+
+            String strLog;
+            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+
+            boolean bValidPort0 = false, bValidPort1 = false;
+            for( byte id : mCabinet ) {
+                if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
+                if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
+            }
+
+            if( mFuncIndex < 7 ) {
+                byte[] data = { (byte)mFuncIndex, (byte)mPatternIndex };
+
+                byte[] data0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, data);
+                byte[] data1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, data);
+
+                if( bValidPort0 ) ctrl.Send( mStatus ? NxCinemaCtrl.CMD_TCON_PATTERN_RUN : NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data0 );
+                if( bValidPort1 ) ctrl.Send( mStatus ? NxCinemaCtrl.CMD_TCON_PATTERN_RUN : NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data1 );
+
+                if( mPatternName[mFuncIndex].length == 0 ) {
+                    strLog = String.format( "%s pattern test. ( %s )", mStatus ? "Run" : "Stop", mFuncName[mFuncIndex] );
+                }
+                else {
+                    strLog = String.format( "%s pattern test. ( %s / %s )", mStatus ? "Run" : "Stop", mFuncName[mFuncIndex], mPatternName[mFuncIndex][mPatternIndex] );
+                }
+            }
+            else {
+                byte[] reg = ctrl.IntToByteArray(mPatternReg[mFuncIndex-7], NxCinemaCtrl.FORMAT_INT16);
+                byte[] dat = ctrl.IntToByteArray(mStatus ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
+                byte[] data = ctrl.AppendByteArray(reg, dat);
+                byte[] data0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, data);
+                byte[] data1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, data);
+
+                if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, data0 );
+                if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, data1 );
+
+                strLog = String.format( "%s %s", mFuncName[mFuncIndex], mStatus ? "Enable" : "Disable" );
+            }
+
+            ((CinemaInfo)getApplicationContext()).InsertLog(strLog);
+
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Void... values) {
+            super.onProgressUpdate(values);
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            Log.i(VD_DTAG, "Test Pattern Start.");
+            CinemaLoading.Show( DisplayCheckActivity.this );
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            CinemaLoading.Hide();
+            Log.i(VD_DTAG, "Test Pattern Done.");
+        }
+    }
+
     private class AsyncTaskAccumulation extends AsyncTask<Void, Void, Void> {
         private StatusDescribeExpandableAdapter mAdapter;
 
@@ -352,6 +429,7 @@ public class DisplayCheckActivity extends AppCompatActivity {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
+            Log.i(VD_DTAG, "Accumulation Time Check Start.");
             CinemaLoading.Show(DisplayCheckActivity.this);
         }
 
@@ -359,6 +437,7 @@ public class DisplayCheckActivity extends AppCompatActivity {
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
             CinemaLoading.Hide();
+            Log.i(VD_DTAG, "Accumulation Time Check Done.");
         }
     }
 

@@ -4,13 +4,17 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE_TAGS := optional
 
+# Add IPC Server
+LOCAL_SRC_FILES += \
+	ipc/ipc_protocol.cpp \
+	ipc/NX_IPCClient.cpp \
+	ipc/NX_IPCServer.cpp
+
 # Add TMS Server
 LOCAL_SRC_FILES += \
-	tms/tms_protocol.cpp \
-	tms/NX_IPCClient.cpp \
-	tms/NX_IPCServer.cpp \
-	tms/NX_TMSClient.cpp \
-	tms/NX_TMSServer.cpp
+	gdc/gdc_protocol.cpp \
+	gdc/NX_TMSClient.cpp \
+	gdc/NX_TMSServer.cpp
 
 # Add UART Sources
 LOCAL_SRC_FILES += \
@@ -38,14 +42,15 @@ LOCAL_C_INCLUDES += \
 	$(LOCAL_PATH)/i2c \
 	$(LOCAL_PATH)/uart \
 	$(LOCAL_PATH)/utils \
-	$(LOCAL_PATH)/tms
+	$(LOCAL_PATH)/ipc \
+	$(LOCAL_PATH)/gdc
 
 LOCAL_SHARED_LIBRARIES := \
 	liblog
 
 LOCAL_STATIC_LIBRARIES +=
 
-LOCAL_LDFLAGS += 
+LOCAL_LDFLAGS +=
 
 LOCAL_MODULE:= libnxcinema
 LOCAL_MODULE_PATH := $(LOCAL_PATH)/../lib

@@ -17,8 +17,8 @@
 //
 //------------------------------------------------------------------------------
 
-#ifndef __TMS_PROTOCOL_H__
-#define __TMS_PROTOCOL_H__
+#ifndef __IPC_PROTOCOL_H__
+#define __IPC_PROTOCOL_H__
 
 #include <NX_Utils.h>
 
@@ -30,18 +30,18 @@
 		  ((uint32_t)(uint8_t)(C0) << 24) )
 #endif
 
-#define	TMS_KEY_VALUE	MAKE_KEY_VALUE('G','D','C',' ')	// GDC --> SAM Key Value
+#define	NXP_KEY_VALUE	MAKE_KEY_VALUE('N','X','P',' ')	// GDC --> SAM Key Value
 #define SEC_KEY_VALUE	MAKE_KEY_VALUE('S','A','M',' ')	// SAM --> GDC Key Value
 
-#define TMS_GET_LENGTH(C0, C1) \
+#define IPC_GET_LENGTH(C0, C1) \
 		( ((uint32_t)(uint8_t)(C1)      ) |	\
 		  ((uint32_t)(uint8_t)(C0) << 8 ) )
-#define TMS_GET_COMMAND(C0, C1) \
+#define IPC_GET_COMMAND(C0, C1) \
 		( ((uint32_t)(uint8_t)(C1)      ) |	\
 		  ((uint32_t)(uint8_t)(C0) << 8 ) )
 
 //
-//	TMS <--> N.AP Coomunication Packet Format
+//	NXP <--> N.AP Coomunication Packet Format
 //
 //	Key       ( 4 Bytes )
 //	Length    ( 2 Bytes )
@@ -50,21 +50,21 @@
 //
 //	Description
 //		KeyValue:
-//			a. TMS --> SEC : TMS_KEY_VALUE "TMS "
-//			b. SEC --> TMS : SEC_KEY_VALUE "SEC "
+//			a. NXP --> SEC : TMS_KEY_VALUE "NXP "
+//			b. SEC --> NXP : SEC_KEY_VALUE "SEC "
 //		Length :
 //			Command ( 2 bytes ) + Payload ( n Bytes )
 
 //	APIs
-int32_t TMS_MakePacket (
+int32_t IPC_MakePacket (
 	uint32_t key, uint32_t cmd, void *payload, int32_t payloadSize,
 	void *pOutBuf, int32_t outBufSize );
 
-int32_t TMS_ParsePacket (
+int32_t IPC_ParsePacket (
 	void *pInBuf, int32_t inBufSize,
 	uint32_t *key, uint32_t *cmd, void **payload, int32_t *playloadSize );
 
 //	Debug Functions
-void DumpTmsPacket(void *pData, int32_t dataSize, int32_t protocol);
+void DumpIpcPacket(void *pData, int32_t dataSize, int32_t protocol);
 
-#endif	// __TMS_PROTOCOL_H__
+#endif	// __IPC_PROTOCOL_H__

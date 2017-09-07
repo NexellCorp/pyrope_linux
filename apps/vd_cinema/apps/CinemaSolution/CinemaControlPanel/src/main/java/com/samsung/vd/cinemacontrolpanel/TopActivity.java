@@ -482,15 +482,20 @@ public class TopActivity extends AppCompatActivity {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
+
+            Log.i(VD_DTAG, "Mode Configuration Start.");
             CinemaLoading.Show( TopActivity.this );
         }
 
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
-            CinemaLoading.Hide();
+
             mTextInitModeCurrent.setText(String.format(Locale.US, "-. Current Mode : Mode #%d", mIndexInitialValue + 1));
             ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_INITIAL_MODE, String.valueOf(mIndexInitialValue));
+            CinemaLoading.Hide();
+
+            Log.i(VD_DTAG, String.format("Mode Configuration Done. ( mode = %d )", mIndexInitialValue + 1));
         }
     }
 

@@ -1105,6 +1105,7 @@ public class DisplayModeActivity extends AppCompatActivity {
         protected void onPreExecute() {
             super.onPreExecute();
 
+            Log.i(VD_DTAG, "AsyncTaskCheckCabinet Start.");
             CinemaLoading.Show( DisplayModeActivity.this );
             ((CinemaInfo)getApplicationContext()).ClearCabinet();
         }
@@ -1114,7 +1115,6 @@ public class DisplayModeActivity extends AppCompatActivity {
             super.onPostExecute(aVoid);
 
             ((CinemaInfo)getApplicationContext()).SortCabinet();
-            CinemaLoading.Hide();
 
             byte[] cabinet = ((CinemaInfo)getApplicationContext()).GetCabinet();
             int curCabinetNum = Integer.parseInt( ((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_CABINET_NUM ) );
@@ -1132,6 +1132,9 @@ public class DisplayModeActivity extends AppCompatActivity {
                 info.InsertLog(strLog);
                 Log.i(VD_DTAG, strLog);
             }
+
+            Log.i(VD_DTAG, "AsyncTaskCheckCabinet Done.");
+            CinemaLoading.Hide();
         }
     }
 
@@ -1194,6 +1197,8 @@ public class DisplayModeActivity extends AppCompatActivity {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
+
+            Log.i(VD_DTAG, "AsyncTaskMasteringWrite Start.");
             CinemaLoading.Show( DisplayModeActivity.this );
         }
 
@@ -1203,7 +1208,9 @@ public class DisplayModeActivity extends AppCompatActivity {
             for( int i = 0; i < mSeekBarMastering.length; i++ ) {
                 mSeekBarMastering[i].setProgress( mDataMastering[mMasteringModePos][i] );
             }
+
             CinemaLoading.Hide();
+            Log.i(VD_DTAG, "AsyncTaskMasteringWrite Done.");
         }
     }
 
@@ -1236,7 +1243,9 @@ public class DisplayModeActivity extends AppCompatActivity {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            CinemaLoading.Show(DisplayModeActivity.this);
+
+            Log.i(VD_DTAG, "AsyncTaskMasteringRead Start.");
+            CinemaLoading.Show( DisplayModeActivity.this );
 
             mValue = new int[mRegMastering.length];
             for( int i = 0; i < mValue.length; i++ ) {
@@ -1257,7 +1266,9 @@ public class DisplayModeActivity extends AppCompatActivity {
 
                 mBtnMastering[i].setEnabled(false);
             }
+
             CinemaLoading.Hide();
+            Log.i(VD_DTAG, "AsyncTaskMasteringRead Done.");
         }
     }
 
@@ -1285,7 +1296,6 @@ public class DisplayModeActivity extends AppCompatActivity {
                         ctrl.Send( NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData );
                     }
                 }
-
             }
 
             result = FileManager.CheckFile(LedUniformityInfo.PATH_TARGET, LedUniformityInfo.NAME);
@@ -1308,13 +1318,17 @@ public class DisplayModeActivity extends AppCompatActivity {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
+
+            Log.i(VD_DTAG, "AsyncTaskUniformityCorrection Start.");
             CinemaLoading.Show( DisplayModeActivity.this );
         }
 
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
+
             CinemaLoading.Hide();
+            Log.i(VD_DTAG, "AsyncTaskUniformityCorrection Done.");
         }
     }
 
@@ -1450,13 +1464,17 @@ public class DisplayModeActivity extends AppCompatActivity {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
+
+            Log.i(VD_DTAG, "AsyncTaskImageQuality Start.");
             CinemaLoading.Show( DisplayModeActivity.this );
         }
 
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
+
             CinemaLoading.Hide();
+            Log.i(VD_DTAG, "AsyncTaskImageQuality Done.");
         }
     }
 
@@ -1497,6 +1515,7 @@ public class DisplayModeActivity extends AppCompatActivity {
 
         @Override
         protected void onPreExecute() {
+            Log.i(VD_DTAG, "AsyncTaskAdapterDotCorrection Start.");
             CinemaLoading.Show( DisplayModeActivity.this );
             super.onPreExecute();
         }
@@ -1504,6 +1523,7 @@ public class DisplayModeActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(Void aVoid) {
             CinemaLoading.Hide();
+            Log.i(VD_DTAG, "AsyncTaskAdapterDotCorrection Done.");
             super.onPostExecute(aVoid);
         }
     }
@@ -1571,14 +1591,17 @@ public class DisplayModeActivity extends AppCompatActivity {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
+
+            Log.i(VD_DTAG, "Dot Correction Start.");
             CinemaLoading.Show( DisplayModeActivity.this );
         }
 
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
+
             CinemaLoading.Hide();
-            Log.i(VD_DTAG, ">>> Dot Correction Done. ");
+            Log.i(VD_DTAG, "Dot Correction Done.");
         }
     }
 
@@ -1621,14 +1644,17 @@ public class DisplayModeActivity extends AppCompatActivity {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
+
+            Log.i(VD_DTAG, "Dot Correction Extract Start.");
             CinemaLoading.Show( DisplayModeActivity.this );
         }
 
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
+
             CinemaLoading.Hide();
-            Log.i(VD_DTAG, ">>> Dot Correction Extract Done. ");
+            Log.i(VD_DTAG, "Dot Correction Extract Done. ");
         }
     }
 
@@ -1709,12 +1735,16 @@ public class DisplayModeActivity extends AppCompatActivity {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
+
+            Log.i(VD_DTAG, "WhiteSeam Read Start.");
             CinemaLoading.Show( DisplayModeActivity.this );
         }
 
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
+
+            Log.i(VD_DTAG, "WhiteSeam Read Done.");
             CinemaLoading.Hide();
         }
     }
@@ -1727,8 +1757,6 @@ public class DisplayModeActivity extends AppCompatActivity {
         private int[] mSeamVal = new int[4];
 
         public AsyncTaskWhiteSeamEmulate(byte[] cabinet, int indexPos) {
-            Log.i(VD_DTAG, ">>> WhiteSeam Emulate Start.");
-
             mCabinet = cabinet;
             mIndexPos = indexPos;
 
@@ -1792,14 +1820,17 @@ public class DisplayModeActivity extends AppCompatActivity {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
+
+            Log.i(VD_DTAG, "WhiteSeam Emulate Start.");
             CinemaLoading.Show( DisplayModeActivity.this );
         }
 
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
+
             CinemaLoading.Hide();
-            Log.i(VD_DTAG, ">>> WhiteSeam Emulation Done.");
+            Log.i(VD_DTAG, "WhiteSeam Emulation Done.");
         }
     }
 
@@ -1898,14 +1929,17 @@ public class DisplayModeActivity extends AppCompatActivity {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
+
+            Log.i(VD_DTAG, "WhiteSeam Write Start.");
             CinemaLoading.Show( DisplayModeActivity.this );
         }
 
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
+
             CinemaLoading.Hide();
-            Log.i(VD_DTAG, ">>> WhiteSeam Write Done.");
+            Log.i(VD_DTAG, "WhiteSeam Write Done.");
         }
     }
 

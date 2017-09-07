@@ -333,6 +333,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
 
         @Override
         protected void onPreExecute() {
+            Log.i(VD_DTAG, "AsyncTaskTconStatus Start.");
             CinemaLoading.Show( DiagnosticsActivity.this );
             mAdapter.clear();
             mTextTconStatus.setVisibility(View.GONE);
@@ -349,6 +350,8 @@ public class DiagnosticsActivity extends AppCompatActivity {
             }
 
             CinemaLoading.Hide();
+            Log.i(VD_DTAG, "TCON Status Check Done.");
+
             super.onPostExecute(aVoid);
         }
     }
@@ -398,6 +401,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
 
         @Override
         protected void onPreExecute() {
+            Log.i(VD_DTAG, "TCON LVDS Check Start.");
             CinemaLoading.Show( DiagnosticsActivity.this );
             mAdapter.clear();
             mTextTconLvds.setVisibility(View.GONE);
@@ -414,6 +418,8 @@ public class DiagnosticsActivity extends AppCompatActivity {
             }
 
             CinemaLoading.Hide();
+            Log.i(VD_DTAG, "TCON LVDS Check Done.");
+
             super.onPostExecute(aVoid);
         }
     }
@@ -472,6 +478,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
 
         @Override
         protected void onPreExecute() {
+            Log.i(VD_DTAG, "LED Open Check Start.");
             CinemaLoading.Show( DiagnosticsActivity.this );
             mAdapter.clear();
             mTextLedOpen.setVisibility(View.GONE);
@@ -488,6 +495,8 @@ public class DiagnosticsActivity extends AppCompatActivity {
             }
 
             CinemaLoading.Hide();
+            Log.i(VD_DTAG, "LED Open Check Done.");
+
             super.onPostExecute(aVoid);
         }
     }
@@ -530,6 +539,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
 
         @Override
         protected void onPreExecute() {
+            Log.i(VD_DTAG, "Cabinet Door Check Start.");
             CinemaLoading.Show( DiagnosticsActivity.this );
             mAdapter.clear();
             mTextCabinetDoor.setVisibility(View.GONE);
@@ -546,6 +556,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
             }
 
             CinemaLoading.Hide();
+            Log.i(VD_DTAG, "Cabinet Door Check Done.");
             super.onPostExecute(aVoid);
         }
     }
@@ -665,6 +676,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
+            Log.i(VD_DTAG, "Peripheral Check Start.");
             CinemaLoading.Show( DiagnosticsActivity.this );
         }
 
@@ -672,6 +684,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
             CinemaLoading.Hide();
+            Log.i(VD_DTAG, "Peripheral Check Done.");
         }
     }
 
@@ -715,6 +728,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
 
         @Override
         protected void onPreExecute() {
+            Log.i(VD_DTAG, "TCON Version Check Start.");
             CinemaLoading.Show( DiagnosticsActivity.this );
             mAdapter.clear();
             super.onPreExecute();
@@ -724,6 +738,7 @@ public class DiagnosticsActivity extends AppCompatActivity {
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
             CinemaLoading.Hide();
+            Log.i(VD_DTAG, "TCON Version Check Done.");
         }
     }
 

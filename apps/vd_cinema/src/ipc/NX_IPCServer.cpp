@@ -30,7 +30,7 @@
 #include <CNX_I2C.h>
 #include <NX_I2CRegister.h>
 #include <SockUtils.h>
-#include <tms_protocol.h>
+#include <ipc_protocol.h>
 
 #include <NX_IPCCommand.h>
 #include <NX_IPCServer.h>
@@ -121,7 +121,7 @@ private:
 	int32_t PLAT_IpcVersion( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
 
 	//	IMB Commands
-	int32_t IMB_ChangeContents( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
+	// int32_t IMB_ChangeContents( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
 
 	int32_t ProcessCommand( int32_t clientSocket, uint32_t cmd, void *pPayload, int32_t payloadSize );
 
@@ -194,11 +194,7 @@ int32_t CNX_IPCServer::StartServer()
 		return 1;
 
 	int32_t svrSocket = -1;
-#if IPC_CONNECT_TCP
-	svrSocket = TCP_Open( IPC_SERVER_PORT );
-#else
 	svrSocket = LS_Open( IPC_SERVER_FILE );
-#endif
 	if( svrSocket < 0 )
 	{
 		NxErrMsg( "Error : server socket \n");
@@ -272,7 +268,7 @@ void CNX_IPCServer::ThreadProc()
 				goto ERROR;
 			}
 			key = (key<<8) | tmp;
-			if( key == TMS_KEY_VALUE )
+			if( key == NXP_KEY_VALUE )
 			{
 				break;
 			}
@@ -285,7 +281,7 @@ void CNX_IPCServer::ThreadProc()
 			NxErrMsg("Error : Read Length\n");
 			goto ERROR;
 		}
-		len = TMS_GET_LENGTH(pBuf[0], pBuf[1]);
+		len = IPC_GET_LENGTH(pBuf[0], pBuf[1]);
 
 		//	Size Check
 		if( len+8 > sizeof(m_ReceiveBuf) )
@@ -301,7 +297,7 @@ void CNX_IPCServer::ThreadProc()
 			NxErrMsg("Error : Read Data\n");
 			goto ERROR;
 		}
-		cmd = TMS_GET_COMMAND(pBuf[2], pBuf[3]);
+		cmd = IPC_GET_COMMAND(pBuf[2], pBuf[3]);
 
 		pPayload = pBuf + 4;
 		payloadSize = len - 2;
@@ -414,7 +410,7 @@ int32_t CNX_IPCServer::TCON_RegWrite( int32_t fd, uint32_t cmd, uint8_t *pBuf, i
 	result[3] = 0x00;
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -465,7 +461,7 @@ int32_t CNX_IPCServer::TCON_RegRead( int32_t fd, uint32_t cmd, uint8_t *pBuf, in
 	result[3] = (uint8_t)((iReadData >>  0) & 0xFF);
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -489,7 +485,7 @@ int32_t CNX_IPCServer::TCON_RegBurstWrite( int32_t fd, uint32_t cmd, uint8_t *pB
 	int32_t sendSize;
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -538,7 +534,7 @@ int32_t CNX_IPCServer::TCON_Init( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32
 	result = 0x01;
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -593,7 +589,7 @@ int32_t CNX_IPCServer::TCON_Status( int32_t fd, uint32_t cmd, uint8_t *pBuf, int
 #endif
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -654,7 +650,7 @@ int32_t CNX_IPCServer::TCON_DoorStatus( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 #endif
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -701,7 +697,7 @@ int32_t CNX_IPCServer::TCON_LvdsStatus( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 #endif
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -748,7 +744,7 @@ int32_t CNX_IPCServer::TCON_BootingStatus( int32_t fd, uint32_t cmd, uint8_t *pB
 #endif
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -815,7 +811,7 @@ int32_t CNX_IPCServer::TCON_LedModeNormal( int32_t fd, uint32_t cmd, uint8_t *pB
 #endif
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, snedSize );
@@ -892,7 +888,7 @@ int32_t CNX_IPCServer::TCON_LedModeLod( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 #endif
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -966,7 +962,7 @@ int32_t CNX_IPCServer::TCON_LedOpenNum( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 	result[3] = (uint8_t)(iErrorNum >>  0) & 0xFF;
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -1019,7 +1015,7 @@ int32_t CNX_IPCServer::TCON_LedOpenPos( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 	i2c.Write( slave, TCON_REG_ERROR_OUT_CLK, 0x0000 );
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -1174,7 +1170,7 @@ int32_t CNX_IPCServer::TCON_TestPattern( int32_t fd, uint32_t cmd, uint8_t *pBuf
 	result = 0x01;
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -1333,7 +1329,7 @@ int32_t CNX_IPCServer::TCON_TargetGamma( int32_t fd, uint32_t cmd, uint8_t *pBuf
 	result = 0x01;
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -1493,7 +1489,7 @@ int32_t CNX_IPCServer::TCON_DeviceGamma( int32_t fd, uint32_t cmd, uint8_t *pBuf
 	result = 0x01;
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -1816,7 +1812,7 @@ int32_t CNX_IPCServer::TCON_DotCorrection( int32_t fd, uint32_t cmd, uint8_t *pB
 	result = 0x01;
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -1953,7 +1949,7 @@ int32_t CNX_IPCServer::TCON_DotCorrectionExtract( int32_t fd, uint32_t cmd, uint
 	}
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, pResult, iResultLen, m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, pResult, iResultLen, m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -2217,7 +2213,7 @@ int32_t CNX_IPCServer::TCON_WhiteSeamRead( int32_t fd, uint32_t cmd, uint8_t *pB
 	result = 0x01;
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -2466,7 +2462,7 @@ int32_t CNX_IPCServer::TCON_WhiteSeamWrite( int32_t fd, uint32_t cmd, uint8_t *p
 	result = 0x01;
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -2594,7 +2590,7 @@ int32_t CNX_IPCServer::TCON_OptionalData( int32_t fd, uint32_t cmd, uint8_t *pBu
 	}
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -2657,7 +2653,7 @@ int32_t CNX_IPCServer::TCON_Version( int32_t fd, uint32_t cmd, uint8_t *pBuf, in
 	result[7] = (uint8_t)((iTime >>  0) & 0xFF);
 
 ERROR_TCON:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -2718,7 +2714,7 @@ int32_t CNX_IPCServer::PFPGA_RegWrite( int32_t fd, uint32_t cmd, uint8_t *pBuf, 
 	result[3] = 0x00;
 
 ERROR_PFPGA:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -2768,7 +2764,7 @@ int32_t CNX_IPCServer::PFPGA_RegRead( int32_t fd, uint32_t cmd, uint8_t *pBuf, i
 	result[3] = (uint8_t)((iReadData >>  0) & 0xFF);
 
 ERROR_PFPGA:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -2792,7 +2788,7 @@ int32_t CNX_IPCServer::PFPGA_RegBurstWrite( int32_t fd, uint32_t cmd, uint8_t *p
 	int32_t sendSize;
 
 ERROR_PFPGA:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -2839,7 +2835,7 @@ int32_t CNX_IPCServer::PFPGA_Status( int32_t fd, uint32_t cmd, uint8_t *pBuf, in
 #endif
 
 ERROR_PFPGA:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -2917,7 +2913,7 @@ int32_t CNX_IPCServer::PFPGA_UniformityData( int32_t fd, uint32_t cmd, uint8_t *
 	result = 0x01;
 
 ERROR_PFPGA:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -2966,7 +2962,7 @@ int32_t CNX_IPCServer::PFPGA_Mute( int32_t fd, uint32_t cmd, uint8_t *pBuf, int3
 #endif
 
 ERROR_PFPGA:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -3012,7 +3008,7 @@ int32_t CNX_IPCServer::PFPGA_Version( int32_t fd, uint32_t cmd, uint8_t *pBuf, i
 	result[3] = (uint8_t)((iReadData >>  0) & 0xFF);
 
 ERROR_PFPGA:
-	sendSize = TMS_MakePacket( SEC_KEY_VALUE, cmd, result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sendSize );
@@ -3036,7 +3032,7 @@ int32_t CNX_IPCServer::PLAT_NapVersion( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 	// pBuf : not used
 	//
 
-	int32_t sendSize = TMS_MakePacket ( SEC_KEY_VALUE, cmd, m_NapVersion, strlen((const char*)m_NapVersion), m_SendBuf, sizeof(m_SendBuf) );
+	int32_t sendSize = IPC_MakePacket ( SEC_KEY_VALUE, cmd, m_NapVersion, strlen((const char*)m_NapVersion), m_SendBuf, sizeof(m_SendBuf) );
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sent );
 
@@ -3053,7 +3049,7 @@ int32_t CNX_IPCServer::PLAT_SapVersion( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 	// pBuf : not used
 	//
 
-	int32_t sendSize = TMS_MakePacket ( SEC_KEY_VALUE, cmd, m_SapVersion, strlen((const char*)m_SapVersion), m_SendBuf, sizeof(m_SendBuf) );
+	int32_t sendSize = IPC_MakePacket ( SEC_KEY_VALUE, cmd, m_SapVersion, strlen((const char*)m_SapVersion), m_SendBuf, sizeof(m_SendBuf) );
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sent );
 
@@ -3070,67 +3066,69 @@ int32_t CNX_IPCServer::PLAT_IpcVersion( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 	// pBuf : not used
 	//
 
-	int32_t sendSize = TMS_MakePacket ( SEC_KEY_VALUE, cmd, m_IpcVersion, strlen((const char*)m_IpcVersion), m_SendBuf, sizeof(m_SendBuf) );
+	int32_t sendSize = IPC_MakePacket ( SEC_KEY_VALUE, cmd, m_IpcVersion, strlen((const char*)m_IpcVersion), m_SendBuf, sizeof(m_SendBuf) );
 	write( fd, m_SendBuf, sendSize );
 	// NX_HexDump( m_SendBuf, sent );
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::IMB_ChangeContents( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
-{
-	UNUSED( iSize );
-#if 0
-	//
-	//	pBuf[0] : color format,	pBuf[1] : Bit number,	pBuf[2] : Resolution, 	pBuf[3:4] : Frame rate,
-	//	pBuf[5] : Gamma curve,	pBuf[6:7] : Brightness,	pBuf[8] : Enhancement setting
-	//
+// int32_t CNX_IPCServer::IMB_ChangeContents( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+// {
+// 	UNUSED( iSize );
+// #if 0
+// 	//
+// 	//	pBuf[0] : color format,	pBuf[1] : Bit number,	pBuf[2] : Resolution, 	pBuf[3:4] : Frame rate,
+// 	//	pBuf[5] : Gamma curve,	pBuf[6:7] : Brightness,	pBuf[8] : Enhancement setting
+// 	//
 
-	uint8_t result	= 0xFF;
-	int32_t sendSize;
+// 	uint8_t result	= 0xFF;
+// 	int32_t sendSize;
 
-	uint16_t iColorFormat	= (uint16_t)pBuf[0];
-	uint16_t iBitNumber		= (uint16_t)pBuf[1];
-	uint16_t iResolution	= (uint16_t)pBuf[2];
-	uint16_t iFrameRate		= ((int16_t)(pBuf[3] << 8) & 0xFF00) + (int16_t)pBuf[4];
-	uint16_t iGammaCurve	= (uint16_t)pBuf[5];
-	uint16_t iBrightness	= ((int16_t)(pBuf[6] << 8) & 0xFF00) + (int16_t)pBuf[7];
-	uint16_t iEnhancement	= (uint16_t)pBuf[8];
+// 	uint16_t iColorFormat	= (uint16_t)pBuf[0];
+// 	uint16_t iBitNumber		= (uint16_t)pBuf[1];
+// 	uint16_t iResolution	= (uint16_t)pBuf[2];
+// 	uint16_t iFrameRate		= ((int16_t)(pBuf[3] << 8) & 0xFF00) + (int16_t)pBuf[4];
+// 	uint16_t iGammaCurve	= (uint16_t)pBuf[5];
+// 	uint16_t iBrightness	= ((int16_t)(pBuf[6] << 8) & 0xFF00) + (int16_t)pBuf[7];
+// 	uint16_t iEnhancement	= (uint16_t)pBuf[8];
 
-	printf(">> iColorFormat	= %5d ( 0x%04x )\n", iColorFormat, iColorFormat );
-	printf(">> iBitNumber	= %5d ( 0x%04x )\n", iBitNumber, iBitNumber );
-	printf(">> iResolution	= %5d ( 0x%04x )\n", iResolution, iResolution );
-	printf(">> iFrameRate	= %5d ( 0x%04x )\n", iFrameRate, iFrameRate );
-	printf(">> iGammaCurve	= %5d ( 0x%04x )\n", iGammaCurve, iGammaCurve );
-	printf(">> iBrightness	= %5d ( 0x%04x )\n", iBrightness, iBrightness );
-	printf(">> iEnhancement	= %5d ( 0x%04x )\n", iEnhancement, iEnhancement );
+// 	printf(">> iColorFormat	= %5d ( 0x%04x )\n", iColorFormat, iColorFormat );
+// 	printf(">> iBitNumber	= %5d ( 0x%04x )\n", iBitNumber, iBitNumber );
+// 	printf(">> iResolution	= %5d ( 0x%04x )\n", iResolution, iResolution );
+// 	printf(">> iFrameRate	= %5d ( 0x%04x )\n", iFrameRate, iFrameRate );
+// 	printf(">> iGammaCurve	= %5d ( 0x%04x )\n", iGammaCurve, iGammaCurve );
+// 	printf(">> iBrightness	= %5d ( 0x%04x )\n", iBrightness, iBrightness );
+// 	printf(">> iEnhancement	= %5d ( 0x%04x )\n", iEnhancement, iEnhancement );
 
-	result = 0x01;
-#else
-	uint8_t result = 0xFF;
-	int32_t sendSize;
+// 	result = 0x01;
+// #else
+// 	uint8_t result = 0xFF;
+// 	int32_t sendSize;
 
-	printf(">> receive data : 0x%02x\n", pBuf[0]);
+// 	printf(">> receive data : 0x%02x\n", pBuf[0]);
 
-	if( pBuf[0] == 0x00 || pBuf[0] == 0x01 )
-	{
-		SendRemote( "cinema.change.contents", (pBuf[0] == 0x00) ? "0" : "1" );
-		result = 0x01;
-	}
-#endif
-ERROR_RESERVED:
-	sendSize = TMS_MakePacket ( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+// 	if( pBuf[0] == 0x00 || pBuf[0] == 0x01 )
+// 	{
+// 		if( !SendRemote( "cinema.change.contents", (pBuf[0] == 0x00) ? "0" : "1" ) )
+// 		{
+// 			result = 0x01;
+// 		}
+// 	}
+// #endif
+// ERROR_RESERVED:
+// 	sendSize = IPC_MakePacket ( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sent );
+// 	write( fd, m_SendBuf, sendSize );
+// 	// NX_HexDump( m_SendBuf, sent );
 
-	return 0;
-}
+// 	return 0;
+// }
 
 //------------------------------------------------------------------------------
 int32_t CNX_IPCServer::ProcessCommand( int32_t fd, uint32_t cmd, void *pPayload, int32_t payloadSize )
 {
-	printf("cmd( 0x%04X ), payload( %p ), size( %d )\n", cmd, pPayload, payloadSize);
+	// printf("cmd( 0x%04X ), payload( %p ), size( %d )\n", cmd, pPayload, payloadSize);
 
 	switch( cmd )
 	{
@@ -3251,9 +3249,9 @@ int32_t CNX_IPCServer::ProcessCommand( int32_t fd, uint32_t cmd, void *pPayload,
 	//
 	//	IMB Commands
 	//
-	case IMB_CMD_CHANGE_CONTENTS:
-	case GDC_COMMAND( CMD_TYPE_IMB, IMB_CMD_CHANGE_CONTENTS ):
-		return IMB_ChangeContents( fd, cmd, (uint8_t*)pPayload, payloadSize );
+	// case IMB_CMD_CHANGE_CONTENTS:
+	// case GDC_COMMAND( CMD_TYPE_IMB, IMB_CMD_CHANGE_CONTENTS ):
+	// 	return IMB_ChangeContents( fd, cmd, (uint8_t*)pPayload, payloadSize );
 
 	default:
 		return -1;
@@ -3645,40 +3643,40 @@ static int32_t TestPatternDiagonal( CNX_I2C *pI2c, uint8_t index, uint8_t patter
 }
 
 //------------------------------------------------------------------------------
-static int32_t SendRemote( const char *pSockName, const char *pMsg )
-{
-	int32_t sock, len;
-	struct sockaddr_un addr;
+// static int32_t SendRemote( const char *pSockName, const char *pMsg )
+// {
+// 	int32_t sock, len;
+// 	struct sockaddr_un addr;
 
-	if( 0 > (sock = socket(AF_UNIX, SOCK_STREAM, 0)) )
-	{
-		printf("Fail, socket().\n");
-		return -1;
-	}
+// 	if( 0 > (sock = socket(AF_UNIX, SOCK_STREAM, 0)) )
+// 	{
+// 		printf("Fail, socket().\n");
+// 		return -1;
+// 	}
 
-	addr.sun_family  = AF_UNIX;
-	addr.sun_path[0] = '\0';	// for abstract namespace
-	strcpy( addr.sun_path + 1, pSockName );
+// 	addr.sun_family  = AF_UNIX;
+// 	addr.sun_path[0] = '\0';	// for abstract namespace
+// 	strcpy( addr.sun_path + 1, pSockName );
 
-	len = 1 + strlen(pSockName) + offsetof(struct sockaddr_un, sun_path);
+// 	len = 1 + strlen(pSockName) + offsetof(struct sockaddr_un, sun_path);
 
-	if( 0 > connect(sock, (struct sockaddr *) &addr, len))
-	{
-		printf("Fail, connect(). ( node: %s )\n", pSockName);
-		close( sock );
-		return -1;
-	}
+// 	if( 0 > connect(sock, (struct sockaddr *) &addr, len))
+// 	{
+// 		printf("Fail, connect(). ( node: %s )\n", pSockName);
+// 		close( sock );
+// 		return -1;
+// 	}
 
-	if( 0 > write(sock, pMsg, strlen(pMsg)) )
-	{
-		printf("Fail, write().\n");
-		close( sock );
-		return -1;
-	}
+// 	if( 0 > write(sock, pMsg, strlen(pMsg)) )
+// 	{
+// 		printf("Fail, write().\n");
+// 		close( sock );
+// 		return -1;
+// 	}
 
-	close( sock );
-	return 0;
-}
+// 	close( sock );
+// 	return 0;
+// }
 
 //------------------------------------------------------------------------------
 //

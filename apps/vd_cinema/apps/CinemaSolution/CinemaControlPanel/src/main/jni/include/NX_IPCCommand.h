@@ -26,7 +26,7 @@
 #define CMD_TYPE_TCON					0x00	// 0000 0000
 #define CMD_TYPE_PFPGA					0x40	// 0100 0000
 #define CMD_TYPE_PLATFORM				0x80	// 1000 0000
-#define CMD_TYPE_RESERVED				0xC0	// 1100 0000
+#define CMD_TYPE_IMB					0xC0	// 1100 0000
 
 #define GDC_COMMAND( type, cmd )		(type | (cmd & 0x00FF))
 
@@ -89,6 +89,7 @@
 //
 //	IMB Command
 //
-#define IMB_CMD_CHANGE_CONTENTS			0x0C10	//	IMB Change Contents					// 0xC0 | 0x10
+// #define IMB_CMD_CHANGE_CONTENTS			0x0C10	//	IMB Change Contents					// 0xC0 | 0x10
+#define IMB_CMD_CHANGE_CONTENTS			0x0C20	//	IMB Change Contents					// 0xC0 | 0x20
 
 #endif	// __NX_IPCCOMMAND_H__

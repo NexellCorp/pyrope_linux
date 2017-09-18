@@ -18,6 +18,7 @@
 //------------------------------------------------------------------------------
 
 #include <stdio.h>
+#include <stddef.h>
 #include <string.h>
 #include <unistd.h>
 #include <poll.h>
@@ -44,6 +45,8 @@
 #define UNUSED(x)			(void)(x)
 #endif
 
+static int32_t ReadData( int32_t fd, uint8_t *pBuf, int32_t iSize );
+static int32_t WriteData( int32_t fd, uint8_t *pBuf, int32_t iSize );
 static int32_t SendRemote( const char *pSockName, const char *pMsg );
 
 //------------------------------------------------------------------------------
@@ -66,7 +69,6 @@ protected:
 
 private:
 	int32_t WaitClient();
-	int32_t ReadData(int32_t fd, uint8_t *pBuf, int32_t size);
 
 	int32_t IMB_ChangeContents( int32_t fd, uint32_t iCmd, uint8_t *pBuf, int32_t iSize );
 
@@ -79,7 +81,6 @@ private:
 
 	//	Key(4bytes) + Length(2bytes) + Payload(MAX 65535bytes)
 	uint8_t		m_SendBuf[MAX_PAYLOAD_SIZE + 6];
-	uint8_t		m_ReceiveBuf[MAX_PAYLOAD_SIZE + 6];
 
 private:
 	//	For Singletone
@@ -157,113 +158,117 @@ void CNX_TMSServer::StopServer()
 //------------------------------------------------------------------------------
 void CNX_TMSServer::ThreadProc()
 {
-	int32_t readSize;
-	uint32_t key=0, cmd=0, len;
-	uint8_t *pPayload;
-	int32_t payloadSize;
+	int32_t iSize;
+	uint8_t payloadBuf[MAX_PAYLOAD_SIZE+6];
 
 	while( m_bThreadRun )
 	{
-		uint8_t *pBuf = m_ReceiveBuf;
+		uint32_t iKey = 0;
+		uint8_t *pPayload = NULL;
+		uint16_t iPayloadSize = 0;
+
 		int32_t clientSocket = WaitClient();
-		if( 0 > clientSocket )	//	Error
+		if( !clientSocket )
 		{
-			break;
+			continue;
+		}
+		else if( 0 > clientSocket )	//	Error
+		{
+			goto ERROR;
 		}
 
-		//
-		//	Find Key Code
-		//
-		do{
-			uint8_t tmp;
-			readSize = ReadData( clientSocket, &tmp, 1 );
-			if( readSize != 1 )
+		do {
+			uint8_t tempData;
+			iSize = ReadData( clientSocket, &tempData, 1 );
+			if( 1 > iSize )
 			{
-				NxErrMsg("Read Error!!!\n");
-				printf("read Error!\n");
-				goto ERROR;
+				NxErrMsg( "Fail, ReadData().\n" );
+				break;
 			}
-			key = (key<<8) | tmp;
-			if( key == GDC_KEY(tmp) )
+
+			iKey = (iKey << 8) | tempData;
+			if( iKey == GDC_KEY(tempData) )
 			{
 				break;
 			}
-		}while(1);
+		} while( m_bThreadRun );
 
-		//	Read Length
-		readSize = ReadData(clientSocket, pBuf, 2);
-		if( readSize <= 0 ){
-			NxErrMsg("Error : Read Length\n");
-			goto ERROR;
-		}
-		len = MAKE_LENGTH_2BYTE(pBuf[0], pBuf[1]);
-
-		//	Size Check
-		if( len+2 > sizeof(m_ReceiveBuf) )
+		if( 1 > iSize )
 		{
-			NxErrMsg("Error : Data size\n");
 			goto ERROR;
 		}
 
-		//	Read all data
-		readSize = ReadData ( clientSocket, pBuf+2, len );
-		if( readSize <= 0 )
+		iSize = ReadData( clientSocket, payloadBuf, 2 );
+		if( 2 > iSize )
 		{
-			NxErrMsg("Error : Read Data\n");
+			NxErrMsg( "Fail, ReadData().\n" );
 			goto ERROR;
 		}
 
-		pPayload = pBuf + 2;
-		payloadSize = len;
+		iPayloadSize = MAKE_LENGTH_2BYTE( payloadBuf[0], payloadBuf[1] );
+		if( iPayloadSize != 0 )
+		{
+			iSize = ReadData( clientSocket, payloadBuf + 2, iPayloadSize );
+			if( 0 >= iSize || iSize != iPayloadSize )
+			{
+				NxErrMsg( "Fail, ReadData().\n" );
+				goto ERROR;
+			}
 
-		ProcessCommand( clientSocket, key, pPayload, payloadSize );
+			pPayload = payloadBuf + 2;
+		}
+
+		ProcessCommand( clientSocket, iKey, pPayload, iPayloadSize );
 
 ERROR:
-		if( clientSocket > 0 )
+		if( 0 < clientSocket )
+		{
 			close( clientSocket );
+			clientSocket = -1;
+		}
 	}
 }
 
 //------------------------------------------------------------------------------
 int32_t CNX_TMSServer::WaitClient()
 {
-	//	client socket
-	int32_t clientSocket;
-	struct sockaddr_un clntAddr;
-	int32_t clntAddrSize;
+	int32_t ret;
+	struct pollfd hPoll;
 
-	if( -1 == listen(m_hSocket, 5) )
+	hPoll.fd		= m_hSocket;
+	hPoll.events	= POLLIN | POLLERR;
+	hPoll.revents	= 0;
+	ret = poll( (struct pollfd*)&hPoll, 1, MAX_TIMEOUT );
+
+	if( 0 < ret )
 	{
-		NxErrMsg( "Error : listen (err = %d)\n", errno );
+		if( hPoll.revents & POLLIN )
+		{
+			int32_t clnSocket;
+			struct sockaddr_un clntAddr;
+			int32_t clntAddrSize;
+
+			clntAddrSize = sizeof( clntAddr );
+			clnSocket = accept( m_hSocket, (struct sockaddr*)&clntAddr, (socklen_t*)&clntAddrSize );
+
+			if( 0 > clnSocket )
+			{
+				NxErrMsg( "Fail, accept().\n" );
+				return -1;
+			}
+
+			printf( "Connect Success. ( %d )\n", clnSocket );
+			return clnSocket;
+		}
+	}
+	else if( 0 > ret )
+	{
+		NxErrMsg( "Fail, poll().\n");
 		return -1;
 	}
 
-	clntAddrSize = sizeof( clntAddr );
-	clientSocket = accept( m_hSocket, (struct sockaddr*)&clntAddr, (socklen_t*)&clntAddrSize );
-
-	if ( -1 == clientSocket )
-	{
-		NxErrMsg( "Error : accept (err = %d)\n", errno );
-		return -1;
-	}
-	return clientSocket;
-}
-
-//------------------------------------------------------------------------------
-int32_t CNX_TMSServer::ReadData(int32_t fd, uint8_t *pBuf, int32_t size)
-{
-	int32_t readSize, totalSize=0;
-	do
-	{
-		readSize = read( fd, pBuf, size );
-		if( readSize < 0 )
-			return -1;
-
-		size -= readSize;
-		pBuf += readSize;
-		totalSize += readSize;
-	} while(size > 0);
-	return totalSize;
+	NxDbgMsg( NX_DBG_VBS, "Timeout. WaitClient().\n");
+	return 0;
 }
 
 //------------------------------------------------------------------------------
@@ -283,13 +288,13 @@ int32_t CNX_TMSServer::IMB_ChangeContents( int32_t fd, uint32_t iCmd, uint8_t *p
 		else
 		{
 			printf("Fail, SendRemote. ( node: cinema.change.contents )\n");
+			NxDbgMsg( NX_DBG_VBS, "Fail, SendRemote. ( node: cinema.change.contents )\n");
 		}
 	}
 
-ERROR_RESERVED:
 	sendSize = GDC_MakePacket( SEC_KEY(iCmd), &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
-	write( fd, m_SendBuf, sendSize );
+	WriteData( fd, m_SendBuf, sendSize );
 	NX_HexDump( m_SendBuf, sendSize );
 
 	return 0;
@@ -298,9 +303,7 @@ ERROR_RESERVED:
 //------------------------------------------------------------------------------
 int32_t CNX_TMSServer::ProcessCommand( int32_t fd, uint32_t key, void *pPayload, int32_t payloadSize )
 {
-	int32_t iWriteSize = 0;
 	int32_t iCmd = key & 0xFF;
-	uint8_t sendBuf[MAX_PAYLOAD_SIZE + 6];
 
 	switch( iCmd )
 	{
@@ -314,6 +317,52 @@ int32_t CNX_TMSServer::ProcessCommand( int32_t fd, uint32_t key, void *pPayload,
 }
 
 //------------------------------------------------------------------------------
+static int32_t ReadData( int32_t fd, uint8_t *pBuf, int32_t iSize )
+{
+	int32_t readSize, totalSize=0;
+	do {
+		int32_t ret;
+		struct pollfd hPoll;
+
+		hPoll.fd		= fd;
+		hPoll.events	= POLLIN | POLLERR;
+		hPoll.revents	= 0;
+		ret = poll( (struct pollfd*)&hPoll, 1, MAX_TIMEOUT );
+		if( 0 < ret )
+		{
+			readSize = read( fd, pBuf, iSize );
+
+			if( 0 >= readSize )
+			{
+				return -1;
+			}
+
+			iSize     -= readSize;
+			pBuf      += readSize;
+			totalSize += readSize;
+		}
+		else if( 0 > ret )
+		{
+			NxErrMsg( "Fail, poll().\n" );
+			return -1;
+		}
+		else
+		{
+			NxDbgMsg( NX_DBG_VBS, "Timeout. ReadData().\n");
+			return 0;
+		}
+	} while(iSize > 0);
+
+	return totalSize;
+}
+
+//------------------------------------------------------------------------------
+static int32_t WriteData( int32_t fd, uint8_t *pBuf, int32_t iSize )
+{
+	return write( fd, pBuf, iSize );
+}
+
+//------------------------------------------------------------------------------
 static int32_t SendRemote( const char *pSockName, const char *pMsg )
 {
 	int32_t sock, len;
@@ -321,6 +370,7 @@ static int32_t SendRemote( const char *pSockName, const char *pMsg )
 
 	if( 0 > (sock = socket(AF_UNIX, SOCK_STREAM, 0)) )
 	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, socket().\n");
 		printf("Fail, socket().\n");
 		return -1;
 	}
@@ -333,13 +383,15 @@ static int32_t SendRemote( const char *pSockName, const char *pMsg )
 
 	if( 0 > connect(sock, (struct sockaddr *) &addr, len))
 	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, connect(). ( node: %s )\n", pSockName);
 		printf("Fail, connect(). ( node: %s )\n", pSockName);
 		close( sock );
 		return -1;
 	}
 
-	if( 0 > write(sock, pMsg, strlen(pMsg)) )
+	if( 0 > WriteData(sock, (uint8_t*)pMsg, strlen(pMsg)) )
 	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, write().\n");
 		printf("Fail, write().\n");
 		close( sock );
 		return -1;

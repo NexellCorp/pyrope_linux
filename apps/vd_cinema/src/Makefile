@@ -13,7 +13,7 @@ CPPFLAGS+= -fpic -DARM_11
 
 INCLUDE += \
 	-I $(VD_CINEMA_TOP)/src/include \
-	-I $(VD_CINEMA_TOP)/src/tms \
+	-I $(VD_CINEMA_TOP)/src/ipc \
 	-I $(VD_CINEMA_TOP)/src/uart \
 	-I $(VD_CINEMA_TOP)/src/i2c \
 	-I $(VD_CINEMA_TOP)/src/gdc \
@@ -28,12 +28,9 @@ COBJS	:=
 CPPOBJS	:=
 
 CPPOBJS +=	\
-	tms/tms_protocol.o \
-	tms/NX_IPCClient.o \
-	tms/NX_IPCServer.o \
-	tms/NX_TMSClient.o \
-	tms/NX_TMSServer.o
-
+	ipc/ipc_protocol.o \
+	ipc/NX_IPCClient.o \
+	ipc/NX_IPCServer.o
 
 # Add UART Sources
 CPPOBJS += \

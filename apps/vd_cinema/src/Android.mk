@@ -24,7 +24,8 @@ LOCAL_SRC_FILES += \
 
 # Add I2C Sources
 LOCAL_SRC_FILES += \
-	i2c/CNX_I2C.cpp
+	i2c/CNX_I2C.cpp	\
+	i2c/CNX_EEPRom.cpp
 
 # Add Utils Sources
 LOCAL_SRC_FILES += \

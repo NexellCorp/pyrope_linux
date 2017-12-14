@@ -80,4 +80,29 @@ LOCAL_LDFLAGS += \
 LOCAL_MODULE:= nx_eeprom_sequential
 LOCAL_MODULE_PATH := $(VD_TOP)/bin
 
+#
+#	Build EEPROM Binary Writing Application
+#
+include $(CLEAR_VARS)
+
+LOCAL_MODULE_TAGS := optional
+
+LOCAL_SRC_FILES:= \
+	push.cpp
+
+LOCAL_C_INCLUDES += \
+	$(VD_TOP)/src/include
+
+LOCAL_SHARED_LIBRARIES := \
+	libcutils	\
+	libutils
+
+LOCAL_STATIC_LIBRARIES +=
+
+LOCAL_LDFLAGS += \
+	-L$(VD_TOP)/lib -lnxcinema
+
+LOCAL_MODULE:= nx_eeprom_push
+LOCAL_MODULE_PATH := $(VD_TOP)/bin
+
 include $(BUILD_EXECUTABLE)

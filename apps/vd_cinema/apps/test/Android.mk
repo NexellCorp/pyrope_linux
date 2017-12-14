@@ -11,3 +11,4 @@ include $(TEST_APP)/test_socket/Android.mk
 include $(TEST_APP)/test_tms/Android.mk
 include $(TEST_APP)/test_uart/Android.mk
 include $(TEST_APP)/test_uevent/Android.mk
+include $(TEST_APP)/test_eeprom/Android.mk

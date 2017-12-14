@@ -58,7 +58,7 @@ public:
 	int32_t WriteProtection( int32_t bEnable );
 
 private:
-	enum { MAX_PAGE_SIZE = 256 };
+	enum { MAX_PAGE_SIZE = 256, MAX_STABLE_TIME = 3 * 1000 /* 3 mSec*/};
 
 	int32_t RawWrite( uint8_t iSlave, uint8_t *pBuf, int32_t iSize );
 	int32_t RawRead( uint8_t iSlave, uint8_t *pBuf, int32_t iSize );

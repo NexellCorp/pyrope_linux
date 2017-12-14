@@ -61,7 +61,9 @@
 #define TCON_CMD_WHITE_SEAM_WRITE		0x0024	//	TCON White Seam Write				// 0x00 | 0x24
 #define TCON_CMD_ELAPSED_TIME			0x0025	//	LED Elapsed Time					// 0x00 | 0x25
 #define TCON_CMD_ACCUMULATE_TIME		0x0026	//	Total LED Accumulate Time			// 0x00 | 0x26
-#define TCON_CMD_VERSION				0x0027	//	TCON Version						// 0x00 | 0x27
+#define TCON_CMD_SW_RESET				0x0027	//	TCON Software Reset					// 0x00 | 0x27	:: Internal Command
+#define TCON_CMD_EEPROM_READ			0x0028	//	TCON EEPRom Read					// 0x00 | 0x28	:: Internal Command
+#define TCON_CMD_VERSION				0x0029	//	TCON Version						// 0x00 | 0x29
 
 
 //

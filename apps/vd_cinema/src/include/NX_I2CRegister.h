@@ -149,6 +149,11 @@
 //
 //	Quality
 //
+#define TCON_REG_DRVIVER_CLK_OFF		0x0003
+#define TCON_REG_BURST_DATA_XOR			0x0162
+#define TCON_REG_BURST_DATA_CNT			0x0163
+#define TCON_REG_SW_RESET				0x0184
+
 #define TCON_REG_LUT_BURST_SEL			0x0001
 
 #define TCON_REG_TGAM_WR_SEL			0x0081
@@ -296,5 +301,6 @@
 
 #define PFPGA_REG_PF_VERSION			0x018F
 #define PFPGA_REG_PF_FPGA_TIME			0x018E
+
 
 #endif	// __NX_I2CREGISTER_H__

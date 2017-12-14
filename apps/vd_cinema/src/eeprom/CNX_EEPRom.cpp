@@ -39,6 +39,8 @@
 #define EEPROM_SLAVE			0x50
 #define EEPROM_WRITE_CONTROL	GPIOC31			// Write Protection
 
+#define NX_ENABLE_READ_DELAY	1
+
 //------------------------------------------------------------------------------
 CNX_EEPRom::CNX_EEPRom()
 	: m_hDev( -1 )
@@ -62,10 +64,13 @@ int32_t CNX_EEPRom::Read()
 	iRet = RawRead( EEPROM_SLAVE, &data, sizeof(data) );
 	if( 0 > iRet )
 	{
-		printf("Fail, Read().\n");
+		// printf("Fail, Read().\n");
 		return iRet;
 	}
 
+#if NX_ENABLE_READ_DELAY
+	usleep( MAX_STABLE_TIME );
+#endif
 	return 0x000000FF & data;
 }
 
@@ -79,7 +84,7 @@ int32_t CNX_EEPRom::Read( uint32_t iAddr )
 
 	if( !IsValidAddress(iAddr) )
 	{
-		printf("Fail, Invalid Address. ( 0x%08X )\n", iAddr );
+		// printf("Fail, Invalid Address. ( 0x%08X )\n", iAddr );
 		return -1;
 	}
 
@@ -90,17 +95,20 @@ int32_t CNX_EEPRom::Read( uint32_t iAddr )
 	iRet = RawWrite( slave, addr, sizeof(addr) / sizeof(addr[0]) );
 	if( 0 > iRet )
 	{
-		printf("Fail, Read().\n");
+		// printf("Fail, Read().\n");
 		return iRet;
 	}
 
 	iRet = RawRead( slave, &data, sizeof(data) );
 	if( 0 > iRet )
 	{
-		printf("Fail, Read().\n");
+		// printf("Fail, Read().\n");
 		return iRet;
 	}
 
+#if NX_ENABLE_READ_DELAY
+	usleep( MAX_STABLE_TIME );
+#endif
 	return 0x000000FF & data;
 }
 
@@ -112,10 +120,13 @@ int32_t CNX_EEPRom::Read( uint8_t *pBuf, int32_t iSize )
 	iRet = RawRead( EEPROM_SLAVE, pBuf, iSize );
 	if( 0 > iRet )
 	{
-		printf("Fail, Read().\n");
+		// printf("Fail, Read().\n");
 		return iRet;
 	}
 
+#if NX_ENABLE_READ_DELAY
+	usleep( MAX_STABLE_TIME );
+#endif
 	return iRet;
 }
 
@@ -128,7 +139,7 @@ int32_t CNX_EEPRom::Read( uint32_t iAddr, uint8_t *pBuf, int32_t iSize )
 
 	if( !IsValidAddress(iAddr) )
 	{
-		printf("Fail, Invalid Address. ( 0x%08X )\n", iAddr );
+		// printf("Fail, Invalid Address. ( 0x%08X )\n", iAddr );
 		return -1;
 	}
 
@@ -139,17 +150,20 @@ int32_t CNX_EEPRom::Read( uint32_t iAddr, uint8_t *pBuf, int32_t iSize )
 	iRet = RawWrite( slave, addr, sizeof(addr) / sizeof(addr[0]) );
 	if( 0 > iRet )
 	{
-		printf("Fail, Read().\n");
+		// printf("Fail, Read().\n");
 		return iRet;
 	}
 
 	iRet = RawRead( slave, pBuf, iSize );
 	if( 0 > iRet )
 	{
-		printf("Fail, Read().\n");
+		// printf("Fail, Read().\n");
 		return iRet;
 	}
 
+#if NX_ENABLE_READ_DELAY
+	usleep( MAX_STABLE_TIME );
+#endif
 	return iRet;
 }
 
@@ -162,7 +176,7 @@ int32_t CNX_EEPRom::Write( uint32_t iAddr, uint8_t iBuf )
 
 	if( !IsValidAddress(iAddr) )
 	{
-		printf("Fail, Invalid Address. ( 0x%08X )\n", iAddr );
+		// printf("Fail, Invalid Address. ( 0x%08X )\n", iAddr );
 		return -1;
 	}
 
@@ -174,9 +188,10 @@ int32_t CNX_EEPRom::Write( uint32_t iAddr, uint8_t iBuf )
 	iRet = RawWrite( slave, raw, sizeof(raw) / sizeof(raw[0]) );
 	if( 0 > iRet )
 	{
-		printf("Fail, Write().\n");
+		// printf("Fail, Write().\n");
 	}
 
+	usleep( MAX_STABLE_TIME );
 	return iRet;
 }
 
@@ -188,7 +203,7 @@ int32_t CNX_EEPRom::Write( uint32_t iAddr, uint8_t *pBuf, int32_t iSize )
 
 	if( !IsValidAddress(iAddr) )
 	{
-		printf("Fail, Invalid Address. ( 0x%08X )\n", iAddr );
+		// printf("Fail, Invalid Address. ( 0x%08X )\n", iAddr );
 		return -1;
 	}
 
@@ -209,10 +224,12 @@ int32_t CNX_EEPRom::Write( uint32_t iAddr, uint8_t *pBuf, int32_t iSize )
 	iRet = RawWrite( slave, pRaw, iRawSize );
 	if( 0 > iRet )
 	{
-		printf("Fail, Write().\n");
+		// printf("Fail, Write().\n");
 	}
 
 	if( pRaw ) free( pRaw );
+
+	usleep( MAX_STABLE_TIME );
 	return iRet;
 }
 
@@ -273,7 +290,7 @@ int32_t CNX_EEPRom::IsValidFd( void )
 {
 	if( 0 == (fcntl(m_hDev, F_GETFL) != -1 || errno != EBADF) )
 	{
-		printf("fail, file descriptor. ( %d )\n", m_hDev);
+		printf("Fail, file descriptor. ( %d )\n", m_hDev);
 		return false;
 	}
 
@@ -283,5 +300,11 @@ int32_t CNX_EEPRom::IsValidFd( void )
 //------------------------------------------------------------------------------
 int32_t CNX_EEPRom::IsValidAddress( uint32_t iAddr )
 {
-	return (iAddr <= 0x1FFFF) ? true : false;
+	if( iAddr > 0x1FFFF )
+	{
+		printf("Fail, Invalid Address. ( 0x%08X )\n", iAddr );
+		return false;
+	}
+
+	return true;
 }

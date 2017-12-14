@@ -57,6 +57,18 @@
                         android:layout_height="wrap_content"
                         layout="@layout/layout_display_check_accumulation_time" />
                 </RelativeLayout>
+
+                <RelativeLayout
+                    android:id="@+id/tabAdditionalInformation"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical">
+
+                    <include
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        layout="@layout/layout_display_check_additional_information" />
+                </RelativeLayout>
             </FrameLayout>
         </LinearLayout>
     </TabHost>

@@ -75,152 +75,112 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="5dp"
-                android:layout_marginRight="5dp"
+                android:layout_marginRight="15dp"
                 android:gravity="center"
-                android:orientation="vertical"
+                android:orientation="horizontal"
                 android:weightSum="1">
 
                 <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="0dp"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:text="- Initialize"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="5dp"
+                    android:text="- Initialize Mode : "
                     android:paddingStart="30dp"
-                    android:paddingEnd="0dp"
                     android:textStyle=""
-                    android:layout_weight="0.5" />
+                    android:layout_weight="0.25" />
 
                 <!-- Current Mode -->
                 <TextView
                     android:id="@+id/textInitModeCurrent"
-                    android:layout_width="match_parent"
-                    android:layout_height="0dp"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:paddingStart="40dp"
-                    android:paddingEnd="0dp"
-                    android:paddingBottom="10dp"
-                    android:text="-. Current Mode :"
+                    android:text="Mode #1"
                     android:textStyle=""
-                    android:layout_weight="0.5" />
+                    android:layout_weight="0.61" />
 
-                <!-- Mode Title -->
-                <!--
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <!-- Mode Update -->
+                <Button
+                    android:id="@+id/btnInitModeUpdate"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginLeft="5dp"
-                    android:layout_marginRight="5dp"
-                    android:paddingStart="40dp"
-                    android:paddingEnd="0dp"
-                    android:gravity="center"
-                    android:weightSum="1">
+                    android:text="Update"
+                    android:textStyle=""
+                    android:enabled="false"
+                    android:layout_weight="0.14" />
 
-                    <TextView
-                        android:background="@drawable/draw_line_border"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceMedium"
-                        android:text="Mode"
-                        android:gravity="center"
-                        android:paddingTop="12dp"
-                        android:paddingBottom="11dp"
-                        android:layout_weight="0.25"/>
-
-                    <TextView
-                        android:background="@drawable/draw_line_border"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceMedium"
-                        android:text="Description"
-                        android:gravity="center"
-                        android:paddingTop="12dp"
-                        android:paddingBottom="11dp"
-                        android:layout_weight="0.45"/>
-
-                    <TextView
-                        android:background="@drawable/draw_line_border"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceMedium"
-                        android:text="Control"
-                        android:gravity="center"
-                        android:paddingTop="12dp"
-                        android:paddingBottom="11dp"
-                        android:layout_weight="0.3"/>
-                </LinearLayout>
-                -->
-
-                <!-- Mode Control -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="5dp"
-                    android:layout_marginRight="5dp"
-                    android:paddingStart="40dp"
-                    android:paddingEnd="0dp"
-                    android:gravity="center"
-                    android:weightSum="1">
-
-                    <LinearLayout
-                        android:background="@drawable/draw_line_border"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:gravity="center"
-                        android:layout_weight="0.15">
-                        <Spinner
-                            android:id="@+id/spinnerInitialValue"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:layout_marginLeft="25dp"
-                            android:layout_marginRight="25dp"
-                            android:gravity="center"/>
-                    </LinearLayout>
-
-                    <TextView
-                        android:id="@+id/textInitModeDescription"
-                        android:background="@drawable/draw_line_border"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceMedium"
-                        android:text="Mode Description"
-                        android:gravity="center"
-                        android:paddingTop="12dp"
-                        android:paddingBottom="11dp"
-                        android:layout_weight="0.55"/>
-
-                    <LinearLayout
-                        android:background="@drawable/draw_line_border"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:gravity="center"
-                        android:layout_weight="0.15">
-                        <Button
-                            android:id="@+id/btnUpdateInitialValue"
-                            android:text="Update"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:enabled="false"
-                            android:gravity="center" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:background="@drawable/draw_line_border"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:gravity="center"
-                        android:layout_weight="0.15">
-                        <Button
-                            android:id="@+id/btnApplyInitialValue"
-                            android:text="Apply"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:enabled="false"
-                            android:gravity="center" />
-                    </LinearLayout>
-                </LinearLayout>
             </LinearLayout>
+
+            <!-- Mode Title -->
+            <!--
+            <LinearLayout
+                android:background="#FFE0E0E0"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="50dp"
+                android:layout_marginRight="15dp"
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp"
+                android:gravity="center"
+                android:weightSum="1">
+
+                <TextView
+                    android:background="@drawable/draw_line_left_top_bottom"
+                    android:layout_width="0px"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:text="Mode"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
+                    android:layout_weight="0.2"/>
+
+                <TextView
+                    android:background="@drawable/draw_line_border"
+                    android:layout_width="0px"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:text="Description"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
+                    android:layout_weight="0.65"/>
+
+                <TextView
+                    android:background="@drawable/draw_line_border"
+                    android:layout_width="0px"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:text="Control"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
+                    android:layout_weight="0.15"/>
+            </LinearLayout>
+            -->
+
+            <!-- Mode Table -->
+            <LinearLayout
+                android:background="@drawable/draw_line_border"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="50dp"
+                android:layout_marginRight="15dp"
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp"
+                android:gravity="center"
+                android:weightSum="1">
+
+                <ListView
+                    android:id="@+id/listView_mode_apply"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:footerDividersEnabled="true" />
+            </LinearLayout>
+
         </LinearLayout>
 
         <!-- Menu Button -->

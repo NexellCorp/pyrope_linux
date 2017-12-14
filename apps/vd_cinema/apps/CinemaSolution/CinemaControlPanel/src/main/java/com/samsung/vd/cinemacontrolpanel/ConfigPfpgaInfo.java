@@ -19,18 +19,19 @@ public class ConfigPfpgaInfo {
     private static final String VD_DTAG = "ConfigPfpgaInfo";
 
     public static final String PATH_SOURCE = "DCI/PFPGA";
-    public static final String PATH_TARGET = "/storage/sdcard0";
+    public static final String PATH_TARGET = "/storage/sdcard0/SAMSUNG/PFPGA";
+
     public static final String NAME = "P_REG.txt";
 
+    private static final int MAX_MODE_NUM = 10;
     private static final int NUM_INDEX = 1;
     private static final int NUM_ENABLE = 1;
     private static final int NUM_REG_NUMBER = 1;
 
-    public static final String PATTERN_DATA = "\\w+\\s*(\\d*)\\s*(\\d*)\\s*(\\d*)\\s*(\\d*)\\s*";
-
-    public boolean[] mEnable = new boolean[4];
-    public int[] mDataNum = new int[4];
-    public int[][][] mData = new int[4][2][];
+    private int mModeNum = 0;
+    private boolean[] mEnable = new boolean[MAX_MODE_NUM];
+    private int[] mDataNum = new int[MAX_MODE_NUM];
+    private int[][][] mData = new int[MAX_MODE_NUM][2][];
 
     public ConfigPfpgaInfo() {
     }
@@ -44,88 +45,70 @@ public class ConfigPfpgaInfo {
         if( !fileName.equals(NAME) )
             return false;
 
-        Pattern pattern = Pattern.compile(PATTERN_DATA);
-        try {
-            FileInputStream inStream = new FileInputStream( filePath );
-            BufferedReader bufferedReader = new BufferedReader( new InputStreamReader(inStream) );
-
-            for( int i = 0; i < NUM_INDEX + NUM_ENABLE + NUM_REG_NUMBER; i++ ) {
-                String strLine = bufferedReader.readLine();
-                if( strLine == null ) {
-                    Log.i(VD_DTAG, String.format(Locale.US, "Fail, Read Configuration. ( idx = %d )", i));
-                    return false;
-                }
-
-                if( i < NUM_INDEX )
-                    continue;
-
-                Matcher matcher = pattern.matcher(strLine);
-                if( matcher.matches() ) {
-                    if( i < NUM_INDEX + NUM_ENABLE ) {
-                        mEnable[0] = (Integer.parseInt( matcher.group(1), 10 ) == 1);
-                        mEnable[1] = (Integer.parseInt( matcher.group(2), 10 ) == 1);
-                        mEnable[2] = (Integer.parseInt( matcher.group(3), 10 ) == 1);
-                        mEnable[3] = (Integer.parseInt( matcher.group(4), 10 ) == 1);
-                    }
-                    else {
-                        mDataNum[0] = Integer.parseInt(matcher.group(1), 10);
-                        mDataNum[1] = Integer.parseInt(matcher.group(2), 10);
-                        mDataNum[2] = Integer.parseInt(matcher.group(3), 10);
-                        mDataNum[3] = Integer.parseInt(matcher.group(4), 10);
-                    }
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        for( int i = 0; i < 4; i++ ) {
-            mData[i][0] = new int[mDataNum[i]];
-            mData[i][1] = new int[mDataNum[i]];
-        }
+        for( int i = 0; i < MAX_MODE_NUM; i++ )
+            mDataNum[i] = 0;
 
         try {
             FileInputStream inStream = new FileInputStream( filePath );
             BufferedReader bufferedReader = new BufferedReader( new InputStreamReader(inStream) );
 
-            // adjust reading offset
-            int dataOffset = 0;
-            while( bufferedReader.readLine() != null )
-            {
-                if (dataOffset++ >= NUM_INDEX + NUM_ENABLE + NUM_REG_NUMBER - 1)
-                    break;
-            }
+            int idxLine = 0, idxData = 0;
+            String strLine;
+            String[] strSplit;
 
-            int index = 0;
             while( true )
             {
-                String strLineReg = bufferedReader.readLine();
-                String strLineData = bufferedReader.readLine();
-                if( strLineReg == null || strLineData == null ) {
+                strLine = bufferedReader.readLine();
+                if( strLine == null ) {
                     Log.i(VD_DTAG, String.format( "EOF. ( %s )", filePath ));
                     break;
                 }
 
-                String[] strRegSplit = strLineReg.split("\\s+");
-                String[] strDataSplit = strLineData.split("\\s+");
+//                Log.i(VD_DTAG, String.format(">>> %s", strLine) );
+                strSplit = strLine.split("\\s+");
 
-                int curPos = 0;
-                for( int i = 0; i < strRegSplit.length; i++ )
-                {
-                    if( strRegSplit[i].equals("") )
-                        continue;
-
-                    for( int j = curPos; j < 4; j++ ) {
-                        if( index < mDataNum[j] ) {
-                            mData[j][0][index] = Integer.decode( strRegSplit[i] );
-                            mData[j][1][index] = Integer.parseInt( strDataSplit[i], 10 );
-                            curPos++;
-                            break;
-                        }
-                        curPos++;
+                if( idxLine < NUM_INDEX ) {
+                    mModeNum = strSplit.length;
+                }
+                else if( idxLine < NUM_INDEX + NUM_ENABLE ) {
+                    for( int i = 0; i < strSplit.length; i++ )
+                    {
+                        mEnable[idxLine-NUM_INDEX] = (Integer.parseInt( strSplit[i], 10 ) == 1);
                     }
                 }
-                index++;
+                else if( idxLine < NUM_INDEX + NUM_ENABLE + NUM_REG_NUMBER ) {
+                    for( int i = 0; i < strSplit.length; i++ )
+                    {
+                        mDataNum[i] = Integer.parseInt( strSplit[i], 10 );
+
+                        mData[i][0] = new int[mDataNum[i]];
+                        mData[i][1] = new int[mDataNum[i]];
+                    }
+                }
+                else {
+                    int curPos = 0;
+                    for( int i = 0; i < strSplit.length; i++ )
+                    {
+                        if( strSplit[i].equals("") )
+                            continue;
+
+                        for( int j = curPos; j < MAX_MODE_NUM; j++ ) {
+                            if( idxData / 2 < mDataNum[j] ) {
+
+                                mData[j][idxData % 2][idxData/2] =
+                                        ((idxData % 2) == 0) ? Integer.decode( strSplit[i] ) : Integer.parseInt( strSplit[i], 10 );
+
+                                curPos++;
+                                break;
+                            }
+                            curPos++;
+                        }
+                    }
+
+                    idxData++;
+                }
+
+                idxLine++;
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -134,7 +117,10 @@ public class ConfigPfpgaInfo {
         //
         // Debug Message
         //
-        for( int i = 0; i < 4; i++ ) {
+        for( int i = 0; i < mModeNum; i++ ) {
+            if( mData[i][0] == null )
+                continue;
+
             Log.i(VD_DTAG, String.format("* mode %d", i));
             Log.i(VD_DTAG, String.format("-. Uniformity Correction ( %b )", mEnable[i] ));
             Log.i(VD_DTAG, String.format("> register number for writing : %d", mData[i][0].length));
@@ -147,15 +133,21 @@ public class ConfigPfpgaInfo {
         return true;
     }
 
+    int GetModeNum() { return mModeNum; }
+
     boolean GetEnableUpdateUniformity( int mode ) {
-        return mEnable[mode];
+        return (mModeNum > mode) && mEnable[mode];
     }
 
     int[] GetRegister( int mode ) {
-        return mData[mode][0];
+        return (mModeNum > mode) ? mData[mode][0] : null;
     }
 
     int[] GetData( int mode ) {
-        return mData[mode][1];
+        return (mModeNum > mode) ? mData[mode][1] : null;
+    }
+
+    int[][] GetRegData( int mode ) {
+        return (mModeNum > mode) ? mData[mode] : null;
     }
 }

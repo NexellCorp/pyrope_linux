@@ -12,12 +12,14 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -35,11 +37,13 @@ public class TopActivity extends AppCompatActivity {
 
     private byte[]  mCabinet;
 
-    private Spinner mSpinnerInitialValue;
-    private Button mBtnUpdateInitialValue;
-    private Button mBtnApplyInitialValue;
-    private TextView mTextInitModeCurrent;
-    private TextView mTextInitModeDescription;
+    private int mInitMode;
+    private Button mBtnInitMode;
+    private TextView mTextInitMode;
+
+    private TextButtonAdapter mAdapterMode;
+    private ConfigTconInfo mTconEEPRomInfo = new ConfigTconInfo();
+    private ConfigTconInfo mTconUsbInfo = new ConfigTconInfo();
 
     private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -61,7 +65,7 @@ public class TopActivity extends AppCompatActivity {
                     (resultTcon != null && resultTcon.length != 0) ||
                     (resultGamma != null && resultGamma.length != 0) ) {
 
-                    mBtnUpdateInitialValue.setEnabled(true);
+                    mBtnInitMode.setEnabled(true);
 
                     if( resultPfpga != null ) for(String file : resultPfpga) Log.i(VD_DTAG, String.format("Detection File. ( %s )", file ));
                     if( resultUniformity != null ) for(String file : resultUniformity) Log.i(VD_DTAG, String.format("Detection File. ( %s )", file ));
@@ -70,7 +74,7 @@ public class TopActivity extends AppCompatActivity {
                 }
             }
             if( intent.getAction().equals(Intent.ACTION_MEDIA_EJECT) ) {
-                mBtnUpdateInitialValue.setEnabled(false);
+                mBtnInitMode.setEnabled(false);
             }
         }
     };
@@ -144,6 +148,7 @@ public class TopActivity extends AppCompatActivity {
         //
         //  Cinema System Information
         //
+        View listViewFooter = ((LayoutInflater)getApplicationContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE)).inflate(R.layout.listview_footer_blank, null, false);
         mCabinet = ((CinemaInfo)getApplicationContext()).GetCabinet();
 
         //
@@ -169,33 +174,94 @@ public class TopActivity extends AppCompatActivity {
         textComment.append(String.format(Locale.US, "-. Dot Correct Extract Path\t: [USB_TOP]/DOT_CORRECTION_IDxxx/\n"));
 
         //
+        //  Parse TCON Configuration Files.
         //
-        //
-        mSpinnerInitialValue= (Spinner)findViewById(R.id.spinnerInitialValue);
-        mSpinnerInitialValue.setAdapter( new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, new String[] { "1", "2", "3", "4"}));
+        ListView listViewMode = (ListView)findViewById(R.id.listView_mode_apply);
+        listViewMode.addFooterView(listViewFooter);
 
+        mAdapterMode = new TextButtonAdapter(this, R.layout.listview_row_text_button);
+        listViewMode.setAdapter( mAdapterMode );
+
+        String[] resultPath;
+        resultPath = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET_EEPROM, ConfigTconInfo.NAME);
+        mAdapterMode.clear();
+
+        for( String file : resultPath ) {
+            if( mTconEEPRomInfo.Parse( file ) ) {
+                for( int i = 0; i < 10; i++ ) {
+                    if( i < mTconEEPRomInfo.GetModeNum() ) {
+                        mAdapterMode.add(
+                                new TextButtonInfo(
+                                        String.format(Locale.US, "mode #%d", i + 1),
+                                        String.format(Locale.US, "%s", mTconEEPRomInfo.GetDescription(i)),
+                                        mTextbuttonAdapterClickListener)
+                        );
+                    }
+                    else {
+                        mAdapterMode.add(
+                                new TextButtonInfo(
+                                        String.format(Locale.US, "mode #%d", i + 1), "")
+                        );
+                    }
+
+                    mAdapterMode.notifyDataSetChanged();
+                }
+            }
+            else {
+                for( int i = 0; i < 10; i++ ) {
+                    mAdapterMode.add(
+                            new TextButtonInfo(
+                                    String.format(Locale.US, "mode #%d", i + 1), "")
+                    );
+
+                    mAdapterMode.notifyDataSetChanged();
+                }
+            }
+        }
+
+        resultPath = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET_USB, ConfigTconInfo.NAME);
+        for( String file : resultPath ) {
+            if( mTconUsbInfo.Parse(file) ) {
+                for( int i = 0; i < 10; i++ ) {
+                    if( i < mTconUsbInfo.GetModeNum() )
+                        mAdapterMode.add(
+                                new TextButtonInfo(
+                                        String.format(Locale.US, "mode #%d", i + 11),
+                                        String.format(Locale.US, "%s", mTconEEPRomInfo.GetDescription(i)),
+                                        mTextbuttonAdapterClickListener )
+                        );
+                    else
+                        mAdapterMode.add(
+                                new TextButtonInfo(
+                                        String.format(Locale.US, "mode #%d", i + 11), "")
+                        );
+
+                    mAdapterMode.notifyDataSetChanged();
+                }
+            }
+            else {
+                for( int i = 0; i < 10; i++ ) {
+                    mAdapterMode.add(
+                            new TextButtonInfo(
+                                    String.format(Locale.US, "mode #%d", i + 11), "")
+                    );
+
+                    mAdapterMode.notifyDataSetChanged();
+                }
+            }
+        }
+
+        //
+        //
+        //
         String strTemp = ((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_INITIAL_MODE);
-        mSpinnerInitialValue.setSelection( (strTemp == null) ? 0 : Integer.parseInt(strTemp));
-        mSpinnerInitialValue.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                mTextInitModeDescription.setText(String.format(Locale.US, "This is mode #%d", i + 1));
-            }
+        mInitMode = (strTemp == null) ? 0 : Integer.parseInt(strTemp);
 
-            @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {
+        mTextInitMode = (TextView)findViewById(R.id.textInitModeCurrent);
+        mTextInitMode.setText(String.format(Locale.US, "Mode #%d", mInitMode+1));
 
-            }
-        });
-
-        mTextInitModeCurrent = (TextView)findViewById(R.id.textInitModeCurrent);
-        mTextInitModeCurrent.setText(String.format(Locale.US, "-. Current Mode : Mode #%d", mSpinnerInitialValue.getSelectedItemPosition() + 1));
-
-        mTextInitModeDescription = (TextView)findViewById(R.id.textInitModeDescription);
-        mTextInitModeDescription.setText(String.format(Locale.US, "This is mode #%d", mSpinnerInitialValue.getSelectedItemPosition() + 1));
-
-        mBtnUpdateInitialValue = (Button)findViewById(R.id.btnUpdateInitialValue);
-        mBtnUpdateInitialValue.setOnClickListener(new View.OnClickListener() {
+        mBtnInitMode = (Button)findViewById(R.id.btnInitModeUpdate);
+        mBtnInitMode.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 String[] resultPfpga = FileManager.CheckFileInUsb(ConfigPfpgaInfo.PATH_SOURCE, ConfigPfpgaInfo.NAME);
@@ -213,27 +279,24 @@ public class TopActivity extends AppCompatActivity {
                 String[] resultQuality = FileManager.CheckFileInUsb(ConfigTconInfo.PATH_SOURCE, ConfigTconInfo.NAME);
                 for( String path : resultQuality ) {
                     Log.i(VD_DTAG, ">>" + path);
-                    FileManager.CopyFile(path, ConfigTconInfo.PATH_TARGET + "/" + path.substring(path.lastIndexOf("/") + 1));
+                    FileManager.CopyFile(path, ConfigTconInfo.PATH_TARGET_USB + "/" + path.substring(path.lastIndexOf("/") + 1));
                 }
 
                 String[] resultGamma = FileManager.CheckFileInUsb(LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME);
                 for( String path : resultGamma ) {
                     Log.i(VD_DTAG, ">>" + path);
-                    FileManager.CopyFile(path, LedGammaInfo.PATH_TARGET + "/" + path.substring(path.lastIndexOf("/") + 1));
+                    FileManager.CopyFile(path, LedGammaInfo.PATH_TARGET_USB + "/" + path.substring(path.lastIndexOf("/") + 1));
                 }
 
                 if( (resultPfpga.length != 0) || (resultUniformity.length != 0 ) || (resultQuality.length != 0) || (resultGamma.length != 0) ) {
                     ShowMessage( "Update Initial Value File.");
                     UpdateInitialValue();
                 }
-            }
-        });
 
-        mBtnApplyInitialValue = (Button)findViewById(R.id.btnApplyInitialValue);
-        mBtnApplyInitialValue.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                new AsyncTaskInitialValue().execute();
+                //
+                //  TCON EEPROM Test Code.
+                //
+//                new AsyncTaskEEPRomRead().execute();
             }
         });
 
@@ -271,6 +334,13 @@ public class TopActivity extends AppCompatActivity {
             btnMenuSystem.setEnabled(false);
         }
     }
+
+    private TextButtonAdapter.OnClickListener mTextbuttonAdapterClickListener = new TextButtonAdapter.OnClickListener() {
+        @Override
+        public void onClickListener(int position) {
+            new AsyncTaskInitMode(position).execute();
+        }
+    };
 
     private View.OnClickListener mClickListener = new View.OnClickListener() {
         @Override
@@ -312,26 +382,130 @@ public class TopActivity extends AppCompatActivity {
         String[] usbGamma = FileManager.CheckFileInUsb(LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME);
         String[] internalPfpga = FileManager.CheckFile(ConfigPfpgaInfo.PATH_TARGET, ConfigPfpgaInfo.NAME);
         String[] internalUniformity = FileManager.CheckFile(LedUniformityInfo.PATH_TARGET, LedUniformityInfo.NAME);
-        String[] internalTcon = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET, ConfigTconInfo.NAME);
-        String[] internalGamma = FileManager.CheckFile(LedGammaInfo.PATH_TARGET, LedGammaInfo.PATTERN_NAME);
+        String[] internalTcon = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET_USB, ConfigTconInfo.NAME);
+        String[] internalGamma = FileManager.CheckFile(LedGammaInfo.PATH_TARGET_USB, LedGammaInfo.PATTERN_NAME);
 
         if( (usbPfpga != null && usbPfpga.length != 0) ||
             (usbUniformity != null && usbUniformity.length != 0) ||
             (usbTcon != null && usbTcon.length != 0) ||
             (usbGamma != null && usbGamma.length != 0) ) {
-            mBtnUpdateInitialValue.setEnabled(true);
+            mBtnInitMode.setEnabled(true);
         }
 
         if( (internalPfpga != null && internalPfpga.length != 0) ||
             (internalUniformity != null && internalUniformity.length != 0) ||
             (internalTcon != null && internalTcon.length != 0) ||
             (internalGamma != null && internalGamma.length != 0) ) {
-            mBtnApplyInitialValue.setEnabled(true);
+            mBtnInitMode.setEnabled(true);
+        }
+
+        String[] resultPath;
+        resultPath = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET_EEPROM, ConfigTconInfo.NAME);
+        mAdapterMode.clear();
+
+        for( String file : resultPath ) {
+            if( mTconEEPRomInfo.Parse( file ) ) {
+                for( int i = 0; i < 10; i++ ) {
+                    if( i < mTconEEPRomInfo.GetModeNum() )
+                        mAdapterMode.add(
+                                new TextButtonInfo(
+                                        String.format(Locale.US, "mode #%d", i+1),
+                                        String.format(Locale.US, "%s", mTconEEPRomInfo.GetDescription(i)),
+                                        mTextbuttonAdapterClickListener )
+                        );
+                    else
+                        mAdapterMode.add(
+                                new TextButtonInfo(
+                                        String.format(Locale.US, "mode #%d", i + 1), "")
+                        );
+
+                    mAdapterMode.notifyDataSetChanged();
+                }
+            }
+            else {
+                for( int i = 0; i < 10; i++ ) {
+                    mAdapterMode.add(
+                            new TextButtonInfo(
+                                    String.format(Locale.US, "mode #%d", i + 1), "")
+                    );
+
+                    mAdapterMode.notifyDataSetChanged();
+                }
+            }
+        }
+
+        resultPath = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET_USB, ConfigTconInfo.NAME);
+        for( String file : resultPath ) {
+            if( mTconUsbInfo.Parse(file) ) {
+                for( int i = 0; i < 10; i++ ) {
+                    if( i < mTconUsbInfo.GetModeNum() )
+                        mAdapterMode.add(
+                                new TextButtonInfo(
+                                        String.format(Locale.US, "mode #%d", i + 11),
+                                        String.format(Locale.US, "%s", mTconEEPRomInfo.GetDescription(i)),
+                                        mTextbuttonAdapterClickListener )
+                        );
+                    else
+                        mAdapterMode.add(
+                                new TextButtonInfo(
+                                        String.format(Locale.US, "mode #%d", i + 11), "")
+                        );
+
+                    mAdapterMode.notifyDataSetChanged();
+                }
+            }
+            else {
+                for( int i = 0; i < 10; i++ ) {
+                    mAdapterMode.add(
+                            new TextButtonInfo(
+                                    String.format(Locale.US, "mode #%d", i + 11), "")
+                    );
+
+                    mAdapterMode.notifyDataSetChanged();
+                }
+            }
         }
     }
 
-    private class AsyncTaskInitialValue extends AsyncTask<Void, Void, Void> {
-        private int mIndexInitialValue = mSpinnerInitialValue.getSelectedItemPosition();
+    //
+    //  TCON EEPRom Test Code.
+    //
+    private class AsyncTaskEEPRomRead extends AsyncTask<Void, Void, Void> {
+        @Override
+        protected Void doInBackground(Void... voids) {
+            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+
+            byte[] result = ctrl.Send(NxCinemaCtrl.CMD_TCON_EEPROM_READ, null);
+            if( result == null || result.length == 0 ) {
+                Log.i(VD_DTAG, "Unknown Error.");
+                return null;
+            }
+
+            if( (int)result[0] == 0xFF ) Log.i(VD_DTAG, "Fail, EEPROM Read.");
+            if( (int)result[0] == 0x01 ) Log.i(VD_DTAG, "Update is successful.");
+            if( (int)result[0] == 0x00 ) Log.i(VD_DTAG, "Update is not needed.");
+            return null;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            CinemaLoading.Show( TopActivity.this );
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            CinemaLoading.Hide();
+        }
+    }
+
+    private class AsyncTaskInitMode extends AsyncTask<Void, Void, Void> {
+        private int mInitMode;
+
+        public AsyncTaskInitMode(int mode) {
+            mInitMode = mode;
+        }
 
         @Override
         protected Void doInBackground(Void... voids) {
@@ -387,13 +561,15 @@ public class TopActivity extends AppCompatActivity {
             for( String file : resultPath ) {
                 ConfigPfpgaInfo info = new ConfigPfpgaInfo();
                 if( info.Parse( file ) ) {
-                    enableUniformity = info.GetEnableUpdateUniformity(mIndexInitialValue);
-                    for( int i = 0; i < info.GetRegister(mIndexInitialValue).length; i++ ) {
-                        byte[] reg = ctrl.IntToByteArray(info.GetRegister(mIndexInitialValue)[i], NxCinemaCtrl.FORMAT_INT16);
-                        byte[] data = ctrl.IntToByteArray(info.GetData(mIndexInitialValue)[i], NxCinemaCtrl.FORMAT_INT16);
-                        byte[] inData = ctrl.AppendByteArray(reg, data);
+                    if( (10 <= mInitMode) && ((mInitMode-10) < info.GetModeNum()) ) {
+                        enableUniformity = info.GetEnableUpdateUniformity(mInitMode-10);
+                        for( int i = 0; i < info.GetRegister(mInitMode-10).length; i++ ) {
+                            byte[] reg = ctrl.IntToByteArray(info.GetRegister(mInitMode-10)[i], NxCinemaCtrl.FORMAT_INT16);
+                            byte[] data = ctrl.IntToByteArray(info.GetData(mInitMode-10)[i], NxCinemaCtrl.FORMAT_INT16);
+                            byte[] inData = ctrl.AppendByteArray(reg, data);
 
-                        ctrl.Send( NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData );
+                            ctrl.Send( NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData );
+                        }
                     }
                 }
             }
@@ -418,58 +594,151 @@ public class TopActivity extends AppCompatActivity {
             //
             //  Parse T_REG.txt
             //
-            resultPath = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET, ConfigTconInfo.NAME);
-            for( String file : resultPath ) {
-                ConfigTconInfo info = new ConfigTconInfo();
-                if( info.Parse( file ) ) {
-                    enableGamma = info.GetEnableUpdateGamma(mIndexInitialValue);
+            if( (10 > mInitMode) && (mInitMode < mTconEEPRomInfo.GetModeNum())) {
+                enableGamma = mTconEEPRomInfo.GetEnableUpdateGamma(mInitMode);
+                for( int i = 0; i < mTconEEPRomInfo.GetRegister(mInitMode).length; i++ ) {
+                    byte[] reg = ctrl.IntToByteArray(mTconEEPRomInfo.GetRegister(mInitMode)[i], NxCinemaCtrl.FORMAT_INT16);
+                    byte[] data = ctrl.IntToByteArray(mTconEEPRomInfo.GetData(mInitMode)[i], NxCinemaCtrl.FORMAT_INT16);
+                    byte[] inData = ctrl.AppendByteArray(reg, data);
 
-                    for( int i = 0; i < info.GetRegister(mIndexInitialValue).length; i++ ) {
-                        byte[] reg = ctrl.IntToByteArray(info.GetRegister(mIndexInitialValue)[i], NxCinemaCtrl.FORMAT_INT16);
-                        byte[] data = ctrl.IntToByteArray(info.GetData(mIndexInitialValue)[i], NxCinemaCtrl.FORMAT_INT16);
-                        byte[] inData = ctrl.AppendByteArray(reg, data);
+                    byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+                    byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
 
-                        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-                        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+                    if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
+                    if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
+                }
+            }
 
-                        if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
-                        if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
-                    }
+            if( (10 <= mInitMode) && ((mInitMode-10) < mTconUsbInfo.GetModeNum())) {
+                enableGamma = mTconUsbInfo.GetEnableUpdateGamma(mInitMode-10);
+                for( int i = 0; i < mTconUsbInfo.GetRegister(mInitMode-10).length; i++ ) {
+                    byte[] reg = ctrl.IntToByteArray(mTconUsbInfo.GetRegister(mInitMode-10)[i], NxCinemaCtrl.FORMAT_INT16);
+                    byte[] data = ctrl.IntToByteArray(mTconUsbInfo.GetData(mInitMode-10)[i], NxCinemaCtrl.FORMAT_INT16);
+                    byte[] inData = ctrl.AppendByteArray(reg, data);
+
+                    byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+                    byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+                    if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
+                    if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
                 }
             }
 
             //
             //  Write Gamma
             //
-            resultPath = FileManager.CheckFile(LedGammaInfo.PATH_TARGET, LedGammaInfo.PATTERN_NAME);
-            for( String file : resultPath ) {
-                LedGammaInfo info = new LedGammaInfo();
-                if( info.Parse( file ) ) {
-                    if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !enableGamma[0]) ||
-                        (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && !enableGamma[1]) ||
-                        (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !enableGamma[2]) ||
-                        (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && !enableGamma[3]) ) {
-                        Log.i(VD_DTAG, String.format( "Skip. Update Gamma. ( %s )", file ));
-                        continue;
+            if( (10 > mInitMode) && (mInitMode < mTconEEPRomInfo.GetModeNum())) {
+                resultPath = FileManager.CheckFile(LedGammaInfo.PATH_TARGET_EEPROM, LedGammaInfo.PATTERN_NAME);
+                for( String file : resultPath ) {
+                    LedGammaInfo info = new LedGammaInfo();
+                    if( info.Parse( file ) ) {
+                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !enableGamma[0]) ||
+                            (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && !enableGamma[1]) ||
+                            (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !enableGamma[2]) ||
+                            (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && !enableGamma[3]) ) {
+                            Log.i(VD_DTAG, String.format( "Skip. Update Gamma. ( %s )", file ));
+                            continue;
+                        }
+
+                        int cmd;
+                        if( info.GetType() == LedGammaInfo.TYPE_TARGET )
+                            cmd = NxCinemaCtrl.CMD_TCON_TGAM_R;
+                        else
+                            cmd = NxCinemaCtrl.CMD_TCON_DGAM_R;
+
+                        byte[] table = ctrl.IntToByteArray(info.GetTable(), NxCinemaCtrl.FORMAT_INT8);
+                        byte[] data = ctrl.IntArrayToByteArray(info.GetData(), NxCinemaCtrl.FORMAT_INT24);
+                        byte[] inData = ctrl.AppendByteArray(table, data);
+
+                        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+                        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+                        if( bValidPort0 ) ctrl.Send( cmd + info.GetChannel(), inData0 );
+                        if( bValidPort1 ) ctrl.Send( cmd + info.GetChannel(), inData1 );
                     }
-
-                    int cmd;
-                    if( info.GetType() == LedGammaInfo.TYPE_TARGET )
-                        cmd = NxCinemaCtrl.CMD_TCON_TGAM_R;
-                    else
-                        cmd = NxCinemaCtrl.CMD_TCON_DGAM_R;
-
-                    byte[] table = ctrl.IntToByteArray(info.GetTable(), NxCinemaCtrl.FORMAT_INT8);
-                    byte[] data = ctrl.IntArrayToByteArray(info.GetData(), NxCinemaCtrl.FORMAT_INT24);
-                    byte[] inData = ctrl.AppendByteArray(table, data);
-
-                    byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-                    byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-                    if( bValidPort0 ) ctrl.Send( cmd + info.GetChannel(), inData0 );
-                    if( bValidPort1 ) ctrl.Send( cmd + info.GetChannel(), inData1 );
                 }
             }
+
+            if( (10 <= mInitMode) ) {
+                resultPath = FileManager.CheckFile(LedGammaInfo.PATH_TARGET_EEPROM, LedGammaInfo.PATTERN_NAME);
+                for( String file : resultPath ) {
+                    LedGammaInfo info = new LedGammaInfo();
+                    if( info.Parse( file ) ) {
+                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0]) ||
+                            (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1]) ||
+                            (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2]) ||
+                            (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3]) ) {
+                            Log.i(VD_DTAG, String.format( "Skip. Update Gamma. ( %s )", file ));
+                            continue;
+                        }
+
+                        int cmd;
+                        if( info.GetType() == LedGammaInfo.TYPE_TARGET )
+                            cmd = NxCinemaCtrl.CMD_TCON_TGAM_R;
+                        else
+                            cmd = NxCinemaCtrl.CMD_TCON_DGAM_R;
+
+                        byte[] table = ctrl.IntToByteArray(info.GetTable(), NxCinemaCtrl.FORMAT_INT8);
+                        byte[] data = ctrl.IntArrayToByteArray(info.GetData(), NxCinemaCtrl.FORMAT_INT24);
+                        byte[] inData = ctrl.AppendByteArray(table, data);
+
+                        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+                        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+                        if( bValidPort0 ) ctrl.Send( cmd + info.GetChannel(), inData0 );
+                        if( bValidPort1 ) ctrl.Send( cmd + info.GetChannel(), inData1 );
+                    }
+                }
+
+                resultPath = FileManager.CheckFile(LedGammaInfo.PATH_TARGET_USB, LedGammaInfo.PATTERN_NAME);
+                for( String file : resultPath ) {
+                    LedGammaInfo info = new LedGammaInfo();
+                    if( info.Parse( file ) ) {
+                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !enableGamma[0]) ||
+                            (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && !enableGamma[1]) ||
+                            (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !enableGamma[2]) ||
+                            (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && !enableGamma[3]) ) {
+                            Log.i(VD_DTAG, String.format( "Skip. Update Gamma. ( %s )", file ));
+                            continue;
+                        }
+
+                        int cmd;
+                        if( info.GetType() == LedGammaInfo.TYPE_TARGET )
+                            cmd = NxCinemaCtrl.CMD_TCON_TGAM_R;
+                        else
+                            cmd = NxCinemaCtrl.CMD_TCON_DGAM_R;
+
+                        byte[] table = ctrl.IntToByteArray(info.GetTable(), NxCinemaCtrl.FORMAT_INT8);
+                        byte[] data = ctrl.IntArrayToByteArray(info.GetData(), NxCinemaCtrl.FORMAT_INT24);
+                        byte[] inData = ctrl.AppendByteArray(table, data);
+
+                        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+                        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+                        if( bValidPort0 ) ctrl.Send( cmd + info.GetChannel(), inData0 );
+                        if( bValidPort1 ) ctrl.Send( cmd + info.GetChannel(), inData1 );
+                    }
+                }
+            }
+
+            //
+            // Test Code by doriya
+            //
+            byte[] reg = ctrl.IntToByteArray(0x018D, NxCinemaCtrl.FORMAT_INT16);
+            byte[] data = ctrl.IntToByteArray(0x0000, NxCinemaCtrl.FORMAT_INT16);
+            byte[] inData = ctrl.AppendByteArray(reg, data);
+
+            byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+            byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
+            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
+
+            //
+            //  SW Reset
+            //
+            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_SW_RESET, new byte[]{(byte)0x09});
+            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_SW_RESET, new byte[]{(byte)0x89});
 
             //
             //  PFPGA Mute off
@@ -491,11 +760,11 @@ public class TopActivity extends AppCompatActivity {
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
 
-            mTextInitModeCurrent.setText(String.format(Locale.US, "-. Current Mode : Mode #%d", mIndexInitialValue + 1));
-            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_INITIAL_MODE, String.valueOf(mIndexInitialValue));
+            mTextInitMode.setText(String.format(Locale.US, "-. Current Mode : Mode #%d", mInitMode + 1));
+            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_INITIAL_MODE, String.valueOf(mInitMode));
             CinemaLoading.Hide();
 
-            Log.i(VD_DTAG, String.format("Mode Configuration Done. ( mode = %d )", mIndexInitialValue + 1));
+            Log.i(VD_DTAG, String.format("Mode Configuration Done. ( mode = %d )", mInitMode + 1));
         }
     }
 

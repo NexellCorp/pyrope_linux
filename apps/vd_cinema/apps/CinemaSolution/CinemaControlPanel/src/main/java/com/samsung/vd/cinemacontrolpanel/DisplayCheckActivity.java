@@ -205,14 +205,22 @@ public class DisplayCheckActivity extends AppCompatActivity {
         tabSpec1.setIndicator("Led Accumulation time");
         tabSpec1.setContent(R.id.tabLedAccumulation);
 
+        TabHost.TabSpec tabSpec2 = tabHost.newTabSpec("TAB2");
+        tabSpec2.setIndicator("Additional Information");
+        tabSpec2.setContent(R.id.tabAdditionalInformation);
+
         tabHost.addTab(tabSpec0);
         tabHost.addTab(tabSpec1);
+        tabHost.addTab(tabSpec2);
 
         tabHost.setOnTabChangedListener(mDiagnosticsTabChange);
         tabHost.setCurrentTab(0);
 
         tabHost.getTabWidget().getChildTabViewAt(1).setEnabled(false);
         ((TextView)tabHost.getTabWidget().getChildAt(1).findViewById(android.R.id.title)).setTextColor(0xFFDCDCDC);
+
+        tabHost.getTabWidget().getChildTabViewAt(2).setEnabled(false);
+        ((TextView)tabHost.getTabWidget().getChildAt(2).findViewById(android.R.id.title)).setTextColor(0xFFDCDCDC);
     }
 
     private TabHost.OnTabChangeListener mDiagnosticsTabChange = new TabHost.OnTabChangeListener() {
@@ -220,6 +228,7 @@ public class DisplayCheckActivity extends AppCompatActivity {
         public void onTabChanged(String tabId) {
             if( tabId.equals("TAB0") ) UpdateTestPattern();
             if( tabId.equals("TAB1") ) UpdateAccumulation();
+            if( tabId.equals("TAB2") ) UpdateAdditionalInformation();
         }
     };
 
@@ -231,6 +240,10 @@ public class DisplayCheckActivity extends AppCompatActivity {
         StopTestPattern();
 
         new AsyncTaskAccumulation(mAdapterAccumulation).execute();
+    }
+
+    private void UpdateAdditionalInformation() {
+
     }
 
     private void RunTestPattern( int funcIndex, int patternIndex, boolean status ) {
@@ -300,7 +313,7 @@ public class DisplayCheckActivity extends AppCompatActivity {
             }
             else {
                 byte[] reg = ctrl.IntToByteArray(mPatternReg[i-7], NxCinemaCtrl.FORMAT_INT16);
-                byte[] dat = ctrl.IntToByteArray(0x0001, NxCinemaCtrl.FORMAT_INT16);
+                byte[] dat = ctrl.IntToByteArray(0x0000, NxCinemaCtrl.FORMAT_INT16);
                 byte[] data = ctrl.AppendByteArray(reg, dat);
                 byte[] data0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, data);
                 byte[] data1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, data);

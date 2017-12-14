@@ -540,7 +540,7 @@ public class CinemaService extends Service {
             //
             //  Parse T_REG.txt
             //
-            resultPath = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET, ConfigTconInfo.NAME);
+            resultPath = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET_USB, ConfigTconInfo.NAME);
             for( String file : resultPath ) {
                 ConfigTconInfo info = new ConfigTconInfo();
                 if( info.Parse( file ) ) {
@@ -563,7 +563,7 @@ public class CinemaService extends Service {
             //
             //  Write Gamma
             //
-            resultPath = FileManager.CheckFile(LedGammaInfo.PATH_TARGET, LedGammaInfo.PATTERN_NAME);
+            resultPath = FileManager.CheckFile(LedGammaInfo.PATH_TARGET_USB, LedGammaInfo.PATTERN_NAME);
             for( String file : resultPath ) {
                 LedGammaInfo info = new LedGammaInfo();
                 if( info.Parse( file ) ) {

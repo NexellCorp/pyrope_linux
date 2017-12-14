@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -9,7 +9,8 @@
         android:background="#FFE0E0E0"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:weightSum="1">
+        android:weightSum="1"
+        android:id="@+id/linearLayout">>
 
         <TextView
             android:background="@drawable/draw_line_left_top_bottom"
@@ -64,7 +65,9 @@
         android:id="@+id/listview_led_open"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:footerDividersEnabled="true" />
+        android:footerDividersEnabled="true"
+        android:layout_below="@+id/linearLayout"
+        android:layout_above="@+id/linearLayout2" />
 
     <TextView
         android:id="@+id/listview_led_open_text"
@@ -76,4 +79,65 @@
         android:gravity="center"
         android:paddingTop="15dp" />
 
-</LinearLayout>
+    <LinearLayout
+        android:id="@+id/linearLayout2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="end"
+        android:layout_alignParentBottom="true"
+        android:weightSum="1" >
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_weight="0.25">
+            <CheckBox
+                android:id="@+id/checkFullWhite"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="Full White" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_weight="0.25">
+            <CheckBox
+                android:id="@+id/checkLedOpenDetect"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="LED Open Detection" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_weight="0.25">
+            <CheckBox
+                android:id="@+id/checkLodRemoval1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="LOD Removal #1" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_weight="0.25">
+            <CheckBox
+                android:id="@+id/checkLodRemoval2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="LOD Removal #2" />
+        </LinearLayout>
+    </LinearLayout>
+
+</RelativeLayout>

@@ -90,6 +90,11 @@ public class LedDotCorrectInfo {
                     Log.i(VD_DTAG, String.format("Fail, Pattern Match. ( name: %s, pattern: %s )", fileName, PATTERN_DATA) );
                     return false;
                 }
+
+                if( 64*60 == cnt ) {
+                    Log.i(VD_DTAG, String.format("Warning, Out of Line Length.( name: %s )", fileName));
+                    break;
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();

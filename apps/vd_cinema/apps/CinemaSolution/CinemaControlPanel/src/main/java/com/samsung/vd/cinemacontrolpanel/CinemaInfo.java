@@ -74,6 +74,10 @@ public class CinemaInfo extends Application {
         return true;
     }
 
+    public boolean IsFirstBootAccessEEPRom() { 
+		return false;
+	}
+
     public int GetBootTime() {
         return 30;
     }

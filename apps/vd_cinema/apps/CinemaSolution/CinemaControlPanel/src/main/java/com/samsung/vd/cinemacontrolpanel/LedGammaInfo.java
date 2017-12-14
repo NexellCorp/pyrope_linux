@@ -18,7 +18,9 @@ public class LedGammaInfo {
     private static final String VD_DTAG = "LedGammaInfo";
 
     public static final String PATH_SOURCE = "DCI/TCON/LUT";
-    public static final String PATH_TARGET = "/storage/sdcard0";
+    public static final String PATH_TARGET_EEPROM = "/storage/sdcard0/SAMSUNG/TCON_EEPROM/LUT";
+    public static final String PATH_TARGET_USB = "/storage/sdcard0/SAMSUNG/TCON_USB/LUT";
+
     public static final String PATTERN_NAME = "(T|D)GAM(0|1)_(R|G|B).txt";
 
     public static final int TYPE_TARGET     = 0;

@@ -41,7 +41,9 @@ public class NxCinemaCtrl {
     public static final int CMD_TCON_WHITE_SEAM_WRITE       = 0x0024;
     public static final int CMD_TCON_ELAPSED_TIME			= 0x0025;
     public static final int CMD_TCON_ACCUMULATE_TIME		= 0x0026;
-    public static final int CMD_TCON_VERSION				= 0x0027;
+    public static final int CMD_TCON_SW_RESET               = 0x0027;
+    public static final int CMD_TCON_EEPROM_READ            = 0x0028;
+    public static final int CMD_TCON_VERSION				= 0x0029;
 
     public static final int CMD_PFPGA_REG_WRITE				= 0x0100;
     public static final int CMD_PFPGA_REG_READ				= 0x0101;

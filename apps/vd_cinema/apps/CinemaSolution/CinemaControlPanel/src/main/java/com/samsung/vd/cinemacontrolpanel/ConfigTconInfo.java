@@ -19,18 +19,22 @@ public class ConfigTconInfo {
     private static final String VD_DTAG = "ConfigTconInfo";
 
     public static final String PATH_SOURCE = "DCI/TCON";
-    public static final String PATH_TARGET = "/storage/sdcard0";
+    public static final String PATH_TARGET_USB = "/storage/sdcard0/SAMSUNG/TCON_USB";
+    public static final String PATH_TARGET_EEPROM = "/storage/sdcard0/SAMSUNG/TCON_EEPROM";
+
     public static final String NAME = "T_REG.txt";
 
+    private static final int MAX_MODE_NUM = 10;
     private static final int NUM_INDEX = 1;
     private static final int NUM_ENABLE = 4;
+    private static final int NUM_DESCRIPTION = 1;
     private static final int NUM_REG_NUMBER = 1;
 
-    public static final String PATTERN_DATA = "\\w+\\s*(\\d*)\\s*(\\d*)\\s*(\\d*)\\s*(\\d*)\\s*";
-
-    public boolean[][] mEnable = new boolean[4][4];
-    public int[] mDataNum = new int[4];
-    public int[][][] mData = new int[4][2][];
+    private int mModeNum = 0;
+    private boolean[][] mEnable = new boolean[MAX_MODE_NUM][4];
+    private String[] mDescription = new String[MAX_MODE_NUM];
+    private int[] mDataNum = new int[MAX_MODE_NUM];
+    private int[][][] mData = new int[MAX_MODE_NUM][2][];
 
     public ConfigTconInfo() {
     }
@@ -44,88 +48,76 @@ public class ConfigTconInfo {
         if( !fileName.equals(NAME) )
             return false;
 
-        Pattern pattern = Pattern.compile(PATTERN_DATA);
-        try {
-            FileInputStream inStream = new FileInputStream( filePath );
-            BufferedReader bufferedReader = new BufferedReader( new InputStreamReader(inStream) );
-
-            for( int i = 0; i < NUM_INDEX + NUM_ENABLE + NUM_REG_NUMBER; i++ ) {
-                String strLine = bufferedReader.readLine();
-                if( strLine == null ) {
-                    Log.i(VD_DTAG, String.format(Locale.US, "Fail, Read Configuration. ( idx = %d )", i));
-                    return false;
-                }
-
-                if( i < NUM_INDEX )
-                    continue;
-
-                Matcher matcher = pattern.matcher(strLine);
-                if( matcher.matches() ) {
-                    if( i < NUM_INDEX + NUM_ENABLE ) {
-                        mEnable[0][i - NUM_INDEX] = (Integer.parseInt( matcher.group(1), 10 ) == 1);
-                        mEnable[1][i - NUM_INDEX] = (Integer.parseInt( matcher.group(2), 10 ) == 1);
-                        mEnable[2][i - NUM_INDEX] = (Integer.parseInt( matcher.group(3), 10 ) == 1);
-                        mEnable[3][i - NUM_INDEX] = (Integer.parseInt( matcher.group(4), 10 ) == 1);
-                    }
-                    else {
-                        mDataNum[0] = Integer.parseInt( matcher.group(1), 10 );
-                        mDataNum[1] = Integer.parseInt( matcher.group(2), 10 );
-                        mDataNum[2] = Integer.parseInt( matcher.group(3), 10 );
-                        mDataNum[3] = Integer.parseInt( matcher.group(4), 10 );
-                    }
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        for( int i = 0; i < 4; i++ ) {
-            mData[i][0] = new int[mDataNum[i]];
-            mData[i][1] = new int[mDataNum[i]];
-        }
+        for( int i = 0; i < MAX_MODE_NUM; i++ )
+            mDataNum[i] = 0;
 
         try {
             FileInputStream inStream = new FileInputStream( filePath );
             BufferedReader bufferedReader = new BufferedReader( new InputStreamReader(inStream) );
 
-            // adjust reading offset
-            int dataOffset = 0;
-            while( bufferedReader.readLine() != null )
-             {
-                if (dataOffset++ >= NUM_INDEX + NUM_ENABLE + NUM_REG_NUMBER - 1)
-                    break;
-            }
+            int idxLine = 0, idxData = 0;
+            String strLine;
+            String[] strSplit;
 
-            int index = 0;
             while( true )
             {
-                String strLineReg = bufferedReader.readLine();
-                String strLineData = bufferedReader.readLine();
-                if( strLineReg == null || strLineData == null ) {
+                strLine = bufferedReader.readLine();
+                if( strLine == null ) {
                     Log.i(VD_DTAG, String.format( "EOF. ( %s )", filePath ));
                     break;
                 }
 
-                String[] strRegSplit = strLineReg.split("\\s+");
-                String[] strDataSplit = strLineData.split("\\s+");
+//                Log.i(VD_DTAG, String.format(">>> %s", strLine) );
+                strSplit = strLine.split("\\s+");
 
-                int curPos = 0;
-                for( int i = 0; i < strRegSplit.length; i++ )
-                {
-                    if( strRegSplit[i].equals("") )
-                        continue;
-
-                    for( int j = curPos; j < 4; j++ ) {
-                        if( index < mDataNum[j] ) {
-                            mData[j][0][index] = Integer.decode( strRegSplit[i] );
-                            mData[j][1][index] = Integer.parseInt( strDataSplit[i], 10 );
-                            curPos++;
-                            break;
-                        }
-                        curPos++;
+                if( idxLine < NUM_INDEX ) {
+                    mModeNum = strSplit.length;
+                }
+                else if( idxLine < NUM_INDEX + NUM_ENABLE ) {
+                    for( int i = 0; i < strSplit.length; i++ )
+                    {
+                        mEnable[i][idxLine-NUM_INDEX] = (Integer.parseInt( strSplit[i], 10 ) == 1);
                     }
                 }
-                index++;
+                else if( idxLine < NUM_INDEX + NUM_ENABLE + NUM_DESCRIPTION ) {
+                    for( int i = 0; i < strSplit.length; i++ )
+                    {
+                        mDescription[i] = strSplit[i];
+                    }
+                }
+                else if( idxLine < NUM_INDEX + NUM_ENABLE + NUM_DESCRIPTION + NUM_REG_NUMBER ) {
+                    for( int i = 0; i < strSplit.length; i++ )
+                    {
+                        mDataNum[i] = Integer.parseInt( strSplit[i], 10 );
+
+                        mData[i][0] = new int[mDataNum[i]];
+                        mData[i][1] = new int[mDataNum[i]];
+                    }
+                }
+                else {
+                    int curPos = 0;
+                    for( int i = 0; i < strSplit.length; i++ )
+                    {
+                        if( strSplit[i].equals("") )
+                            continue;
+
+                        for( int j = curPos; j < MAX_MODE_NUM; j++ ) {
+                            if( idxData / 2 < mDataNum[j] ) {
+
+                                mData[j][idxData % 2][idxData/2] =
+                                        ((idxData % 2) == 0) ? Integer.decode( strSplit[i] ) : Integer.parseInt( strSplit[i], 10 );
+
+                                curPos++;
+                                break;
+                            }
+                            curPos++;
+                        }
+                    }
+
+                    idxData++;
+                }
+
+                idxLine++;
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -134,10 +126,14 @@ public class ConfigTconInfo {
         //
         // Debug Message
         //
-        for( int i = 0; i < 4; i++ ) {
-            Log.i(VD_DTAG, String.format("* mode %d", i));
+        for( int i = 0; i < mModeNum; i++ ) {
+            if( mData[i][0] == null )
+                continue;
+
+            Log.i(VD_DTAG, String.format("* mode %d : %s", i, mDescription[i]));
             Log.i(VD_DTAG, String.format("-. TGAM0 ( %b ), TGAM1 ( %b ), DGAM0 ( %b ), DGAM1 ( %b )",
                     mEnable[i][0], mEnable[i][1], mEnable[i][2], mEnable[i][3]) );
+
             Log.i(VD_DTAG, String.format("> register number for writing : %d", mData[i][0].length));
             for( int j = 0; j < mData[i][0].length; j++ ) {
                 Log.i(VD_DTAG, String.format("-. reg( %3d, 0x%02x ), data( %4d, 0x%04x )",
@@ -148,19 +144,27 @@ public class ConfigTconInfo {
         return true;
     }
 
+    int GetModeNum() {
+        return mModeNum;
+    }
+
     boolean[] GetEnableUpdateGamma( int mode ) {
-        return mEnable[mode];
+        return (mModeNum > mode) ? mEnable[mode] : null;
     }
 
     int[] GetRegister( int mode ) {
-        return mData[mode][0];
+        return (mModeNum > mode) ? mData[mode][0] : null;
     }
 
     int[] GetData( int mode ) {
-        return mData[mode][1];
+        return (mModeNum > mode) ? mData[mode][1] : null;
+    }
+
+    String GetDescription( int mode ) {
+        return (mModeNum > mode) ? mDescription[mode] : null;
     }
 
     int[][] GetRegData( int mode ) {
-        return mData[mode];
+        return (mModeNum > mode) ? mData[mode] : null;
     }
 }

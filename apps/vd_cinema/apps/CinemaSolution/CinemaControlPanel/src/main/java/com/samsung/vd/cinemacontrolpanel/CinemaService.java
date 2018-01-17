@@ -156,7 +156,6 @@ public class CinemaService extends Service {
         } catch (Settings.SettingNotFoundException e) {
             e.printStackTrace();
         }
-
         return brightness;
     }
 

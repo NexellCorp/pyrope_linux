@@ -585,23 +585,44 @@ public class LoginActivity extends AppCompatActivity {
                 }
 
                 //
-                // Test Code by doriya
-                //
-                byte[] reg = ctrl.IntToByteArray(0x018D, NxCinemaCtrl.FORMAT_INT16);
-                byte[] data = ctrl.IntToByteArray(0x0000, NxCinemaCtrl.FORMAT_INT16);
-                byte[] inData = ctrl.AppendByteArray(reg, data);
-
-                byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-                byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-                if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
-                if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
-
-                //
                 //
                 //
                 if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_SW_RESET, new byte[]{(byte)0x09});
                 if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_SW_RESET, new byte[]{(byte)0x89});
+
+                //
+                //  Set Global Register
+                //
+                {
+                    int [][] treg = mCinemaInfo.GetDefaultTReg();
+                    for( int i = 0; i < treg.length; i++ ) {
+                        if( treg[i][1] == -1 ) {
+                            continue;
+                        }
+
+                        byte[] reg = ctrl.IntToByteArray(treg[i][0], NxCinemaCtrl.FORMAT_INT16);
+                        byte[] dat = ctrl.IntToByteArray(treg[i][1], NxCinemaCtrl.FORMAT_INT16);
+                        byte[] inData = ctrl.AppendByteArray(reg, dat);
+
+                        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte) 0x09}, inData);
+                        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte) 0x89}, inData);
+
+                        if (bValidPort0) ctrl.Send(NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
+                        if (bValidPort1) ctrl.Send(NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
+                    }
+
+                    int [][] preg = mCinemaInfo.GetDefaultPReg();
+                    for( int i = 0; i < preg.length; i++ ) {
+                        if( preg[i][1] == -1 ) {
+                            continue;
+                        }
+                        byte[] reg = ctrl.IntToByteArray(treg[i][0], NxCinemaCtrl.FORMAT_INT16);
+                        byte[] dat = ctrl.IntToByteArray(treg[i][1], NxCinemaCtrl.FORMAT_INT16);
+                        byte[] inData = ctrl.AppendByteArray(reg, dat);
+
+                        ctrl.Send(NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData);
+                    }
+                }
 
                 //
                 //  PFPGA Mute off
@@ -732,8 +753,11 @@ public class LoginActivity extends AppCompatActivity {
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
-        boolean isOn = mService.IsOn();
-        mService.RefreshScreenSaver();
+        boolean isOn = false;
+        if( mService != null ) {
+            isOn = mService.IsOn();
+            mService.RefreshScreenSaver();
+        }
 
         return !isOn || super.dispatchTouchEvent(ev);
     }

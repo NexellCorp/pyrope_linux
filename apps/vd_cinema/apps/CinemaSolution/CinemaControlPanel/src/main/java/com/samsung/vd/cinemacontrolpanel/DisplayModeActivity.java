@@ -163,6 +163,16 @@ public class DisplayModeActivity extends AppCompatActivity {
     private Button mBtnWhiteSeamApply;
     private Spinner mSpinnerSuspendTime;
 
+    private VdSpinCtrl mSpinSyncWidth;
+    private Button mBtnApplySyncWidth;
+    private VdSpinCtrl mSpinSyncDelay;
+    private Button mBtnApplySyncDelay;
+    private CheckBox mCheckSyncReverse;
+    private CheckBox mCheckScale;
+    private CheckBox mCheckZeroScale;
+    private CheckBox mCheckSeam;
+    private CheckBox mCheckModule;
+
     private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -678,50 +688,23 @@ public class DisplayModeActivity extends AppCompatActivity {
             }
         });
 
-        mCheckWhiteSeamEmulation.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                Log.i(VD_DTAG, String.format(Locale.US, "Change WhiteSeam Emulation. ( %b )", mCheckWhiteSeamEmulation.isChecked()));
+        //
+        //  Global
+        //
+        mSpinSyncWidth = (VdSpinCtrl)findViewById(R.id.spinSyncWidth);
+        mBtnApplySyncWidth = (Button)findViewById(R.id.btnApplySyncWidth);
+        mSpinSyncDelay = (VdSpinCtrl)findViewById(R.id.spinSyncDelay);
+        mBtnApplySyncDelay = (Button)findViewById(R.id.btnApplySyncDelay);
+        mCheckSyncReverse = (CheckBox)findViewById(R.id.checkSyncReverse);
+        mCheckScale = (CheckBox)findViewById(R.id.checkScale);
+        mCheckZeroScale = (CheckBox)findViewById(R.id.checkZeroScale);
+        mCheckSeam = (CheckBox)findViewById(R.id.checkSeam);
+        mCheckModule = (CheckBox)findViewById(R.id.checkModule);
 
-                mBtnWhiteSeamApply.setEnabled(b);
-                for( VdSpinCtrl spin : mSpinWhiteSeam ) {
-                    spin.setEnabled(b);
-                }
+        mSpinSyncWidth.SetRange(0, 4095);
+        mSpinSyncDelay.SetRange(0, 4095);
 
-                NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-
-                if( mSpinnerWhiteSeamCabinetId.getSelectedItemPosition() == 0 ) {
-                    boolean bValidPort0 = false, bValidPort1 = false;
-                    for( byte id : mCabinet ) {
-                        if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-                        if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-                    }
-
-                    byte[] reg = ctrl.IntToByteArray(0x0189, NxCinemaCtrl.FORMAT_INT16);
-                    byte[] dat = ctrl.IntToByteArray(mCheckWhiteSeamEmulation.isChecked() ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
-                    byte[] inData = ctrl.AppendByteArray(reg, dat);
-
-                    byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-                    byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-                    if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
-                    if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
-                }
-                else {
-                    int pos = mSpinnerWhiteSeamCabinetId.getSelectedItemPosition() - 1;
-                    byte slave = ((mCabinet[pos] % 16) < 8) ? (mCabinet[pos]) : (byte)(mCabinet[pos] | 0x80);
-                    byte[] inData;
-                    inData = new byte[] { slave };
-                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(0x0189, NxCinemaCtrl.FORMAT_INT16));
-                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mCheckWhiteSeamEmulation.isChecked() ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16));
-
-                    ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData );
-                }
-
-                new AsyncTaskWhiteSeamRead(mCabinet, mSpinnerWhiteSeamCabinetId.getSelectedItemPosition(), mCheckWhiteSeamEmulation.isChecked()).execute();
-            }
-        });
-
+        UnregisterListener();
 
         //
         //  Spinner Cabinet Number
@@ -804,6 +787,101 @@ public class DisplayModeActivity extends AppCompatActivity {
         });
     }
 
+    private void RegisterListener() {
+        mBtnApplySyncWidth.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ApplySyncWidth();
+            }
+        });
+
+        mSpinSyncWidth.SetOnChangeListener(new VdSpinCtrl.OnChangeListener() {
+            @Override
+            public void onChange(int value) {
+                ApplySyncWidth();
+            }
+        });
+
+        mSpinSyncWidth.SetOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+                ApplySyncWidth();
+                return false;
+            }
+        });
+
+        mBtnApplySyncDelay.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ApplySyncDelay();
+            }
+        });
+
+        mSpinSyncDelay.SetOnChangeListener(new VdSpinCtrl.OnChangeListener() {
+            @Override
+            public void onChange(int value) {
+                ApplySyncDelay();
+            }
+        });
+
+        mSpinSyncDelay.SetOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+                ApplySyncDelay();
+                return false;
+            }
+        });
+
+        mCheckSyncReverse.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                ApplySyncReverse();
+            }
+        });
+
+        mCheckScale.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                ApplyScale();
+            }
+        });
+
+        mCheckZeroScale.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                ApplyZeroScale();
+            }
+        });
+
+        mCheckSeam.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                ApplySeam();
+            }
+        });
+
+        mCheckModule.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                ApplyModule();
+            }
+        });
+    }
+
+    private void UnregisterListener() {
+        mBtnApplySyncWidth.setOnClickListener(null);
+        mSpinSyncWidth.SetOnChangeListener(null);
+        mSpinSyncWidth.SetOnEditorActionListener(null);
+        mBtnApplySyncDelay.setOnClickListener(null);
+        mSpinSyncDelay.SetOnChangeListener(null);
+        mSpinSyncDelay.SetOnEditorActionListener(null);
+        mCheckSyncReverse.setOnCheckedChangeListener(null);
+        mCheckScale.setOnCheckedChangeListener(null);
+        mCheckZeroScale.setOnCheckedChangeListener(null);
+        mCheckSeam.setOnCheckedChangeListener(null);
+        mCheckModule.setOnCheckedChangeListener(null);
+    }
+
     private TextButtonAdapter.OnClickListener mTextbuttonAdapterClickListener = new TextButtonAdapter.OnClickListener() {
         @Override
         public void onClickListener(int position) {
@@ -840,8 +918,12 @@ public class DisplayModeActivity extends AppCompatActivity {
         tabSpec5.setContent(R.id.tabWhiteSeamValue);
 
         TabHost.TabSpec tabSpec6 = tabHost.newTabSpec("TAB6");
-        tabSpec6.setIndicator("Set up");
-        tabSpec6.setContent(R.id.tabSetup);
+        tabSpec6.setIndicator("Global");
+        tabSpec6.setContent(R.id.tabGlobal);
+
+        TabHost.TabSpec tabSpec7 = tabHost.newTabSpec("TAB7");
+        tabSpec7.setIndicator("Set up");
+        tabSpec7.setContent(R.id.tabSetup);
 
         tabHost.addTab(tabSpec0);
         tabHost.addTab(tabSpec1);
@@ -850,6 +932,13 @@ public class DisplayModeActivity extends AppCompatActivity {
         tabHost.addTab(tabSpec4);
         tabHost.addTab(tabSpec5);
         tabHost.addTab(tabSpec6);
+        tabHost.addTab(tabSpec7);
+
+        for( int i = 0; i < tabHost.getTabWidget().getChildCount(); i++ ) {
+            View tabView = tabHost.getTabWidget().getChildAt(i);
+//            tabView.getLayoutParams().height = ;
+            tabView.setPadding( 5, 5, 5, 5 );
+        }
 
         tabHost.setOnTabChangedListener(mTabChange);
         tabHost.setCurrentTab(0);
@@ -864,7 +953,8 @@ public class DisplayModeActivity extends AppCompatActivity {
             if( tabId.equals("TAB3") ) UpdateDotCorrection();
             if( tabId.equals("TAB4") ) UpdateDotCorrectionExtract();
             if( tabId.equals("TAB5") ) UpdateWhiteSeamValue();
-            if( tabId.equals("TAB6") ) UpdateSetup();
+            if( tabId.equals("TAB6") ) UpdateGlobal();
+            if( tabId.equals("TAB7") ) UpdateSetup();
         }
     };
 
@@ -1052,6 +1142,7 @@ public class DisplayModeActivity extends AppCompatActivity {
     }
 
     private void InitWhiteSeamValue() {
+        mCheckWhiteSeamEmulation.setOnCheckedChangeListener(null);
         mCheckWhiteSeamEmulation.setChecked(false);
 
         boolean bValidPort0 = false, bValidPort1 = false;
@@ -1071,6 +1162,50 @@ public class DisplayModeActivity extends AppCompatActivity {
 
         if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
         if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
+
+        mCheckWhiteSeamEmulation.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                Log.i(VD_DTAG, String.format(Locale.US, "Change WhiteSeam Emulation. ( %b )", mCheckWhiteSeamEmulation.isChecked()));
+
+                mBtnWhiteSeamApply.setEnabled(b);
+                for( VdSpinCtrl spin : mSpinWhiteSeam ) {
+                    spin.setEnabled(b);
+                }
+
+                NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+
+                if( mSpinnerWhiteSeamCabinetId.getSelectedItemPosition() == 0 ) {
+                    boolean bValidPort0 = false, bValidPort1 = false;
+                    for( byte id : mCabinet ) {
+                        if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
+                        if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
+                    }
+
+                    byte[] reg = ctrl.IntToByteArray(0x0189, NxCinemaCtrl.FORMAT_INT16);
+                    byte[] dat = ctrl.IntToByteArray(mCheckWhiteSeamEmulation.isChecked() ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
+                    byte[] inData = ctrl.AppendByteArray(reg, dat);
+
+                    byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+                    byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+                    if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
+                    if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
+                }
+                else {
+                    int pos = mSpinnerWhiteSeamCabinetId.getSelectedItemPosition() - 1;
+                    byte slave = ((mCabinet[pos] % 16) < 8) ? (mCabinet[pos]) : (byte)(mCabinet[pos] | 0x80);
+                    byte[] inData;
+                    inData = new byte[] { slave };
+                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(0x0189, NxCinemaCtrl.FORMAT_INT16));
+                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mCheckWhiteSeamEmulation.isChecked() ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16));
+
+                    ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData );
+                }
+
+                new AsyncTaskWhiteSeamRead(mCabinet, mSpinnerWhiteSeamCabinetId.getSelectedItemPosition(), mCheckWhiteSeamEmulation.isChecked()).execute();
+            }
+        });
     }
 
     private void UpdateWhiteSeamValue() {
@@ -1093,6 +1228,11 @@ public class DisplayModeActivity extends AppCompatActivity {
         else {
             mBtnDotCorrectExtract.setEnabled(false);
         }
+    }
+
+    private void UpdateGlobal() {
+        InitWhiteSeamValue();
+        new AsyncTaskGlobalRead().execute();
     }
 
     private void UpdateSetup() {
@@ -1943,6 +2083,8 @@ public class DisplayModeActivity extends AppCompatActivity {
             //  Emulate is
             //      true    : Emulate Register --> UI
             //      false   : Flash Register --> Emulate Register --> UI
+            if( mCabinet.length == 0 )
+                return null;
 
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
 
@@ -2206,6 +2348,282 @@ public class DisplayModeActivity extends AppCompatActivity {
         }
     }
 
+    private class AsyncTaskGlobalRead extends AsyncTask<Void, Integer, Void> {
+        @Override
+        protected Void doInBackground(Void... voids) {
+            if( mCabinet.length == 0 )
+                return null;
+
+            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+            int [] globalReg = { 0x018B, 0x018C, 0x018A, 0x018D, 0x018E, 0x0192, 0x0055 };
+            int [] globalVal = { 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000 };
+
+            for( int i = 0; i < globalReg.length; i++ )
+            {
+                byte[] result, inData;
+                inData = new byte[] { mCabinet[0] };
+                inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(globalReg[i], NxCinemaCtrl.FORMAT_INT16));
+
+                result = ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_READ, inData );
+                if( result == null || result.length == 0 ) {
+                    Log.i(VD_DTAG, String.format(Locale.US, "i2c read fail.( id: 0x%02X, reg: 0x%04X )", mCabinet[0], globalReg[i] ));
+                    return null;
+                }
+
+                globalVal[i] = ctrl.ByteArrayToInt(result);
+            }
+
+            publishProgress( globalVal[0], globalVal[1], globalVal[2], globalVal[3], globalVal[4], globalVal[5], globalVal[6] );
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            mSpinSyncWidth.SetValue( values[0] );
+            mSpinSyncDelay.SetValue( values[1] );
+
+            mCheckSyncReverse.setChecked( values[2] != 0 ) ;
+            mCheckScale.setChecked( values[3] != 0 );
+            mCheckZeroScale.setChecked( values[4] != 0 );
+            mCheckSeam.setChecked( values[5] != 0 );
+            mCheckModule.setChecked( values[6] != 0 );
+
+            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018B, String.valueOf(values[0]) );
+            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018C, String.valueOf(values[1]) );
+            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018A, String.valueOf(values[2]) );
+            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018D, String.valueOf(values[3] == 0 ? 0 : 1) );
+            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_PREG_0x0199, String.valueOf(values[3] == 0 ? 1 : 0) );
+            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018E, String.valueOf(values[4]) );
+            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x0192, String.valueOf(values[5]) );
+            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x0055, String.valueOf(values[6]) );
+            ((CinemaInfo)getApplicationContext()).UpdateDefaultRegister();
+
+            super.onProgressUpdate(values);
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+            UnregisterListener();
+
+            Log.i(VD_DTAG, ">>> Global Read Start.");
+            CinemaLoading.Show( DisplayModeActivity.this );
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+
+            RegisterListener();
+
+            Log.i(VD_DTAG, ">>> Global Read Done.");
+            CinemaLoading.Hide();
+        }
+    }
+
+    void ApplySyncWidth() {
+        Log.i(VD_DTAG, String.format(Locale.US, "Apply SYNC_WIDTH. ( %d )", mSpinSyncWidth.GetValue()));
+
+        if( mCabinet.length == 0 )
+            return ;
+
+        boolean bValidPort0 = false, bValidPort1 = false;
+        for( byte id : mCabinet ) {
+            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
+            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
+        }
+
+        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+        byte[] reg = ctrl.IntToByteArray(0x018B, NxCinemaCtrl.FORMAT_INT16);
+        byte[] dat = ctrl.IntToByteArray(mSpinSyncWidth.GetValue(), NxCinemaCtrl.FORMAT_INT16);
+        byte[] inData = ctrl.AppendByteArray(reg, dat);
+
+        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+        if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
+        if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
+
+        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018B, String.valueOf(mSpinSyncDelay.GetValue()) );
+        ((CinemaInfo)getApplicationContext()).UpdateDefaultRegister();
+    }
+
+    void ApplySyncDelay() {
+        Log.i(VD_DTAG, String.format(Locale.US, "Apply SYNC_DELAY. ( %d )", mSpinSyncDelay.GetValue()));
+        if( mCabinet.length == 0 )
+            return ;
+
+        boolean bValidPort0 = false, bValidPort1 = false;
+        for( byte id : mCabinet ) {
+            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
+            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
+        }
+
+        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+        byte[] reg = ctrl.IntToByteArray(0x018C, NxCinemaCtrl.FORMAT_INT16);
+        byte[] dat = ctrl.IntToByteArray(mSpinSyncDelay.GetValue(), NxCinemaCtrl.FORMAT_INT16);
+        byte[] inData = ctrl.AppendByteArray(reg, dat);
+
+        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+        if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
+        if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
+
+        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018C, String.valueOf(mSpinSyncDelay.GetValue()) );
+        ((CinemaInfo)getApplicationContext()).UpdateDefaultRegister();
+    }
+
+    void ApplySyncReverse() {
+        Log.i(VD_DTAG, String.format(Locale.US, "Change SYNC_REVERSE. ( %b )", mCheckSyncReverse.isChecked()));
+        if( mCabinet.length == 0 )
+            return ;
+
+        boolean bValidPort0 = false, bValidPort1 = false;
+        for( byte id : mCabinet ) {
+            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
+            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
+        }
+
+        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+        byte[] reg = ctrl.IntToByteArray(0x018A, NxCinemaCtrl.FORMAT_INT16);
+        byte[] dat = ctrl.IntToByteArray(mCheckSyncReverse.isChecked() ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
+        byte[] inData = ctrl.AppendByteArray(reg, dat);
+
+        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+        if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
+        if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
+
+        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018A, String.valueOf(mCheckSyncReverse.isChecked() ? 1 : 0) );
+        ((CinemaInfo)getApplicationContext()).UpdateDefaultRegister();
+    }
+
+    void ApplyScale() {
+        Log.i(VD_DTAG, String.format(Locale.US, "Change Scale. ( %b )", mCheckScale.isChecked()));
+        if( mCabinet.length == 0 )
+            return ;
+
+        boolean bValidPort0 = false, bValidPort1 = false;
+        for( byte id : mCabinet ) {
+            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
+            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
+        }
+
+        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+        ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x01} );
+        {
+            byte[] reg = ctrl.IntToByteArray(0x0199, NxCinemaCtrl.FORMAT_INT16);
+            byte[] dat = ctrl.IntToByteArray(mCheckScale.isChecked() ? 0x0000 : 0x0001, NxCinemaCtrl.FORMAT_INT16);
+            byte[] inData = ctrl.AppendByteArray(reg, dat);
+            ctrl.Send( NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData );
+        }
+        {
+            byte[] reg = ctrl.IntToByteArray(0x018D, NxCinemaCtrl.FORMAT_INT16);
+            byte[] dat = ctrl.IntToByteArray(mCheckScale.isChecked() ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
+            byte[] inData = ctrl.AppendByteArray(reg, dat);
+
+            byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+            byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
+            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
+        }
+        ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x00} );
+
+        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_PREG_0x0199, String.valueOf(mCheckScale.isChecked() ? 0 : 1) );
+        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018D, String.valueOf(mCheckScale.isChecked() ? 1 : 0) );
+        ((CinemaInfo)getApplicationContext()).UpdateDefaultRegister();
+    }
+
+    void ApplyZeroScale() {
+        Log.i(VD_DTAG, String.format(Locale.US, "Change Zero Scale. ( %b )", mCheckZeroScale.isChecked()));
+        if( mCabinet.length == 0 )
+            return ;
+
+        boolean bValidPort0 = false, bValidPort1 = false;
+        for( byte id : mCabinet ) {
+            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
+            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
+        }
+
+        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+        ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x01} );
+        {
+            byte[] reg = ctrl.IntToByteArray(0x018E, NxCinemaCtrl.FORMAT_INT16);
+            byte[] dat = ctrl.IntToByteArray(mCheckZeroScale.isChecked() ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
+            byte[] inData = ctrl.AppendByteArray(reg, dat);
+
+            byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+            byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
+            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
+        }
+        ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x00} );
+
+        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018E, String.valueOf(mCheckZeroScale.isChecked() ? 1 : 0) );
+        ((CinemaInfo)getApplicationContext()).UpdateDefaultRegister();
+    }
+
+    void ApplySeam() {
+        Log.i(VD_DTAG, String.format(Locale.US, "Change Seam. ( %b )", mCheckSeam.isChecked()));
+        if( mCabinet.length == 0 )
+            return ;
+
+        boolean bValidPort0 = false, bValidPort1 = false;
+        for( byte id : mCabinet ) {
+            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
+            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
+        }
+
+        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+        {
+            byte[] reg = ctrl.IntToByteArray(0x0192, NxCinemaCtrl.FORMAT_INT16);
+            byte[] dat = ctrl.IntToByteArray(mCheckSeam.isChecked() ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
+            byte[] inData = ctrl.AppendByteArray(reg, dat);
+
+            byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+            byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
+            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
+        }
+
+        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x0192, String.valueOf(mCheckSeam.isChecked() ? 1 : 0) );
+        ((CinemaInfo)getApplicationContext()).UpdateDefaultRegister();
+    }
+
+    void ApplyModule() {
+        Log.i(VD_DTAG, String.format(Locale.US, "Change Module. ( %b )", mCheckModule.isChecked()));
+        if( mCabinet.length == 0 )
+            return ;
+
+        boolean bValidPort0 = false, bValidPort1 = false;
+        for( byte id : mCabinet ) {
+            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
+            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
+        }
+
+        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+        {
+            byte[] reg = ctrl.IntToByteArray(0x0055, NxCinemaCtrl.FORMAT_INT16);
+            byte[] dat = ctrl.IntToByteArray(mCheckModule.isChecked() ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
+            byte[] inData = ctrl.AppendByteArray(reg, dat);
+
+            byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+            byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
+            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
+        }
+
+        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x0055, String.valueOf(mCheckModule.isChecked() ? 1 : 0) );
+        ((CinemaInfo)getApplicationContext()).UpdateDefaultRegister();
+    }
+
     //
     //  For Screen Rotation
     //
@@ -2280,8 +2698,11 @@ public class DisplayModeActivity extends AppCompatActivity {
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
-        boolean isOn = mService.IsOn();
-        mService.RefreshScreenSaver();
+        boolean isOn = false;
+        if( mService != null ) {
+            isOn = mService.IsOn();
+            mService.RefreshScreenSaver();
+        }
 
         return !isOn || super.dispatchTouchEvent(ev);
     }

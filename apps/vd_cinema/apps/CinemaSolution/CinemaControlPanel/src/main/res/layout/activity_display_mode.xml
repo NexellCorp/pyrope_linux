@@ -102,6 +102,17 @@
                 </RelativeLayout>
 
                 <RelativeLayout
+                    android:id="@+id/tabGlobal"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical">
+                    <include
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        layout="@layout/layout_display_mode_global" />
+                </RelativeLayout>
+
+                <RelativeLayout
                     android:id="@+id/tabSetup"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"

@@ -126,20 +126,20 @@ public class ConfigTconInfo {
         //
         // Debug Message
         //
-        for( int i = 0; i < mModeNum; i++ ) {
-            if( mData[i][0] == null )
-                continue;
-
-            Log.i(VD_DTAG, String.format("* mode %d : %s", i, mDescription[i]));
-            Log.i(VD_DTAG, String.format("-. TGAM0 ( %b ), TGAM1 ( %b ), DGAM0 ( %b ), DGAM1 ( %b )",
-                    mEnable[i][0], mEnable[i][1], mEnable[i][2], mEnable[i][3]) );
-
-            Log.i(VD_DTAG, String.format("> register number for writing : %d", mData[i][0].length));
-            for( int j = 0; j < mData[i][0].length; j++ ) {
-                Log.i(VD_DTAG, String.format("-. reg( %3d, 0x%02x ), data( %4d, 0x%04x )",
-                        mData[i][0][j], mData[i][0][j], mData[i][1][j], mData[i][1][j] ));
-            }
-        }
+//        for( int i = 0; i < mModeNum; i++ ) {
+//            if( mData[i][0] == null )
+//                continue;
+//
+//            Log.i(VD_DTAG, String.format("* mode %d : %s", i, mDescription[i]));
+//            Log.i(VD_DTAG, String.format("-. TGAM0 ( %b ), TGAM1 ( %b ), DGAM0 ( %b ), DGAM1 ( %b )",
+//                    mEnable[i][0], mEnable[i][1], mEnable[i][2], mEnable[i][3]) );
+//
+//            Log.i(VD_DTAG, String.format("> register number for writing : %d", mData[i][0].length));
+//            for( int j = 0; j < mData[i][0].length; j++ ) {
+//                Log.i(VD_DTAG, String.format("-. reg( %3d, 0x%02x ), data( %4d, 0x%04x )",
+//                        mData[i][0][j], mData[i][0][j], mData[i][1][j], mData[i][1][j] ));
+//            }
+//        }
 
         return true;
     }

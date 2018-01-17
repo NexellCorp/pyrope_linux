@@ -82,7 +82,7 @@ public class SystemActivity extends AppCompatActivity {
                 finish();
             }
         });
-        
+
         if( !((CinemaInfo)getApplicationContext()).IsEnableRotate() ) {
             titleBar.SetVisibility(VdTitleBar.BTN_ROTATE, View.GONE);
         }
@@ -401,8 +401,11 @@ public class SystemActivity extends AppCompatActivity {
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
-        boolean isOn = mService.IsOn();
-        mService.RefreshScreenSaver();
+        boolean isOn = false;
+        if( mService != null ) {
+            isOn = mService.IsOn();
+            mService.RefreshScreenSaver();
+        }
 
         return !isOn || super.dispatchTouchEvent(ev);
     }

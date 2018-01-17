@@ -722,19 +722,6 @@ public class TopActivity extends AppCompatActivity {
             }
 
             //
-            // Test Code by doriya
-            //
-            byte[] reg = ctrl.IntToByteArray(0x018D, NxCinemaCtrl.FORMAT_INT16);
-            byte[] data = ctrl.IntToByteArray(0x0000, NxCinemaCtrl.FORMAT_INT16);
-            byte[] inData = ctrl.AppendByteArray(reg, data);
-
-            byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-            byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
-            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
-
-            //
             //  SW Reset
             //
             if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_SW_RESET, new byte[]{(byte)0x09});
@@ -744,6 +731,7 @@ public class TopActivity extends AppCompatActivity {
             //  PFPGA Mute off
             //
             ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x00} );
+
             return null;
 
         }
@@ -855,8 +843,11 @@ public class TopActivity extends AppCompatActivity {
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
-        boolean isOn = mService.IsOn();
-        mService.RefreshScreenSaver();
+        boolean isOn = false;
+        if( mService != null ) {
+            isOn = mService.IsOn();
+            mService.RefreshScreenSaver();
+        }
 
         return !isOn || super.dispatchTouchEvent(ev);
     }

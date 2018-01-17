@@ -22,6 +22,29 @@ public class CinemaInfo extends Application {
     public static final String KEY_MASTERING_MODE   = "mastering.mode";
     public static final String KEY_SCREEN_ROTATE    = "screen.rotate";
 
+    public static final String KEY_TREG_0x018B      = "treg.0x018b";    // REG_WIDTH_CONTROL
+    public static final String KEY_TREG_0x018C      = "treg.0x018c";    // REG_SYNC_DELAY
+    public static final String KEY_TREG_0x018A      = "treg.0x018a";    // REG_SYNC_REVERSE
+    public static final String KEY_TREG_0x018D      = "treg.0x018d";    // REG_SACLE
+    public static final String KEY_TREG_0x018E      = "treg.0x018e";    // REG_ZERO_SCALE
+    public static final String KEY_TREG_0x0192      = "treg.0x0192";    // REG_SEAM_ON
+    public static final String KEY_TREG_0x0055      = "treg.0x0055";    // REG_MODULE_ON
+    public static final String KEY_PREG_0x0199      = "preg.0x0199";    // REG_RESOLUTION
+
+    public static final String[] KEY_TREG_DEFAULT   = {
+        KEY_TREG_0x018B,
+        KEY_TREG_0x018C,
+        KEY_TREG_0x018A,
+        KEY_TREG_0x018D,
+        KEY_TREG_0x018E,
+        KEY_TREG_0x0192,
+        KEY_TREG_0x0055,
+    };
+
+    public static final String[] KEY_PREG_DEFAULT   = {
+        KEY_PREG_0x0199,
+    };
+
     public static final int TCON_ID_OFFSET = 16;
     public static final int TCON_MODULE_NUM = 24;
 
@@ -42,6 +65,23 @@ public class CinemaInfo extends Application {
     //  Cabinet ID      = (slave address        ) & (0x00 or 0x80 ) :: 16, 17, 18, .., 112
     //
     private byte[] mCabinet = new byte[0];
+
+    //
+    //  Default TCON / PFPGA register
+    //
+    private int[][] mDefaultTReg = {
+        { 0x018B, -1 },
+        { 0x018C, -1 },
+        { 0x018A, -1 },
+        { 0x018D, -1 },
+        { 0x018E, -1 },
+        { 0x0192, -1 },
+        { 0x0055, -1 },
+    };
+
+    private int[][] mDefaultPReg = {
+        { 0x0199, -1 },
+    };
 
     //
     //  for debug
@@ -74,7 +114,7 @@ public class CinemaInfo extends Application {
         return true;
     }
 
-    public boolean IsFirstBootAccessEEPRom() { 
+    public boolean IsFirstBootAccessEEPRom() {
 		return false;
 	}
 
@@ -91,6 +131,8 @@ public class CinemaInfo extends Application {
 
         mPrefConfig = new VdPreference( getApplicationContext(), CINEMA_CONFIG );
         mLog = new CinemaLog( getApplicationContext() );
+
+        UpdateDefaultRegister();
     }
 
     //
@@ -224,5 +266,48 @@ public class CinemaInfo extends Application {
         for(int i = 0; i < tmpData.length; i++) {
             mCabinet[i] = tmpData[i];
         }
+    }
+
+    //
+    //  For Default Register
+    //
+    public void UpdateDefaultRegister() {
+        for( int i = 0; i < KEY_TREG_DEFAULT.length; i++ )
+        {
+            String strTemp = GetValue( KEY_TREG_DEFAULT[i] );
+            if(strTemp == null)
+                continue;
+
+            mDefaultTReg[i][1] = Integer.parseInt(strTemp, 10);
+        }
+
+        for( int i = 0; i < KEY_PREG_DEFAULT.length; i++ )
+        {
+            String strTemp = GetValue( KEY_PREG_DEFAULT[i] );
+            if(strTemp == null)
+                continue;
+
+            mDefaultPReg[i][1] = Integer.parseInt(strTemp, 10);
+        }
+
+//        Log.i(VD_DTAG, ">>> TREG Default Value.");
+//        for( int i = 0; i < KEY_TREG_DEFAULT.length; i++ )
+//        {
+//            Log.i(VD_DTAG, String.format(">>> reg( 0x%04X ), dat( 0x%04X )", mDefaultTReg[i][0], mDefaultTReg[i][1]));
+//        }
+//
+//        Log.i(VD_DTAG, ">>> PREG Default Value.");
+//        for( int i = 0; i < KEY_PREG_DEFAULT.length; i++ )
+//        {
+//            Log.i(VD_DTAG, String.format(">>> reg( 0x%04X ), dat( 0x%04X )", mDefaultPReg[i][0], mDefaultPReg[i][1]));
+//        }
+    }
+
+    public int[][] GetDefaultTReg() {
+        return mDefaultTReg;
+    }
+
+    public int[][] GetDefaultPReg() {
+        return mDefaultPReg;
     }
 }

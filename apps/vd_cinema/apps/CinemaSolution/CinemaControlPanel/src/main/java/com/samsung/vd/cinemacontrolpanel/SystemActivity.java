@@ -42,6 +42,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.StringTokenizer;
 
 /**
  * Created by doriya on 11/4/16.
@@ -137,19 +138,30 @@ public class SystemActivity extends AppCompatActivity {
         byte[] clnVersion = ctrl.Send( NxCinemaCtrl.CMD_PLATFORM_IPC_CLIENT_VERSION, null );
         byte[] pfpgaVersion = ctrl.Send( NxCinemaCtrl.CMD_PFPGA_VERSION, null );
 
-        Date date = new Date( BuildConfig.BUILD_DATE + 3600 * 9 * 1000 );
         String[][] strVersion = {
-                { "Application", new SimpleDateFormat("HH:mm:ss, MMM dd yyyy ", Locale.US).format(date) },
+//                { "Application", new SimpleDateFormat("HH:mm:ss, MMM dd yyyy ", Locale.US).format(new Date( BuildConfig.BUILD_DATE + 3600 * 9 * 1000 )) },
                 { "N.AP", (napVersion != null && napVersion.length != 0) ? new String(napVersion) : "Unknown" },
                 { "S.AP", (sapVersion != null && sapVersion.length != 0) ? new String(sapVersion) : "Unknown" },
-                { "P.FPGA", (pfpgaVersion != null && pfpgaVersion.length != 0) ? String.format(Locale.US, "%05d", ctrl.ByteArrayToInt(pfpgaVersion)) : "-1" },
-                { "IPC Server", (srvVersion != null && srvVersion.length != 0) ? new String(srvVersion) : "Unknown" },
-                { "IPC Client", (clnVersion != null && clnVersion.length != 0) ? new String(clnVersion) : "Unknown" },
+                { "P.FPGA", (pfpgaVersion != null && pfpgaVersion.length != 0) ? String.format(Locale.US, "%05d", ctrl.ByteArrayToInt(pfpgaVersion)) : "Unknown" },
+//                { "IPC Server", (srvVersion != null && srvVersion.length != 0) ? new String(srvVersion) : "Unknown" },
+//                { "IPC Client", (clnVersion != null && clnVersion.length != 0) ? new String(clnVersion) : "Unknown" },
         };
 
-        Log.i(VD_DTAG, String.format(Locale.US, "-. IPC Server  : %s", (srvVersion != null && srvVersion.length != 0) ? new String(srvVersion) : "Unknown"));
-        Log.i(VD_DTAG, String.format(Locale.US, "-. IPC Client  : %s", (clnVersion != null && clnVersion.length != 0) ? new String(clnVersion) : "Unknown"));
+        Log.i(VD_DTAG, ">>> Version Information.");
+        for( int i = 0; i < strVersion.length; i++ ) {
+            Log.i(VD_DTAG, String.format(Locale.US, " -. %-12s: %s", strVersion[i][0], strVersion[i][1]));
+        }
 
+        //
+        //  Request VD Cinema. ( Remove Build Time )
+        //
+        for( int i = 0; i < strVersion.length; i++ ) {
+            if( strVersion[i][1].equals("Unknown") )
+                continue;
+
+            String[] strTemp = strVersion[i][1].split( "\\(" );
+            strVersion[i][1] = strTemp[0].trim();
+        }
 
         for( int i = 0; i < strVersion.length; i++ ) {
             mAdapterVersion.add( new StatusDescribeInfo( strVersion[i][0], strVersion[i][1] ) );

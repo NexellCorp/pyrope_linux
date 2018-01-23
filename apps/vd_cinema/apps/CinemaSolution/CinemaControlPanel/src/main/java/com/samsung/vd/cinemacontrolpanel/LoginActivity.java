@@ -331,9 +331,9 @@ public class LoginActivity extends AppCompatActivity {
                 int msbVersion = (tconVersion != null && tconVersion.length != 0) ? ctrl.ByteArrayToInt32(tconVersion, NxCinemaCtrl.MASK_INT32_MSB) : 0;
                 int lsbVersion = (tconVersion != null && tconVersion.length != 0) ? ctrl.ByteArrayToInt32(tconVersion, NxCinemaCtrl.MASK_INT32_LSB) : 0;
 
-                Log.i(VD_DTAG, String.format(Locale.US, "-. TCON #%d    : %05d - %05d", (value & 0x7F) - CinemaInfo.TCON_ID_OFFSET, msbVersion, lsbVersion));
+                Log.i(VD_DTAG, String.format(Locale.US, "-. TCON #%02d    : %05d - %05d", (value & 0x7F) - CinemaInfo.TCON_ID_OFFSET, msbVersion, lsbVersion));
             }
-            Log.i(VD_DTAG, String.format(Locale.US, "-. PFPGA       : %05d", (pfpgaVersion != null && pfpgaVersion.length != 0) ? ctrl.ByteArrayToInt(pfpgaVersion) : 0));
+            Log.i(VD_DTAG, String.format(Locale.US, "-. PFPGA       : %s", (pfpgaVersion != null && pfpgaVersion.length != 0) ? String.format(Locale.US, "%05d", ctrl.ByteArrayToInt(pfpgaVersion)) : "Unknown"));
             Log.i(VD_DTAG, String.format(Locale.US, "-. IPC Server  : %s", (srvVersion != null && srvVersion.length != 0) ? new String(srvVersion) : "Unknown"));
             Log.i(VD_DTAG, String.format(Locale.US, "-. IPC Client  : %s", (clnVersion != null && clnVersion.length != 0) ? new String(clnVersion) : "Unknown"));
 

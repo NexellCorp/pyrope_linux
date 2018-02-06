@@ -32,6 +32,11 @@ CPPOBJS +=	\
 	ipc/NX_IPCClient.o \
 	ipc/NX_IPCServer.o
 
+# Add EEPROM Sources
+CPPOBJS += \
+	eeprom/CNX_EEPRom.o	\
+	eeprom/CNX_EEPRomDataParser.o
+
 # Add UART Sources
 CPPOBJS += \
 	uart/CNX_Uart.o	\

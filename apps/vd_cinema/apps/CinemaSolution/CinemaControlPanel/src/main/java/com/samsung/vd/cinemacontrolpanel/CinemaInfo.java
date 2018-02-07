@@ -22,6 +22,11 @@ public class CinemaInfo extends Application {
     public static final String KEY_MASTERING_MODE   = "mastering.mode";
     public static final String KEY_SCREEN_ROTATE    = "screen.rotate";
 
+    public static final String KEY_UPDATE_TGAM0     = "update.tgam0";   // 0: skip, 1: eeprom, 2: usb
+    public static final String KEY_UPDATE_TGAM1     = "update.tgam1";   // 0: skip, 1: eeprom, 2: usb
+    public static final String KEY_UPDATE_DGAM0     = "update.dgam0";   // 0: skip, 1: eeprom, 2: usb
+    public static final String KEY_UPDATE_DGAM1     = "update.dgam1";   // 0: skip, 1: eeprom, 2: usb
+
     public static final String KEY_TREG_0x018B      = "treg.0x018b";    // REG_WIDTH_CONTROL
     public static final String KEY_TREG_0x018C      = "treg.0x018c";    // REG_SYNC_DELAY
     public static final String KEY_TREG_0x018A      = "treg.0x018a";    // REG_SYNC_REVERSE
@@ -29,6 +34,9 @@ public class CinemaInfo extends Application {
     public static final String KEY_TREG_0x018E      = "treg.0x018e";    // REG_ZERO_SCALE
     public static final String KEY_TREG_0x0192      = "treg.0x0192";    // REG_SEAM_ON
     public static final String KEY_TREG_0x0055      = "treg.0x0055";    // REG_MODULE_ON
+    public static final String KEY_TREG_0x0004      = "treg.0x0004";    // REG_XYZ_TO_RGB
+    public static final String KEY_TREG_0x0100      = "treg.0x0100";    // REG_LIVE_LOD_EN
+    public static final String KEY_TREG_0x011E      = "treg.0x011E";    // REG_LOD_INSERT_EN
     public static final String KEY_PREG_0x0199      = "preg.0x0199";    // REG_RESOLUTION
 
     public static final String[] KEY_TREG_DEFAULT   = {
@@ -39,6 +47,9 @@ public class CinemaInfo extends Application {
         KEY_TREG_0x018E,
         KEY_TREG_0x0192,
         KEY_TREG_0x0055,
+        KEY_TREG_0x0004,
+        KEY_TREG_0x0100,
+        KEY_TREG_0x011E,
     };
 
     public static final String[] KEY_PREG_DEFAULT   = {
@@ -77,6 +88,9 @@ public class CinemaInfo extends Application {
         { 0x018E, -1 },
         { 0x0192, -1 },
         { 0x0055, -1 },
+        { 0x0004, -1 },
+        { 0x0100, -1 },
+        { 0x011E, -1 },
     };
 
     private int[][] mDefaultPReg = {
@@ -115,7 +129,7 @@ public class CinemaInfo extends Application {
     }
 
     public boolean IsFirstBootAccessEEPRom() {
-		return false;
+		return true;
 	}
 
     public int GetBootTime() {

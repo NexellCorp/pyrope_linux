@@ -128,6 +128,8 @@ public class FileManager {
             return false;
         }
 
+        MakeDirectory( outFile.substring(0, outFile.lastIndexOf("/") + 1) );
+
         FileInputStream inStream = null;
         FileOutputStream outStream = null;
 

@@ -38,262 +38,423 @@
             android:layout_weight="0.7" />
     </LinearLayout>
 
-    <LinearLayout
+    <ScrollView
+        android:background="@drawable/draw_line_border"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="5dp"
-        android:layout_marginRight="5dp"
+        android:layout_height="match_parent"
         android:gravity="center"
-        android:weightSum="1">
-
-        <TextView
-            android:background="@drawable/draw_line_border"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="3D SYNC WIDTH CONTROL"
-            android:gravity="center"
-            android:paddingTop="15dp"
-            android:paddingBottom="15dp"
-            android:layout_weight="0.3"/>
+        android:orientation="vertical" >
 
         <LinearLayout
-            android:background="@drawable/draw_line_border"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:paddingTop="4dp"
-            android:paddingBottom="3dp"
-            android:layout_weight="0.5">
-
-            <com.samsung.vd.baseutils.VdSpinCtrl
-                android:layout_width="wrap_content"
+            android:id="@+id/layoutMastering"
+            android:layout_width="match_parent"
+            android:orientation="vertical"
+            android:layout_height="wrap_content" >
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:id="@+id/spinSyncWidth" />
+                android:layout_marginLeft="5dp"
+                android:layout_marginRight="5dp"
+                android:gravity="center"
+                android:weightSum="1">
+
+                <TextView
+                    android:background="@drawable/draw_line_border"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:text="3D SYNC WIDTH CONTROL"
+                    android:gravity="center"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
+                    android:layout_weight="0.3"/>
+
+                <LinearLayout
+                    android:background="@drawable/draw_line_border"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="3dp"
+                    android:layout_weight="0.5">
+
+                    <com.samsung.vd.baseutils.VdSpinCtrl
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/spinSyncWidth" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:background="@drawable/draw_line_border"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="3dp"
+                    android:layout_weight="0.2">
+                    <Button
+                        android:id="@+id/btnApplySyncWidth"
+                        android:text="Apply"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="5dp"
+                android:layout_marginRight="5dp"
+                android:gravity="center"
+                android:weightSum="1">
+
+                <TextView
+                    android:background="@drawable/draw_line_border"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:text="3D SYNC DELAY"
+                    android:gravity="center"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
+                    android:layout_weight="0.3"/>
+
+                <LinearLayout
+                    android:background="@drawable/draw_line_border"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="3dp"
+                    android:layout_weight="0.5">
+
+                    <com.samsung.vd.baseutils.VdSpinCtrl
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/spinSyncDelay" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:background="@drawable/draw_line_border"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="3dp"
+                    android:layout_weight="0.2">
+                    <Button
+                        android:id="@+id/btnApplySyncDelay"
+                        android:text="Apply"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="5dp"
+                android:layout_marginRight="5dp"
+                android:gravity="center"
+                android:weightSum="1">
+
+                <TextView
+                    android:background="@drawable/draw_line_border"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:text="3D SYNC REVERSE"
+                    android:gravity="center"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
+                    android:layout_weight="0.3"/>
+
+                <LinearLayout
+                    android:background="@drawable/draw_line_border"
+                    android:layout_width="0px"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="11dp"
+                    android:layout_weight="0.7" >
+
+                    <CheckBox
+                        android:id="@+id/checkSyncReverse"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?android:attr/textAppearanceMedium"
+                        android:text="ON/OFF" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="5dp"
+                android:layout_marginRight="5dp"
+                android:gravity="center"
+                android:weightSum="1">
+
+                <TextView
+                    android:background="@drawable/draw_line_border"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:text="Scaling ON/OFF"
+                    android:gravity="center"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
+                    android:layout_weight="0.3"/>
+
+                <LinearLayout
+                    android:background="@drawable/draw_line_border"
+                    android:layout_width="0px"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="11dp"
+                    android:layout_weight="0.7" >
+
+                    <CheckBox
+                        android:id="@+id/checkScale"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?android:attr/textAppearanceMedium"
+                        android:layout_marginRight="80dp"
+                        android:text="2K" />
+
+                    <CheckBox
+                        android:id="@+id/checkZeroScale"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?android:attr/textAppearanceMedium"
+                        android:text="Zero Scale" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="5dp"
+                android:layout_marginRight="5dp"
+                android:gravity="center"
+                android:weightSum="1">
+
+                <TextView
+                    android:background="@drawable/draw_line_border"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:text="Seam ON/OFF"
+                    android:gravity="center"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
+                    android:layout_weight="0.3"/>
+
+                <LinearLayout
+                    android:background="@drawable/draw_line_border"
+                    android:layout_width="0px"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="11dp"
+                    android:layout_weight="0.7" >
+
+                    <CheckBox
+                        android:id="@+id/checkSeam"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?android:attr/textAppearanceMedium"
+                        android:text="ON/OFF" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="5dp"
+                android:layout_marginRight="5dp"
+                android:gravity="center"
+                android:weightSum="1">
+
+                <TextView
+                    android:background="@drawable/draw_line_border"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:text="Module Correction"
+                    android:gravity="center"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
+                    android:layout_weight="0.3"/>
+
+                <LinearLayout
+                    android:background="@drawable/draw_line_border"
+                    android:layout_width="0px"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="11dp"
+                    android:layout_weight="0.7" >
+
+                    <CheckBox
+                        android:id="@+id/checkModule"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?android:attr/textAppearanceMedium"
+                        android:text="ON/OFF" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="5dp"
+                android:layout_marginRight="5dp"
+                android:gravity="center"
+                android:weightSum="1">
+
+                <TextView
+                    android:background="@drawable/draw_line_border"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:text="RGB / XYZ Input"
+                    android:gravity="center"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
+                    android:layout_weight="0.3"/>
+
+                <LinearLayout
+                    android:background="@drawable/draw_line_border"
+                    android:layout_width="0px"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="11dp"
+                    android:layout_weight="0.7" >
+
+                    <CheckBox
+                        android:id="@+id/checkXyzInput"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?android:attr/textAppearanceMedium"
+                        android:text="XYZ Input" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="5dp"
+                android:layout_marginRight="5dp"
+                android:gravity="center"
+                android:weightSum="1">
+
+                <TextView
+                    android:background="@drawable/draw_line_border"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:text="Led Open Detection"
+                    android:gravity="center"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
+                    android:layout_weight="0.3"/>
+
+                <LinearLayout
+                    android:background="@drawable/draw_line_border"
+                    android:layout_width="0px"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="11dp"
+                    android:layout_weight="0.7" >
+
+                    <CheckBox
+                        android:id="@+id/checkLedOpenDetect"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?android:attr/textAppearanceMedium"
+                        android:text="ON/OFF" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="5dp"
+                android:layout_marginRight="5dp"
+                android:gravity="center"
+                android:weightSum="1">
+
+                <TextView
+                    android:background="@drawable/draw_line_border"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:text="Lod Removal"
+                    android:gravity="center"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
+                    android:layout_weight="0.3"/>
+
+                <LinearLayout
+                    android:background="@drawable/draw_line_border"
+                    android:layout_width="0px"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="11dp"
+                    android:layout_weight="0.7" >
+
+                    <CheckBox
+                        android:id="@+id/checkLodRemoval"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?android:attr/textAppearanceMedium"
+                        android:text="ON/OFF" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="5dp"
+                android:layout_marginRight="5dp"
+                android:gravity="center"
+                android:weightSum="1">
+
+                <TextView
+                    android:background="@drawable/draw_line_border"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:text="LOD Reset"
+                    android:gravity="center"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp"
+                    android:layout_weight="0.3"/>
+
+                <LinearLayout
+                    android:background="@drawable/draw_line_border"
+                    android:layout_width="0px"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="3dp"
+                    android:layout_weight="0.7" >
+
+                    <Button
+                        android:id="@+id/btnLodReset"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?android:attr/textAppearanceMedium"
+                        android:text="Apply" />
+                </LinearLayout>
+            </LinearLayout>
         </LinearLayout>
-
-        <LinearLayout
-            android:background="@drawable/draw_line_border"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:paddingTop="4dp"
-            android:paddingBottom="3dp"
-            android:layout_weight="0.2">
-            <Button
-                android:id="@+id/btnApplySyncWidth"
-                android:text="Apply"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center" />
-        </LinearLayout>
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="5dp"
-        android:layout_marginRight="5dp"
-        android:gravity="center"
-        android:weightSum="1">
-
-        <TextView
-            android:background="@drawable/draw_line_border"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="3D SYNC DELAY"
-            android:gravity="center"
-            android:paddingTop="15dp"
-            android:paddingBottom="15dp"
-            android:layout_weight="0.3"/>
-
-        <LinearLayout
-            android:background="@drawable/draw_line_border"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:paddingTop="4dp"
-            android:paddingBottom="3dp"
-            android:layout_weight="0.5">
-
-            <com.samsung.vd.baseutils.VdSpinCtrl
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/spinSyncDelay" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:background="@drawable/draw_line_border"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:paddingTop="4dp"
-            android:paddingBottom="3dp"
-            android:layout_weight="0.2">
-            <Button
-                android:id="@+id/btnApplySyncDelay"
-                android:text="Apply"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center" />
-        </LinearLayout>
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="5dp"
-        android:layout_marginRight="5dp"
-        android:gravity="center"
-        android:weightSum="1">
-
-        <TextView
-            android:background="@drawable/draw_line_border"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="3D SYNC REVERSE"
-            android:gravity="center"
-            android:paddingTop="15dp"
-            android:paddingBottom="15dp"
-            android:layout_weight="0.3"/>
-
-        <LinearLayout
-            android:background="@drawable/draw_line_border"
-            android:layout_width="0px"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:paddingTop="12dp"
-            android:paddingBottom="11dp"
-            android:layout_weight="0.7" >
-
-            <CheckBox
-                android:id="@+id/checkSyncReverse"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="ON/OFF" />
-        </LinearLayout>
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="5dp"
-        android:layout_marginRight="5dp"
-        android:gravity="center"
-        android:weightSum="1">
-
-        <TextView
-            android:background="@drawable/draw_line_border"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="Scaling ON/OFF"
-            android:gravity="center"
-            android:paddingTop="15dp"
-            android:paddingBottom="15dp"
-            android:layout_weight="0.3"/>
-
-        <LinearLayout
-            android:background="@drawable/draw_line_border"
-            android:layout_width="0px"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:paddingTop="12dp"
-            android:paddingBottom="11dp"
-            android:layout_weight="0.7" >
-
-            <CheckBox
-                android:id="@+id/checkScale"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:layout_marginRight="80dp"
-                android:text="2K" />
-
-            <CheckBox
-                android:id="@+id/checkZeroScale"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="Zero Scale" />
-        </LinearLayout>
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="5dp"
-        android:layout_marginRight="5dp"
-        android:gravity="center"
-        android:weightSum="1">
-
-        <TextView
-            android:background="@drawable/draw_line_border"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="Seam ON/OFF"
-            android:gravity="center"
-            android:paddingTop="15dp"
-            android:paddingBottom="15dp"
-            android:layout_weight="0.3"/>
-
-        <LinearLayout
-            android:background="@drawable/draw_line_border"
-            android:layout_width="0px"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:paddingTop="12dp"
-            android:paddingBottom="11dp"
-            android:layout_weight="0.7" >
-
-            <CheckBox
-                android:id="@+id/checkSeam"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="ON/OFF" />
-        </LinearLayout>
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="5dp"
-        android:layout_marginRight="5dp"
-        android:gravity="center"
-        android:weightSum="1">
-
-        <TextView
-            android:background="@drawable/draw_line_border"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="Module Correction"
-            android:gravity="center"
-            android:paddingTop="15dp"
-            android:paddingBottom="15dp"
-            android:layout_weight="0.3"/>
-
-        <LinearLayout
-            android:background="@drawable/draw_line_border"
-            android:layout_width="0px"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:paddingTop="12dp"
-            android:paddingBottom="11dp"
-            android:layout_weight="0.7" >
-
-            <CheckBox
-                android:id="@+id/checkModule"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="ON/OFF" />
-        </LinearLayout>
-    </LinearLayout>
-
+    </ScrollView>
 </LinearLayout>

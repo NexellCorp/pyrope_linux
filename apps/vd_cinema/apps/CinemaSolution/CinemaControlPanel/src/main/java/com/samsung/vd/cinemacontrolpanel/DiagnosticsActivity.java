@@ -172,6 +172,13 @@ public class DiagnosticsActivity extends AppCompatActivity {
             }
         });
 
+        CheckBox checkLodRemoval1 = (CheckBox)findViewById(R.id.checkLodRemoval1);
+        CheckBox checkLodRemoval2 = (CheckBox)findViewById(R.id.checkLodRemoval2);
+
+        checkFullWhite.setVisibility(View.GONE);
+        checkLedOpenDetect.setVisibility(View.GONE);
+        checkLodRemoval1.setVisibility(View.GONE);
+        checkLodRemoval2.setVisibility(View.GONE);
 
         //
         //  CABINET DOOR

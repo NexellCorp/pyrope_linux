@@ -23,13 +23,13 @@ public class ConfigPfpgaInfo {
 
     public static final String NAME = "P_REG.txt";
 
-    private static final int MAX_MODE_NUM = 10;
+    private static final int MAX_MODE_NUM = 20;
     private static final int NUM_INDEX = 1;
     private static final int NUM_ENABLE = 1;
     private static final int NUM_REG_NUMBER = 1;
 
     private int mModeNum = 0;
-    private boolean[] mEnable = new boolean[MAX_MODE_NUM];
+    private int[] mEnable = new int[MAX_MODE_NUM];
     private int[] mDataNum = new int[MAX_MODE_NUM];
     private int[][][] mData = new int[MAX_MODE_NUM][2][];
 
@@ -73,13 +73,25 @@ public class ConfigPfpgaInfo {
                 else if( idxLine < NUM_INDEX + NUM_ENABLE ) {
                     for( int i = 0; i < strSplit.length; i++ )
                     {
-                        mEnable[idxLine-NUM_INDEX] = (Integer.parseInt( strSplit[i], 10 ) == 1);
+                        try {
+                            mEnable[i] = Integer.parseInt( strSplit[i], 10 );
+                        }
+                        catch (NumberFormatException e) {
+                            Log.i(VD_DTAG, String.format("Fail, Parse(). ( token: %s )", strSplit[i]));
+                            return false;
+                        }
                     }
                 }
                 else if( idxLine < NUM_INDEX + NUM_ENABLE + NUM_REG_NUMBER ) {
                     for( int i = 0; i < strSplit.length; i++ )
                     {
-                        mDataNum[i] = Integer.parseInt( strSplit[i], 10 );
+                        try {
+                            mDataNum[i] = Integer.parseInt(strSplit[i], 10);
+                        }
+                        catch (NumberFormatException e) {
+                            Log.i(VD_DTAG, String.format("Fail, Parse(). ( token: %s )", strSplit[i]));
+                            return false;
+                        }
 
                         mData[i][0] = new int[mDataNum[i]];
                         mData[i][1] = new int[mDataNum[i]];
@@ -95,8 +107,14 @@ public class ConfigPfpgaInfo {
                         for( int j = curPos; j < MAX_MODE_NUM; j++ ) {
                             if( idxData / 2 < mDataNum[j] ) {
 
-                                mData[j][idxData % 2][idxData/2] =
-                                        ((idxData % 2) == 0) ? Integer.decode( strSplit[i] ) : Integer.parseInt( strSplit[i], 10 );
+                                try {
+                                    mData[j][idxData % 2][idxData/2] =
+                                            ((idxData % 2) == 0) ? Integer.decode( strSplit[i] ) : Integer.parseInt( strSplit[i], 10 );
+                                }
+                                catch (NumberFormatException e) {
+                                    Log.i(VD_DTAG, String.format("Fail, Parse(). ( token: %s )", strSplit[i]));
+                                    return false;
+                                }
 
                                 curPos++;
                                 break;
@@ -117,26 +135,26 @@ public class ConfigPfpgaInfo {
         //
         // Debug Message
         //
-        for( int i = 0; i < mModeNum; i++ ) {
-            if( mData[i][0] == null )
-                continue;
-
-            Log.i(VD_DTAG, String.format("* mode %d", i));
-            Log.i(VD_DTAG, String.format("-. Uniformity Correction ( %b )", mEnable[i] ));
-            Log.i(VD_DTAG, String.format("> register number for writing : %d", mData[i][0].length));
-            for( int j = 0; j < mData[i][0].length; j++ ) {
-                Log.i(VD_DTAG, String.format("-. reg( %3d, 0x%02x ), data( %4d, 0x%04x )",
-                        mData[i][0][j], mData[i][0][j], mData[i][1][j], mData[i][1][j] ));
-            }
-        }
+//        for( int i = 0; i < mModeNum; i++ ) {
+//            if( mData[i][0] == null )
+//                continue;
+//
+//            Log.i(VD_DTAG, String.format("* mode %d", i));
+//            Log.i(VD_DTAG, String.format("-. Uniformity Correction ( %d )", mEnable[i] ));
+//            Log.i(VD_DTAG, String.format("> register number for writing : %d", mData[i][0].length));
+//            for( int j = 0; j < mData[i][0].length; j++ ) {
+//                Log.i(VD_DTAG, String.format("-. reg( %3d, 0x%02x ), data( %4d, 0x%04x )",
+//                        mData[i][0][j], mData[i][0][j], mData[i][1][j], mData[i][1][j] ));
+//            }
+//        }
 
         return true;
     }
 
     int GetModeNum() { return mModeNum; }
 
-    boolean GetEnableUpdateUniformity( int mode ) {
-        return (mModeNum > mode) && mEnable[mode];
+    int GetEnableUpdateUniformity( int mode ) {
+        return (mModeNum > mode) ? mEnable[mode] : 0;
     }
 
     int[] GetRegister( int mode ) {

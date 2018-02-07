@@ -31,7 +31,7 @@ public class ConfigTconInfo {
     private static final int NUM_REG_NUMBER = 1;
 
     private int mModeNum = 0;
-    private boolean[][] mEnable = new boolean[MAX_MODE_NUM][4];
+    private int[][] mEnable = new int[MAX_MODE_NUM][4];
     private String[] mDescription = new String[MAX_MODE_NUM];
     private int[] mDataNum = new int[MAX_MODE_NUM];
     private int[][][] mData = new int[MAX_MODE_NUM][2][];
@@ -76,7 +76,13 @@ public class ConfigTconInfo {
                 else if( idxLine < NUM_INDEX + NUM_ENABLE ) {
                     for( int i = 0; i < strSplit.length; i++ )
                     {
-                        mEnable[i][idxLine-NUM_INDEX] = (Integer.parseInt( strSplit[i], 10 ) == 1);
+                        try {
+                            mEnable[i][idxLine - NUM_INDEX] = Integer.parseInt(strSplit[i], 10);
+                        }
+                        catch (NumberFormatException e) {
+                                Log.i(VD_DTAG, String.format("Fail, Parse(). ( token: %s )", strSplit[i]));
+                                return false;
+                        }
                     }
                 }
                 else if( idxLine < NUM_INDEX + NUM_ENABLE + NUM_DESCRIPTION ) {
@@ -88,7 +94,13 @@ public class ConfigTconInfo {
                 else if( idxLine < NUM_INDEX + NUM_ENABLE + NUM_DESCRIPTION + NUM_REG_NUMBER ) {
                     for( int i = 0; i < strSplit.length; i++ )
                     {
-                        mDataNum[i] = Integer.parseInt( strSplit[i], 10 );
+                        try {
+                            mDataNum[i] = Integer.parseInt(strSplit[i], 10);
+                        }
+                        catch (NumberFormatException e) {
+                            Log.i(VD_DTAG, String.format("Fail, Parse(). ( token: %s )", strSplit[i]));
+                            return false;
+                        }
 
                         mData[i][0] = new int[mDataNum[i]];
                         mData[i][1] = new int[mDataNum[i]];
@@ -103,9 +115,14 @@ public class ConfigTconInfo {
 
                         for( int j = curPos; j < MAX_MODE_NUM; j++ ) {
                             if( idxData / 2 < mDataNum[j] ) {
-
-                                mData[j][idxData % 2][idxData/2] =
-                                        ((idxData % 2) == 0) ? Integer.decode( strSplit[i] ) : Integer.parseInt( strSplit[i], 10 );
+                                try {
+                                    mData[j][idxData % 2][idxData / 2] =
+                                            ((idxData % 2) == 0) ? Integer.decode(strSplit[i]) : Integer.parseInt(strSplit[i], 10);
+                                }
+                                catch (NumberFormatException e) {
+                                    Log.i(VD_DTAG, String.format("Fail, Parse(). ( token: %s )", strSplit[i]));
+                                    return false;
+                                }
 
                                 curPos++;
                                 break;
@@ -131,7 +148,7 @@ public class ConfigTconInfo {
 //                continue;
 //
 //            Log.i(VD_DTAG, String.format("* mode %d : %s", i, mDescription[i]));
-//            Log.i(VD_DTAG, String.format("-. TGAM0 ( %b ), TGAM1 ( %b ), DGAM0 ( %b ), DGAM1 ( %b )",
+//            Log.i(VD_DTAG, String.format("-. TGAM0 ( %d ), TGAM1 ( %d ), DGAM0 ( %d ), DGAM1 ( %d )",
 //                    mEnable[i][0], mEnable[i][1], mEnable[i][2], mEnable[i][3]) );
 //
 //            Log.i(VD_DTAG, String.format("> register number for writing : %d", mData[i][0].length));
@@ -148,7 +165,7 @@ public class ConfigTconInfo {
         return mModeNum;
     }
 
-    boolean[] GetEnableUpdateGamma( int mode ) {
+    int[] GetEnableUpdateGamma( int mode ) {
         return (mModeNum > mode) ? mEnable[mode] : null;
     }
 

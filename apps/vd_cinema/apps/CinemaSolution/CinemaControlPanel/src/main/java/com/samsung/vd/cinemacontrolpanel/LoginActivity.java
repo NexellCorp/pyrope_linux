@@ -408,22 +408,20 @@ public class LoginActivity extends AppCompatActivity {
                 //  Parse P_REG.txt
                 //
                 String[] resultPath;
-                boolean enableUniformity = false;
-                boolean[] enableGamma = {false, };
+                int enableUniformity = 0;
+                int[] enableGamma = {0, 0, 0, 0};
 
                 resultPath = FileManager.CheckFile(ConfigPfpgaInfo.PATH_TARGET, ConfigPfpgaInfo.NAME);
                 for( String file : resultPath ) {
                     ConfigPfpgaInfo info = new ConfigPfpgaInfo();
                     if( info.Parse( file ) ) {
-                        if( (10 <= mInitMode) && ((mInitMode-10) < info.GetModeNum()) ) {
-                            enableUniformity = info.GetEnableUpdateUniformity(mInitMode-10);
-                            for( int i = 0; i < info.GetRegister(mInitMode-10).length; i++ ) {
-                                byte[] reg = ctrl.IntToByteArray(info.GetRegister(mInitMode-10)[i], NxCinemaCtrl.FORMAT_INT16);
-                                byte[] data = ctrl.IntToByteArray(info.GetData(mInitMode-10)[i], NxCinemaCtrl.FORMAT_INT16);
-                                byte[] inData = ctrl.AppendByteArray(reg, data);
+                        enableUniformity = info.GetEnableUpdateUniformity(mInitMode);
+                        for( int i = 0; i < info.GetRegister(mInitMode).length; i++ ) {
+                            byte[] reg = ctrl.IntToByteArray(info.GetRegister(mInitMode)[i], NxCinemaCtrl.FORMAT_INT16);
+                            byte[] data = ctrl.IntToByteArray(info.GetData(mInitMode)[i], NxCinemaCtrl.FORMAT_INT16);
+                            byte[] inData = ctrl.AppendByteArray(reg, data);
 
-                                ctrl.Send( NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData );
-                            }
+                            ctrl.Send( NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData );
                         }
                     }
                 }
@@ -435,7 +433,7 @@ public class LoginActivity extends AppCompatActivity {
                 for( String file : resultPath ) {
                     LedUniformityInfo info = new LedUniformityInfo();
                     if( info.Parse( file ) ) {
-                        if( !enableUniformity ) {
+                        if( enableUniformity == 0 ) {
                             Log.i(VD_DTAG, String.format( "Skip. Update Uniformity. ( %s )", file ));
                             continue;
                         }
@@ -453,6 +451,7 @@ public class LoginActivity extends AppCompatActivity {
                 for( String file : resultPath ) {
                     tconEEPRomInfo.Parse(file);
                 }
+
                 if( (10 > mInitMode) && (mInitMode < tconEEPRomInfo.GetModeNum())) {
                     enableGamma = tconEEPRomInfo.GetEnableUpdateGamma(mInitMode);
                     for( int i = 0; i < tconEEPRomInfo.GetRegister(mInitMode).length; i++ ) {
@@ -473,6 +472,7 @@ public class LoginActivity extends AppCompatActivity {
                 for( String file : resultPath ) {
                     tconUsbInfo.Parse(file);
                 }
+
                 if( (10 <= mInitMode) && ((mInitMode-10) < tconUsbInfo.GetModeNum())) {
                     enableGamma = tconUsbInfo.GetEnableUpdateGamma(mInitMode-10);
                     for( int i = 0; i < tconUsbInfo.GetRegister(mInitMode-10).length; i++ ) {
@@ -487,6 +487,7 @@ public class LoginActivity extends AppCompatActivity {
                         if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
                     }
                 }
+
                 //
                 //  Write Gamma
                 //
@@ -495,11 +496,11 @@ public class LoginActivity extends AppCompatActivity {
                     for( String file : resultPath ) {
                         LedGammaInfo info = new LedGammaInfo();
                         if( info.Parse( file ) ) {
-                            if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !enableGamma[0]) ||
-                                    (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && !enableGamma[1]) ||
-                                    (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !enableGamma[2]) ||
-                                    (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && !enableGamma[3]) ) {
-                                Log.i(VD_DTAG, String.format( "Skip. Update Gamma. ( %s )", file ));
+                            if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] != 1) ||
+                                    (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] != 1) ||
+                                    (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] != 1) ||
+                                    (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] != 1) ) {
+                                Log.i(VD_DTAG, String.format( "Skip. Update EEPROM Gamma. ( %s )", file ));
                                 continue;
                             }
 
@@ -527,11 +528,11 @@ public class LoginActivity extends AppCompatActivity {
                     for( String file : resultPath ) {
                         LedGammaInfo info = new LedGammaInfo();
                         if( info.Parse( file ) ) {
-                            if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0]) ||
-                                    (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1]) ||
-                                    (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2]) ||
-                                    (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3]) ) {
-                                Log.i(VD_DTAG, String.format( "Skip. Update Gamma. ( %s )", file ));
+                            if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] != 1) ||
+                                    (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] != 1) ||
+                                    (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] != 1) ||
+                                    (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] != 1) ) {
+                                Log.i(VD_DTAG, String.format( "Skip. Update EEPROM Gamma. ( %s )", file ));
                                 continue;
                             }
 
@@ -557,11 +558,11 @@ public class LoginActivity extends AppCompatActivity {
                     for( String file : resultPath ) {
                         LedGammaInfo info = new LedGammaInfo();
                         if( info.Parse( file ) ) {
-                            if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !enableGamma[0]) ||
-                                    (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && !enableGamma[1]) ||
-                                    (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !enableGamma[2]) ||
-                                    (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && !enableGamma[3]) ) {
-                                Log.i(VD_DTAG, String.format( "Skip. Update Gamma. ( %s )", file ));
+                            if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] != 2) ||
+                                    (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] != 2) ||
+                                    (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] != 2) ||
+                                    (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] != 2) ) {
+                                Log.i(VD_DTAG, String.format( "Skip. Update USB Gamma. ( %s )", file ));
                                 continue;
                             }
 
@@ -585,7 +586,15 @@ public class LoginActivity extends AppCompatActivity {
                 }
 
                 //
+                //  Update Gamma Status
                 //
+                mCinemaInfo.SetValue( CinemaInfo.KEY_UPDATE_TGAM0, String.valueOf(enableGamma[0]) );
+                mCinemaInfo.SetValue( CinemaInfo.KEY_UPDATE_TGAM1, String.valueOf(enableGamma[1]) );
+                mCinemaInfo.SetValue( CinemaInfo.KEY_UPDATE_DGAM0, String.valueOf(enableGamma[2]) );
+                mCinemaInfo.SetValue( CinemaInfo.KEY_UPDATE_DGAM1, String.valueOf(enableGamma[3]) );
+
+                //
+                //  SW Reset
                 //
                 if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_SW_RESET, new byte[]{(byte)0x09});
                 if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_SW_RESET, new byte[]{(byte)0x89});

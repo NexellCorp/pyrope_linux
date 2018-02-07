@@ -11,7 +11,9 @@ import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -40,6 +42,7 @@ import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTitleBar;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Locale;
@@ -49,6 +52,8 @@ import java.util.Locale;
  */
 public class DisplayModeActivity extends AppCompatActivity {
     private final String VD_DTAG = "DisplayModeActivity";
+
+    private UIHandler mUIHandler;
 
     private LayoutInflater  mInflater;
     private LinearLayout    mParentLayoutMastering;
@@ -172,6 +177,10 @@ public class DisplayModeActivity extends AppCompatActivity {
     private CheckBox mCheckZeroScale;
     private CheckBox mCheckSeam;
     private CheckBox mCheckModule;
+    private CheckBox mCheckXyzInput;
+    private CheckBox mCheckLedOpenDetection;
+    private CheckBox mCheckLodRemoval;
+    private Button mBtnLodReset;
 
     private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -263,6 +272,8 @@ public class DisplayModeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         SetScreenRotation();
         setContentView(R.layout.activity_display_mode);
+
+        mUIHandler = new UIHandler( this );
 
         //
         //  Configuration TitleBar
@@ -700,6 +711,10 @@ public class DisplayModeActivity extends AppCompatActivity {
         mCheckZeroScale = (CheckBox)findViewById(R.id.checkZeroScale);
         mCheckSeam = (CheckBox)findViewById(R.id.checkSeam);
         mCheckModule = (CheckBox)findViewById(R.id.checkModule);
+        mCheckXyzInput = (CheckBox)findViewById(R.id.checkXyzInput);
+        mCheckLedOpenDetection = (CheckBox)findViewById(R.id.checkLedOpenDetect);
+        mCheckLodRemoval = (CheckBox)findViewById(R.id.checkLodRemoval);
+        mBtnLodReset = (Button)findViewById(R.id.btnLodReset);
 
         mSpinSyncWidth.SetRange(0, 4095);
         mSpinSyncDelay.SetRange(0, 4095);
@@ -866,6 +881,34 @@ public class DisplayModeActivity extends AppCompatActivity {
                 ApplyModule();
             }
         });
+
+        mCheckXyzInput.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                ApplyXyzInput();
+            }
+        });
+
+        mCheckLedOpenDetection.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                ApplyLedOpenDetection();
+            }
+        });
+
+        mCheckLodRemoval.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                ApplyLodRemoval();
+            }
+        });
+
+        mBtnLodReset.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ApplyLodReset();
+            }
+        });
     }
 
     private void UnregisterListener() {
@@ -880,6 +923,10 @@ public class DisplayModeActivity extends AppCompatActivity {
         mCheckZeroScale.setOnCheckedChangeListener(null);
         mCheckSeam.setOnCheckedChangeListener(null);
         mCheckModule.setOnCheckedChangeListener(null);
+        mCheckXyzInput.setOnCheckedChangeListener(null);
+        mCheckLedOpenDetection.setOnCheckedChangeListener(null);
+        mCheckLodRemoval.setOnCheckedChangeListener(null);
+        mBtnLodReset.setOnClickListener(null);
     }
 
     private TextButtonAdapter.OnClickListener mTextbuttonAdapterClickListener = new TextButtonAdapter.OnClickListener() {
@@ -1598,7 +1645,7 @@ public class DisplayModeActivity extends AppCompatActivity {
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
 
             String[] result;
-            boolean enableUniformity = false;
+            int enableUniformity = 0;
 
             result = FileManager.CheckFile(ConfigPfpgaInfo.PATH_TARGET, ConfigPfpgaInfo.NAME);
             for( String file : result ) {
@@ -1620,7 +1667,7 @@ public class DisplayModeActivity extends AppCompatActivity {
             for( String file : result ) {
                 LedUniformityInfo info = new LedUniformityInfo();
                 if( info.Parse(file) ) {
-                    if( !enableUniformity ) {
+                    if( enableUniformity == 0 ) {
                         Log.i(VD_DTAG, String.format( "Skip. Update Uniformity Correction. ( %s )", file ));
                         continue;
                     }
@@ -1652,9 +1699,14 @@ public class DisplayModeActivity extends AppCompatActivity {
 
     private class AsyncTaskImageQuality extends AsyncTask<Void, Void, Void> {
         private int mModeIndexQuality = 0;
+        private int mUpdateGamma[] = new int[4];
 
         public AsyncTaskImageQuality(int mode) {
             mModeIndexQuality = mode;
+            mUpdateGamma[0] = Integer.parseInt(((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_UPDATE_TGAM0));
+            mUpdateGamma[1] = Integer.parseInt(((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_UPDATE_TGAM1));
+            mUpdateGamma[2] = Integer.parseInt(((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_UPDATE_DGAM0));
+            mUpdateGamma[3] = Integer.parseInt(((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_UPDATE_DGAM1));
         }
 
         @Override
@@ -1704,22 +1756,18 @@ public class DisplayModeActivity extends AppCompatActivity {
             //  Parse P_REG.txt
             //
             String[] resultPath;
-//            boolean enableUniformity = false;
-            boolean[] enableGamma = {false, };
+            int[] enableGamma = {0, 0, 0, 0};
 
             resultPath = FileManager.CheckFile(ConfigPfpgaInfo.PATH_TARGET, ConfigPfpgaInfo.NAME);
             for( String file : resultPath ) {
                 ConfigPfpgaInfo info = new ConfigPfpgaInfo();
                 if( info.Parse( file ) ) {
-                    if( (10 <= mModeIndexQuality) && ((mModeIndexQuality-10) < info.GetModeNum()) ) {
-//                        enableUniformity = info.GetEnableUpdateUniformity(mModeIndexQuality-10);
-                        for( int i = 0; i < info.GetRegister(mModeIndexQuality-10).length; i++ ) {
-                            byte[] reg = ctrl.IntToByteArray(info.GetRegister(mModeIndexQuality-10)[i], NxCinemaCtrl.FORMAT_INT16);
-                            byte[] data = ctrl.IntToByteArray(info.GetData(mModeIndexQuality-10)[i], NxCinemaCtrl.FORMAT_INT16);
-                            byte[] inData = ctrl.AppendByteArray(reg, data);
+                    for( int i = 0; i < info.GetRegister(mModeIndexQuality).length; i++ ) {
+                        byte[] reg = ctrl.IntToByteArray(info.GetRegister(mModeIndexQuality)[i], NxCinemaCtrl.FORMAT_INT16);
+                        byte[] data = ctrl.IntToByteArray(info.GetData(mModeIndexQuality)[i], NxCinemaCtrl.FORMAT_INT16);
+                        byte[] inData = ctrl.AppendByteArray(reg, data);
 
-                            ctrl.Send( NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData );
-                        }
+                        ctrl.Send( NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData );
                     }
                 }
             }
@@ -1765,11 +1813,19 @@ public class DisplayModeActivity extends AppCompatActivity {
                 for( String file : resultPath ) {
                     LedGammaInfo info = new LedGammaInfo();
                     if( info.Parse( file ) ) {
-                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !enableGamma[0]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && !enableGamma[1]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !enableGamma[2]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && !enableGamma[3]) ) {
-                            Log.i(VD_DTAG, String.format( "Skip. Update Gamma. ( %s )", file ));
+                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] != 1) ||
+                                (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] != 1) ||
+                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] != 1) ||
+                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] != 1) ) {
+                            Log.i(VD_DTAG, String.format( "Skip. Update EEPRom Gamma. ( %s )", file ));
+                            continue;
+                        }
+
+                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] == mUpdateGamma[0]) ||
+                                (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] == mUpdateGamma[1]) ||
+                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] == mUpdateGamma[2]) ||
+                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] == mUpdateGamma[3]) ) {
+                            Log.i(VD_DTAG, String.format( "Skip. Already Update EEPRom Gamma. ( %s )", file ));
                             continue;
                         }
 
@@ -1797,11 +1853,19 @@ public class DisplayModeActivity extends AppCompatActivity {
                 for( String file : resultPath ) {
                     LedGammaInfo info = new LedGammaInfo();
                     if( info.Parse( file ) ) {
-                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3]) ) {
-                            Log.i(VD_DTAG, String.format( "Skip. Update Gamma. ( %s )", file ));
+                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] != 1) ||
+                                (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] != 1) ||
+                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] != 1) ||
+                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] != 1) ) {
+                            Log.i(VD_DTAG, String.format( "Skip. Update EEPRom Gamma. ( %s )", file ));
+                            continue;
+                        }
+
+                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] == mUpdateGamma[0]) ||
+                                (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] == mUpdateGamma[1]) ||
+                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] == mUpdateGamma[2]) ||
+                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] == mUpdateGamma[3]) ) {
+                            Log.i(VD_DTAG, String.format( "Skip. Already Update EEPRom Gamma. ( %s )", file ));
                             continue;
                         }
 
@@ -1827,11 +1891,19 @@ public class DisplayModeActivity extends AppCompatActivity {
                 for( String file : resultPath ) {
                     LedGammaInfo info = new LedGammaInfo();
                     if( info.Parse( file ) ) {
-                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !enableGamma[0]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && !enableGamma[1]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && !enableGamma[2]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && !enableGamma[3]) ) {
-                            Log.i(VD_DTAG, String.format( "Skip. Update Gamma. ( %s )", file ));
+                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] != 2) ||
+                                (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] != 2) ||
+                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] != 2) ||
+                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] != 2) ) {
+                            Log.i(VD_DTAG, String.format( "Skip. Update USB Gamma. ( %s )", file ));
+                            continue;
+                        }
+
+                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] == mUpdateGamma[0]) ||
+                                (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] == mUpdateGamma[1]) ||
+                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] == mUpdateGamma[2]) ||
+                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] == mUpdateGamma[3]) ) {
+                            Log.i(VD_DTAG, String.format( "Skip. Already Update USB Gamma. ( %s )", file ));
                             continue;
                         }
 
@@ -1853,6 +1925,20 @@ public class DisplayModeActivity extends AppCompatActivity {
                     }
                 }
             }
+
+            //
+            //  Update Gamma Status
+            //
+            ((CinemaInfo)getApplicationContext()).SetValue( CinemaInfo.KEY_UPDATE_TGAM0, String.valueOf(enableGamma[0]) );
+            ((CinemaInfo)getApplicationContext()).SetValue( CinemaInfo.KEY_UPDATE_TGAM1, String.valueOf(enableGamma[1]) );
+            ((CinemaInfo)getApplicationContext()).SetValue( CinemaInfo.KEY_UPDATE_DGAM0, String.valueOf(enableGamma[2]) );
+            ((CinemaInfo)getApplicationContext()).SetValue( CinemaInfo.KEY_UPDATE_DGAM1, String.valueOf(enableGamma[3]) );
+
+            //
+            //  SW Reset
+            //
+            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_SW_RESET, new byte[]{(byte)0x09});
+            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_SW_RESET, new byte[]{(byte)0x89});
 
             //
             //  PFPGA Mute off
@@ -2355,8 +2441,8 @@ public class DisplayModeActivity extends AppCompatActivity {
                 return null;
 
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-            int [] globalReg = { 0x018B, 0x018C, 0x018A, 0x018D, 0x018E, 0x0192, 0x0055 };
-            int [] globalVal = { 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000 };
+            int [] globalReg = { 0x018B, 0x018C, 0x018A, 0x018D, 0x018E, 0x0192, 0x0055, 0x0004, 0x0100, 0x011E };
+            int [] globalVal = { 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000 };
 
             for( int i = 0; i < globalReg.length; i++ )
             {
@@ -2373,7 +2459,7 @@ public class DisplayModeActivity extends AppCompatActivity {
                 globalVal[i] = ctrl.ByteArrayToInt(result);
             }
 
-            publishProgress( globalVal[0], globalVal[1], globalVal[2], globalVal[3], globalVal[4], globalVal[5], globalVal[6] );
+            publishProgress( globalVal[0], globalVal[1], globalVal[2], globalVal[3], globalVal[4], globalVal[5], globalVal[6], globalVal[7], globalVal[8], globalVal[9] );
             return null;
         }
 
@@ -2387,6 +2473,9 @@ public class DisplayModeActivity extends AppCompatActivity {
             mCheckZeroScale.setChecked( values[4] != 0 );
             mCheckSeam.setChecked( values[5] != 0 );
             mCheckModule.setChecked( values[6] != 0 );
+            mCheckXyzInput.setChecked( values[7] != 0 );
+            mCheckLedOpenDetection.setChecked( values[8] != 0 );
+            mCheckLodRemoval.setChecked( values[9] != 0 );
 
             ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018B, String.valueOf(values[0]) );
             ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018C, String.valueOf(values[1]) );
@@ -2396,6 +2485,9 @@ public class DisplayModeActivity extends AppCompatActivity {
             ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018E, String.valueOf(values[4]) );
             ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x0192, String.valueOf(values[5]) );
             ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x0055, String.valueOf(values[6]) );
+            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x0004, String.valueOf(values[7]) );
+            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x0100, String.valueOf(values[8]) );
+            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x011E, String.valueOf(values[9]) );
             ((CinemaInfo)getApplicationContext()).UpdateDefaultRegister();
 
             super.onProgressUpdate(values);
@@ -2419,6 +2511,89 @@ public class DisplayModeActivity extends AppCompatActivity {
 
             Log.i(VD_DTAG, ">>> Global Read Done.");
             CinemaLoading.Hide();
+        }
+    }
+
+    private class AsyncTaskLodReset extends AsyncTask<Void, Void, Void> {
+        @Override
+        protected Void doInBackground(Void... voids) {
+            if( mCabinet.length == 0 ) {
+                return null;
+            }
+
+            boolean bValidPort0 = false, bValidPort1 = false;
+            for( byte id : mCabinet ) {
+                if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
+                if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
+            }
+
+            byte[] reg, dat, inData, inData0, inData1;
+            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+            {
+                reg = ctrl.IntToByteArray(0x011F, NxCinemaCtrl.FORMAT_INT16);
+                dat = ctrl.IntToByteArray(0x0000, NxCinemaCtrl.FORMAT_INT16);
+                inData = ctrl.AppendByteArray(reg, dat);
+                inData0 = ctrl.AppendByteArray(new byte[]{(byte) 0x09}, inData);
+                inData1 = ctrl.AppendByteArray(new byte[]{(byte) 0x89}, inData);
+                if (bValidPort0) ctrl.Send(NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
+                if (bValidPort1) ctrl.Send(NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
+
+                try {
+                    Thread.sleep(75);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            {
+                reg = ctrl.IntToByteArray(0x011F, NxCinemaCtrl.FORMAT_INT16);
+                dat = ctrl.IntToByteArray(0x0001, NxCinemaCtrl.FORMAT_INT16);
+                inData = ctrl.AppendByteArray(reg, dat);
+                inData0 = ctrl.AppendByteArray(new byte[]{(byte) 0x09}, inData);
+                inData1 = ctrl.AppendByteArray(new byte[]{(byte) 0x89}, inData);
+                if (bValidPort0) ctrl.Send(NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
+                if (bValidPort1) ctrl.Send(NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
+
+                try {
+                    Thread.sleep(75);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            {
+                reg = ctrl.IntToByteArray(0x011F, NxCinemaCtrl.FORMAT_INT16);
+                dat = ctrl.IntToByteArray(0x0000, NxCinemaCtrl.FORMAT_INT16);
+                inData = ctrl.AppendByteArray(reg, dat);
+                inData0 = ctrl.AppendByteArray(new byte[]{(byte) 0x09}, inData);
+                inData1 = ctrl.AppendByteArray(new byte[]{(byte) 0x89}, inData);
+                if (bValidPort0) ctrl.Send(NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
+                if (bValidPort1) ctrl.Send(NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
+
+                try {
+                    Thread.sleep(75);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+            Log.i(VD_DTAG, "Lod Reset Start.");
+            CinemaLoading.Show( DisplayModeActivity.this );
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+
+            CinemaLoading.Hide();
+            Log.i(VD_DTAG, "Lod Reset Done.");
         }
     }
 
@@ -2624,6 +2799,126 @@ public class DisplayModeActivity extends AppCompatActivity {
         ((CinemaInfo)getApplicationContext()).UpdateDefaultRegister();
     }
 
+    void ApplyXyzInput() {
+        Log.i(VD_DTAG, String.format(Locale.US, "Change XyzInput. ( %b )", mCheckXyzInput.isChecked()));
+        if( mCabinet.length == 0 )
+            return ;
+
+        boolean bValidPort0 = false, bValidPort1 = false;
+        for( byte id : mCabinet ) {
+            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
+            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
+        }
+
+        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+        {
+            byte[] reg = ctrl.IntToByteArray(0x0004, NxCinemaCtrl.FORMAT_INT16);
+            byte[] dat = ctrl.IntToByteArray(mCheckXyzInput.isChecked() ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
+            byte[] inData = ctrl.AppendByteArray(reg, dat);
+
+            byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+            byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
+            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
+        }
+
+        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x0004, String.valueOf(mCheckXyzInput.isChecked() ? 1 : 0) );
+        ((CinemaInfo)getApplicationContext()).UpdateDefaultRegister();
+    }
+
+    void ApplyLedOpenDetection() {
+        Log.i(VD_DTAG, String.format(Locale.US, "Change Led Open Detection. ( %b )", mCheckLedOpenDetection.isChecked()));
+        if( mCabinet.length == 0 )
+            return ;
+
+        boolean bValidPort0 = false, bValidPort1 = false;
+        for( byte id : mCabinet ) {
+            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
+            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
+        }
+
+        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+        {
+            byte[] reg = ctrl.IntToByteArray(0x0100, NxCinemaCtrl.FORMAT_INT16);
+            byte[] dat = ctrl.IntToByteArray(mCheckLedOpenDetection.isChecked() ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
+            byte[] inData = ctrl.AppendByteArray(reg, dat);
+
+            byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+            byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
+            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
+        }
+
+        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x0100, String.valueOf(mCheckLedOpenDetection.isChecked() ? 1 : 0) );
+        ((CinemaInfo)getApplicationContext()).UpdateDefaultRegister();
+    }
+
+    void ApplyLodRemoval() {
+        Log.i(VD_DTAG, String.format(Locale.US, "Change Lod Removal. ( %b )", mCheckLodRemoval.isChecked()));
+        if( mCabinet.length == 0 )
+            return ;
+
+        boolean bValidPort0 = false, bValidPort1 = false;
+        for( byte id : mCabinet ) {
+            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
+            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
+        }
+
+        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+        {
+            byte[] reg = ctrl.IntToByteArray(0x011E, NxCinemaCtrl.FORMAT_INT16);
+            byte[] dat = ctrl.IntToByteArray(mCheckLodRemoval.isChecked() ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
+            byte[] inData = ctrl.AppendByteArray(reg, dat);
+
+            byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+            byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
+            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
+        }
+
+        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x011E, String.valueOf(mCheckLodRemoval.isChecked() ? 1 : 0) );
+        ((CinemaInfo)getApplicationContext()).UpdateDefaultRegister();
+    }
+
+    void ApplyLodReset() {
+        new AsyncTaskLodReset().execute();
+    }
+
+    //
+    //
+    //
+    CinemaService.ChangeContentsCallback mCallback = new CinemaService.ChangeContentsCallback() {
+        @Override
+        public void onChangeContentsCallback(int mode) {
+            mUIHandler.sendEmptyMessage(0);
+        }
+    };
+
+    private static class UIHandler extends Handler {
+        private WeakReference<DisplayModeActivity> mActivity;
+
+        public UIHandler( DisplayModeActivity activity ) {
+            mActivity = new WeakReference<>(activity);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            DisplayModeActivity activity = mActivity.get();
+            if( activity != null ) {
+                activity.handleMessage(msg);
+            }
+        }
+    }
+
+    private void handleMessage( Message msg ) {
+        String strTemp = ((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_INITIAL_MODE);
+        int mode = (strTemp == null) ? 0 : Integer.parseInt(strTemp);
+        mTextImageQuality.setText(String.format(Locale.US, "Mode #%d", mode+1));
+    }
+
     //
     //  For Screen Rotation
     //
@@ -2712,6 +3007,7 @@ public class DisplayModeActivity extends AppCompatActivity {
         public void onServiceConnected(ComponentName name, IBinder service) {
             CinemaService.LocalBinder binder = (CinemaService.LocalBinder)service;
             mService = binder.GetService();
+            mService.RegisterCallback( mCallback );
             mServiceRun = true;
         }
 

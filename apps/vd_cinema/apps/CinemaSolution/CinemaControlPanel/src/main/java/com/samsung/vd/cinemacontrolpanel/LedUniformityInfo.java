@@ -17,7 +17,7 @@ public class LedUniformityInfo {
     private static final String VD_DTAG = "LedUniformityInfo";
 
     public static final String PATH_SOURCE = "DCI";
-    public static final String PATH_TARGET = "/storage/sdcard0";
+    public static final String PATH_TARGET = "/storage/sdcard0/SAMSUNG/PFPGA";
     public static final String NAME = "UC_COEF.txt";
 
     public int[] mData = new int[4096];
@@ -47,7 +47,15 @@ public class LedUniformityInfo {
             while( (strValue = bufferedReader.readLine()) != null ) {
                 StringTokenizer token = new StringTokenizer(strValue);
                 while(token.hasMoreTokens()) {
-                    mData[index] = Integer.parseInt(token.nextToken(), 10);
+                    String strTemp = token.nextToken();
+                    try {
+                        mData[index] = Integer.parseInt(strTemp, 10);
+                    }
+                    catch (NumberFormatException e) {
+                        Log.i(VD_DTAG, String.format("Fail, Parse(). ( token: %s )", strTemp));
+                        return false;
+                    }
+
                     index++;
                 }
             }

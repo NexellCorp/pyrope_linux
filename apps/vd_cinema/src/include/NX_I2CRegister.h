@@ -251,7 +251,7 @@
 //
 //	Input Source
 //
-#define TCON_REG_MUTE					0x0064
+#define TCON_REG_MUTE					0x0065
 #define TCON_REG_XYZ_TO_RGB				0x0004
 #define TCON_REG_I_H_RAST_SIZE			0x0005
 #define TCON_REG_I_V_RAST_SIZE			0x0006

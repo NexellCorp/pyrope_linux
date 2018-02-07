@@ -279,9 +279,12 @@ int32_t CNX_TMSServer::IMB_ChangeContents( int32_t fd, uint32_t iCmd, uint8_t *p
 	uint8_t result = 0xFF;
 	int32_t sendSize;
 
-	if( pBuf[0] == 0x00 || pBuf[0] == 0x01 )
+	if( pBuf[0] < 0x0A )
 	{
-		if( !SendRemote( "cinema.change.contents", (pBuf[0] == 0x00) ? "0" : "1" ) )
+		uint8_t sendData[2] = { 0x00, };
+		sprintf( (char*)sendData, "%d", pBuf[0] );
+
+		if( !SendRemote( "cinema.change.contents", (const char*)sendData ) )
 		{
 			result = 0x01;
 		}

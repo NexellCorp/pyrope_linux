@@ -2805,15 +2805,6 @@ int32_t CNX_IPCServer::TCON_SwReset( int32_t fd, uint32_t cmd, uint8_t *pBuf, in
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_MUTE, 0x0001 ) )
-	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
-			port, slave, TCON_REG_MUTE, 0x0001 );
-		goto ERROR_TCON;
-	}
-
-	usleep(75000);
-
 	if( 0 > i2c.Write( slave, TCON_REG_SW_RESET, 0x0000 ) )
 	{
 		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
@@ -2832,16 +2823,6 @@ int32_t CNX_IPCServer::TCON_SwReset( int32_t fd, uint32_t cmd, uint8_t *pBuf, in
 	}
 
 	usleep(150000);
-
-	if( 0 > i2c.Write( slave, TCON_REG_MUTE, 0x0000 ) )
-	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
-			port, slave, TCON_REG_MUTE, 0x0000 );
-		goto ERROR_TCON;
-	}
-
-	usleep(75000);
-
 
 	result = 0x01;
 
@@ -3377,6 +3358,36 @@ ERROR_PFPGA:
 }
 
 //------------------------------------------------------------------------------
+static void WaitTime( uint64_t iWaitTime )
+{
+	uint64_t iTimeout = NX_GetTickCount() + iWaitTime;
+	uint64_t iCurTime;
+	uint64_t iMiliSecond = 0;
+
+#if 0
+	fprintf(stdout, "Wait time : %llu sec.\n", iWaitTime / 1000);
+	fflush(stdout);
+#else
+	NxDbgMsg( NX_DBG_DEBUG, "Wait time : %llu mSec.\n", iWaitTime);
+#endif
+
+	do {
+#if 0
+		fprintf( stdout, "Wait %llu mSec\r", iMiliSecond );
+		fflush(stdout);
+#else
+		NxDbgMsg( NX_DBG_DEBUG, "Wait %llu mSec\r", iMiliSecond * 100);
+#endif
+
+		iCurTime = NX_GetTickCount();
+		usleep(100000);
+		iMiliSecond++;
+	} while( iCurTime <= iTimeout );
+
+	printf("\n");
+}
+
+//------------------------------------------------------------------------------
 int32_t CNX_IPCServer::PFPGA_Mute( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
 {
 	UNUSED( iSize );
@@ -3396,6 +3407,9 @@ int32_t CNX_IPCServer::PFPGA_Mute( int32_t fd, uint32_t cmd, uint8_t *pBuf, int3
 
 	uint8_t data	= pBuf[0];
 
+	if( data == 0x00 )
+		WaitTime( 1500 );
+
 	CNX_I2C i2c( port );
 
 	if( 0 > i2c.Open() )
@@ -3410,6 +3424,12 @@ int32_t CNX_IPCServer::PFPGA_Mute( int32_t fd, uint32_t cmd, uint8_t *pBuf, int3
 			port, slave, PFPGA_REG_MUTE, data );
 		goto ERROR_PFPGA;
 	}
+
+	NxDbgMsg( NX_DBG_DEBUG, "Write Data. ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+			port, slave, PFPGA_REG_MUTE, data );
+
+	if( data == 0x01 )
+		WaitTime( 100 );	// 2frame with 24Hz
 
 	result = 0x01;
 #endif

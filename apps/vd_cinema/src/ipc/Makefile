@@ -1,0 +1,40 @@
+################################################################################
+# Get Linux Build Enviornment:
+include ./build.env
+
+################################################################################
+# Build options
+INCLUDE	+= -I./ \
+			-I./../include/
+LIBRARY	+= -lstdc++
+
+################################################################################
+# Target
+COBJS	:=
+CPPOBJS	:= main.o ipc_protocol.o \
+			../utils/NX_Utils.o
+
+TARGET	:= NxTest
+
+################################################################################
+# Build
+OBJS	:= $(COBJS) $(CPPOBJS)
+
+all: $(TARGET)
+
+$(TARGET): depend $(OBJS)
+		$(CC) $(CPPFLAGS) $(OBJS) -o $(TARGET) $(LIBRARY) -g
+
+clean:
+		rm -f $(TARGET) *.o .depend
+
+################################################################################
+# Dependency
+ifeq (.depend,$(wildcard .depend))
+include .depend
+endif
+
+SRCS := $(COBJS:.o=.c) $(CPPOBJS:.o=.cpp)
+INCS := $(INCLUDE)
+depend dep:
+		$(CC) -M $(CFLAGS) $(INCS) $(SRCS) > .depend

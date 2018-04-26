@@ -22,6 +22,8 @@
 #include <string.h>
 #include <ctype.h>
 
+#include <stdlib.h> //malloc , free
+
 #include <android/log.h>
 
 #include <NX_IPCClient.h>
@@ -49,7 +51,8 @@ int gNxFilterDebugLevel     = NX_DBG_ERR;
                                 }                                       \
                             } while(0);
 
-#define MAX_PAYLOAD_SIZE    65533
+//#define MAX_PAYLOAD_SIZE    65533
+//#define MAX_PAYLOAD_SIZE    5*1024*1024
 
 //------------------------------------------------------------------------------
 #if ENABLE_HEX_DUMP
@@ -113,31 +116,45 @@ void NX_HexDump( const void * /*data*/, int32_t /*size*/ )
 //------------------------------------------------------------------------------
 JNIEXPORT jbyteArray JNICALL NX_CinemaCtrl( JNIEnv *env, jclass obj, jint cmd, jbyteArray inArray )
 {
+	int32_t iRet = 0;
     NxDbgMsg( NX_DBG_VBS, "%s()++", __FUNCTION__ );
 
-    uint8_t*    pTmpBuf = (uint8_t*)malloc( sizeof(uint8_t) * MAX_PAYLOAD_SIZE );
-    int32_t     iTmpSize = 0;
+    //uint8_t*    pTmpBuf = (uint8_t*)malloc( sizeof(uint8_t) * MAX_PAYLOAD_SIZE );
+    uint8_t*    pTmpBuf = NULL;
+    uint32_t    nTmpSize = 0;
 
-    memset( pTmpBuf, 0x00, sizeof(uint8_t) * MAX_PAYLOAD_SIZE );
+    //memset( pTmpBuf, 0x00, sizeof(uint8_t) * MAX_PAYLOAD_SIZE );
 
     if( NULL != inArray )
     {
         jbyte* pData = env->GetByteArrayElements( inArray, NULL );
-        jint dataSize = env->GetArrayLength( inArray );
+        jlong  dataSize = env->GetArrayLength( inArray );
 
-        iTmpSize = dataSize;
+        nTmpSize = (uint32_t)dataSize;
+
+        pTmpBuf = (uint8_t*)malloc( sizeof(uint8_t) * nTmpSize );
+        memset( pTmpBuf, 0x00, sizeof(uint8_t) * nTmpSize );
+
         memcpy( pTmpBuf, (uint8_t*)pData, dataSize );
         env->ReleaseByteArrayElements( inArray, pData, 0 );
     }
-
-    if( 0 > NX_IPCSendCommand( cmd, (uint8_t*)pTmpBuf, &iTmpSize ) )
+    else
     {
-       NxDbgMsg( NX_DBG_ERR, "Fail, NX_IPCSendCommand().\n" );
+        nTmpSize = 4;
+        pTmpBuf = (uint8_t*)malloc( sizeof(uint8_t) * nTmpSize );
+        memset( pTmpBuf, 0x00, sizeof(uint8_t) * nTmpSize );
+    }
+
+	iRet = NX_IPCSendCommand( cmd, &pTmpBuf, &nTmpSize );
+    if( 0 > iRet )
+    {
+       __android_log_print(ANDROID_LOG_INFO, "JNI", "NX_IPCSendCommand failed ret : %d " , iRet);
+       NxDbgMsg( NX_DBG_ERR, "Fail, NX_IPCSendCommand(). Ret : %d\n" ,iRet);
        NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
        return NULL;
     }
 
-    jbyteArray outArray = env->NewByteArray( iTmpSize );
+    jbyteArray outArray = env->NewByteArray( nTmpSize );
     if( NULL == outArray )
     {
         NxDbgMsg( NX_DBG_ERR, "Fail, NewCharArray().\n" );
@@ -145,8 +162,8 @@ JNIEXPORT jbyteArray JNICALL NX_CinemaCtrl( JNIEnv *env, jclass obj, jint cmd, j
         return NULL;
     }
 
-    env->SetByteArrayRegion( outArray, 0, iTmpSize, (jbyte*)pTmpBuf );
-    NX_HexDump( pTmpBuf, iTmpSize );
+    env->SetByteArrayRegion( outArray, 0, nTmpSize, (jbyte*)pTmpBuf );
+    NX_HexDump( pTmpBuf, nTmpSize );
     free( pTmpBuf );
 
     NxDbgMsg( NX_DBG_VBS, "%s()--", __FUNCTION__ );
@@ -198,7 +215,7 @@ jint JNI_OnLoad( JavaVM *vm, void *reserved )
         goto FAIL;
     }
 
-    if( RegisterNativeMethods(env, "com/samsung/vd/cinemacontrolpanel/NxCinemaCtrl", sMethods, sizeof(sMethods) / sizeof(sMethods[0]) ) != JNI_TRUE ) {
+    if( RegisterNativeMethods(env, "com/samsung/vd/cinemacontrolpanel/Utils/NxCinemaCtrl", sMethods, sizeof(sMethods) / sizeof(sMethods[0]) ) != JNI_TRUE ) {
         NxDbgMsg( NX_DBG_ERR, "%s(): RegisterNativeMethods failed!", __FUNCTION__ );
         goto FAIL;
     }

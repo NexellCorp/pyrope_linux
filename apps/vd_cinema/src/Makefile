@@ -17,6 +17,9 @@ INCLUDE += \
 	-I $(VD_CINEMA_TOP)/src/uart \
 	-I $(VD_CINEMA_TOP)/src/i2c \
 	-I $(VD_CINEMA_TOP)/src/gdc \
+	-I $(VD_CINEMA_TOP)/src/tms \
+	-I $(VD_CINEMA_TOP)/src/i2ccontroller \
+	-I $(VD_CINEMA_TOP)/src/i2ccontroller/i2ccommand \
 	-I $(VD_CINEMA_TOP)/src/utils
 
 LIBRARY += -lssl -lcrypto
@@ -26,6 +29,15 @@ LIBRARY	+= -lstdc++ -lpthread
 # Target
 COBJS	:=
 CPPOBJS	:=
+
+CPPOBJS +=	\
+	i2ccontroller/NX_I2CController.o \
+	i2ccontroller/i2ccommand/NX_Command.o
+
+CPPOBJS +=	\
+	tms/tms_protocol.o \
+	tms/NX_TMSClient.o \
+	tms/NX_TMSServer.o
 
 CPPOBJS +=	\
 	ipc/ipc_protocol.o \

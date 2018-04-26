@@ -4,6 +4,14 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE_TAGS := optional
 
+# ADD I2CController
+LOCAL_SRC_FILES += \
+	i2ccontroller/NX_I2CController.cpp
+
+# ADD I2CCommand
+LOCAL_SRC_FILES += \
+	i2ccontroller/i2ccommand/NX_Command.cpp
+
 # Add IPC Server
 LOCAL_SRC_FILES += \
 	ipc/ipc_protocol.cpp \
@@ -12,9 +20,9 @@ LOCAL_SRC_FILES += \
 
 # Add TMS Server
 LOCAL_SRC_FILES += \
-	gdc/gdc_protocol.cpp \
-	gdc/NX_TMSClient.cpp \
-	gdc/NX_TMSServer.cpp
+	tms/tms_protocol.cpp \
+	tms/NX_TMSClient.cpp \
+	tms/NX_TMSServer.cpp
 
 # Add UART Sources
 LOCAL_SRC_FILES += \
@@ -43,12 +51,15 @@ LOCAL_SRC_FILES += \
 	utils/SockUtils.cpp
 
 LOCAL_C_INCLUDES += \
+	$(LOCAL_PATH)/i2ccontroller \
+	$(LOCAL_PATH)/i2ccontroller/i2ccommand \
 	$(LOCAL_PATH)/include \
 	$(LOCAL_PATH)/i2c \
 	$(LOCAL_PATH)/uart \
 	$(LOCAL_PATH)/utils \
 	$(LOCAL_PATH)/ipc \
-	$(LOCAL_PATH)/gdc
+	$(LOCAL_PATH)/gdc \
+	$(LOCAL_PATH)/tms
 
 LOCAL_SHARED_LIBRARIES := \
 	liblog

@@ -13,119 +13,126 @@
         android:layout_alignParentTop="true"
         android:layout_alignParentStart="true"/>
 
-    <TabHost
+    <RelativeLayout
+        android:id="@+id/contentParent"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/tabHost"
         android:layout_below="@+id/layoutTitleBar"
         android:layout_above="@+id/layoutStatusBar"
-        android:layout_alignParentStart="true">
-
-        <LinearLayout
+        android:layout_alignParentStart="true"
+        >
+        <TabHost
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical">
+            android:id="@+id/tabHost">
 
-            <TabWidget
-                android:id="@android:id/tabs"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:layout_height="match_parent"
+                android:orientation="vertical">
 
-            <FrameLayout
-                android:id="@android:id/tabcontent"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
-
-                <RelativeLayout
-                    android:id="@+id/tabMasteringMode"
+                <TabWidget
+                    android:id="@android:id/tabs"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical">
-                    <include
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        layout="@layout/layout_display_mode_mastering" />
-                </RelativeLayout>
+                    android:layout_height="wrap_content" />
 
-                <RelativeLayout
-                    android:id="@+id/tabUniformityCorrection"
+                <FrameLayout
+                    android:id="@android:id/tabcontent"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent">
-                    <include
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        layout="@layout/layout_display_mode_uniformity_correction" />
-                </RelativeLayout>
 
-                <RelativeLayout
-                    android:id="@+id/tabImageQuality"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical">
-                    <include
+                    <RelativeLayout
+                        android:id="@+id/tabMasteringMode"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        layout="@layout/layout_display_mode_image_quality" />
-                </RelativeLayout>
+                        android:layout_height="match_parent"
+                        android:orientation="vertical">
+                        <include
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            layout="@layout/layout_display_mode_mastering" />
+                    </RelativeLayout>
 
-                <RelativeLayout
-                    android:id="@+id/tabDotCorrection"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical">
-                    <include
+                    <RelativeLayout
+                        android:id="@+id/tabUniformityCorrection"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        layout="@layout/layout_display_mode_dot_correction" />
-                </RelativeLayout>
+                        android:layout_height="match_parent">
+                        <include
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            layout="@layout/layout_display_mode_uniformity_correction" />
+                    </RelativeLayout>
 
-                <RelativeLayout
-                    android:id="@+id/tabDotCorrectionExtract"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical">
-                    <include
+                    <RelativeLayout
+                        android:id="@+id/tabImageQuality"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        layout="@layout/layout_display_mode_dot_correction_extract" />
-                </RelativeLayout>
+                        android:layout_height="match_parent"
+                        android:orientation="vertical">
+                        <include
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            layout="@layout/layout_display_mode_image_quality" />
+                    </RelativeLayout>
 
-                <RelativeLayout
-                    android:id="@+id/tabWhiteSeamValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical">
-                    <include
+                    <RelativeLayout
+                        android:id="@+id/tabDotCorrection"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        layout="@layout/layout_display_mode_white_seam" />
-                </RelativeLayout>
+                        android:layout_height="match_parent"
+                        android:orientation="vertical">
+                        <include
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            layout="@layout/layout_display_mode_dot_correction" />
+                    </RelativeLayout>
 
-                <RelativeLayout
-                    android:id="@+id/tabGlobal"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical">
-                    <include
+                    <RelativeLayout
+                        android:id="@+id/tabDotCorrectionExtract"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        layout="@layout/layout_display_mode_global" />
-                </RelativeLayout>
+                        android:layout_height="match_parent"
+                        android:orientation="vertical">
+                        <include
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            layout="@layout/layout_display_mode_dot_correction_extract" />
+                    </RelativeLayout>
 
-                <RelativeLayout
-                    android:id="@+id/tabSetup"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical">
-
-                    <include
+                    <RelativeLayout
+                        android:id="@+id/tabWhiteSeamValue"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        layout="@layout/layout_display_mode_setup" />
-                </RelativeLayout>
-            </FrameLayout>
-        </LinearLayout>
-    </TabHost>
+                        android:layout_height="match_parent"
+                        android:orientation="vertical">
+                        <include
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            layout="@layout/layout_display_mode_white_seam" />
+                    </RelativeLayout>
+
+                    <RelativeLayout
+                        android:id="@+id/tabGlobal"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical">
+                        <include
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            layout="@layout/layout_display_mode_global" />
+                    </RelativeLayout>
+
+                    <RelativeLayout
+                        android:id="@+id/tabSetup"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical">
+
+                        <include
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            layout="@layout/layout_display_mode_setup" />
+                    </RelativeLayout>
+                </FrameLayout>
+            </LinearLayout>
+        </TabHost>
+
+    </RelativeLayout>
 
     <LinearLayout
         android:id="@+id/layoutStatusBar"

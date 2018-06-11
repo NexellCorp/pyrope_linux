@@ -51,6 +51,7 @@ int32_t NX_GetRandomValue( int32_t iStartNum, int32_t iEndNum )
 	return rand() % (iEndNum - iStartNum + 1) + iStartNum;
 }
 
+#if ENABLE_HEX_DUMP
 //------------------------------------------------------------------------------
 void NX_HexDump( const void *data, int32_t size, const char *msg )
 {
@@ -124,6 +125,14 @@ void NX_HexDump( const void *data, int32_t size )
 		offset += 16;
 	}
 }
+#else
+void NX_HexDump( const void *, int32_t  )
+{
+}
+void NX_HexDump( const void *, int32_t , const char * )
+{
+}
+#endif
 
 //------------------------------------------------------------------------------
 int32_t NX_CompareData( uint8_t *pData1, int32_t iSize1, uint8_t *pData2, int32_t iSize2 )

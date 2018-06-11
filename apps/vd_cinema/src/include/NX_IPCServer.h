@@ -28,7 +28,7 @@
 int32_t NX_IPCServerStart();
 void	NX_IPCServerStop();
 
-void	NX_SetNapVersion( uint8_t *pVersion, int iSize );
-void	NX_SetSapVersion( uint8_t *pVersion, int iSize );
+void	NX_SetNapVersion( uint8_t *pVersion, int32_t iSize );
+void	NX_SetSapVersion( uint8_t *pVersion, int32_t iSize );
 
 #endif	// __NX_IPCSERVER_H__

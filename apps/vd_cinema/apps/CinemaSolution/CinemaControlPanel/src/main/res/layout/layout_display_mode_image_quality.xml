@@ -10,7 +10,19 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:weightSum="1"
-        android:id="@+id/linearLayout">>
+        android:id="@+id/linearLayout">
+
+        <TextView
+            android:background="@drawable/draw_line_left_top_bottom"
+            android:layout_width="0px"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="Index"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:paddingTop="15dp"
+            android:paddingBottom="15dp"
+            android:layout_weight="0.1"/>
 
 
         <TextView
@@ -23,7 +35,7 @@
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.2"/>
+            android:layout_weight="0.1"/>
 
         <TextView
             android:background="@drawable/draw_line_border"
@@ -35,10 +47,10 @@
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.65"/>
+            android:layout_weight="0.45"/>
 
         <TextView
-            android:background="@drawable/draw_line_border"
+            android:background="@drawable/draw_line_top_right_bottom"
             android:layout_width="0px"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
@@ -47,7 +59,7 @@
             android:gravity="center"
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
-            android:layout_weight="0.15"/>
+            android:layout_weight="0.35"/>
     </LinearLayout>
 
     <ListView
@@ -90,7 +102,7 @@
             android:id="@+id/btnModeUpdate"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Update"
+            android:text="Get USB Data"
             android:textStyle=""
             android:enabled="false"
             android:layout_weight="0.14" />

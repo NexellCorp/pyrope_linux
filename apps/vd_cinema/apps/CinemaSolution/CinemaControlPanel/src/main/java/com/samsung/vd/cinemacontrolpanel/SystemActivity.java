@@ -160,7 +160,7 @@ public class SystemActivity extends AppCompatActivity {
                 continue;
 
             String[] strTemp = strVersion[i][1].split( "\\(" );
-            strVersion[i][1] = strTemp[0].trim();
+            strVersion[i][1] = strVersion[i][0].equals("N.AP") ? strVersion[i][1] : strTemp[0].trim();
         }
 
         for( int i = 0; i < strVersion.length; i++ ) {

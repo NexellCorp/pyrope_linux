@@ -190,37 +190,26 @@ public class TopActivity extends AppCompatActivity {
         mAdapterMode = new TextButtonAdapter(this, R.layout.listview_row_text_button);
         listViewMode.setAdapter( mAdapterMode );
 
+        mAdapterMode.clear();
+        for( int i = 0; i < 20; i++ ) {
+            TextButtonInfo info = new TextButtonInfo(String.format(Locale.US, "mode #%d", i + 1), "");
+            mAdapterMode.add(info);
+        }
+
         String[] resultPath;
         resultPath = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET_EEPROM, ConfigTconInfo.NAME);
-        mAdapterMode.clear();
-
         for( String file : resultPath ) {
             if( mTconEEPRomInfo.Parse( file ) ) {
                 for( int i = 0; i < 10; i++ ) {
                     if( i < mTconEEPRomInfo.GetModeNum() ) {
-                        mAdapterMode.add(
-                                new TextButtonInfo(
-                                        String.format(Locale.US, "mode #%d", i + 1),
-                                        String.format(Locale.US, "%s", mTconEEPRomInfo.GetDescription(i)),
-                                        mTextbuttonAdapterClickListener)
-                        );
-                    }
-                    else {
-                        mAdapterMode.add(
-                                new TextButtonInfo(
-                                        String.format(Locale.US, "mode #%d", i + 1), "")
-                        );
-                    }
+                        TextButtonInfo info = mAdapterMode.getItem(i);
+                        if( null == info )
+                            continue;
 
-                    mAdapterMode.notifyDataSetChanged();
-                }
-            }
-            else {
-                for( int i = 0; i < 10; i++ ) {
-                    mAdapterMode.add(
-                            new TextButtonInfo(
-                                    String.format(Locale.US, "mode #%d", i + 1), "")
-                    );
+                        info.SetText(mTconEEPRomInfo.GetDescription(i));
+                        info.SetEnable(true);
+                        info.SetOnClickListener(mTextbuttonAdapterClickListener);
+                    }
 
                     mAdapterMode.notifyDataSetChanged();
                 }
@@ -231,28 +220,15 @@ public class TopActivity extends AppCompatActivity {
         for( String file : resultPath ) {
             if( mTconUsbInfo.Parse(file) ) {
                 for( int i = 0; i < 10; i++ ) {
-                    if( i < mTconUsbInfo.GetModeNum() )
-                        mAdapterMode.add(
-                                new TextButtonInfo(
-                                        String.format(Locale.US, "mode #%d", i + 11),
-                                        String.format(Locale.US, "%s", mTconUsbInfo.GetDescription(i)),
-                                        mTextbuttonAdapterClickListener )
-                        );
-                    else
-                        mAdapterMode.add(
-                                new TextButtonInfo(
-                                        String.format(Locale.US, "mode #%d", i + 11), "")
-                        );
+                    if( i < mTconUsbInfo.GetModeNum() ) {
+                        TextButtonInfo info = mAdapterMode.getItem(10+i);
+                        if (null == info)
+                            continue;
 
-                    mAdapterMode.notifyDataSetChanged();
-                }
-            }
-            else {
-                for( int i = 0; i < 10; i++ ) {
-                    mAdapterMode.add(
-                            new TextButtonInfo(
-                                    String.format(Locale.US, "mode #%d", i + 11), "")
-                    );
+                        info.SetText(mTconUsbInfo.GetDescription(i));
+                        info.SetEnable(true);
+                        info.SetOnClickListener(mTextbuttonAdapterClickListener);
+                    }
 
                     mAdapterMode.notifyDataSetChanged();
                 }
@@ -407,35 +383,26 @@ public class TopActivity extends AppCompatActivity {
             mBtnInitMode.setEnabled(true);
         }
 
+        mAdapterMode.clear();
+        for( int i = 0; i < 20; i++ ) {
+            TextButtonInfo info = new TextButtonInfo(String.format(Locale.US, "mode #%d", i + 1), "");
+            mAdapterMode.add(info);
+        }
+
         String[] resultPath;
         resultPath = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET_EEPROM, ConfigTconInfo.NAME);
-        mAdapterMode.clear();
-
         for( String file : resultPath ) {
             if( mTconEEPRomInfo.Parse( file ) ) {
                 for( int i = 0; i < 10; i++ ) {
-                    if( i < mTconEEPRomInfo.GetModeNum() )
-                        mAdapterMode.add(
-                                new TextButtonInfo(
-                                        String.format(Locale.US, "mode #%d", i+1),
-                                        String.format(Locale.US, "%s", mTconEEPRomInfo.GetDescription(i)),
-                                        mTextbuttonAdapterClickListener )
-                        );
-                    else
-                        mAdapterMode.add(
-                                new TextButtonInfo(
-                                        String.format(Locale.US, "mode #%d", i + 1), "")
-                        );
+                    if( i < mTconEEPRomInfo.GetModeNum() ) {
+                        TextButtonInfo info = mAdapterMode.getItem(i);
+                        if( null == info )
+                            continue;
 
-                    mAdapterMode.notifyDataSetChanged();
-                }
-            }
-            else {
-                for( int i = 0; i < 10; i++ ) {
-                    mAdapterMode.add(
-                            new TextButtonInfo(
-                                    String.format(Locale.US, "mode #%d", i + 1), "")
-                    );
+                        info.SetText(mTconEEPRomInfo.GetDescription(i));
+                        info.SetEnable(true);
+                        info.SetOnClickListener(mTextbuttonAdapterClickListener);
+                    }
 
                     mAdapterMode.notifyDataSetChanged();
                 }
@@ -446,28 +413,15 @@ public class TopActivity extends AppCompatActivity {
         for( String file : resultPath ) {
             if( mTconUsbInfo.Parse(file) ) {
                 for( int i = 0; i < 10; i++ ) {
-                    if( i < mTconUsbInfo.GetModeNum() )
-                        mAdapterMode.add(
-                                new TextButtonInfo(
-                                        String.format(Locale.US, "mode #%d", i + 11),
-                                        String.format(Locale.US, "%s", mTconUsbInfo.GetDescription(i)),
-                                        mTextbuttonAdapterClickListener )
-                        );
-                    else
-                        mAdapterMode.add(
-                                new TextButtonInfo(
-                                        String.format(Locale.US, "mode #%d", i + 11), "")
-                        );
+                    if( i < mTconUsbInfo.GetModeNum() ) {
+                        TextButtonInfo info = mAdapterMode.getItem(10+i);
+                        if (null == info)
+                            continue;
 
-                    mAdapterMode.notifyDataSetChanged();
-                }
-            }
-            else {
-                for( int i = 0; i < 10; i++ ) {
-                    mAdapterMode.add(
-                            new TextButtonInfo(
-                                    String.format(Locale.US, "mode #%d", i + 11), "")
-                    );
+                        info.SetText(mTconUsbInfo.GetDescription(i));
+                        info.SetEnable(true);
+                        info.SetOnClickListener(mTextbuttonAdapterClickListener);
+                    }
 
                     mAdapterMode.notifyDataSetChanged();
                 }

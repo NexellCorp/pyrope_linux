@@ -625,8 +625,8 @@ public class LoginActivity extends AppCompatActivity {
                         if( preg[i][1] == -1 ) {
                             continue;
                         }
-                        byte[] reg = ctrl.IntToByteArray(treg[i][0], NxCinemaCtrl.FORMAT_INT16);
-                        byte[] dat = ctrl.IntToByteArray(treg[i][1], NxCinemaCtrl.FORMAT_INT16);
+                        byte[] reg = ctrl.IntToByteArray(preg[i][0], NxCinemaCtrl.FORMAT_INT16);
+                        byte[] dat = ctrl.IntToByteArray(preg[i][1], NxCinemaCtrl.FORMAT_INT16);
                         byte[] inData = ctrl.AppendByteArray(reg, dat);
 
                         ctrl.Send(NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData);

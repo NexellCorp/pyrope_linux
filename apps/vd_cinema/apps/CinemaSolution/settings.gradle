@@ -1,1 +1,1 @@
-include ':app', ':CinemaControlPanel', ':BaseUtils'
+include ':app', ':CinemaControlPanel', ':BaseUtils', ':CinemaDiagnostics'

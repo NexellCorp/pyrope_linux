@@ -17,8 +17,8 @@
 //
 //------------------------------------------------------------------------------
 
-#ifndef __NX_IPCCOMMAND_H__
-#define __NX_IPCCOMMAND_H__
+#ifndef __NX_CINEMACOMMAND_H__
+#define __NX_CINEMACOMMAND_H__
 
 //
 //	Re-mapping Command for Cinema LED Protocol. ( 4 byte command -> 1byte command )
@@ -29,6 +29,11 @@
 #define CMD_TYPE_IMB					0xC0	// 1100 0000
 
 #define GDC_COMMAND( type, cmd )		(type | (cmd & 0x00FF))
+
+#define CMD_TCON( cmd )					GDC_COMMAND( CMD_TYPE_TCON, cmd )
+#define CMD_PFPGA( cmd )				GDC_COMMAND( CMD_TYPE_PFPGA, cmd )
+#define CMD_PLATFORM( cmd )				GDC_COMMAND( CMD_TYPE_PLATFORM, cmd )
+#define CMD_IMB( cmd )					GDC_COMMAND( CMD_TYPE_IMB, cmd )
 
 
 //
@@ -86,12 +91,22 @@
 #define PLATFORM_CMD_SAP_VERSION		0x0211	//	S.AP Software Version				// 0x80 | 0x11
 #define PLATFORM_CMD_IPC_SERVER_VERSION	0x0212	//	IPC Server Version					// 0x80 | 0x12
 #define PLATFORM_CMD_IPC_CLIENT_VERSION	0x0213	//	IPC Client Version					// 0x80 | 0x13
+#define PLATFORM_CMD_TMS_SERVER_VERSION	0x0214	//	TMS Server Version					// 0x80 | 0x14
+#define PLATFORM_CMD_TMS_CLIENT_VERSION	0x0215	//	TMS Server Version					// 0x80 | 0x15
+#define PLATFORM_CMD_IS_BUSY			0x0216	//	Check Busy Status					// 0x80 | 0x16
+
+#define PLATFORM_CMD_CHANGE_MODE		0x021F	//	Change Mode for Platform			// 0x80 | 0X1F
 
 
 //
 //	IMB Command
 //
 // #define IMB_CMD_CHANGE_CONTENTS			0x0C10	//	IMB Change Contents					// 0xC0 | 0x10
-#define IMB_CMD_CHANGE_CONTENTS			0x0C20	//	IMB Change Contents					// 0xC0 | 0x20
 
-#endif	// __NX_IPCCOMMAND_H__
+#define IMB_CMD_CHANGE_CONTENTS			0x0C20	//	IMB Change Contents					// 0xC0 | 0x20
+#define IMB_CMD_CHANGE_MODE				0x0C21	//	IMB Change Mode
+#define IMB_CMD_GET_CURRENT_MODE		0x0C22	//	IMB Get Current Mode
+#define IMB_CMD_WRITE_FILE				0x0C23	//	IMB Write File
+#define IMB_CMD_READ_MODE_DESC			0x0C24	//	IMB Read Mode Description
+
+#endif	// __NX_CINEMACOMMAND_H__

@@ -1,47 +1,28 @@
 package com.samsung.vd.cinemacontrolpanel;
 
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
-import android.content.pm.ActivityInfo;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.IBinder;
-import android.os.Message;
-import android.os.RemoteException;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTitleBar;
 
-import java.lang.ref.WeakReference;
 import java.util.Locale;
 
 /**
  * Created by doriya on 8/17/16.
  */
-public class TopActivity extends AppCompatActivity {
+public class TopActivity extends CinemaBaseActivity {
     private final String VD_DTAG = "TopActivity";
-
-    private UIHandler mUIHandler;
-
-    private byte[]  mCabinet;
 
     private int mInitMode;
     private Button mBtnInitMode;
@@ -54,7 +35,11 @@ public class TopActivity extends AppCompatActivity {
     private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if( intent.getAction().equals(Intent.ACTION_MEDIA_MOUNTED) ) {
+            String action = intent.getAction();
+            if( null == action )
+                return;
+
+            if( action.equals(Intent.ACTION_MEDIA_MOUNTED) ) {
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
@@ -106,10 +91,7 @@ public class TopActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        SetScreenRotation();
         setContentView(R.layout.activity_top);
-
-        mUIHandler = new UIHandler( this );
 
         //
         //  Configuration Title Bar
@@ -127,16 +109,13 @@ public class TopActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 ((CinemaInfo)getApplicationContext()).InsertLog("Logout.");
-
-                startActivity( new Intent(v.getContext(), LoginActivity.class) );
-                overridePendingTransition(0, 0);
-                finish();
+                Launch(v.getContext(), LoginActivity.class);
             }
         });
         titleBar.SetListener(VdTitleBar.BTN_EXIT, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mService.TurnOff();
+                TurnOff();
             }
         });
 
@@ -156,15 +135,16 @@ public class TopActivity extends AppCompatActivity {
         //
         //  Cinema System Information
         //
+
         View listViewFooter = ((LayoutInflater)getApplicationContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE)).inflate(R.layout.listview_footer_blank, null, false);
-        mCabinet = ((CinemaInfo)getApplicationContext()).GetCabinet();
 
         //
         //  Alert Message
         //
-        int configCabinetNum = Integer.parseInt(((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_CABINET_NUM));
+        String strCabinetNum = ((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_CABINET_NUM);
+        int configCabinetNum = Integer.parseInt( (strCabinetNum != null) ? strCabinetNum : "0" );
         int detectCabientNum = ((CinemaInfo)getApplicationContext()).GetCabinet().length;
-        if( configCabinetNum != detectCabientNum && ((CinemaInfo)getApplicationContext()).IsCheckCabinet() ) {
+        if( configCabinetNum != detectCabientNum && ((CinemaInfo)getApplicationContext()).IsCheckCabinetNum() ) {
             String strMessage = String.format(Locale.US, "Please Check Cabinet Number. ( setting: %d, detect: %d )", configCabinetNum, detectCabientNum);
             CinemaAlert.Show( TopActivity.this, "Alert",  strMessage );
         }
@@ -190,37 +170,26 @@ public class TopActivity extends AppCompatActivity {
         mAdapterMode = new TextButtonAdapter(this, R.layout.listview_row_text_button);
         listViewMode.setAdapter( mAdapterMode );
 
+        mAdapterMode.clear();
+        for( int i = 0; i < 20; i++ ) {
+            TextButtonInfo info = new TextButtonInfo(String.format(Locale.US, "mode #%d", i + 1), "");
+            mAdapterMode.add(info);
+        }
+
         String[] resultPath;
         resultPath = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET_EEPROM, ConfigTconInfo.NAME);
-        mAdapterMode.clear();
-
         for( String file : resultPath ) {
             if( mTconEEPRomInfo.Parse( file ) ) {
                 for( int i = 0; i < 10; i++ ) {
                     if( i < mTconEEPRomInfo.GetModeNum() ) {
-                        mAdapterMode.add(
-                                new TextButtonInfo(
-                                        String.format(Locale.US, "mode #%d", i + 1),
-                                        String.format(Locale.US, "%s", mTconEEPRomInfo.GetDescription(i)),
-                                        mTextbuttonAdapterClickListener)
-                        );
-                    }
-                    else {
-                        mAdapterMode.add(
-                                new TextButtonInfo(
-                                        String.format(Locale.US, "mode #%d", i + 1), "")
-                        );
-                    }
+                        TextButtonInfo info = mAdapterMode.getItem(i);
+                        if( null == info )
+                            continue;
 
-                    mAdapterMode.notifyDataSetChanged();
-                }
-            }
-            else {
-                for( int i = 0; i < 10; i++ ) {
-                    mAdapterMode.add(
-                            new TextButtonInfo(
-                                    String.format(Locale.US, "mode #%d", i + 1), "")
-                    );
+                        info.SetText(mTconEEPRomInfo.GetDescription(i));
+                        info.SetEnable(true);
+                        info.SetOnClickListener(mTextbuttonAdapterClickListener);
+                    }
 
                     mAdapterMode.notifyDataSetChanged();
                 }
@@ -231,28 +200,15 @@ public class TopActivity extends AppCompatActivity {
         for( String file : resultPath ) {
             if( mTconUsbInfo.Parse(file) ) {
                 for( int i = 0; i < 10; i++ ) {
-                    if( i < mTconUsbInfo.GetModeNum() )
-                        mAdapterMode.add(
-                                new TextButtonInfo(
-                                        String.format(Locale.US, "mode #%d", i + 11),
-                                        String.format(Locale.US, "%s", mTconUsbInfo.GetDescription(i)),
-                                        mTextbuttonAdapterClickListener )
-                        );
-                    else
-                        mAdapterMode.add(
-                                new TextButtonInfo(
-                                        String.format(Locale.US, "mode #%d", i + 11), "")
-                        );
+                    if( i < mTconUsbInfo.GetModeNum() ) {
+                        TextButtonInfo info = mAdapterMode.getItem(i);
+                        if (null == info)
+                            continue;
 
-                    mAdapterMode.notifyDataSetChanged();
-                }
-            }
-            else {
-                for( int i = 0; i < 10; i++ ) {
-                    mAdapterMode.add(
-                            new TextButtonInfo(
-                                    String.format(Locale.US, "mode #%d", i + 11), "")
-                    );
+                        info.SetText(mTconUsbInfo.GetDescription(i));
+                        info.SetEnable(true);
+                        info.SetOnClickListener(mTextbuttonAdapterClickListener);
+                    }
 
                     mAdapterMode.notifyDataSetChanged();
                 }
@@ -300,11 +256,6 @@ public class TopActivity extends AppCompatActivity {
                     ShowMessage( "Update Initial Value File.");
                     UpdateInitialValue();
                 }
-
-                //
-                //  TCON EEPROM Test Code.
-                //
-//                new AsyncTaskEEPRomRead().execute();
             }
         });
 
@@ -341,12 +292,50 @@ public class TopActivity extends AppCompatActivity {
         if( info.GetUserGroup().equals(AccountPreference.GROUP_CALIBRATOR) ) {
             btnMenuSystem.setEnabled(false);
         }
+
+        this.RegisterTmsCallback(new CinemaService.TmsEventCallback() {
+            @Override
+            public void onTmsEventCallback() {
+                String strTemp = ((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_INITIAL_MODE);
+                mInitMode = (strTemp == null) ? 0 : Integer.parseInt(strTemp);
+                mTextInitMode.setText(String.format(Locale.US, "Mode #%d", mInitMode + 1));
+            }
+        });
     }
 
     private TextButtonAdapter.OnClickListener mTextbuttonAdapterClickListener = new TextButtonAdapter.OnClickListener() {
         @Override
         public void onClickListener(int position) {
-            new AsyncTaskInitMode(position).execute();
+            CinemaTask.GetInstance().Run(
+                    CinemaTask.CMD_CHANGE_MODE,
+                    getApplicationContext(),
+                    position,
+                    new CinemaTask.PreExecuteCallback() {
+                        @Override
+                        public void onPreExecute() {
+                            ShowProgress();
+                        }
+                    },
+                    new CinemaTask.PostExecuteCallback() {
+                        @Override
+                        public void onPostExecute() {
+                            String strTemp = ((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_INITIAL_MODE);
+                            Log.i(VD_DTAG, strTemp);
+
+                            mInitMode = (strTemp == null) ? 0 : Integer.parseInt(strTemp);
+                            mTextInitMode.setText(String.format(Locale.US, "Mode #%d", mInitMode + 1));
+
+                            CinemaLoading.Hide();
+                            Log.i(VD_DTAG, String.format("Change Mode Done. ( mode = %d )", mInitMode + 1));
+                            HideProgress();
+                        }
+
+                        @Override
+                        public void onPostExecute(int[] values) {
+
+                        }
+                    }
+            );
         }
     };
 
@@ -355,29 +344,19 @@ public class TopActivity extends AppCompatActivity {
         public void onClick(View v) {
             switch( (v).getId() ) {
                 case R.id.btnMenuDiagonostics:
-                    startActivity( new Intent(v.getContext(), DiagnosticsActivity.class) );
-                    overridePendingTransition(0, 0);
-                    finish();
+                    Launch(v.getContext(), DiagnosticsActivity.class);
                     break;
                 case R.id.btnMenuDisplayCheck:
-                    startActivity( new Intent(v.getContext(), DisplayCheckActivity.class) );
-                    overridePendingTransition(0, 0);
-                    finish();
+                    Launch(v.getContext(), DisplayCheckActivity.class);
                     break;
                 case R.id.btnMenuDisplayMode:
-                    startActivity( new Intent(v.getContext(), DisplayModeActivity.class) );
-                    overridePendingTransition(0, 0);
-                    finish();
+                    Launch(v.getContext(), DisplayModeActivity.class);
                     break;
                 case R.id.btnMenuSystem:
-                    startActivity( new Intent(v.getContext(), SystemActivity.class) );
-                    overridePendingTransition(0, 0);
-                    finish();
+                    Launch(v.getContext(), SystemActivity.class);
                     break;
                 case R.id.btnMenuAccount:
-                    startActivity( new Intent(v.getContext(), AccountActivity.class) );
-                    overridePendingTransition(0, 0);
-                    finish();
+                    Launch(v.getContext(), AccountActivity.class);
                     break;
             }
         }
@@ -407,35 +386,26 @@ public class TopActivity extends AppCompatActivity {
             mBtnInitMode.setEnabled(true);
         }
 
+        mAdapterMode.clear();
+        for( int i = 0; i < 20; i++ ) {
+            TextButtonInfo info = new TextButtonInfo(String.format(Locale.US, "mode #%d", i + 1), "");
+            mAdapterMode.add(info);
+        }
+
         String[] resultPath;
         resultPath = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET_EEPROM, ConfigTconInfo.NAME);
-        mAdapterMode.clear();
-
         for( String file : resultPath ) {
             if( mTconEEPRomInfo.Parse( file ) ) {
                 for( int i = 0; i < 10; i++ ) {
-                    if( i < mTconEEPRomInfo.GetModeNum() )
-                        mAdapterMode.add(
-                                new TextButtonInfo(
-                                        String.format(Locale.US, "mode #%d", i+1),
-                                        String.format(Locale.US, "%s", mTconEEPRomInfo.GetDescription(i)),
-                                        mTextbuttonAdapterClickListener )
-                        );
-                    else
-                        mAdapterMode.add(
-                                new TextButtonInfo(
-                                        String.format(Locale.US, "mode #%d", i + 1), "")
-                        );
+                    if( i < mTconEEPRomInfo.GetModeNum() ) {
+                        TextButtonInfo info = mAdapterMode.getItem(i);
+                        if( null == info )
+                            continue;
 
-                    mAdapterMode.notifyDataSetChanged();
-                }
-            }
-            else {
-                for( int i = 0; i < 10; i++ ) {
-                    mAdapterMode.add(
-                            new TextButtonInfo(
-                                    String.format(Locale.US, "mode #%d", i + 1), "")
-                    );
+                        info.SetText(mTconEEPRomInfo.GetDescription(i));
+                        info.SetEnable(true);
+                        info.SetOnClickListener(mTextbuttonAdapterClickListener);
+                    }
 
                     mAdapterMode.notifyDataSetChanged();
                 }
@@ -446,499 +416,19 @@ public class TopActivity extends AppCompatActivity {
         for( String file : resultPath ) {
             if( mTconUsbInfo.Parse(file) ) {
                 for( int i = 0; i < 10; i++ ) {
-                    if( i < mTconUsbInfo.GetModeNum() )
-                        mAdapterMode.add(
-                                new TextButtonInfo(
-                                        String.format(Locale.US, "mode #%d", i + 11),
-                                        String.format(Locale.US, "%s", mTconUsbInfo.GetDescription(i)),
-                                        mTextbuttonAdapterClickListener )
-                        );
-                    else
-                        mAdapterMode.add(
-                                new TextButtonInfo(
-                                        String.format(Locale.US, "mode #%d", i + 11), "")
-                        );
+                    if( i < mTconUsbInfo.GetModeNum() ) {
+                        TextButtonInfo info = mAdapterMode.getItem(i);
+                        if (null == info)
+                            continue;
 
-                    mAdapterMode.notifyDataSetChanged();
-                }
-            }
-            else {
-                for( int i = 0; i < 10; i++ ) {
-                    mAdapterMode.add(
-                            new TextButtonInfo(
-                                    String.format(Locale.US, "mode #%d", i + 11), "")
-                    );
+                        info.SetText(mTconUsbInfo.GetDescription(i));
+                        info.SetEnable(true);
+                        info.SetOnClickListener(mTextbuttonAdapterClickListener);
+                    }
 
                     mAdapterMode.notifyDataSetChanged();
                 }
             }
         }
     }
-
-    //
-    //  TCON EEPRom Test Code.
-    //
-    private class AsyncTaskEEPRomRead extends AsyncTask<Void, Void, Void> {
-        @Override
-        protected Void doInBackground(Void... voids) {
-            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-
-            byte[] result = ctrl.Send(NxCinemaCtrl.CMD_TCON_EEPROM_READ, null);
-            if( result == null || result.length == 0 ) {
-                Log.i(VD_DTAG, "Unknown Error.");
-                return null;
-            }
-
-            if( (int)result[0] == 0xFF ) Log.i(VD_DTAG, "Fail, EEPROM Read.");
-            if( (int)result[0] == 0x01 ) Log.i(VD_DTAG, "Update is successful.");
-            if( (int)result[0] == 0x00 ) Log.i(VD_DTAG, "Update is not needed.");
-            return null;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            CinemaLoading.Show( TopActivity.this );
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-            CinemaLoading.Hide();
-        }
-    }
-
-    private class AsyncTaskInitMode extends AsyncTask<Void, Void, Void> {
-        private int mInitMode;
-        private int mUpdateGamma[] = new int[4];
-
-        public AsyncTaskInitMode(int mode) {
-            mInitMode = mode;
-            mUpdateGamma[0] = Integer.parseInt(((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_UPDATE_TGAM0));
-            mUpdateGamma[1] = Integer.parseInt(((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_UPDATE_TGAM1));
-            mUpdateGamma[2] = Integer.parseInt(((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_UPDATE_DGAM0));
-            mUpdateGamma[3] = Integer.parseInt(((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_UPDATE_DGAM1));
-        }
-
-        @Override
-        protected Void doInBackground(Void... voids) {
-            if( mCabinet.length == 0 )
-                return null;
-
-            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-
-            boolean bValidPort0 = false, bValidPort1 = false;
-            for( byte id : mCabinet ) {
-                if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-                if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-            }
-
-            //
-            //  Check TCON Booting Status
-            //
-            if( ((CinemaInfo)getApplicationContext()).IsCheckTconBooting() ) {
-                boolean bTconBooting = true;
-                for( byte id : mCabinet ) {
-                    byte[] result;
-                    result = ctrl.Send(NxCinemaCtrl.CMD_TCON_BOOTING_STATUS, new byte[]{id});
-                    if (result == null || result.length == 0) {
-                        Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / port: %d / slave : 0x%02x )", (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (id & 0x80), id));
-                        continue;
-                    }
-
-                    if( result[0] == 0 ) {
-                        Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / port: %d / slave : 0x%02x / result : %d )", (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (id & 0x80), id, result[0] ));
-                        bTconBooting = false;
-                    }
-                }
-
-                if( !bTconBooting ) {
-                    Log.i(VD_DTAG, "Fail, TCON booting.");
-                    return null;
-                }
-            }
-
-            //
-            //  PFPGA Mute on
-            //
-            ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x01} );
-
-            //
-            //  Parse P_REG.txt
-            //
-            String[] resultPath;
-            int enableUniformity = 0;
-            int[] enableGamma = {0, 0, 0, 0};
-
-            resultPath = FileManager.CheckFile(ConfigPfpgaInfo.PATH_TARGET, ConfigPfpgaInfo.NAME);
-            for( String file : resultPath ) {
-                ConfigPfpgaInfo info = new ConfigPfpgaInfo();
-                if( info.Parse( file ) ) {
-                    enableUniformity = info.GetEnableUpdateUniformity(mInitMode);
-                    for( int i = 0; i < info.GetRegister(mInitMode).length; i++ ) {
-                        byte[] reg = ctrl.IntToByteArray(info.GetRegister(mInitMode)[i], NxCinemaCtrl.FORMAT_INT16);
-                        byte[] data = ctrl.IntToByteArray(info.GetData(mInitMode)[i], NxCinemaCtrl.FORMAT_INT16);
-                        byte[] inData = ctrl.AppendByteArray(reg, data);
-
-                        ctrl.Send( NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData );
-                    }
-                }
-            }
-
-            //
-            //  Auto Uniformity Correction Writing
-            //
-            resultPath = FileManager.CheckFile(LedUniformityInfo.PATH_TARGET, LedUniformityInfo.NAME);
-            for( String file : resultPath ) {
-                LedUniformityInfo info = new LedUniformityInfo();
-                if( info.Parse( file ) ) {
-                    if( enableUniformity == 0 ) {
-                        Log.i(VD_DTAG, String.format( "Skip. Update Uniformity. ( %s )", file ));
-                        continue;
-                    }
-
-                    byte[] inData = ctrl.IntArrayToByteArray( info.GetData(), NxCinemaCtrl.FORMAT_INT16 );
-                    ctrl.Send( NxCinemaCtrl.CMD_PFPGA_UNIFORMITY_DATA, inData );
-                }
-            }
-
-            //
-            //  Parse T_REG.txt
-            //
-            if( (10 > mInitMode) && (mInitMode < mTconEEPRomInfo.GetModeNum())) {
-                enableGamma = mTconEEPRomInfo.GetEnableUpdateGamma(mInitMode);
-                for( int i = 0; i < mTconEEPRomInfo.GetRegister(mInitMode).length; i++ ) {
-                    byte[] reg = ctrl.IntToByteArray(mTconEEPRomInfo.GetRegister(mInitMode)[i], NxCinemaCtrl.FORMAT_INT16);
-                    byte[] data = ctrl.IntToByteArray(mTconEEPRomInfo.GetData(mInitMode)[i], NxCinemaCtrl.FORMAT_INT16);
-                    byte[] inData = ctrl.AppendByteArray(reg, data);
-
-                    byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-                    byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-                    if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
-                    if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
-                }
-            }
-
-            if( (10 <= mInitMode) && ((mInitMode-10) < mTconUsbInfo.GetModeNum())) {
-                enableGamma = mTconUsbInfo.GetEnableUpdateGamma(mInitMode-10);
-                for( int i = 0; i < mTconUsbInfo.GetRegister(mInitMode-10).length; i++ ) {
-                    byte[] reg = ctrl.IntToByteArray(mTconUsbInfo.GetRegister(mInitMode-10)[i], NxCinemaCtrl.FORMAT_INT16);
-                    byte[] data = ctrl.IntToByteArray(mTconUsbInfo.GetData(mInitMode-10)[i], NxCinemaCtrl.FORMAT_INT16);
-                    byte[] inData = ctrl.AppendByteArray(reg, data);
-
-                    byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-                    byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-                    if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
-                    if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
-                }
-            }
-
-            //
-            //  Write Gamma
-            //
-            if( (10 > mInitMode) && (mInitMode < mTconEEPRomInfo.GetModeNum())) {
-                resultPath = FileManager.CheckFile(LedGammaInfo.PATH_TARGET_EEPROM, LedGammaInfo.PATTERN_NAME);
-                for( String file : resultPath ) {
-                    LedGammaInfo info = new LedGammaInfo();
-                    if( info.Parse( file ) ) {
-                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] != 1) ||
-                            (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] != 1) ||
-                            (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] != 1) ||
-                            (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] != 1) ) {
-                            Log.i(VD_DTAG, String.format( "Skip. Update EEPRom Gamma. ( %s )", file ));
-                            continue;
-                        }
-
-                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] == mUpdateGamma[0]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] == mUpdateGamma[1]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] == mUpdateGamma[2]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] == mUpdateGamma[3]) ) {
-                            Log.i(VD_DTAG, String.format( "Skip. Already Update EEPRom Gamma. ( %s )", file ));
-                            continue;
-                        }
-
-                        int cmd;
-                        if( info.GetType() == LedGammaInfo.TYPE_TARGET )
-                            cmd = NxCinemaCtrl.CMD_TCON_TGAM_R;
-                        else
-                            cmd = NxCinemaCtrl.CMD_TCON_DGAM_R;
-
-                        byte[] table = ctrl.IntToByteArray(info.GetTable(), NxCinemaCtrl.FORMAT_INT8);
-                        byte[] data = ctrl.IntArrayToByteArray(info.GetData(), NxCinemaCtrl.FORMAT_INT24);
-                        byte[] inData = ctrl.AppendByteArray(table, data);
-
-                        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-                        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-                        if( bValidPort0 ) ctrl.Send( cmd + info.GetChannel(), inData0 );
-                        if( bValidPort1 ) ctrl.Send( cmd + info.GetChannel(), inData1 );
-                    }
-                }
-            }
-
-            if( (10 <= mInitMode) ) {
-                resultPath = FileManager.CheckFile(LedGammaInfo.PATH_TARGET_EEPROM, LedGammaInfo.PATTERN_NAME);
-                for( String file : resultPath ) {
-                    LedGammaInfo info = new LedGammaInfo();
-                    if( info.Parse( file ) ) {
-                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] != 1) ||
-                            (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] != 1) ||
-                            (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] != 1) ||
-                            (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] != 1) ) {
-                            Log.i(VD_DTAG, String.format( "Skip. Update EEPRom Gamma. ( %s )", file ));
-                            continue;
-                        }
-
-                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] == mUpdateGamma[0]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] == mUpdateGamma[1]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] == mUpdateGamma[2]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] == mUpdateGamma[3]) ) {
-                            Log.i(VD_DTAG, String.format( "Skip. Already Update EEPRom Gamma. ( %s )", file ));
-                            continue;
-                        }
-
-                        int cmd;
-                        if( info.GetType() == LedGammaInfo.TYPE_TARGET )
-                            cmd = NxCinemaCtrl.CMD_TCON_TGAM_R;
-                        else
-                            cmd = NxCinemaCtrl.CMD_TCON_DGAM_R;
-
-                        byte[] table = ctrl.IntToByteArray(info.GetTable(), NxCinemaCtrl.FORMAT_INT8);
-                        byte[] data = ctrl.IntArrayToByteArray(info.GetData(), NxCinemaCtrl.FORMAT_INT24);
-                        byte[] inData = ctrl.AppendByteArray(table, data);
-
-                        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-                        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-                        if( bValidPort0 ) ctrl.Send( cmd + info.GetChannel(), inData0 );
-                        if( bValidPort1 ) ctrl.Send( cmd + info.GetChannel(), inData1 );
-                    }
-                }
-
-                resultPath = FileManager.CheckFile(LedGammaInfo.PATH_TARGET_USB, LedGammaInfo.PATTERN_NAME);
-                for( String file : resultPath ) {
-                    LedGammaInfo info = new LedGammaInfo();
-                    if( info.Parse( file ) ) {
-                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] != 2) ||
-                            (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] != 2) ||
-                            (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] != 2) ||
-                            (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] != 2) ) {
-                            Log.i(VD_DTAG, String.format( "Skip. Update USB Gamma. ( %s )", file ));
-                            continue;
-                        }
-
-                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] == mUpdateGamma[0]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] == mUpdateGamma[1]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] == mUpdateGamma[2]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] == mUpdateGamma[3]) ) {
-                            Log.i(VD_DTAG, String.format( "Skip. Already Update USB Gamma. ( %s )", file ));
-                            continue;
-                        }
-
-                        int cmd;
-                        if( info.GetType() == LedGammaInfo.TYPE_TARGET )
-                            cmd = NxCinemaCtrl.CMD_TCON_TGAM_R;
-                        else
-                            cmd = NxCinemaCtrl.CMD_TCON_DGAM_R;
-
-                        byte[] table = ctrl.IntToByteArray(info.GetTable(), NxCinemaCtrl.FORMAT_INT8);
-                        byte[] data = ctrl.IntArrayToByteArray(info.GetData(), NxCinemaCtrl.FORMAT_INT24);
-                        byte[] inData = ctrl.AppendByteArray(table, data);
-
-                        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-                        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-                        if( bValidPort0 ) ctrl.Send( cmd + info.GetChannel(), inData0 );
-                        if( bValidPort1 ) ctrl.Send( cmd + info.GetChannel(), inData1 );
-                    }
-                }
-            }
-
-            //
-            //  Update Gamma Status
-            //
-            ((CinemaInfo)getApplicationContext()).SetValue( CinemaInfo.KEY_UPDATE_TGAM0, String.valueOf(enableGamma[0]) );
-            ((CinemaInfo)getApplicationContext()).SetValue( CinemaInfo.KEY_UPDATE_TGAM1, String.valueOf(enableGamma[1]) );
-            ((CinemaInfo)getApplicationContext()).SetValue( CinemaInfo.KEY_UPDATE_DGAM0, String.valueOf(enableGamma[2]) );
-            ((CinemaInfo)getApplicationContext()).SetValue( CinemaInfo.KEY_UPDATE_DGAM1, String.valueOf(enableGamma[3]) );
-
-            //
-            //  SW Reset
-            //
-            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_SW_RESET, new byte[]{(byte)0x09});
-            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_SW_RESET, new byte[]{(byte)0x89});
-
-            //
-            //  PFPGA Mute off
-            //
-            ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x00} );
-
-            return null;
-
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            Log.i(VD_DTAG, "Mode Configuration Start.");
-            CinemaLoading.Show( TopActivity.this );
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-
-            mTextInitMode.setText(String.format(Locale.US, "Mode #%d", mInitMode + 1));
-            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_INITIAL_MODE, String.valueOf(mInitMode));
-            CinemaLoading.Hide();
-
-            Log.i(VD_DTAG, String.format("Mode Configuration Done. ( mode = %d )", mInitMode + 1));
-        }
-    }
-
-    //
-    //
-    //
-    CinemaService.ChangeContentsCallback mCallback = new CinemaService.ChangeContentsCallback() {
-        @Override
-        public void onChangeContentsCallback(int mode) {
-            mUIHandler.sendEmptyMessage(0);
-        }
-    };
-
-    private static class UIHandler extends Handler {
-        private WeakReference<TopActivity> mActivity;
-
-        public UIHandler( TopActivity activity ) {
-            mActivity = new WeakReference<>(activity);
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            TopActivity activity = mActivity.get();
-            if( activity != null ) {
-                activity.handleMessage(msg);
-            }
-        }
-    }
-
-    private void handleMessage( Message msg ) {
-        String strTemp = ((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_INITIAL_MODE);
-        mInitMode = (strTemp == null) ? 0 : Integer.parseInt(strTemp);
-        mTextInitMode.setText(String.format(Locale.US, "Mode #%d", mInitMode+1));
-    }
-
-    //
-    //  For Internal Toast Message
-    //
-    private static Toast mToast;
-
-    private void ShowMessage( String strMsg ) {
-        if( mToast == null )
-            mToast = Toast.makeText(getApplicationContext(), null, Toast.LENGTH_SHORT);
-
-        mToast.setText(strMsg);
-        mToast.show();
-    }
-
-    //
-    //  For Screen Rotation
-    //
-    private void SetScreenRotation() {
-        String orientation = ((CinemaInfo) getApplicationContext()).GetValue(CinemaInfo.KEY_SCREEN_ROTATE);
-        if( orientation == null ) {
-            orientation = String.valueOf(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-        }
-
-        switch( Integer.parseInt(orientation) ) {
-            case ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE:
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                break;
-            case ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE:
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                break;
-            default:
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                break;
-        }
-    }
-
-    private void ChangeScreenRotation() {
-        String orientation = ((CinemaInfo) getApplicationContext()).GetValue(CinemaInfo.KEY_SCREEN_ROTATE);
-        if( orientation == null ) {
-            orientation = String.valueOf(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-        }
-
-        int curRotate;
-        int prvRotate = Integer.parseInt(orientation);
-        switch (prvRotate) {
-            case ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE:
-                curRotate = ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                break;
-            case ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE:
-                curRotate = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                break;
-            default:
-                curRotate = ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                break;
-        }
-
-        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_SCREEN_ROTATE, String.valueOf(curRotate));
-    }
-
-    //
-    //  For ScreenSaver
-    //
-    private CinemaService mService = null;
-    private boolean mServiceRun = false;
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        Intent intent = new Intent(this, CinemaService.class);
-        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-
-        if( mServiceRun ) {
-            unbindService(mConnection);
-            mServiceRun = false;
-        }
-    }
-
-    @Override
-    public boolean dispatchTouchEvent(MotionEvent ev) {
-        boolean isOn = false;
-        if( mService != null ) {
-            isOn = mService.IsOn();
-            mService.RefreshScreenSaver();
-        }
-
-        return !isOn || super.dispatchTouchEvent(ev);
-    }
-
-    private ServiceConnection mConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            CinemaService.LocalBinder binder = (CinemaService.LocalBinder)service;
-            mService = binder.GetService();
-            mService.RegisterCallback( mCallback );
-            mServiceRun = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            mServiceRun = false;
-        }
-    };
 }

@@ -84,7 +84,12 @@
             android:theme="@android:style/Theme.Dialog">
         </activity>
         <activity
-            android:name=".CinemaLoading2"
+            android:name=".CinemaBaseActivity"
+            android:configChanges="orientation|screenSize"
+            android:theme="@style/TransparentDialog">
+        </activity>
+        <activity
+            android:name=".CinemaLoading"
             android:configChanges="orientation|screenSize"
             android:theme="@style/TransparentDialog">
         </activity>

@@ -47,7 +47,7 @@ import java.util.StringTokenizer;
 /**
  * Created by doriya on 11/4/16.
  */
-public class SystemActivity extends AppCompatActivity {
+public class SystemActivity extends CinemaBaseActivity {
     private final String VD_DTAG = "SystemActivity";
 
     private TabHost mTabHost;
@@ -60,7 +60,6 @@ public class SystemActivity extends AppCompatActivity {
     @Override
     protected void onCreate( Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        SetScreenRotation();
         setContentView(R.layout.activity_system);
 
         //
@@ -78,9 +77,7 @@ public class SystemActivity extends AppCompatActivity {
         titleBar.SetListener(VdTitleBar.BTN_BACK, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity( new Intent(v.getContext(), TopActivity.class) );
-                overridePendingTransition(0, 0);
-                finish();
+                Launch(v.getContext(), TopActivity.class);
             }
         });
 
@@ -140,8 +137,8 @@ public class SystemActivity extends AppCompatActivity {
 
         String[][] strVersion = {
 //                { "Application", new SimpleDateFormat("HH:mm:ss, MMM dd yyyy ", Locale.US).format(new Date( BuildConfig.BUILD_DATE + 3600 * 9 * 1000 )) },
-                { "N.AP", (napVersion != null && napVersion.length != 0) ? new String(napVersion) : "Unknown" },
-                { "S.AP", (sapVersion != null && sapVersion.length != 0) ? new String(sapVersion) : "Unknown" },
+                { "N.AP", (napVersion != null && napVersion.length != 0) ? new String(napVersion).trim() : "Unknown" },
+                { "S.AP", (sapVersion != null && sapVersion.length != 0) ? new String(sapVersion).trim() : "Unknown" },
                 { "P.FPGA", (pfpgaVersion != null && pfpgaVersion.length != 0) ? String.format(Locale.US, "%05d", ctrl.ByteArrayToInt(pfpgaVersion)) : "Unknown" },
 //                { "IPC Server", (srvVersion != null && srvVersion.length != 0) ? new String(srvVersion) : "Unknown" },
 //                { "IPC Client", (clnVersion != null && clnVersion.length != 0) ? new String(clnVersion) : "Unknown" },
@@ -160,7 +157,7 @@ public class SystemActivity extends AppCompatActivity {
                 continue;
 
             String[] strTemp = strVersion[i][1].split( "\\(" );
-            strVersion[i][1] = strTemp[0].trim();
+            strVersion[i][1] = strVersion[i][0].equals("N.AP") ? strVersion[i][1] : strTemp[0].trim();
         }
 
         for( int i = 0; i < strVersion.length; i++ ) {
@@ -326,113 +323,4 @@ public class SystemActivity extends AppCompatActivity {
         ShowMessage("Change IP Address.");
         ((CinemaInfo)getApplicationContext()).InsertLog("Change IP Address.");
     }
-
-    //
-    //  For Internal Toast Message
-    //
-    private static Toast mToast;
-
-    private void ShowMessage( String strMsg ) {
-        if( mToast == null )
-            mToast = Toast.makeText(getApplicationContext(), null, Toast.LENGTH_SHORT);
-
-        mToast.setText(strMsg);
-        mToast.show();
-    }
-
-    //
-    //  For Screen Rotation
-    //
-    private void SetScreenRotation() {
-        String orientation = ((CinemaInfo) getApplicationContext()).GetValue(CinemaInfo.KEY_SCREEN_ROTATE);
-        if( orientation == null ) {
-            orientation = String.valueOf(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-        }
-
-        switch( Integer.parseInt(orientation) ) {
-            case ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE:
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                break;
-            case ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE:
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                break;
-            default:
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                break;
-        }
-    }
-
-    private void ChangeScreenRotation() {
-        String orientation = ((CinemaInfo) getApplicationContext()).GetValue(CinemaInfo.KEY_SCREEN_ROTATE);
-        if( orientation == null ) {
-            orientation = String.valueOf(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-        }
-
-        int curRotate;
-        int prvRotate = Integer.parseInt(orientation);
-        switch (prvRotate) {
-            case ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE:
-                curRotate = ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                break;
-            case ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE:
-                curRotate = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                break;
-            default:
-                curRotate = ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                break;
-        }
-
-        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_SCREEN_ROTATE, String.valueOf(curRotate));
-    }
-
-    //
-    //  For ScreenSaver
-    //
-    private CinemaService mService = null;
-    private boolean mServiceRun = false;
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        bindService(new Intent(this, CinemaService.class), mConnection, Context.BIND_AUTO_CREATE);
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-
-        if( mServiceRun ) {
-            unbindService(mConnection);
-            mServiceRun = false;
-        }
-    }
-
-    @Override
-    public boolean dispatchTouchEvent(MotionEvent ev) {
-        boolean isOn = false;
-        if( mService != null ) {
-            isOn = mService.IsOn();
-            mService.RefreshScreenSaver();
-        }
-
-        return !isOn || super.dispatchTouchEvent(ev);
-    }
-
-    private ServiceConnection mConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            CinemaService.LocalBinder binder = (CinemaService.LocalBinder)service;
-            mService = binder.GetService();
-            mServiceRun = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            mServiceRun = false;
-        }
-    };
 }

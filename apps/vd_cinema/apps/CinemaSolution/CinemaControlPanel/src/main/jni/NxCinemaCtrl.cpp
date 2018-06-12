@@ -49,7 +49,7 @@ int gNxFilterDebugLevel     = NX_DBG_ERR;
                                 }                                       \
                             } while(0);
 
-#define MAX_PAYLOAD_SIZE    65533
+#define MAX_PAYLOAD_SIZE    65535
 
 //------------------------------------------------------------------------------
 #if ENABLE_HEX_DUMP

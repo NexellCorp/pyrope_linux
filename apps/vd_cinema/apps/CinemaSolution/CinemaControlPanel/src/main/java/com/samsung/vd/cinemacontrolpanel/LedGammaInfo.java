@@ -80,9 +80,9 @@ public class LedGammaInfo {
                     break;
             }
 
-            inStream.close();
-            inStreamReader.close();
             bufferedReader.close();
+            inStreamReader.close();
+            inStream.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

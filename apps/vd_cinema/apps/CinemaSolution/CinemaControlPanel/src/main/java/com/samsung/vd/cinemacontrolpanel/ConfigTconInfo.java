@@ -53,7 +53,8 @@ public class ConfigTconInfo {
 
         try {
             FileInputStream inStream = new FileInputStream( filePath );
-            BufferedReader bufferedReader = new BufferedReader( new InputStreamReader(inStream) );
+            InputStreamReader inStreamReader = new InputStreamReader(inStream);
+            BufferedReader bufferedReader = new BufferedReader( inStreamReader );
 
             int idxLine = 0, idxData = 0;
             String strLine;
@@ -136,6 +137,10 @@ public class ConfigTconInfo {
 
                 idxLine++;
             }
+
+            bufferedReader.close();
+            inStreamReader.close();
+            inStream.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

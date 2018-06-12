@@ -1,24 +1,15 @@
 package com.samsung.vd.cinemacontrolpanel;
 
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
-import android.content.pm.ActivityInfo;
 import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.IBinder;
-import android.os.Message;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -35,25 +26,19 @@ import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TabHost;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.samsung.vd.baseutils.VdSpinCtrl;
 import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTitleBar;
 
 import java.io.IOException;
-import java.lang.ref.WeakReference;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Locale;
 
 /**
  * Created by doriya on 8/16/16.
  */
-public class DisplayModeActivity extends AppCompatActivity {
+public class DisplayModeActivity extends CinemaBaseActivity {
     private final String VD_DTAG = "DisplayModeActivity";
-
-    private UIHandler mUIHandler;
 
     private LayoutInflater  mInflater;
     private LinearLayout    mParentLayoutMastering;
@@ -206,7 +191,29 @@ public class DisplayModeActivity extends AppCompatActivity {
 
                 String[] resultDot = FileManager.CheckDirectoryInUsb(LedDotCorrectInfo.PATH, LedDotCorrectInfo.PATTERN_DIR);
                 if( (resultDot != null && resultDot.length != 0) ) {
-                    new AsyncTaskAdapterDotCorrection(mAdapterDotCorrect).execute();
+                    CinemaTask.GetInstance().Run(
+                            CinemaTask.CMD_PIXEL_CORRECTION_ADAPTER,
+                            getApplicationContext(),
+                            mAdapterDotCorrect,
+                            new CinemaTask.PreExecuteCallback() {
+                                @Override
+                                public void onPreExecute() {
+                                    ShowProgress();
+                                }
+                            },
+                            new CinemaTask.PostExecuteCallback() {
+                                @Override
+                                public void onPostExecute() {
+                                    HideProgress();
+                                }
+
+                                @Override
+                                public void onPostExecute(int[] values) {
+
+                                }
+                            }
+                    );
+
                     mBtnDotCorrectCheckAll.setEnabled(true);
                     mBtnDotCorrectUnCheckAll.setEnabled(true);
                     mBtnDotCorrectApply.setEnabled(true);
@@ -245,14 +252,6 @@ public class DisplayModeActivity extends AppCompatActivity {
         //
         //  This is called after onCreate().
         //
-        mLayoutMastering = new LinearLayout[mTextMastering.length];
-        for( int i = 0; i < mTextMastering.length; i++ ) {
-            mLayoutMastering[i] = (LinearLayout)mInflater.inflate(R.layout.layout_item_mastering, mParentLayoutMastering, false );
-            AddViewMastering( i, mLayoutMastering, mTextMastering );
-        }
-
-        UpdateMasteringMode();
-
         IntentFilter filter = new IntentFilter();
         filter.addAction( Intent.ACTION_MEDIA_MOUNTED );
         filter.addAction( Intent.ACTION_MEDIA_EJECT );
@@ -270,10 +269,7 @@ public class DisplayModeActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        SetScreenRotation();
         setContentView(R.layout.activity_display_mode);
-
-        mUIHandler = new UIHandler( this );
 
         //
         //  Configuration TitleBar
@@ -290,19 +286,15 @@ public class DisplayModeActivity extends AppCompatActivity {
         titleBar.SetListener(VdTitleBar.BTN_BACK, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                InitWhiteSeamValue();
-
-                startActivity( new Intent(v.getContext(), TopActivity.class) );
-                overridePendingTransition(0, 0);
-                finish();
+                ClearWhiteSeamValue();
+                Launch(v.getContext(), TopActivity.class);
             }
         });
         titleBar.SetListener(VdTitleBar.BTN_EXIT, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                InitWhiteSeamValue();
-
-                mService.TurnOff();
+                ClearWhiteSeamValue();
+                TurnOff();
             }
         });
 
@@ -391,19 +383,107 @@ public class DisplayModeActivity extends AppCompatActivity {
                 mMasteringModePos = mSpinnerMastering.getSelectedItemPosition();
 
                 ((CinemaInfo) getApplicationContext()).SetValue(CinemaInfo.KEY_MASTERING_MODE, mMasteringMode);
+
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_TCON_REG_WRITE,
+                        getApplicationContext(),
+                        mRegHideMastering,
+                        mDataHideMastering[mMasteringModePos],
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
+                                Log.i(VD_DTAG, "Mastering Write Start. ( Hidden Register Section )");
+                                ShowProgress();
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+                                HideProgress();
+                                Log.i(VD_DTAG, "Mastering Write Done. ( Hidden Register Section )");
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+
+                            }
+                        }
+                );
+
                 if( !IsMasterMode() ) {
-                    new AsyncTaskMasteringWrite().execute();
+                    CinemaTask.GetInstance().Run(
+                            CinemaTask.CMD_TCON_REG_WRITE,
+                            getApplicationContext(),
+                            mRegMastering,
+                            mDataMastering[mMasteringModePos],
+                            new CinemaTask.PreExecuteCallback() {
+                                @Override
+                                public void onPreExecute() {
+                                    Log.i(VD_DTAG, "Mastering Write Start.");
+                                    ShowProgress();
+                                }
+                            },
+                            new CinemaTask.PostExecuteCallback() {
+                                @Override
+                                public void onPostExecute() {
+                                    HideProgress();
+                                    Log.i(VD_DTAG, "Mastering Write Done.");
+                                }
+
+                                @Override
+                                public void onPostExecute(int[] values) {
+
+                                }
+                            }
+                    );
                 }
                 else {
-                    new AsyncTaskMasteringWrite().execute();
-                    new AsyncTaskMasteringRead().execute();
+                    CinemaTask.GetInstance().Run(
+                            CinemaTask.CMD_TCON_REG_READ,
+                            getApplicationContext(),
+                            mRegMastering,
+                            new CinemaTask.PreExecuteCallback() {
+                                @Override
+                                public void onPreExecute() {
+                                    Log.i(VD_DTAG, "Mastering Read Start.");
+                                    ShowProgress();
+                                }
+                            },
+                            new CinemaTask.PostExecuteCallback() {
+                                @Override
+                                public void onPostExecute() {
+
+                                }
+
+                                @Override
+                                public void onPostExecute(int[] values) {
+                                    for( int i = 0; i < values.length; i++ ) {
+                                        mSeekBarMastering[i].setProgress(values[i]);
+                                        mDataMastering[mMasteringModePos][i] = values[i];
+                                        mBtnMastering[i].setEnabled(false);
+                                    }
+
+                                    HideProgress();
+                                    Log.i(VD_DTAG, "Mastering Read Done.");
+                                }
+                            }
+                    );
                 }
 
                 UpdateMasteringMode();
-
                 ((CinemaInfo)getApplicationContext()).InsertLog(String.format( Locale.US, "Change Mastering Mode. ( %s Mode )", mMasteringMode ));
             }
         });
+
+
+        //
+        //
+        //
+        mLayoutMastering = new LinearLayout[mTextMastering.length];
+        for( int i = 0; i < mTextMastering.length; i++ ) {
+            mLayoutMastering[i] = (LinearLayout)mInflater.inflate(R.layout.layout_item_mastering, mParentLayoutMastering, false );
+            AddViewMastering( i, mLayoutMastering, mTextMastering );
+        }
 
         //
         //  Uniformity Correction
@@ -470,7 +550,28 @@ public class DisplayModeActivity extends AppCompatActivity {
         mBtnApplyUniformity.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                new AsyncTaskUniformityCorrection().execute();
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_UNIFORMITY,
+                        getApplicationContext(),
+                        mSpinnerUniformity.getSelectedItemPosition(),
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
+                                ShowProgress();
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+                                HideProgress();
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+
+                            }
+                        }
+                );
             }
         });
 
@@ -619,7 +720,28 @@ public class DisplayModeActivity extends AppCompatActivity {
         mBtnDotCorrectApply.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                new AsyncTaskDotCorrection(mAdapterDotCorrect).execute();
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_PIXEL_CORRECTION,
+                        getApplicationContext(),
+                        mAdapterDotCorrect,
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
+                                ShowProgress();
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+                                HideProgress();
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+
+                            }
+                        }
+                );
             }
         });
 
@@ -645,7 +767,29 @@ public class DisplayModeActivity extends AppCompatActivity {
                 int module= (mSpinnerDotCorrectExtractModule.getSelectedItemPosition() == 0 ) ?
                         LedDotCorrectInfo.MAX_MODULE_NUM : mSpinnerDotCorrectExtractModule.getSelectedItemPosition() - 1;
 
-                new AsyncTaskDotCorrectionExtract(index, module).execute();
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_PIXEL_CORRECTION_EXTRACT,
+                        getApplicationContext(),
+                        index,
+                        module,
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
+                                ShowProgress();
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+                                HideProgress();
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+
+                            }
+                        }
+                );
             }
         });
 
@@ -661,7 +805,32 @@ public class DisplayModeActivity extends AppCompatActivity {
         mSpinnerWhiteSeamCabinetId.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                new AsyncTaskWhiteSeamRead(mCabinet, mSpinnerWhiteSeamCabinetId.getSelectedItemPosition(), mCheckWhiteSeamEmulation.isChecked()).execute();
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_WHITESEAM_READ,
+                        getApplicationContext(),
+                        mSpinnerWhiteSeamCabinetId.getSelectedItemPosition(),
+                        mCheckWhiteSeamEmulation.isChecked(),
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
+                                ShowProgress();
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+                                for( int i = 0; i < values.length; i++ ) {
+                                    mSpinWhiteSeam[i].SetValue(values[i]);
+                                }
+                                HideProgress();
+                            }
+                        }
+                );
             }
 
             @Override
@@ -680,13 +849,68 @@ public class DisplayModeActivity extends AppCompatActivity {
             spin.SetOnChangeListener(new VdSpinCtrl.OnChangeListener() {
                 @Override
                 public void onChange(int value) {
-                    new AsyncTaskWhiteSeamEmulate(mCabinet, mSpinnerWhiteSeamCabinetId.getSelectedItemPosition()).execute();
+                    CinemaTask.GetInstance().Run(
+                            CinemaTask.CMD_WHITESEAM_EMULATE,
+                            getApplicationContext(),
+                            mSpinnerWhiteSeamCabinetId.getSelectedItemPosition(),
+                            new int [] {
+                                    mSpinWhiteSeam[0].GetValue(),
+                                    mSpinWhiteSeam[1].GetValue(),
+                                    mSpinWhiteSeam[2].GetValue(),
+                                    mSpinWhiteSeam[3].GetValue(),
+                            },
+                            new CinemaTask.PreExecuteCallback() {
+                                @Override
+                                public void onPreExecute() {
+                                    ShowProgress();
+                                }
+                            },
+                            new CinemaTask.PostExecuteCallback() {
+                                @Override
+                                public void onPostExecute() {
+                                    HideProgress();
+                                }
+
+                                @Override
+                                public void onPostExecute(int[] values) {
+
+                                }
+                            }
+                    );
+
                 }
             });
             spin.SetOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
                 public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                    new AsyncTaskWhiteSeamEmulate(mCabinet, mSpinnerWhiteSeamCabinetId.getSelectedItemPosition()).execute();
+                    CinemaTask.GetInstance().Run(
+                            CinemaTask.CMD_WHITESEAM_EMULATE,
+                            getApplicationContext(),
+                            mSpinnerWhiteSeamCabinetId.getSelectedItemPosition(),
+                            new int [] {
+                                    mSpinWhiteSeam[0].GetValue(),
+                                    mSpinWhiteSeam[1].GetValue(),
+                                    mSpinWhiteSeam[2].GetValue(),
+                                    mSpinWhiteSeam[3].GetValue(),
+                            },
+                            new CinemaTask.PreExecuteCallback() {
+                                @Override
+                                public void onPreExecute() {
+                                    ShowProgress();
+                                }
+                            },
+                            new CinemaTask.PostExecuteCallback() {
+                                @Override
+                                public void onPostExecute() {
+                                    HideProgress();
+                                }
+
+                                @Override
+                                public void onPostExecute(int[] values) {
+
+                                }
+                            }
+                    );
                     return false;
                 }
             });
@@ -695,7 +919,34 @@ public class DisplayModeActivity extends AppCompatActivity {
         mBtnWhiteSeamApply.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                new AsyncTaskWhiteSeamWrite(mCabinet, mSpinnerWhiteSeamCabinetId.getSelectedItemPosition()).execute();
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_WHITESEAM_WRITE,
+                        getApplicationContext(),
+                        mSpinnerWhiteSeamCabinetId.getSelectedItemPosition(),
+                        new int [] {
+                                mSpinWhiteSeam[0].GetValue(),
+                                mSpinWhiteSeam[1].GetValue(),
+                                mSpinWhiteSeam[2].GetValue(),
+                                mSpinWhiteSeam[3].GetValue(),
+                        },
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
+                                ShowProgress();
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+                                HideProgress();
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+
+                            }
+                        }
+                );
             }
         });
 
@@ -724,16 +975,51 @@ public class DisplayModeActivity extends AppCompatActivity {
         //
         //  Spinner Cabinet Number
         //
-        String curCabinetNum = ((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_CABINET_NUM);
+        String desireCabinetNum = ((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_CABINET_NUM);
 
         mEditCabinet = (EditText)findViewById(R.id.editCabinet);
-        mEditCabinet.setText(curCabinetNum);
+        mEditCabinet.setText(desireCabinetNum);
 
         Button btnCabinetNum = (Button)findViewById(R.id.btnCabinetNumApply);
         btnCabinetNum.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                new AsyncTaskCheckCabinet().execute();
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_CHECK_CABINET_NUM,
+                        getApplicationContext(),
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
+                                ShowProgress();
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+                                int detectCabinetNum = values[0];
+                                int desireCabinetNum = Integer.parseInt( mEditCabinet.getText().toString() );
+                                int curCabinetNum = Integer.parseInt( ((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_CABINET_NUM ) );
+
+                                if( detectCabinetNum != desireCabinetNum && ((CinemaInfo)getApplicationContext()).IsCheckCabinetNum() ) {
+                                    ShowMessage( String.format(Locale.US, "Please check cabinet number. ( desire: %d, detect: %d )", desireCabinetNum, detectCabinetNum) );
+                                }
+                                else {
+                                    CinemaInfo info = (CinemaInfo)getApplicationContext();
+                                    info.SetValue(CinemaInfo.KEY_CABINET_NUM, mEditCabinet.getText().toString());
+
+                                    String strLog = String.format( "Change cabinet number. ( %s -> %s )", curCabinetNum, desireCabinetNum  );
+                                    info.InsertLog(strLog);
+                                    Log.i(VD_DTAG, strLog);
+                                }
+                                HideProgress();
+                            }
+                        }
+                );
             }
         });
 
@@ -754,7 +1040,7 @@ public class DisplayModeActivity extends AppCompatActivity {
             public void onClick(View v) {
                 ShowMessage("Apply");
                 ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_SCREEN_SAVING, CinemaService.OFF_TIME[mSpinnerSuspendTime.getSelectedItemPosition()]);
-                mService.RefreshScreenSaver();
+                RefreshScreenSaver();
             }
         });
 
@@ -800,27 +1086,110 @@ public class DisplayModeActivity extends AppCompatActivity {
                 }
             }
         });
+
+        this.RegisterTmsCallback(new CinemaService.TmsEventCallback() {
+            @Override
+            public void onTmsEventCallback() {
+                String strTemp = ((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_INITIAL_MODE);
+                int mode = (strTemp == null) ? 0 : Integer.parseInt(strTemp);
+                mTextImageQuality.setText(String.format(Locale.US, "Mode #%d", mode+1));
+            }
+        });
+
+        UpdateMasteringMode();
     }
 
     private void RegisterListener() {
         mBtnApplySyncWidth.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                ApplySyncWidth();
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_TCON_REG_WRITE,
+                        getApplicationContext(),
+                        new int[]{0x018B},
+                        new int[]{mSpinSyncWidth.GetValue()},
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
+                                ShowProgress();
+                                Log.i(VD_DTAG, String.format(Locale.US, "Apply SYNC_DELAY. ( %d )", mSpinSyncWidth.GetValue()));
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+                                ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018B, String.valueOf(mSpinSyncDelay.GetValue()) );
+                                HideProgress();
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+
+                            }
+                        }
+                );
             }
         });
 
         mSpinSyncWidth.SetOnChangeListener(new VdSpinCtrl.OnChangeListener() {
             @Override
             public void onChange(int value) {
-                ApplySyncWidth();
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_TCON_REG_WRITE,
+                        getApplicationContext(),
+                        new int[]{0x018B},
+                        new int[]{mSpinSyncWidth.GetValue()},
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
+                                ShowProgress();
+                                Log.i(VD_DTAG, String.format(Locale.US, "Apply SYNC_DELAY. ( %d )", mSpinSyncWidth.GetValue()));
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+                                ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018B, String.valueOf(mSpinSyncDelay.GetValue()) );
+                                HideProgress();
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+
+                            }
+                        }
+                );
             }
         });
 
         mSpinSyncWidth.SetOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                ApplySyncWidth();
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_TCON_REG_WRITE,
+                        getApplicationContext(),
+                        new int[]{0x018B},
+                        new int[]{mSpinSyncWidth.GetValue()},
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
+                                ShowProgress();
+                                Log.i(VD_DTAG, String.format(Locale.US, "Apply SYNC_DELAY. ( %d )", mSpinSyncWidth.GetValue()));
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+                                ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018B, String.valueOf(mSpinSyncDelay.GetValue()) );
+                                HideProgress();
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+
+                            }
+                        }
+                );
                 return false;
             }
         });
@@ -828,21 +1197,94 @@ public class DisplayModeActivity extends AppCompatActivity {
         mBtnApplySyncDelay.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                ApplySyncDelay();
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_TCON_REG_WRITE,
+                        getApplicationContext(),
+                        new int[]{0x018C},
+                        new int[]{mSpinSyncDelay.GetValue()},
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
+                                ShowProgress();
+                                Log.i(VD_DTAG, String.format(Locale.US, "Apply SYNC_DELAY. ( %d )", mSpinSyncDelay.GetValue()));
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+                                ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018C, String.valueOf(mSpinSyncDelay.GetValue()) );
+                                HideProgress();
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+
+                            }
+                        }
+                );
             }
         });
 
         mSpinSyncDelay.SetOnChangeListener(new VdSpinCtrl.OnChangeListener() {
             @Override
             public void onChange(int value) {
-                ApplySyncDelay();
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_TCON_REG_WRITE,
+                        getApplicationContext(),
+                        new int[]{0x018C},
+                        new int[]{mSpinSyncDelay.GetValue()},
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
+                                ShowProgress();
+                                Log.i(VD_DTAG, String.format(Locale.US, "Apply SYNC_DELAY. ( %d )", mSpinSyncDelay.GetValue()));
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+                                ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018C, String.valueOf(mSpinSyncDelay.GetValue()) );
+                                HideProgress();
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+
+                            }
+                        }
+                );
             }
         });
 
         mSpinSyncDelay.SetOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                ApplySyncDelay();
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_TCON_REG_WRITE,
+                        getApplicationContext(),
+                        new int[]{0x018C},
+                        new int[]{mSpinSyncDelay.GetValue()},
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
+                                ShowProgress();
+                                Log.i(VD_DTAG, String.format(Locale.US, "Apply SYNC_DELAY. ( %d )", mSpinSyncDelay.GetValue()));
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+                                ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018C, String.valueOf(mSpinSyncDelay.GetValue()) );
+                                HideProgress();
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+
+                            }
+                        }
+                );
+
                 return false;
             }
         });
@@ -850,63 +1292,303 @@ public class DisplayModeActivity extends AppCompatActivity {
         mCheckSyncReverse.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                ApplySyncReverse();
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_TCON_REG_WRITE,
+                        getApplicationContext(),
+                        new int[]{0x018A},
+                        new int[]{mCheckSyncReverse.isChecked() ? 0x0001 : 0x0000},
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
+                                ShowProgress();
+                                Log.i(VD_DTAG, String.format(Locale.US, "Change SYNC_REVERSE. ( %b )", mCheckSyncReverse.isChecked()));
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+                                ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018A, String.valueOf(mCheckSyncReverse.isChecked() ? 1 : 0) );
+                                HideProgress();
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+
+                            }
+                        }
+                );
             }
         });
 
         mCheckScale.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                ApplyScale();
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_PFPGA_MUTE,
+                        getApplicationContext(),
+                        true,
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
+                                ShowProgress();
+                            }
+                        },
+                        null
+                );
+
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_PFPGA_REG_WRITE,
+                        getApplicationContext(),
+                        new int[]{0x0199},
+                        new int[]{mCheckScale.isChecked() ? 0x0000 : 0x0001},
+                        null,
+                        null
+                );
+
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_TCON_REG_WRITE,
+                        getApplicationContext(),
+                        new int[]{0x018D},
+                        new int[]{mCheckScale.isChecked() ? 0x0001 : 0x0000},
+                        null,
+                        null
+                );
+
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_PFPGA_MUTE,
+                        getApplicationContext(),
+                        false,
+                        null,
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+                                ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_PREG_0x0199, String.valueOf(mCheckScale.isChecked() ? 0 : 1) );
+                                ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018D, String.valueOf(mCheckScale.isChecked() ? 1 : 0) );
+                                HideProgress();
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+
+                            }
+                        }
+                );
             }
         });
 
         mCheckZeroScale.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                ApplyZeroScale();
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_TCON_REG_WRITE,
+                        getApplicationContext(),
+                        new int[]{0x018E},
+                        new int[]{mCheckZeroScale.isChecked() ? 0x0001 : 0x0000},
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
+                                ShowProgress();
+                                Log.i(VD_DTAG, String.format(Locale.US, "Change Zero Scale. ( %b )", mCheckZeroScale.isChecked()));
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+                                ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018E, String.valueOf(mCheckZeroScale.isChecked() ? 1 : 0) );
+                                HideProgress();
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+
+                            }
+                        }
+                );
             }
         });
 
         mCheckSeam.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                ApplySeam();
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_TCON_REG_WRITE,
+                        getApplicationContext(),
+                        new int[]{0x0192},
+                        new int[]{mCheckSeam.isChecked() ? 0x0001 : 0x0000},
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
+                                ShowProgress();
+                                Log.i(VD_DTAG, String.format(Locale.US, "Change Seam. ( %b )", mCheckSeam.isChecked()));
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+                                ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x0192, String.valueOf(mCheckSeam.isChecked() ? 1 : 0) );
+                                HideProgress();
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+
+                            }
+                        }
+                );
             }
         });
 
         mCheckModule.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                ApplyModule();
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_TCON_REG_WRITE,
+                        getApplicationContext(),
+                        new int[]{0x0055},
+                        new int[]{mCheckModule.isChecked() ? 0x0001 : 0x0000},
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
+                                ShowProgress();
+                                Log.i(VD_DTAG, String.format(Locale.US, "Change Module. ( %b )", mCheckModule.isChecked()));
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+                                ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x0055, String.valueOf(mCheckModule.isChecked() ? 1 : 0) );
+                                HideProgress();
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+
+                            }
+                        }
+                );
             }
         });
 
         mCheckXyzInput.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                ApplyXyzInput();
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_TCON_REG_WRITE,
+                        getApplicationContext(),
+                        new int[]{0x0004},
+                        new int[]{mCheckXyzInput.isChecked() ? 0x0001 : 0x0000},
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
+                                ShowProgress();
+                                Log.i(VD_DTAG, String.format(Locale.US, "Change XYX Input. ( %b )", mCheckXyzInput.isChecked()));
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+                                ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x0004, String.valueOf(mCheckXyzInput.isChecked() ? 1 : 0) );
+                                HideProgress();
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+
+                            }
+                        }
+                );
             }
         });
 
         mCheckLedOpenDetection.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                ApplyLedOpenDetection();
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_TCON_REG_WRITE,
+                        getApplicationContext(),
+                        new int[]{0x0100},
+                        new int[]{mCheckLedOpenDetection.isChecked() ? 0x0001 : 0x0000},
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
+                                ShowProgress();
+                                Log.i(VD_DTAG, String.format(Locale.US, "Change Led Open Detection. ( %b )", mCheckLedOpenDetection.isChecked()));
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+                                ((CinemaInfo)getApplicationContext()).SetValue(
+                                        CinemaInfo.KEY_TREG_0x0100,
+                                        String.valueOf(mCheckLedOpenDetection.isChecked() ? 1 : 0)
+                                );
+                                HideProgress();
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+
+                            }
+                        }
+                );
             }
         });
 
         mCheckLodRemoval.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                ApplyLodRemoval();
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_TCON_REG_WRITE,
+                        getApplicationContext(),
+                        new int[]{0x011E},
+                        new int[]{mCheckLodRemoval.isChecked() ? 0x0001 : 0x0000},
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
+                                ShowProgress();
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+                                ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x011E, String.valueOf(mCheckLodRemoval.isChecked() ? 1 : 0) );
+                                HideProgress();
+                            }
+                        }
+                );
             }
         });
 
         mBtnLodReset.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                ApplyLodReset();
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_LOD_RESET,
+                        getApplicationContext(),
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
+                                ShowProgress();
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+                                ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x011E, String.valueOf(mCheckLodRemoval.isChecked() ? 1 : 0) );
+                                HideProgress();
+                            }
+                        }
+                );
             }
         });
     }
@@ -932,7 +1614,31 @@ public class DisplayModeActivity extends AppCompatActivity {
     private TextButtonAdapter.OnClickListener mTextbuttonAdapterClickListener = new TextButtonAdapter.OnClickListener() {
         @Override
         public void onClickListener(int position) {
-            new AsyncTaskImageQuality(position).execute();
+            final int mode = position;
+            CinemaTask.GetInstance().Run(
+                    CinemaTask.CMD_CHANGE_MODE,
+                    getApplicationContext(),
+                    position,
+                    new CinemaTask.PreExecuteCallback() {
+                        @Override
+                        public void onPreExecute() {
+                            ShowProgress();
+                        }
+                    },
+                    new CinemaTask.PostExecuteCallback() {
+                        @Override
+                        public void onPostExecute() {
+                            mTextImageQuality.setText(String.format(Locale.US, "Mode #%d", mode+1));
+                            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_INITIAL_MODE, String.valueOf(mode));
+                            HideProgress();
+                        }
+
+                        @Override
+                        public void onPostExecute(int[] values) {
+
+                        }
+                    }
+            );
         }
     };
 
@@ -1010,7 +1716,7 @@ public class DisplayModeActivity extends AppCompatActivity {
     }
 
     private void UpdateMasteringMode() {
-        InitWhiteSeamValue();
+        ClearWhiteSeamValue();
 
         for( int i = 0; i < mStrModeMastering.length; i++ ) {
             if( mMasteringMode.equals(mStrModeMastering[i]) ) {
@@ -1029,7 +1735,37 @@ public class DisplayModeActivity extends AppCompatActivity {
                         mSeekBarMastering[j].setEnabled(true);
                         mValueMastering[j].setEnabled(true);
                     }
-                    new AsyncTaskMasteringRead().execute();
+
+                    CinemaTask.GetInstance().Run(
+                            CinemaTask.CMD_TCON_REG_READ,
+                            getApplicationContext(),
+                            mRegMastering,
+                            new CinemaTask.PreExecuteCallback() {
+                                @Override
+                                public void onPreExecute() {
+                                    Log.i(VD_DTAG, "Mastering Read Start.");
+                                    ShowProgress();
+                                }
+                            },
+                            new CinemaTask.PostExecuteCallback() {
+                                @Override
+                                public void onPostExecute() {
+
+                                }
+
+                                @Override
+                                public void onPostExecute(int[] values) {
+                                    for( int i = 0; i < values.length; i++ ) {
+                                        mSeekBarMastering[i].setProgress(values[i]);
+                                        mDataMastering[mMasteringModePos][i] = values[i];
+                                        mBtnMastering[i].setEnabled(false);
+                                    }
+
+                                    HideProgress();
+                                    Log.i(VD_DTAG, "Mastering Read Done.");
+                                }
+                            }
+                    );
                 }
                 break;
             }
@@ -1037,7 +1773,7 @@ public class DisplayModeActivity extends AppCompatActivity {
     }
 
     private void UpdateUniformityCorrection() {
-        InitWhiteSeamValue();
+        ClearWhiteSeamValue();
 
         String[] usbPfpga = FileManager.CheckFileInUsb(ConfigPfpgaInfo.PATH_SOURCE, ConfigPfpgaInfo.NAME);
         String[] usbUniformity = FileManager.CheckFileInUsb(LedUniformityInfo.PATH_SOURCE, LedUniformityInfo.NAME);
@@ -1086,7 +1822,7 @@ public class DisplayModeActivity extends AppCompatActivity {
     }
 
     private void UpdateImageQuality() {
-        InitWhiteSeamValue();
+        ClearWhiteSeamValue();
 
         //
         //  Update Button
@@ -1176,97 +1912,167 @@ public class DisplayModeActivity extends AppCompatActivity {
     }
 
     private void UpdateDotCorrection() {
-        InitWhiteSeamValue();
+        ClearWhiteSeamValue();
 
         String[] result = FileManager.CheckDirectoryInUsb(LedDotCorrectInfo.PATH, LedDotCorrectInfo.PATTERN_DIR);
         if( result == null || result.length == 0 )
             return;
 
-        new AsyncTaskAdapterDotCorrection(mAdapterDotCorrect).execute();
+        CinemaTask.GetInstance().Run(
+                CinemaTask.CMD_PIXEL_CORRECTION_ADAPTER,
+                getApplicationContext(),
+                mAdapterDotCorrect,
+                new CinemaTask.PreExecuteCallback() {
+                    @Override
+                    public void onPreExecute() {
+                        ShowProgress();
+                    }
+                },
+                new CinemaTask.PostExecuteCallback() {
+                    @Override
+                    public void onPostExecute() {
+                        HideProgress();
+                    }
+
+                    @Override
+                    public void onPostExecute(int[] values) {
+
+                    }
+                }
+        );
+
         mBtnDotCorrectCheckAll.setEnabled(true);
         mBtnDotCorrectUnCheckAll.setEnabled(true);
         mBtnDotCorrectApply.setEnabled(true);
     }
 
-    private void InitWhiteSeamValue() {
+    private void ClearWhiteSeamValue() {
         mCheckWhiteSeamEmulation.setOnCheckedChangeListener(null);
         mCheckWhiteSeamEmulation.setChecked(false);
 
-        boolean bValidPort0 = false, bValidPort1 = false;
-        for( byte id : mCabinet ) {
-            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-        }
+        CinemaTask.GetInstance().Run(
+                CinemaTask.CMD_TCON_REG_WRITE,
+                getApplicationContext(),
+                new int[] { 0x0189 },
+                new int[] { 0x0000 },
+                new CinemaTask.PreExecuteCallback() {
+                    @Override
+                    public void onPreExecute() {
+                        ShowProgress();
+                    }
+                },
+                new CinemaTask.PostExecuteCallback() {
+                    @Override
+                    public void onPostExecute() {
+                        HideProgress();
+                    }
 
-        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+                    @Override
+                    public void onPostExecute(int[] values) {
 
-        byte[] reg = ctrl.IntToByteArray(0x0189, NxCinemaCtrl.FORMAT_INT16);
-        byte[] dat = ctrl.IntToByteArray(0x0000, NxCinemaCtrl.FORMAT_INT16);
-        byte[] inData = ctrl.AppendByteArray(reg, dat);
-
-        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-        if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
-        if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
+                    }
+                }
+        );
 
         mCheckWhiteSeamEmulation.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                Log.i(VD_DTAG, String.format(Locale.US, "Change WhiteSeam Emulation. ( %b )", mCheckWhiteSeamEmulation.isChecked()));
-
+                Log.i(VD_DTAG, String.format(">>> onCheckedChanged() ( %b )", b));
+                Log.i(VD_DTAG, String.format(">>> onCheckedChanged() ( %b )", mCheckWhiteSeamEmulation.isChecked()));
                 mBtnWhiteSeamApply.setEnabled(b);
                 for( VdSpinCtrl spin : mSpinWhiteSeam ) {
                     spin.setEnabled(b);
                 }
 
-                NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_WHITESEAM_ENABLE,
+                        getApplicationContext(),
+                        mSpinnerWhiteSeamCabinetId.getSelectedItemPosition(),
+                        b,
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
 
-                if( mSpinnerWhiteSeamCabinetId.getSelectedItemPosition() == 0 ) {
-                    boolean bValidPort0 = false, bValidPort1 = false;
-                    for( byte id : mCabinet ) {
-                        if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-                        if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-                    }
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
 
-                    byte[] reg = ctrl.IntToByteArray(0x0189, NxCinemaCtrl.FORMAT_INT16);
-                    byte[] dat = ctrl.IntToByteArray(mCheckWhiteSeamEmulation.isChecked() ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
-                    byte[] inData = ctrl.AppendByteArray(reg, dat);
+                            }
 
-                    byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-                    byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+                            @Override
+                            public void onPostExecute(int[] values) {
 
-                    if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
-                    if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
-                }
-                else {
-                    int pos = mSpinnerWhiteSeamCabinetId.getSelectedItemPosition() - 1;
-                    byte slave = ((mCabinet[pos] % 16) < 8) ? (mCabinet[pos]) : (byte)(mCabinet[pos] | 0x80);
-                    byte[] inData;
-                    inData = new byte[] { slave };
-                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(0x0189, NxCinemaCtrl.FORMAT_INT16));
-                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mCheckWhiteSeamEmulation.isChecked() ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16));
+                            }
+                        }
+                );
 
-                    ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData );
-                }
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_WHITESEAM_READ,
+                        getApplicationContext(),
+                        mSpinnerWhiteSeamCabinetId.getSelectedItemPosition(),
+                        b,
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
 
-                new AsyncTaskWhiteSeamRead(mCabinet, mSpinnerWhiteSeamCabinetId.getSelectedItemPosition(), mCheckWhiteSeamEmulation.isChecked()).execute();
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+                                for( int i = 0; i < values.length; i++ ) {
+                                    mSpinWhiteSeam[i].SetValue(values[i]);
+                                }
+                            }
+                        }
+                );
             }
         });
     }
 
     private void UpdateWhiteSeamValue() {
-        InitWhiteSeamValue();
+        ClearWhiteSeamValue();
 
         mBtnWhiteSeamApply.setEnabled(mCheckWhiteSeamEmulation.isChecked());
         for( VdSpinCtrl spin : mSpinWhiteSeam )
             spin.setEnabled(mCheckWhiteSeamEmulation.isChecked());
 
-        new AsyncTaskWhiteSeamRead(mCabinet, mSpinnerWhiteSeamCabinetId.getSelectedItemPosition(), mCheckWhiteSeamEmulation.isChecked()).execute();
+        CinemaTask.GetInstance().Run(
+                CinemaTask.CMD_WHITESEAM_READ,
+                getApplicationContext(),
+                mSpinnerWhiteSeamCabinetId.getSelectedItemPosition(),
+                mCheckWhiteSeamEmulation.isChecked(),
+                new CinemaTask.PreExecuteCallback() {
+                    @Override
+                    public void onPreExecute() {
+
+                    }
+                },
+                new CinemaTask.PostExecuteCallback() {
+                    @Override
+                    public void onPostExecute() {
+
+                    }
+
+                    @Override
+                    public void onPostExecute(int[] values) {
+                        for( int i = 0; i < values.length; i++ ) {
+                            mSpinWhiteSeam[i].SetValue(values[i]);
+                        }
+                    }
+                }
+        );
     }
 
     private void UpdateDotCorrectionExtract() {
-        InitWhiteSeamValue();
+        ClearWhiteSeamValue();
 
         String result = GetExternalStorage();
         if( result != null ) {
@@ -1278,12 +2084,58 @@ public class DisplayModeActivity extends AppCompatActivity {
     }
 
     private void UpdateGlobal() {
-        InitWhiteSeamValue();
-        new AsyncTaskGlobalRead().execute();
+        ClearWhiteSeamValue();
+
+        CinemaTask.GetInstance().Run(
+                CinemaTask.CMD_TCON_REG_READ,
+                getApplicationContext(),
+                new int[] {
+                        NxCinemaCtrl.REG_TCON_0x018B,
+                        NxCinemaCtrl.REG_TCON_0x018C,
+                        NxCinemaCtrl.REG_TCON_0x018A,
+                        NxCinemaCtrl.REG_TCON_0x018D,
+                        NxCinemaCtrl.REG_TCON_0x018E,
+                        NxCinemaCtrl.REG_TCON_0x0192,
+                        NxCinemaCtrl.REG_TCON_0x0055,
+                        NxCinemaCtrl.REG_TCON_0x0004,
+                        NxCinemaCtrl.REG_TCON_0x0100,
+                        NxCinemaCtrl.REG_TCON_0x011E
+                },
+                new CinemaTask.PreExecuteCallback() {
+                    @Override
+                    public void onPreExecute() {
+                        Log.i(VD_DTAG, ">> Global Register Read Start.");
+                        ShowProgress();
+                    }
+                },
+                new CinemaTask.PostExecuteCallback() {
+                    @Override
+                    public void onPostExecute() {
+
+                    }
+
+                    @Override
+                    public void onPostExecute(int[] values) {
+                        mSpinSyncWidth.SetValue( values[0] );
+                        mSpinSyncDelay.SetValue( values[1] );
+
+                        mCheckSyncReverse.setChecked( values[2] != 0 ) ;
+                        mCheckScale.setChecked( values[3] != 0 );
+                        mCheckZeroScale.setChecked( values[4] != 0 );
+                        mCheckSeam.setChecked( values[5] != 0 );
+                        mCheckModule.setChecked( values[6] != 0 );
+                        mCheckXyzInput.setChecked( values[7] != 0 );
+                        mCheckLedOpenDetection.setChecked( values[8] != 0 );
+                        mCheckLodRemoval.setChecked( values[9] != 0 );
+                        Log.i(VD_DTAG, ">> Global Register Read Done.");
+                        HideProgress();
+                    }
+                }
+        );
     }
 
     private void UpdateSetup() {
-        InitWhiteSeamValue();
+        ClearWhiteSeamValue();
 
         mEditCabinet.setText(((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_CABINET_NUM));
 
@@ -1308,19 +2160,6 @@ public class DisplayModeActivity extends AppCompatActivity {
     private String GetExternalStorage() {
         String[] result = FileManager.GetExternalPath();
         return (result != null && result.length != 0) ? result[0] : null;
-    }
-
-    //
-    //  For Internal Toast Message
-    //
-    private static Toast mToast;
-
-    private void ShowMessage( String strMsg ) {
-        if( mToast == null )
-            mToast = Toast.makeText(getApplicationContext(), null, Toast.LENGTH_SHORT);
-
-        mToast.setText(strMsg);
-        mToast.show();
     }
 
     //
@@ -1378,7 +2217,31 @@ public class DisplayModeActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 mDataMastering[mMasteringModePos][itemIndex] = Integer.parseInt( mValueMastering[itemIndex].getText().toString() );
-                ApplyMasteringMode( itemIndex, mDataMastering[mMasteringModePos][itemIndex] );
+
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_TCON_REG_WRITE,
+                        getApplicationContext(),
+                        new int[]{mRegMastering[itemIndex]},
+                        new int[]{mDataMastering[mMasteringModePos][itemIndex]},
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
+                                ShowProgress();
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+                                HideProgress();
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+
+                            }
+                        }
+                );
+
                 mBtnMastering[itemIndex].setEnabled( false );
             }
         });
@@ -1418,1602 +2281,4 @@ public class DisplayModeActivity extends AppCompatActivity {
             }
         });
     }
-
-    //
-    //
-    //
-    private void ApplyMasteringMode( int itemIdx, int value ) {
-        boolean bValidPort0 = false, bValidPort1 = false;
-        for( byte id : mCabinet ) {
-            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-        }
-
-        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-
-        byte[] reg = ctrl.IntToByteArray(mRegMastering[itemIdx], NxCinemaCtrl.FORMAT_INT16);
-        byte[] data = ctrl.IntToByteArray(value, NxCinemaCtrl.FORMAT_INT16);
-        byte[] inData = ctrl.AppendByteArray(reg ,data);
-
-        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-        if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
-        if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
-    }
-
-    //
-    //
-    //
-    private class AsyncTaskCheckCabinet extends AsyncTask<Void, Void, Void> {
-        @Override
-        protected Void doInBackground(Void... params) {
-            for( int i = 0; i < 255; i++ ) {
-                if( (i & 0x7F) < 0x10 )
-                    continue;
-
-                NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-                byte[] result = ctrl.Send(NxCinemaCtrl.CMD_TCON_STATUS, new byte[]{(byte)i});
-                if (result == null || result.length == 0)
-                    continue;
-
-                if( 0 > result[0] )
-                    continue;
-
-                ((CinemaInfo)getApplicationContext()).AddCabinet( (byte)i );
-            }
-
-            return null;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            Log.i(VD_DTAG, "AsyncTaskCheckCabinet Start.");
-            CinemaLoading.Show( DisplayModeActivity.this );
-            ((CinemaInfo)getApplicationContext()).ClearCabinet();
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-
-            ((CinemaInfo)getApplicationContext()).SortCabinet();
-
-            byte[] cabinet = ((CinemaInfo)getApplicationContext()).GetCabinet();
-            int curCabinetNum = Integer.parseInt( ((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_CABINET_NUM ) );
-
-            if( cabinet.length != curCabinetNum && ((CinemaInfo)getApplicationContext()).IsCheckCabinet() ) {
-                ShowMessage( String.format(Locale.US, "Please check cabinet number. ( value: %d, detect: %d )", curCabinetNum, cabinet.length) );
-            }
-            else {
-                String targetCabinetNum = mEditCabinet.getText().toString();
-
-                CinemaInfo info = (CinemaInfo)getApplicationContext();
-                info.SetValue(CinemaInfo.KEY_CABINET_NUM, targetCabinetNum);
-
-                String strLog = String.format( "Change cabinet number. ( %s -> %s )", curCabinetNum, targetCabinetNum  );
-                info.InsertLog(strLog);
-                Log.i(VD_DTAG, strLog);
-            }
-
-            Log.i(VD_DTAG, "AsyncTaskCheckCabinet Done.");
-            CinemaLoading.Hide();
-        }
-    }
-
-    //
-    //
-    //
-    private class AsyncTaskMasteringWrite extends AsyncTask<Void, Void, Void> {
-        @Override
-        protected Void doInBackground(Void... voids) {
-            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-
-            boolean bValidPort0 = false, bValidPort1 = false;
-            for( byte id : mCabinet ) {
-                if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-                if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-            }
-
-            if( IsMasterMode() ) {
-                for( int i = 0; i < mRegHideMastering.length; i++ ) {
-                    byte[] reg = ctrl.IntToByteArray( mRegHideMastering[i], NxCinemaCtrl.FORMAT_INT16 );
-                    byte[] data = ctrl.IntToByteArray( mDataHideMastering[mMasteringModePos][i], NxCinemaCtrl.FORMAT_INT16 );
-                    byte[] inData = ctrl.AppendByteArray(reg, data);
-
-                    byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-                    byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-                    if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
-                    if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
-                }
-                return null;
-            }
-
-            for( int i = 0; i < mRegHideMastering.length; i++ ) {
-                byte[] reg = ctrl.IntToByteArray( mRegHideMastering[i], NxCinemaCtrl.FORMAT_INT16 );
-                byte[] data = ctrl.IntToByteArray( mDataHideMastering[mMasteringModePos][i], NxCinemaCtrl.FORMAT_INT16 );
-                byte[] inData = ctrl.AppendByteArray(reg, data);
-
-                byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-                byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-                if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
-                if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
-            }
-
-            for( int i = 0; i < mRegMastering.length; i++ ) {
-                byte[] reg = ctrl.IntToByteArray( mRegMastering[i], NxCinemaCtrl.FORMAT_INT16 );
-                byte[] data = ctrl.IntToByteArray( mDataMastering[mMasteringModePos][i], NxCinemaCtrl.FORMAT_INT16 );
-                byte[] inData = ctrl.AppendByteArray(reg, data);
-
-                byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-                byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-                if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
-                if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
-            }
-
-            return null;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            Log.i(VD_DTAG, "AsyncTaskMasteringWrite Start.");
-            CinemaLoading.Show( DisplayModeActivity.this );
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-            for( int i = 0; i < mSeekBarMastering.length; i++ ) {
-                mSeekBarMastering[i].setProgress( mDataMastering[mMasteringModePos][i] );
-            }
-
-            CinemaLoading.Hide();
-            Log.i(VD_DTAG, "AsyncTaskMasteringWrite Done.");
-        }
-    }
-
-    private class AsyncTaskMasteringRead extends AsyncTask<Void, Void, Void> {
-        int[] mValue;
-
-        @Override
-        protected Void doInBackground(Void... voids) {
-            if( !IsMasterMode() )
-                return null;
-
-            if( mCabinet == null || mCabinet.length == 0 )
-                return null;
-
-            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-            for (int i = 0; i < mRegMastering.length; i++) {
-                byte[] reg = ctrl.IntToByteArray( mRegMastering[i], NxCinemaCtrl.FORMAT_INT16 );
-                byte[] inData = ctrl.AppendByteArray(new byte[]{mCabinet[0]}, reg);
-                byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_READ, inData );
-
-                if( result == null || result.length == 0 )
-                    continue;
-
-                mValue[i] = ctrl.ByteArrayToInt(result);
-            }
-
-            return null;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            Log.i(VD_DTAG, "AsyncTaskMasteringRead Start.");
-            CinemaLoading.Show( DisplayModeActivity.this );
-
-            mValue = new int[mRegMastering.length];
-            for( int i = 0; i < mValue.length; i++ ) {
-                mValue[i] = 0;
-            }
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-
-            for (int i = 0; i < mSeekBarMastering.length; i++) {
-                if( 0 > mValue[i] )
-                    continue;
-
-                mSeekBarMastering[i].setProgress(mValue[i]);
-                mDataMastering[mMasteringModePos][i] = mValue[i];
-
-                mBtnMastering[i].setEnabled(false);
-            }
-
-            CinemaLoading.Hide();
-            Log.i(VD_DTAG, "AsyncTaskMasteringRead Done.");
-        }
-    }
-
-    private class AsyncTaskUniformityCorrection extends AsyncTask<Void, Void, Void> {
-        private int mIndexUniformity = mSpinnerUniformity.getSelectedItemPosition();
-
-        @Override
-        protected Void doInBackground(Void... voids) {
-            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-
-            String[] result;
-            int enableUniformity = 0;
-
-            result = FileManager.CheckFile(ConfigPfpgaInfo.PATH_TARGET, ConfigPfpgaInfo.NAME);
-            for( String file : result ) {
-                ConfigPfpgaInfo info = new ConfigPfpgaInfo();
-                if( info.Parse( file ) ) {
-                    enableUniformity = info.GetEnableUpdateUniformity(mIndexUniformity);
-
-                    for( int i = 0; i < info.GetRegister(mIndexUniformity).length; i++ ) {
-                        byte[] reg = ctrl.IntToByteArray(info.GetRegister(mIndexUniformity)[i], NxCinemaCtrl.FORMAT_INT8);
-                        byte[] data = ctrl.IntToByteArray(info.GetData(mIndexUniformity)[i], NxCinemaCtrl.FORMAT_INT16);
-                        byte[] inData = ctrl.AppendByteArray(reg, data);
-
-                        ctrl.Send( NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData );
-                    }
-                }
-            }
-
-            result = FileManager.CheckFile(LedUniformityInfo.PATH_TARGET, LedUniformityInfo.NAME);
-            for( String file : result ) {
-                LedUniformityInfo info = new LedUniformityInfo();
-                if( info.Parse(file) ) {
-                    if( enableUniformity == 0 ) {
-                        Log.i(VD_DTAG, String.format( "Skip. Update Uniformity Correction. ( %s )", file ));
-                        continue;
-                    }
-
-                    byte[] inData = ctrl.IntArrayToByteArray( info.GetData(), NxCinemaCtrl.FORMAT_INT16 );
-                    ctrl.Send( NxCinemaCtrl.CMD_PFPGA_UNIFORMITY_DATA, inData );
-                }
-            }
-
-            return null;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            Log.i(VD_DTAG, "AsyncTaskUniformityCorrection Start.");
-            CinemaLoading.Show( DisplayModeActivity.this );
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-
-            CinemaLoading.Hide();
-            Log.i(VD_DTAG, "AsyncTaskUniformityCorrection Done.");
-        }
-    }
-
-    private class AsyncTaskImageQuality extends AsyncTask<Void, Void, Void> {
-        private int mModeIndexQuality = 0;
-        private int mUpdateGamma[] = new int[4];
-
-        public AsyncTaskImageQuality(int mode) {
-            mModeIndexQuality = mode;
-            mUpdateGamma[0] = Integer.parseInt(((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_UPDATE_TGAM0));
-            mUpdateGamma[1] = Integer.parseInt(((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_UPDATE_TGAM1));
-            mUpdateGamma[2] = Integer.parseInt(((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_UPDATE_DGAM0));
-            mUpdateGamma[3] = Integer.parseInt(((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_UPDATE_DGAM1));
-        }
-
-        @Override
-        protected Void doInBackground(Void... voids) {
-            if( mCabinet.length == 0 )
-                return null;
-
-            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-
-            boolean bValidPort0 = false, bValidPort1 = false;
-            for( byte id : mCabinet ) {
-                if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-                if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-            }
-
-            //
-            //  Check TCON Booting Status
-            //
-            if( ((CinemaInfo)getApplicationContext()).IsCheckTconBooting() ) {
-                boolean bTconBooting = true;
-                for( byte id : mCabinet ) {
-                    byte[] result;
-                    result = ctrl.Send(NxCinemaCtrl.CMD_TCON_BOOTING_STATUS, new byte[]{id});
-                    if (result == null || result.length == 0) {
-                        Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / port: %d / slave : 0x%02x )", (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (id & 0x80), id));
-                        continue;
-                    }
-
-                    if( result[0] == 0 ) {
-                        Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / port: %d / slave : 0x%02x / result : %d )", (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (id & 0x80), id, result[0] ));
-                        bTconBooting = false;
-                    }
-                }
-
-                if( !bTconBooting ) {
-                    Log.i(VD_DTAG, "Fail, TCON booting.");
-                    return null;
-                }
-            }
-
-            //
-            //  PFPGA Mute on
-            //
-            ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x01} );
-
-            //
-            //  Parse P_REG.txt
-            //
-            String[] resultPath;
-            int[] enableGamma = {0, 0, 0, 0};
-
-            resultPath = FileManager.CheckFile(ConfigPfpgaInfo.PATH_TARGET, ConfigPfpgaInfo.NAME);
-            for( String file : resultPath ) {
-                ConfigPfpgaInfo info = new ConfigPfpgaInfo();
-                if( info.Parse( file ) ) {
-                    for( int i = 0; i < info.GetRegister(mModeIndexQuality).length; i++ ) {
-                        byte[] reg = ctrl.IntToByteArray(info.GetRegister(mModeIndexQuality)[i], NxCinemaCtrl.FORMAT_INT16);
-                        byte[] data = ctrl.IntToByteArray(info.GetData(mModeIndexQuality)[i], NxCinemaCtrl.FORMAT_INT16);
-                        byte[] inData = ctrl.AppendByteArray(reg, data);
-
-                        ctrl.Send( NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData );
-                    }
-                }
-            }
-
-            //
-            //  Parse T_REG.txt
-            //
-            if( (10 > mModeIndexQuality) && (mModeIndexQuality < mTconEEPRomInfo.GetModeNum())) {
-                enableGamma = mTconEEPRomInfo.GetEnableUpdateGamma(mModeIndexQuality);
-                for( int i = 0; i < mTconEEPRomInfo.GetRegister(mModeIndexQuality).length; i++ ) {
-                    byte[] reg = ctrl.IntToByteArray(mTconEEPRomInfo.GetRegister(mModeIndexQuality)[i], NxCinemaCtrl.FORMAT_INT16);
-                    byte[] data = ctrl.IntToByteArray(mTconEEPRomInfo.GetData(mModeIndexQuality)[i], NxCinemaCtrl.FORMAT_INT16);
-                    byte[] inData = ctrl.AppendByteArray(reg, data);
-
-                    byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-                    byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-                    if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
-                    if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
-                }
-            }
-
-            if( (10 <= mModeIndexQuality) && ((mModeIndexQuality-10) < mTconUsbInfo.GetModeNum())) {
-                enableGamma = mTconUsbInfo.GetEnableUpdateGamma(mModeIndexQuality-10);
-                for( int i = 0; i < mTconUsbInfo.GetRegister(mModeIndexQuality-10).length; i++ ) {
-                    byte[] reg = ctrl.IntToByteArray(mTconUsbInfo.GetRegister(mModeIndexQuality-10)[i], NxCinemaCtrl.FORMAT_INT16);
-                    byte[] data = ctrl.IntToByteArray(mTconUsbInfo.GetData(mModeIndexQuality-10)[i], NxCinemaCtrl.FORMAT_INT16);
-                    byte[] inData = ctrl.AppendByteArray(reg, data);
-
-                    byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-                    byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-                    if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
-                    if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
-                }
-            }
-
-            //
-            //  Write Gamma
-            //
-            if( (10 > mModeIndexQuality) && (mModeIndexQuality < mTconEEPRomInfo.GetModeNum())) {
-                resultPath = FileManager.CheckFile(LedGammaInfo.PATH_TARGET_EEPROM, LedGammaInfo.PATTERN_NAME);
-                for( String file : resultPath ) {
-                    LedGammaInfo info = new LedGammaInfo();
-                    if( info.Parse( file ) ) {
-                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] != 1) ||
-                                (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] != 1) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] != 1) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] != 1) ) {
-                            Log.i(VD_DTAG, String.format( "Skip. Update EEPRom Gamma. ( %s )", file ));
-                            continue;
-                        }
-
-                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] == mUpdateGamma[0]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] == mUpdateGamma[1]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] == mUpdateGamma[2]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] == mUpdateGamma[3]) ) {
-                            Log.i(VD_DTAG, String.format( "Skip. Already Update EEPRom Gamma. ( %s )", file ));
-                            continue;
-                        }
-
-                        int cmd;
-                        if( info.GetType() == LedGammaInfo.TYPE_TARGET )
-                            cmd = NxCinemaCtrl.CMD_TCON_TGAM_R;
-                        else
-                            cmd = NxCinemaCtrl.CMD_TCON_DGAM_R;
-
-                        byte[] table = ctrl.IntToByteArray(info.GetTable(), NxCinemaCtrl.FORMAT_INT8);
-                        byte[] data = ctrl.IntArrayToByteArray(info.GetData(), NxCinemaCtrl.FORMAT_INT24);
-                        byte[] inData = ctrl.AppendByteArray(table, data);
-
-                        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-                        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-                        if( bValidPort0 ) ctrl.Send( cmd + info.GetChannel(), inData0 );
-                        if( bValidPort1 ) ctrl.Send( cmd + info.GetChannel(), inData1 );
-                    }
-                }
-            }
-
-            if( (10 <= mModeIndexQuality) ) {
-                resultPath = FileManager.CheckFile(LedGammaInfo.PATH_TARGET_EEPROM, LedGammaInfo.PATTERN_NAME);
-                for( String file : resultPath ) {
-                    LedGammaInfo info = new LedGammaInfo();
-                    if( info.Parse( file ) ) {
-                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] != 1) ||
-                                (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] != 1) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] != 1) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] != 1) ) {
-                            Log.i(VD_DTAG, String.format( "Skip. Update EEPRom Gamma. ( %s )", file ));
-                            continue;
-                        }
-
-                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] == mUpdateGamma[0]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] == mUpdateGamma[1]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] == mUpdateGamma[2]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] == mUpdateGamma[3]) ) {
-                            Log.i(VD_DTAG, String.format( "Skip. Already Update EEPRom Gamma. ( %s )", file ));
-                            continue;
-                        }
-
-                        int cmd;
-                        if( info.GetType() == LedGammaInfo.TYPE_TARGET )
-                            cmd = NxCinemaCtrl.CMD_TCON_TGAM_R;
-                        else
-                            cmd = NxCinemaCtrl.CMD_TCON_DGAM_R;
-
-                        byte[] table = ctrl.IntToByteArray(info.GetTable(), NxCinemaCtrl.FORMAT_INT8);
-                        byte[] data = ctrl.IntArrayToByteArray(info.GetData(), NxCinemaCtrl.FORMAT_INT24);
-                        byte[] inData = ctrl.AppendByteArray(table, data);
-
-                        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-                        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-                        if( bValidPort0 ) ctrl.Send( cmd + info.GetChannel(), inData0 );
-                        if( bValidPort1 ) ctrl.Send( cmd + info.GetChannel(), inData1 );
-                    }
-                }
-
-                resultPath = FileManager.CheckFile(LedGammaInfo.PATH_TARGET_USB, LedGammaInfo.PATTERN_NAME);
-                for( String file : resultPath ) {
-                    LedGammaInfo info = new LedGammaInfo();
-                    if( info.Parse( file ) ) {
-                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] != 2) ||
-                                (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] != 2) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] != 2) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] != 2) ) {
-                            Log.i(VD_DTAG, String.format( "Skip. Update USB Gamma. ( %s )", file ));
-                            continue;
-                        }
-
-                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] == mUpdateGamma[0]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] == mUpdateGamma[1]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] == mUpdateGamma[2]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] == mUpdateGamma[3]) ) {
-                            Log.i(VD_DTAG, String.format( "Skip. Already Update USB Gamma. ( %s )", file ));
-                            continue;
-                        }
-
-                        int cmd;
-                        if( info.GetType() == LedGammaInfo.TYPE_TARGET )
-                            cmd = NxCinemaCtrl.CMD_TCON_TGAM_R;
-                        else
-                            cmd = NxCinemaCtrl.CMD_TCON_DGAM_R;
-
-                        byte[] table = ctrl.IntToByteArray(info.GetTable(), NxCinemaCtrl.FORMAT_INT8);
-                        byte[] data = ctrl.IntArrayToByteArray(info.GetData(), NxCinemaCtrl.FORMAT_INT24);
-                        byte[] inData = ctrl.AppendByteArray(table, data);
-
-                        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-                        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-                        if( bValidPort0 ) ctrl.Send( cmd + info.GetChannel(), inData0 );
-                        if( bValidPort1 ) ctrl.Send( cmd + info.GetChannel(), inData1 );
-                    }
-                }
-            }
-
-            //
-            //  Update Gamma Status
-            //
-            ((CinemaInfo)getApplicationContext()).SetValue( CinemaInfo.KEY_UPDATE_TGAM0, String.valueOf(enableGamma[0]) );
-            ((CinemaInfo)getApplicationContext()).SetValue( CinemaInfo.KEY_UPDATE_TGAM1, String.valueOf(enableGamma[1]) );
-            ((CinemaInfo)getApplicationContext()).SetValue( CinemaInfo.KEY_UPDATE_DGAM0, String.valueOf(enableGamma[2]) );
-            ((CinemaInfo)getApplicationContext()).SetValue( CinemaInfo.KEY_UPDATE_DGAM1, String.valueOf(enableGamma[3]) );
-
-            //
-            //  SW Reset
-            //
-            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_SW_RESET, new byte[]{(byte)0x09});
-            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_SW_RESET, new byte[]{(byte)0x89});
-
-            //
-            //  PFPGA Mute off
-            //
-            ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x00} );
-            return null;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            Log.i(VD_DTAG, "AsyncTaskImageQuality Start.");
-            CinemaLoading.Show( DisplayModeActivity.this );
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-
-            mTextImageQuality.setText(String.format(Locale.US, "Mode #%d", mModeIndexQuality+1));
-            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_INITIAL_MODE, String.valueOf(mModeIndexQuality));
-
-            CinemaLoading.Hide();
-            Log.i(VD_DTAG, "AsyncTaskImageQuality Done.");
-        }
-    }
-
-    private class AsyncTaskAdapterDotCorrection extends AsyncTask<Void, String, Void> {
-        private CheckRunAdapter mAdapter;
-
-        public AsyncTaskAdapterDotCorrection( CheckRunAdapter adapter ) {
-            mAdapter = adapter;
-            mAdapter.clear();
-        }
-
-        @Override
-        protected Void doInBackground(Void... voids) {
-            String[] resultDir = FileManager.CheckDirectoryInUsb(LedDotCorrectInfo.PATH, LedDotCorrectInfo.PATTERN_DIR);
-            for( String dir : resultDir ) {
-                if( isCancelled() ) {
-                    return null;
-                }
-                publishProgress( dir );
-            }
-            return null;
-        }
-
-        @Override
-        protected void onProgressUpdate(String... values) {
-            String[] resultFile = FileManager.CheckFile(values[0], LedDotCorrectInfo.PATTERN_NAME);
-            mAdapter.add( new CheckRunInfo(values[0].substring(values[0].lastIndexOf("/") + 1), String.format("total : %s", resultFile.length)) );
-            Collections.sort(mAdapter.get(), new Comparator<CheckRunInfo>() {
-                @Override
-                public int compare(CheckRunInfo t0, CheckRunInfo t1) {
-                    return (t0.GetTitle().compareTo(t1.GetTitle()) > 0) ? 1 : -1;
-                }
-            });
-
-            mAdapter.notifyDataSetChanged();
-            super.onProgressUpdate(values);
-        }
-
-        @Override
-        protected void onPreExecute() {
-            Log.i(VD_DTAG, "AsyncTaskAdapterDotCorrection Start.");
-            CinemaLoading.Show( DisplayModeActivity.this );
-            super.onPreExecute();
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            CinemaLoading.Hide();
-            Log.i(VD_DTAG, "AsyncTaskAdapterDotCorrection Done.");
-            super.onPostExecute(aVoid);
-        }
-    }
-
-    private class AsyncTaskDotCorrection extends AsyncTask<Void, Integer, Void> {
-        private CheckRunAdapter mAdapter;
-
-        public AsyncTaskDotCorrection( CheckRunAdapter adapter ) {
-            mAdapter = adapter;
-        }
-
-        @Override
-        protected Void doInBackground(Void... params) {
-            String[] resultDir = FileManager.CheckDirectoryInUsb(LedDotCorrectInfo.PATH, LedDotCorrectInfo.PATTERN_DIR);
-            if( resultDir == null || resultDir.length == 0 )
-                return null;
-
-            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-            String topdir = resultDir[0].substring(0, resultDir[0].lastIndexOf("/") + 1);
-
-            for( int i = 0; i < mAdapter.getCount(); i++ ) {
-                int success = 0;
-                int fail = 0;
-
-                CheckRunInfo item = mAdapter.getItem(i);
-                if( !item.GetChecked() )
-                    continue;
-
-                String[] result = FileManager.CheckFile(topdir + item.GetTitle(), LedDotCorrectInfo.PATTERN_NAME);
-                for( String file : result ) {
-                    Log.i(VD_DTAG, "Dot Correct Info : " + file);
-
-                    LedDotCorrectInfo info = new LedDotCorrectInfo();
-                    if( info.Parse(file) ) {
-                        byte[] sel = ctrl.IntToByteArray( info.GetModule(), NxCinemaCtrl.FORMAT_INT8 );       // size: 1
-                        byte[] data = ctrl.IntArrayToByteArray( info.GetData(), NxCinemaCtrl.FORMAT_INT16 );    // size: 61440
-                        byte[] inData =  ctrl.AppendByteArray( sel, data );
-
-                        byte[] res = ctrl.Send( NxCinemaCtrl.CMD_TCON_DOT_CORRECTION, ctrl.AppendByteArray( new byte[]{(byte)info.GetIndex()}, inData ) );
-                        if( res == null || res.length == 0 ) {
-                            publishProgress(i, result.length, success, ++fail);
-                            continue;
-                        }
-
-                        if( res[0] == (byte)0xFF ) {
-                            publishProgress(i, result.length, success, ++fail);
-                            continue;
-                        }
-                        publishProgress(i, result.length, ++success, fail);
-                    }
-                }
-            }
-
-            return null;
-        }
-
-        @Override
-        protected void onProgressUpdate(Integer... values) {
-            CheckRunInfo info = mAdapter.getItem(values[0]);
-            info.SetDescription( String.format(Locale.US, "total: %d, success: %d, fail: %d", values[1], values[2], values[3]));
-            mAdapter.notifyDataSetChanged();
-            super.onProgressUpdate(values);
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            Log.i(VD_DTAG, "Dot Correction Start.");
-            CinemaLoading.Show( DisplayModeActivity.this );
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-
-            CinemaLoading.Hide();
-            Log.i(VD_DTAG, "Dot Correction Done.");
-        }
-    }
-
-    private class AsyncTaskDotCorrectionExtract extends AsyncTask<Void, Void, Void> {
-        private int mId;
-        private int mModule;
-
-        public AsyncTaskDotCorrectionExtract( int id, int module ) {
-            mId     = id;
-            mModule = module;
-        }
-
-        @Override
-        protected Void doInBackground(Void... voids) {
-            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-
-            int start   = (mModule != LedDotCorrectInfo.MAX_MODULE_NUM) ? mModule     : 0;
-            int end     = (mModule != LedDotCorrectInfo.MAX_MODULE_NUM) ? mModule + 1 : LedDotCorrectInfo.MAX_MODULE_NUM;
-            int idx     = mId;
-
-            for( int i = start; i < end; i++ ) {
-                Log.i(VD_DTAG, String.format(Locale.US, "Dot correction extract. ( slave: 0x%02X, module: %d )", (byte)idx, i) );
-
-                byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_DOT_CORRECTION_EXTRACT, new byte[]{(byte)idx, (byte)i} );
-                if( result == null || result.length == 0)
-                    continue;
-
-                String strDir = String.format(Locale.US, "%s/DOT_CORRECTION_ID%03d", GetExternalStorage(), (idx & 0x7F) - CinemaInfo.TCON_ID_OFFSET);
-                if( !FileManager.MakeDirectory( strDir ) ) {
-                    Log.i(VD_DTAG, String.format(Locale.US, "Fail, Create Directory. ( %s )", strDir));
-                    continue;
-                }
-
-                new LedDotCorrectInfo().Make(idx, i, result, strDir);
-            }
-
-            return null;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            Log.i(VD_DTAG, "Dot Correction Extract Start.");
-            CinemaLoading.Show( DisplayModeActivity.this );
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-
-            CinemaLoading.Hide();
-            Log.i(VD_DTAG, "Dot Correction Extract Done. ");
-        }
-    }
-
-    private class AsyncTaskWhiteSeamRead extends AsyncTask<Void, Integer, Void> {
-        private byte[] mCabinet;
-        private int mIndexPos;
-        private boolean mEmulate;
-
-        private int[] mSeamReg = new int[]{ 0x0180, 0x0181, 0x0182, 0x0183 };
-        private int[] mSeamVal = new int[4];
-
-        public AsyncTaskWhiteSeamRead(byte[] cabinet, int indexPos, boolean emulate) {
-            Log.i(VD_DTAG, ">>> WhiteSeam Read Start.");
-
-            mCabinet = cabinet;
-            mIndexPos = indexPos;
-            mEmulate = emulate;
-        }
-
-        @Override
-        protected Void doInBackground(Void... voids) {
-            //
-            //  Emulate is
-            //      true    : Emulate Register --> UI
-            //      false   : Flash Register --> Emulate Register --> UI
-            if( mCabinet.length == 0 )
-                return null;
-
-            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-
-            int indexPos = (mIndexPos != 0) ? mIndexPos - 1 : 0;
-            byte slave = mCabinet[indexPos];
-
-            //
-            //  1. Read White Seam Value in Flash Memory.
-            //
-            if( !mEmulate ) {
-                Log.i(VD_DTAG, ">>> White Seam Read in Flash Memory.");
-                byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_WHITE_SEAM_READ, new byte[] {slave} );
-                if( result == null || result.length == 0 || result[0] != 0x01 ) {
-                    Log.i(VD_DTAG, "Fail, WhiteSeam Read.");
-                    return null;
-                }
-            }
-
-            //
-            //  2. Read White Seam Value in Emulate Register.
-            //
-            Log.i(VD_DTAG, ">>> White Seam Read in Emulate Register.");
-            for( int i = 0; i < mSeamReg.length; i++ ) {
-                byte[] result, inData;
-                inData = new byte[] { slave };
-                inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mSeamReg[i], NxCinemaCtrl.FORMAT_INT16));
-
-                result = ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_READ, inData );
-                if( result == null || result.length == 0 ) {
-                    Log.i(VD_DTAG, String.format(Locale.US, "i2c read fail.( id: 0x%02X, reg: 0x%04X )", slave, mSeamReg[i] ));
-                    return null;
-                }
-
-                mSeamVal[i] = ctrl.ByteArrayToInt(result);
-            }
-
-            Log.i(VD_DTAG, String.format(Locale.US, ">>> WhiteSeam Read Done. ( pos: %d, slave: 0x%02X, emulate: %b, top: %d, bottom: %d, left: %d, right: %d )",
-                    indexPos, slave, mEmulate, mSeamVal[0], mSeamVal[1], mSeamVal[2], mSeamVal[3]));
-
-            publishProgress(mSeamVal[0], mSeamVal[1], mSeamVal[2], mSeamVal[3]);
-            return null;
-        }
-
-        @Override
-        protected void onProgressUpdate(Integer... values) {
-            for( int i = 0; i < mSeamVal.length; i++ ) {
-                mSpinWhiteSeam[i].SetValue(values[i]);
-            }
-
-            super.onProgressUpdate(values);
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            Log.i(VD_DTAG, "WhiteSeam Read Start.");
-            CinemaLoading.Show( DisplayModeActivity.this );
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-
-            Log.i(VD_DTAG, "WhiteSeam Read Done.");
-            CinemaLoading.Hide();
-        }
-    }
-
-    private class AsyncTaskWhiteSeamEmulate extends AsyncTask<Void, Void, Void> {
-        private byte[] mCabinet;
-        private int mIndexPos;
-
-        private int[] mSeamReg = new int[]{ 0x0180, 0x0181, 0x0182, 0x0183 };
-        private int[] mSeamVal = new int[4];
-
-        public AsyncTaskWhiteSeamEmulate(byte[] cabinet, int indexPos) {
-            mCabinet = cabinet;
-            mIndexPos = indexPos;
-
-            for( int i = 0; i < mSeamVal.length; i++ )
-                mSeamVal[i] = mSpinWhiteSeam[i].GetValue();
-        }
-
-        @Override
-        protected Void doInBackground(Void... voids) {
-            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-            Log.i(VD_DTAG, String.format(Locale.US, "pos: %d", mIndexPos));
-
-            if( mIndexPos == 0 ) {
-                Log.i(VD_DTAG, "WhiteSeam Emulate. ( index: all )");
-
-                boolean bValidPort0 = false, bValidPort1 = false;
-                for( byte id : mCabinet ) {
-                    if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-                    if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-                }
-
-                for( int j = 0; j < mSeamReg.length; j++ ) {
-                    byte[] reg = ctrl.IntToByteArray(mSeamReg[j], NxCinemaCtrl.FORMAT_INT16);
-                    byte[] val = ctrl.IntToByteArray(mSeamVal[j], NxCinemaCtrl.FORMAT_INT16);
-
-                    byte[] inData1 = new byte[] {(byte)0x09};
-                    inData1 = ctrl.AppendByteArray(inData1, reg);
-                    inData1 = ctrl.AppendByteArray(inData1, val);
-
-                    byte[] inData2 = new byte[] {(byte)0x89};
-                    inData2 = ctrl.AppendByteArray(inData2, reg);
-                    inData2 = ctrl.AppendByteArray(inData2, val);
-
-                    if( bValidPort0 )   ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
-                    if( bValidPort1 )   ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData2 );
-                }
-            }
-            else {
-                int pos = mIndexPos - 1;
-                byte slave = mCabinet[pos];
-                Log.i(VD_DTAG, String.format(Locale.US, "WhiteSeam Emulate. ( index: %d, slave: 0x%02x )", pos, slave));
-
-                for( int j = 0; j < mSeamReg.length; j++ ) {
-                    byte[] inData;
-                    inData = new byte[] { slave };
-                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mSeamReg[j], NxCinemaCtrl.FORMAT_INT16));
-                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mSeamVal[j], NxCinemaCtrl.FORMAT_INT16));
-
-                    ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData );
-                }
-            }
-
-            return null;
-        }
-
-        @Override
-        protected void onProgressUpdate(Void... values) {
-            super.onProgressUpdate(values);
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            Log.i(VD_DTAG, "WhiteSeam Emulate Start.");
-            CinemaLoading.Show( DisplayModeActivity.this );
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-
-            CinemaLoading.Hide();
-            Log.i(VD_DTAG, "WhiteSeam Emulation Done.");
-        }
-    }
-
-    private class AsyncTaskWhiteSeamWrite extends  AsyncTask<Void, Void, Void> {
-        private byte[] mCabinet;
-        private int mIndexPos;
-
-        private int[] mSeamReg = new int[]{ 0x0180, 0x0181, 0x0182, 0x0183 };
-        private int[] mSeamVal = new int[4];
-
-        public AsyncTaskWhiteSeamWrite(byte[] cabinet, int indexPos) {
-            mCabinet = cabinet;
-            mIndexPos = indexPos;
-
-            for( int i = 0; i < mSeamVal.length; i++ )
-                mSeamVal[i] = mSpinWhiteSeam[i].GetValue();
-        }
-
-        @Override
-        protected Void doInBackground(Void... voids) {
-            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-
-            //
-            //  1. Update White Seam in Emulate Register.
-            //
-            if( mIndexPos == 0 ) {
-                boolean bValidPort0 = false, bValidPort1 = false;
-                for( byte id : mCabinet ) {
-                    if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-                    if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-                }
-
-                for( int j = 0; j < mSeamReg.length; j++ ) {
-                    byte[] reg = ctrl.IntToByteArray(mSeamReg[j], NxCinemaCtrl.FORMAT_INT16);
-                    byte[] val = ctrl.IntToByteArray(mSeamVal[j], NxCinemaCtrl.FORMAT_INT16);
-
-                    byte[] inData1 = new byte[] {(byte)0x09};
-                    inData1 = ctrl.AppendByteArray(inData1, reg);
-                    inData1 = ctrl.AppendByteArray(inData1, val);
-
-                    byte[] inData2 = new byte[] {(byte)0x89};
-                    inData2 = ctrl.AppendByteArray(inData2, reg);
-                    inData2 = ctrl.AppendByteArray(inData2, val);
-
-                    if( bValidPort0 )   ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
-                    if( bValidPort1 )   ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData2 );
-                }
-            }
-            else {
-                int pos = mIndexPos - 1;
-                byte slave = mCabinet[pos];
-                for( int j = 0; j < mSeamReg.length; j++ ) {
-                    byte[] inData;
-                    inData = new byte[] { slave };
-                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mSeamReg[j], NxCinemaCtrl.FORMAT_INT16));
-                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mSeamVal[j], NxCinemaCtrl.FORMAT_INT16));
-
-                    ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData );
-                }
-            }
-
-
-            //
-            //  2. Update White Seam in Flash Data.
-            //
-            int start   = (mIndexPos != 0) ? mIndexPos - 1  : 0;
-            int end     = (mIndexPos != 0) ? mIndexPos      : mCabinet.length;
-
-            for( int i = start; i < end; i++ ) {
-                byte slave = mCabinet[i];
-                byte[] result, inData;
-                inData = new byte[] { slave };
-                inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mSeamVal[0], NxCinemaCtrl.FORMAT_INT16));
-                inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mSeamVal[1], NxCinemaCtrl.FORMAT_INT16));
-                inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mSeamVal[2], NxCinemaCtrl.FORMAT_INT16));
-                inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mSeamVal[3], NxCinemaCtrl.FORMAT_INT16));
-
-                result = ctrl.Send(NxCinemaCtrl.CMD_TCON_WHITE_SEAM_WRITE, inData);
-                if( result == null || result.length == 0 || ctrl.ByteArrayToInt(result) != 0x01 ) {
-                    Log.i(VD_DTAG, "Fail, Write WhiteSeam.");
-                    return null;
-                }
-
-                Log.i(VD_DTAG, String.format(Locale.US, "WhiteSeam Write. ( pos: %d, slave: 0x%02x, top: %d, bottom: %d, left: %d, right: %d )",
-                        i, slave, mSeamVal[0], mSeamVal[1], mSeamVal[2], mSeamVal[3]));
-            }
-
-            return null;
-        }
-
-        @Override
-        protected void onProgressUpdate(Void... values) {
-            super.onProgressUpdate(values);
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            Log.i(VD_DTAG, "WhiteSeam Write Start.");
-            CinemaLoading.Show( DisplayModeActivity.this );
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-
-            CinemaLoading.Hide();
-            Log.i(VD_DTAG, "WhiteSeam Write Done.");
-        }
-    }
-
-    private class AsyncTaskGlobalRead extends AsyncTask<Void, Integer, Void> {
-        @Override
-        protected Void doInBackground(Void... voids) {
-            if( mCabinet.length == 0 )
-                return null;
-
-            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-            int [] globalReg = { 0x018B, 0x018C, 0x018A, 0x018D, 0x018E, 0x0192, 0x0055, 0x0004, 0x0100, 0x011E };
-            int [] globalVal = { 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000 };
-
-            for( int i = 0; i < globalReg.length; i++ )
-            {
-                byte[] result, inData;
-                inData = new byte[] { mCabinet[0] };
-                inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(globalReg[i], NxCinemaCtrl.FORMAT_INT16));
-
-                result = ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_READ, inData );
-                if( result == null || result.length == 0 ) {
-                    Log.i(VD_DTAG, String.format(Locale.US, "i2c read fail.( id: 0x%02X, reg: 0x%04X )", mCabinet[0], globalReg[i] ));
-                    return null;
-                }
-
-                globalVal[i] = ctrl.ByteArrayToInt(result);
-            }
-
-            publishProgress( globalVal[0], globalVal[1], globalVal[2], globalVal[3], globalVal[4], globalVal[5], globalVal[6], globalVal[7], globalVal[8], globalVal[9] );
-            return null;
-        }
-
-        @Override
-        protected void onProgressUpdate(Integer... values) {
-            mSpinSyncWidth.SetValue( values[0] );
-            mSpinSyncDelay.SetValue( values[1] );
-
-            mCheckSyncReverse.setChecked( values[2] != 0 ) ;
-            mCheckScale.setChecked( values[3] != 0 );
-            mCheckZeroScale.setChecked( values[4] != 0 );
-            mCheckSeam.setChecked( values[5] != 0 );
-            mCheckModule.setChecked( values[6] != 0 );
-            mCheckXyzInput.setChecked( values[7] != 0 );
-            mCheckLedOpenDetection.setChecked( values[8] != 0 );
-            mCheckLodRemoval.setChecked( values[9] != 0 );
-
-            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018B, String.valueOf(values[0]) );
-            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018C, String.valueOf(values[1]) );
-            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018A, String.valueOf(values[2]) );
-            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018D, String.valueOf(values[3] == 0 ? 0 : 1) );
-            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_PREG_0x0199, String.valueOf(values[3] == 0 ? 1 : 0) );
-            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018E, String.valueOf(values[4]) );
-            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x0192, String.valueOf(values[5]) );
-            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x0055, String.valueOf(values[6]) );
-            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x0004, String.valueOf(values[7]) );
-            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x0100, String.valueOf(values[8]) );
-            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x011E, String.valueOf(values[9]) );
-            ((CinemaInfo)getApplicationContext()).UpdateDefaultRegister();
-
-            super.onProgressUpdate(values);
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            UnregisterListener();
-
-            Log.i(VD_DTAG, ">>> Global Read Start.");
-            CinemaLoading.Show( DisplayModeActivity.this );
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-
-            RegisterListener();
-
-            Log.i(VD_DTAG, ">>> Global Read Done.");
-            CinemaLoading.Hide();
-        }
-    }
-
-    private class AsyncTaskLodReset extends AsyncTask<Void, Void, Void> {
-        @Override
-        protected Void doInBackground(Void... voids) {
-            if( mCabinet.length == 0 ) {
-                return null;
-            }
-
-            boolean bValidPort0 = false, bValidPort1 = false;
-            for( byte id : mCabinet ) {
-                if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-                if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-            }
-
-            byte[] reg, dat, inData, inData0, inData1;
-            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-            {
-                reg = ctrl.IntToByteArray(0x011F, NxCinemaCtrl.FORMAT_INT16);
-                dat = ctrl.IntToByteArray(0x0000, NxCinemaCtrl.FORMAT_INT16);
-                inData = ctrl.AppendByteArray(reg, dat);
-                inData0 = ctrl.AppendByteArray(new byte[]{(byte) 0x09}, inData);
-                inData1 = ctrl.AppendByteArray(new byte[]{(byte) 0x89}, inData);
-                if (bValidPort0) ctrl.Send(NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
-                if (bValidPort1) ctrl.Send(NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
-
-                try {
-                    Thread.sleep(75);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            {
-                reg = ctrl.IntToByteArray(0x011F, NxCinemaCtrl.FORMAT_INT16);
-                dat = ctrl.IntToByteArray(0x0001, NxCinemaCtrl.FORMAT_INT16);
-                inData = ctrl.AppendByteArray(reg, dat);
-                inData0 = ctrl.AppendByteArray(new byte[]{(byte) 0x09}, inData);
-                inData1 = ctrl.AppendByteArray(new byte[]{(byte) 0x89}, inData);
-                if (bValidPort0) ctrl.Send(NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
-                if (bValidPort1) ctrl.Send(NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
-
-                try {
-                    Thread.sleep(75);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            {
-                reg = ctrl.IntToByteArray(0x011F, NxCinemaCtrl.FORMAT_INT16);
-                dat = ctrl.IntToByteArray(0x0000, NxCinemaCtrl.FORMAT_INT16);
-                inData = ctrl.AppendByteArray(reg, dat);
-                inData0 = ctrl.AppendByteArray(new byte[]{(byte) 0x09}, inData);
-                inData1 = ctrl.AppendByteArray(new byte[]{(byte) 0x89}, inData);
-                if (bValidPort0) ctrl.Send(NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
-                if (bValidPort1) ctrl.Send(NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
-
-                try {
-                    Thread.sleep(75);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            return null;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            Log.i(VD_DTAG, "Lod Reset Start.");
-            CinemaLoading.Show( DisplayModeActivity.this );
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-
-            CinemaLoading.Hide();
-            Log.i(VD_DTAG, "Lod Reset Done.");
-        }
-    }
-
-    void ApplySyncWidth() {
-        Log.i(VD_DTAG, String.format(Locale.US, "Apply SYNC_WIDTH. ( %d )", mSpinSyncWidth.GetValue()));
-
-        if( mCabinet.length == 0 )
-            return ;
-
-        boolean bValidPort0 = false, bValidPort1 = false;
-        for( byte id : mCabinet ) {
-            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-        }
-
-        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-        byte[] reg = ctrl.IntToByteArray(0x018B, NxCinemaCtrl.FORMAT_INT16);
-        byte[] dat = ctrl.IntToByteArray(mSpinSyncWidth.GetValue(), NxCinemaCtrl.FORMAT_INT16);
-        byte[] inData = ctrl.AppendByteArray(reg, dat);
-
-        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-        if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
-        if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
-
-        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018B, String.valueOf(mSpinSyncDelay.GetValue()) );
-        ((CinemaInfo)getApplicationContext()).UpdateDefaultRegister();
-    }
-
-    void ApplySyncDelay() {
-        Log.i(VD_DTAG, String.format(Locale.US, "Apply SYNC_DELAY. ( %d )", mSpinSyncDelay.GetValue()));
-        if( mCabinet.length == 0 )
-            return ;
-
-        boolean bValidPort0 = false, bValidPort1 = false;
-        for( byte id : mCabinet ) {
-            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-        }
-
-        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-        byte[] reg = ctrl.IntToByteArray(0x018C, NxCinemaCtrl.FORMAT_INT16);
-        byte[] dat = ctrl.IntToByteArray(mSpinSyncDelay.GetValue(), NxCinemaCtrl.FORMAT_INT16);
-        byte[] inData = ctrl.AppendByteArray(reg, dat);
-
-        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-        if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
-        if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
-
-        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018C, String.valueOf(mSpinSyncDelay.GetValue()) );
-        ((CinemaInfo)getApplicationContext()).UpdateDefaultRegister();
-    }
-
-    void ApplySyncReverse() {
-        Log.i(VD_DTAG, String.format(Locale.US, "Change SYNC_REVERSE. ( %b )", mCheckSyncReverse.isChecked()));
-        if( mCabinet.length == 0 )
-            return ;
-
-        boolean bValidPort0 = false, bValidPort1 = false;
-        for( byte id : mCabinet ) {
-            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-        }
-
-        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-        byte[] reg = ctrl.IntToByteArray(0x018A, NxCinemaCtrl.FORMAT_INT16);
-        byte[] dat = ctrl.IntToByteArray(mCheckSyncReverse.isChecked() ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
-        byte[] inData = ctrl.AppendByteArray(reg, dat);
-
-        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-        if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
-        if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
-
-        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018A, String.valueOf(mCheckSyncReverse.isChecked() ? 1 : 0) );
-        ((CinemaInfo)getApplicationContext()).UpdateDefaultRegister();
-    }
-
-    void ApplyScale() {
-        Log.i(VD_DTAG, String.format(Locale.US, "Change Scale. ( %b )", mCheckScale.isChecked()));
-        if( mCabinet.length == 0 )
-            return ;
-
-        boolean bValidPort0 = false, bValidPort1 = false;
-        for( byte id : mCabinet ) {
-            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-        }
-
-        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-        ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x01} );
-        {
-            byte[] reg = ctrl.IntToByteArray(0x0199, NxCinemaCtrl.FORMAT_INT16);
-            byte[] dat = ctrl.IntToByteArray(mCheckScale.isChecked() ? 0x0000 : 0x0001, NxCinemaCtrl.FORMAT_INT16);
-            byte[] inData = ctrl.AppendByteArray(reg, dat);
-            ctrl.Send( NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData );
-        }
-        {
-            byte[] reg = ctrl.IntToByteArray(0x018D, NxCinemaCtrl.FORMAT_INT16);
-            byte[] dat = ctrl.IntToByteArray(mCheckScale.isChecked() ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
-            byte[] inData = ctrl.AppendByteArray(reg, dat);
-
-            byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-            byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
-            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
-        }
-        ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x00} );
-
-        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_PREG_0x0199, String.valueOf(mCheckScale.isChecked() ? 0 : 1) );
-        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018D, String.valueOf(mCheckScale.isChecked() ? 1 : 0) );
-        ((CinemaInfo)getApplicationContext()).UpdateDefaultRegister();
-    }
-
-    void ApplyZeroScale() {
-        Log.i(VD_DTAG, String.format(Locale.US, "Change Zero Scale. ( %b )", mCheckZeroScale.isChecked()));
-        if( mCabinet.length == 0 )
-            return ;
-
-        boolean bValidPort0 = false, bValidPort1 = false;
-        for( byte id : mCabinet ) {
-            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-        }
-
-        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-        ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x01} );
-        {
-            byte[] reg = ctrl.IntToByteArray(0x018E, NxCinemaCtrl.FORMAT_INT16);
-            byte[] dat = ctrl.IntToByteArray(mCheckZeroScale.isChecked() ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
-            byte[] inData = ctrl.AppendByteArray(reg, dat);
-
-            byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-            byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
-            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
-        }
-        ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x00} );
-
-        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x018E, String.valueOf(mCheckZeroScale.isChecked() ? 1 : 0) );
-        ((CinemaInfo)getApplicationContext()).UpdateDefaultRegister();
-    }
-
-    void ApplySeam() {
-        Log.i(VD_DTAG, String.format(Locale.US, "Change Seam. ( %b )", mCheckSeam.isChecked()));
-        if( mCabinet.length == 0 )
-            return ;
-
-        boolean bValidPort0 = false, bValidPort1 = false;
-        for( byte id : mCabinet ) {
-            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-        }
-
-        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-        {
-            byte[] reg = ctrl.IntToByteArray(0x0192, NxCinemaCtrl.FORMAT_INT16);
-            byte[] dat = ctrl.IntToByteArray(mCheckSeam.isChecked() ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
-            byte[] inData = ctrl.AppendByteArray(reg, dat);
-
-            byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-            byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
-            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
-        }
-
-        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x0192, String.valueOf(mCheckSeam.isChecked() ? 1 : 0) );
-        ((CinemaInfo)getApplicationContext()).UpdateDefaultRegister();
-    }
-
-    void ApplyModule() {
-        Log.i(VD_DTAG, String.format(Locale.US, "Change Module. ( %b )", mCheckModule.isChecked()));
-        if( mCabinet.length == 0 )
-            return ;
-
-        boolean bValidPort0 = false, bValidPort1 = false;
-        for( byte id : mCabinet ) {
-            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-        }
-
-        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-        {
-            byte[] reg = ctrl.IntToByteArray(0x0055, NxCinemaCtrl.FORMAT_INT16);
-            byte[] dat = ctrl.IntToByteArray(mCheckModule.isChecked() ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
-            byte[] inData = ctrl.AppendByteArray(reg, dat);
-
-            byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-            byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
-            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
-        }
-
-        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x0055, String.valueOf(mCheckModule.isChecked() ? 1 : 0) );
-        ((CinemaInfo)getApplicationContext()).UpdateDefaultRegister();
-    }
-
-    void ApplyXyzInput() {
-        Log.i(VD_DTAG, String.format(Locale.US, "Change XyzInput. ( %b )", mCheckXyzInput.isChecked()));
-        if( mCabinet.length == 0 )
-            return ;
-
-        boolean bValidPort0 = false, bValidPort1 = false;
-        for( byte id : mCabinet ) {
-            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-        }
-
-        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-        {
-            byte[] reg = ctrl.IntToByteArray(0x0004, NxCinemaCtrl.FORMAT_INT16);
-            byte[] dat = ctrl.IntToByteArray(mCheckXyzInput.isChecked() ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
-            byte[] inData = ctrl.AppendByteArray(reg, dat);
-
-            byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-            byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
-            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
-        }
-
-        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x0004, String.valueOf(mCheckXyzInput.isChecked() ? 1 : 0) );
-        ((CinemaInfo)getApplicationContext()).UpdateDefaultRegister();
-    }
-
-    void ApplyLedOpenDetection() {
-        Log.i(VD_DTAG, String.format(Locale.US, "Change Led Open Detection. ( %b )", mCheckLedOpenDetection.isChecked()));
-        if( mCabinet.length == 0 )
-            return ;
-
-        boolean bValidPort0 = false, bValidPort1 = false;
-        for( byte id : mCabinet ) {
-            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-        }
-
-        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-        {
-            byte[] reg = ctrl.IntToByteArray(0x0100, NxCinemaCtrl.FORMAT_INT16);
-            byte[] dat = ctrl.IntToByteArray(mCheckLedOpenDetection.isChecked() ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
-            byte[] inData = ctrl.AppendByteArray(reg, dat);
-
-            byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-            byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
-            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
-        }
-
-        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x0100, String.valueOf(mCheckLedOpenDetection.isChecked() ? 1 : 0) );
-        ((CinemaInfo)getApplicationContext()).UpdateDefaultRegister();
-    }
-
-    void ApplyLodRemoval() {
-        Log.i(VD_DTAG, String.format(Locale.US, "Change Lod Removal. ( %b )", mCheckLodRemoval.isChecked()));
-        if( mCabinet.length == 0 )
-            return ;
-
-        boolean bValidPort0 = false, bValidPort1 = false;
-        for( byte id : mCabinet ) {
-            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-        }
-
-        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-        {
-            byte[] reg = ctrl.IntToByteArray(0x011E, NxCinemaCtrl.FORMAT_INT16);
-            byte[] dat = ctrl.IntToByteArray(mCheckLodRemoval.isChecked() ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
-            byte[] inData = ctrl.AppendByteArray(reg, dat);
-
-            byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-            byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0 );
-            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1 );
-        }
-
-        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_TREG_0x011E, String.valueOf(mCheckLodRemoval.isChecked() ? 1 : 0) );
-        ((CinemaInfo)getApplicationContext()).UpdateDefaultRegister();
-    }
-
-    void ApplyLodReset() {
-        new AsyncTaskLodReset().execute();
-    }
-
-    //
-    //
-    //
-    CinemaService.ChangeContentsCallback mCallback = new CinemaService.ChangeContentsCallback() {
-        @Override
-        public void onChangeContentsCallback(int mode) {
-            mUIHandler.sendEmptyMessage(0);
-        }
-    };
-
-    private static class UIHandler extends Handler {
-        private WeakReference<DisplayModeActivity> mActivity;
-
-        public UIHandler( DisplayModeActivity activity ) {
-            mActivity = new WeakReference<>(activity);
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            DisplayModeActivity activity = mActivity.get();
-            if( activity != null ) {
-                activity.handleMessage(msg);
-            }
-        }
-    }
-
-    private void handleMessage( Message msg ) {
-        String strTemp = ((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_INITIAL_MODE);
-        int mode = (strTemp == null) ? 0 : Integer.parseInt(strTemp);
-        mTextImageQuality.setText(String.format(Locale.US, "Mode #%d", mode+1));
-    }
-
-    //
-    //  For Screen Rotation
-    //
-    private void SetScreenRotation() {
-        String orientation = ((CinemaInfo) getApplicationContext()).GetValue(CinemaInfo.KEY_SCREEN_ROTATE);
-        if( orientation == null ) {
-            orientation = String.valueOf(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-        }
-
-        switch( Integer.parseInt(orientation) ) {
-            case ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE:
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                break;
-            case ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE:
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                break;
-            default:
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                break;
-        }
-    }
-
-    private void ChangeScreenRotation() {
-        String orientation = ((CinemaInfo) getApplicationContext()).GetValue(CinemaInfo.KEY_SCREEN_ROTATE);
-        if( orientation == null ) {
-            orientation = String.valueOf(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-        }
-
-        int curRotate;
-        int prvRotate = Integer.parseInt(orientation);
-        switch (prvRotate) {
-            case ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE:
-                curRotate = ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                break;
-            case ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE:
-                curRotate = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                break;
-            default:
-                curRotate = ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                break;
-        }
-
-        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_SCREEN_ROTATE, String.valueOf(curRotate));
-    }
-
-    //
-    //  For ScreenSaver
-    //
-    private CinemaService mService = null;
-    private boolean mServiceRun = false;
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        Intent intent = new Intent(this, CinemaService.class);
-        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-
-        if( mServiceRun ) {
-            unbindService(mConnection);
-            mServiceRun = false;
-        }
-    }
-
-    @Override
-    public boolean dispatchTouchEvent(MotionEvent ev) {
-        boolean isOn = false;
-        if( mService != null ) {
-            isOn = mService.IsOn();
-            mService.RefreshScreenSaver();
-        }
-
-        return !isOn || super.dispatchTouchEvent(ev);
-    }
-
-    private ServiceConnection mConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            CinemaService.LocalBinder binder = (CinemaService.LocalBinder)service;
-            mService = binder.GetService();
-            mService.RegisterCallback( mCallback );
-            mServiceRun = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            mServiceRun = false;
-        }
-    };
 }

@@ -1,7 +1,6 @@
 package com.samsung.vd.cinemacontrolpanel;
 
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 import android.net.LocalServerSocket;
 import android.net.LocalSocket;
@@ -19,7 +18,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.ref.WeakReference;
-import java.util.Locale;
 
 /**
  * Created by doriya on 11/9/16.
@@ -30,7 +28,7 @@ public class CinemaService extends Service {
     private final IBinder mBinder = new LocalBinder();
     private final TamperEventReceiver mTamperEventReceiver = new TamperEventReceiver();
     private final SecureEventReceiver mSecureEventReceiver = new SecureEventReceiver();
-    private final ContentsChangeReceiver mContentsChangeReceiver = new ContentsChangeReceiver();
+    private final TmsEventReceiver mTmsEventReceiver = new TmsEventReceiver();
 
     private final ScreenSaverHandler mHandler = new ScreenSaverHandler(this);
 
@@ -45,7 +43,7 @@ public class CinemaService extends Service {
         RefreshScreenSaver();
         mTamperEventReceiver.Start();
         mSecureEventReceiver.Start();
-        mContentsChangeReceiver.Start();
+        mTmsEventReceiver.Start();
 
         return mBinder;
     }
@@ -54,18 +52,18 @@ public class CinemaService extends Service {
     public boolean onUnbind(Intent intent) {
         mTamperEventReceiver.Stop();
         mSecureEventReceiver.Stop();
-        mContentsChangeReceiver.Stop();
+        mTmsEventReceiver.Stop();
 
         return super.onUnbind(intent);
     }
 
-    private ChangeContentsCallback mChangeContentsCallback;
-    interface ChangeContentsCallback {
-        void onChangeContentsCallback( int mode );
+    private TmsEventCallback mTmsEventCallback = null;
+    interface TmsEventCallback {
+        void onTmsEventCallback();
     }
 
-    public void RegisterCallback( ChangeContentsCallback callback ) {
-        mChangeContentsCallback = callback;
+    public void RegisterTmsCallback( TmsEventCallback callback ) {
+        mTmsEventCallback = callback;
     }
 
     //
@@ -367,11 +365,14 @@ public class CinemaService extends Service {
         }
     }
 
-    private class ContentsChangeReceiver extends Thread {
-        private String SOCKET_NAME = "cinema.change.contents";
+    //
+    //  For Tms Event Receiver
+    //
+    private class TmsEventReceiver extends Thread {
+        private String SOCKET_NAME = "cinema.tms";
         private boolean mRun = false;
 
-        public ContentsChangeReceiver() {
+        public TmsEventReceiver() {
         }
 
         @Override
@@ -384,7 +385,17 @@ public class CinemaService extends Service {
                     LocalSocket lSocket = lServer.accept();
                     if( null != lSocket ) {
                         String strValue = Read(lSocket.getInputStream());
-                        new AsyncTaskChangeContents(getApplicationContext(),Integer.parseInt(strValue, 10)).execute();
+                        if( strValue.equals("run") ) {
+                            //ShowLoading( true );
+                            new AsyncTaskLoading( true ).execute();
+                        }
+                        else if( strValue.equals("stop") ) {
+                            //ShowLoading( false );
+                            new AsyncTaskLoading( false ).execute();
+                        }
+                        else {
+                            Log.i(VD_DTAG, "Invalid TMS Event.");
+                        }
                         lSocket.close();
                     }
                 }
@@ -445,315 +456,51 @@ public class CinemaService extends Service {
         }
     }
 
-    private class AsyncTaskChangeContents extends AsyncTask<Void, Void, Void> {
-        private Context mContext;
-        byte[] mCabinet;
-        private int mMode;
-        private int mUpdateGamma[] = new int[4];
+    private class AsyncTaskLoading extends AsyncTask<Void, Void, Void> {
+        private boolean mShow = false;
 
-        public AsyncTaskChangeContents(Context context, int mode ) {
-            mContext = context;
-            mCabinet = ((CinemaInfo)getApplicationContext()).GetCabinet();
-            mMode = mode;
-
-            mUpdateGamma[0] = Integer.parseInt(((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_UPDATE_TGAM0));
-            mUpdateGamma[1] = Integer.parseInt(((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_UPDATE_TGAM1));
-            mUpdateGamma[2] = Integer.parseInt(((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_UPDATE_DGAM0));
-            mUpdateGamma[3] = Integer.parseInt(((CinemaInfo)getApplicationContext()).GetValue(CinemaInfo.KEY_UPDATE_DGAM1));
-
-            Log.i(VD_DTAG, String.format(">>> MODE( %d ), GAM0( %d ), GAM1( %d ), GAM2( %d ), GAM3( %d )",
-                    mMode, mUpdateGamma[0], mUpdateGamma[1], mUpdateGamma[2], mUpdateGamma[3] ));
-
+        public AsyncTaskLoading( boolean show ) {
+            mShow = show;
         }
 
         @Override
         protected Void doInBackground(Void... voids) {
-            if( mCabinet.length == 0 )
-                return null;
-
-            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-
-            boolean bValidPort0 = false, bValidPort1 = false;
-            for( byte id : mCabinet ) {
-                if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-                if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-            }
-
-            //
-            //  Check TCON Booting Status
-            //
-            if( ((CinemaInfo)getApplicationContext()).IsCheckTconBooting() ) {
-                boolean bTconBooting = true;
-                for( byte id : mCabinet ) {
-                    byte[] result;
-                    result = ctrl.Send(NxCinemaCtrl.CMD_TCON_BOOTING_STATUS, new byte[]{id});
-                    if (result == null || result.length == 0) {
-                        Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / port: %d / slave : 0x%02x )", (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (id & 0x80), id));
-                        continue;
-                    }
-
-                    if( result[0] == 0 ) {
-                        Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / port: %d / slave : 0x%02x / result : %d )", (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (id & 0x80), id, result[0] ));
-                        bTconBooting = false;
-                    }
-                }
-
-                if( !bTconBooting ) {
-                    Log.i(VD_DTAG, "Fail, TCON booting.");
-                    return null;
-                }
-            }
-
-            //
-            //  PFPGA Mute on
-            //
-            ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x01} );
-
-            //
-            //  Parse P_REG.txt
-            //
-            String[] resultPath;
-            int enableUniformity = 0;
-            int[] enableGamma = {0, 0, 0, 0};
-
-            resultPath = FileManager.CheckFile(ConfigPfpgaInfo.PATH_TARGET, ConfigPfpgaInfo.NAME);
-            for( String file : resultPath ) {
-                ConfigPfpgaInfo info = new ConfigPfpgaInfo();
-                if( info.Parse( file ) ) {
-                    enableUniformity = info.GetEnableUpdateUniformity(mMode);
-                    for( int i = 0; i < info.GetRegister(mMode).length; i++ ) {
-                        byte[] reg = ctrl.IntToByteArray(info.GetRegister(mMode)[i], NxCinemaCtrl.FORMAT_INT16);
-                        byte[] data = ctrl.IntToByteArray(info.GetData(mMode)[i], NxCinemaCtrl.FORMAT_INT16);
-                        byte[] inData = ctrl.AppendByteArray(reg, data);
-
-                        ctrl.Send( NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData );
-                    }
-                }
-            }
-
-            //
-            //  Auto Uniformity Correction Writing
-            //
-            resultPath = FileManager.CheckFile(LedUniformityInfo.PATH_TARGET, LedUniformityInfo.NAME);
-            for( String file : resultPath ) {
-                LedUniformityInfo info = new LedUniformityInfo();
-                if( info.Parse( file ) ) {
-                    if( enableUniformity == 0 ) {
-                        Log.i(VD_DTAG, String.format( "Skip. Update Uniformity. ( %s )", file ));
-                        continue;
-                    }
-
-                    byte[] inData = ctrl.IntArrayToByteArray( info.GetData(), NxCinemaCtrl.FORMAT_INT16 );
-                    ctrl.Send( NxCinemaCtrl.CMD_PFPGA_UNIFORMITY_DATA, inData );
-                }
-            }
-
-            //
-            //  Parse T_REG.txt
-            //
-            ConfigTconInfo tconEEPRomInfo = new ConfigTconInfo();
-            resultPath = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET_EEPROM, ConfigTconInfo.NAME);
-            for( String file : resultPath ) {
-                tconEEPRomInfo.Parse(file);
-            }
-
-            if( (10 > mMode) && (mMode < tconEEPRomInfo.GetModeNum())) {
-                enableGamma = tconEEPRomInfo.GetEnableUpdateGamma(mMode);
-                for( int i = 0; i < tconEEPRomInfo.GetRegister(mMode).length; i++ ) {
-                    byte[] reg = ctrl.IntToByteArray(tconEEPRomInfo.GetRegister(mMode)[i], NxCinemaCtrl.FORMAT_INT16);
-                    byte[] data = ctrl.IntToByteArray(tconEEPRomInfo.GetData(mMode)[i], NxCinemaCtrl.FORMAT_INT16);
-                    byte[] inData = ctrl.AppendByteArray(reg, data);
-
-                    byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-                    byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-                    if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
-                    if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
-                }
-            }
-
-            ConfigTconInfo tconUsbInfo = new ConfigTconInfo();
-            resultPath = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET_USB, ConfigTconInfo.NAME);
-            for( String file : resultPath ) {
-                tconUsbInfo.Parse(file);
-            }
-
-            if( (10 <= mMode) && ((mMode-10) < tconUsbInfo.GetModeNum())) {
-                enableGamma = tconUsbInfo.GetEnableUpdateGamma(mMode-10);
-                for( int i = 0; i < tconUsbInfo.GetRegister(mMode-10).length; i++ ) {
-                    byte[] reg = ctrl.IntToByteArray(tconUsbInfo.GetRegister(mMode-10)[i], NxCinemaCtrl.FORMAT_INT16);
-                    byte[] data = ctrl.IntToByteArray(tconUsbInfo.GetData(mMode-10)[i], NxCinemaCtrl.FORMAT_INT16);
-                    byte[] inData = ctrl.AppendByteArray(reg, data);
-
-                    byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-                    byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-                    if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
-                    if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
-                }
-            }
-
-            //
-            //  Write Gamma
-            //
-            if( (10 > mMode) && (mMode < tconEEPRomInfo.GetModeNum())) {
-                resultPath = FileManager.CheckFile(LedGammaInfo.PATH_TARGET_EEPROM, LedGammaInfo.PATTERN_NAME);
-                for( String file : resultPath ) {
-                    LedGammaInfo info = new LedGammaInfo();
-                    if( info.Parse( file ) ) {
-                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] != 1) ||
-                                (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] != 1) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] != 1) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] != 1) ) {
-                            Log.i(VD_DTAG, String.format( "Skip. Update EEPRom Gamma. ( %s )", file ));
-                            continue;
-                        }
-
-                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] == mUpdateGamma[0]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] == mUpdateGamma[1]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] == mUpdateGamma[2]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] == mUpdateGamma[3]) ) {
-                            Log.i(VD_DTAG, String.format( "Skip. Already Update EEPRom Gamma. ( %s )", file ));
-                            continue;
-                        }
-
-                        int cmd;
-                        if( info.GetType() == LedGammaInfo.TYPE_TARGET )
-                            cmd = NxCinemaCtrl.CMD_TCON_TGAM_R;
-                        else
-                            cmd = NxCinemaCtrl.CMD_TCON_DGAM_R;
-
-                        byte[] table = ctrl.IntToByteArray(info.GetTable(), NxCinemaCtrl.FORMAT_INT8);
-                        byte[] data = ctrl.IntArrayToByteArray(info.GetData(), NxCinemaCtrl.FORMAT_INT24);
-                        byte[] inData = ctrl.AppendByteArray(table, data);
-
-                        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-                        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-                        if( bValidPort0 ) ctrl.Send( cmd + info.GetChannel(), inData0 );
-                        if( bValidPort1 ) ctrl.Send( cmd + info.GetChannel(), inData1 );
-                    }
-                }
-            }
-
-            if( (10 <= mMode) ) {
-                resultPath = FileManager.CheckFile(LedGammaInfo.PATH_TARGET_EEPROM, LedGammaInfo.PATTERN_NAME);
-                for( String file : resultPath ) {
-                    LedGammaInfo info = new LedGammaInfo();
-                    if( info.Parse( file ) ) {
-                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] != 1) ||
-                                (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] != 1) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] != 1) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] != 1) ) {
-                            Log.i(VD_DTAG, String.format( "Skip. Update EEPRom Gamma. ( %s )", file ));
-                            continue;
-                        }
-
-                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] == mUpdateGamma[0]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] == mUpdateGamma[1]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] == mUpdateGamma[2]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] == mUpdateGamma[3]) ) {
-                            Log.i(VD_DTAG, String.format( "Skip. Already Update EEPRom Gamma. ( %s )", file ));
-                            continue;
-                        }
-
-                        int cmd;
-                        if( info.GetType() == LedGammaInfo.TYPE_TARGET )
-                            cmd = NxCinemaCtrl.CMD_TCON_TGAM_R;
-                        else
-                            cmd = NxCinemaCtrl.CMD_TCON_DGAM_R;
-
-                        byte[] table = ctrl.IntToByteArray(info.GetTable(), NxCinemaCtrl.FORMAT_INT8);
-                        byte[] data = ctrl.IntArrayToByteArray(info.GetData(), NxCinemaCtrl.FORMAT_INT24);
-                        byte[] inData = ctrl.AppendByteArray(table, data);
-
-                        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-                        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-                        if( bValidPort0 ) ctrl.Send( cmd + info.GetChannel(), inData0 );
-                        if( bValidPort1 ) ctrl.Send( cmd + info.GetChannel(), inData1 );
-                    }
-                }
-
-                resultPath = FileManager.CheckFile(LedGammaInfo.PATH_TARGET_USB, LedGammaInfo.PATTERN_NAME);
-                for( String file : resultPath ) {
-                    LedGammaInfo info = new LedGammaInfo();
-                    if( info.Parse( file ) ) {
-                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] != 2) ||
-                                (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] != 2) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] != 2) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] != 2) ) {
-                            Log.i(VD_DTAG, String.format( "Skip. Update USB Gamma. ( %s )", file ));
-                            continue;
-                        }
-
-                        if( (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[0] == mUpdateGamma[0]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_TARGET && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[1] == mUpdateGamma[1]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT0 && enableGamma[2] == mUpdateGamma[2]) ||
-                                (info.GetType() == LedGammaInfo.TYPE_DEVICE && info.GetTable() == LedGammaInfo.TABLE_LUT1 && enableGamma[3] == mUpdateGamma[3]) ) {
-                            Log.i(VD_DTAG, String.format( "Skip. Already Update USB Gamma. ( %s )", file ));
-                            continue;
-                        }
-
-                        int cmd;
-                        if( info.GetType() == LedGammaInfo.TYPE_TARGET )
-                            cmd = NxCinemaCtrl.CMD_TCON_TGAM_R;
-                        else
-                            cmd = NxCinemaCtrl.CMD_TCON_DGAM_R;
-
-                        byte[] table = ctrl.IntToByteArray(info.GetTable(), NxCinemaCtrl.FORMAT_INT8);
-                        byte[] data = ctrl.IntArrayToByteArray(info.GetData(), NxCinemaCtrl.FORMAT_INT24);
-                        byte[] inData = ctrl.AppendByteArray(table, data);
-
-                        byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
-                        byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
-
-                        if( bValidPort0 ) ctrl.Send( cmd + info.GetChannel(), inData0 );
-                        if( bValidPort1 ) ctrl.Send( cmd + info.GetChannel(), inData1 );
-                    }
-                }
-            }
-
-            //
-            //  Update Gamma Status
-            //
-            ((CinemaInfo)getApplicationContext()).SetValue( CinemaInfo.KEY_UPDATE_TGAM0, String.valueOf(enableGamma[0]) );
-            ((CinemaInfo)getApplicationContext()).SetValue( CinemaInfo.KEY_UPDATE_TGAM1, String.valueOf(enableGamma[1]) );
-            ((CinemaInfo)getApplicationContext()).SetValue( CinemaInfo.KEY_UPDATE_DGAM0, String.valueOf(enableGamma[2]) );
-            ((CinemaInfo)getApplicationContext()).SetValue( CinemaInfo.KEY_UPDATE_DGAM1, String.valueOf(enableGamma[3]) );
-
-            //
-            //  SW Reset
-            //
-            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_SW_RESET, new byte[]{(byte)0x09});
-            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_SW_RESET, new byte[]{(byte)0x89});
-
-            //
-            //  PFPGA Mute off
-            //
-            ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x00} );
             return null;
-
         }
 
         @Override
         protected void onPreExecute() {
+            if( mShow ) {
+                CinemaLoading.Show( getApplicationContext() );
+            }
+
             super.onPreExecute();
-            Log.i(VD_DTAG, String.format( Locale.US, "Change Contents. ( %d )", mMode));
-            CinemaLoading2.Show( mContext );
         }
 
         @Override
         protected void onPostExecute(Void aVoid) {
+            if( !mShow ) {
+                if( mTmsEventCallback != null )
+                    mTmsEventCallback.onTmsEventCallback();
+
+                CinemaLoading.Hide();
+            }
             super.onPostExecute(aVoid);
-
-            ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_INITIAL_MODE, String.valueOf(mMode));
-            Log.i(VD_DTAG, String.format( Locale.US, "Change Contents Done."));
-
-            if( mChangeContentsCallback != null )
-                mChangeContentsCallback.onChangeContentsCallback( mMode );
-
-            CinemaLoading2.Hide();
         }
     }
+
+//    private void ShowLoading( final boolean enable ) {
+//        Handler handler = new Handler(getApplicationContext().getMainLooper());
+//        handler.post(new Runnable() {
+//            @Override
+//            public void run() {
+//                if( enable ) {
+//                    CinemaLoading.Show( getApplicationContext() );
+//                }
+//                else {
+//                    CinemaLoading.Hide();
+//                }
+//            }
+//        });
+//    }
 }

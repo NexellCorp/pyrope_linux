@@ -7,6 +7,7 @@ import com.samsung.vd.baseutils.VdPreference;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Locale;
 
 /**
  * Created by doriya on 10/31/16.
@@ -39,23 +40,6 @@ public class CinemaInfo extends Application {
     public static final String KEY_TREG_0x011E      = "treg.0x011E";    // REG_LOD_INSERT_EN
     public static final String KEY_PREG_0x0199      = "preg.0x0199";    // REG_RESOLUTION
 
-    public static final String[] KEY_TREG_DEFAULT   = {
-        KEY_TREG_0x018B,
-        KEY_TREG_0x018C,
-        KEY_TREG_0x018A,
-        KEY_TREG_0x018D,
-        KEY_TREG_0x018E,
-        KEY_TREG_0x0192,
-        KEY_TREG_0x0055,
-        KEY_TREG_0x0004,
-        KEY_TREG_0x0100,
-        KEY_TREG_0x011E,
-    };
-
-    public static final String[] KEY_PREG_DEFAULT   = {
-        KEY_PREG_0x0199,
-    };
-
     public static final int TCON_ID_OFFSET = 16;
     public static final int TCON_MODULE_NUM = 24;
 
@@ -78,29 +62,9 @@ public class CinemaInfo extends Application {
     private byte[] mCabinet = new byte[0];
 
     //
-    //  Default TCON / PFPGA register
-    //
-    private int[][] mDefaultTReg = {
-        { 0x018B, -1 },
-        { 0x018C, -1 },
-        { 0x018A, -1 },
-        { 0x018D, -1 },
-        { 0x018E, -1 },
-        { 0x0192, -1 },
-        { 0x0055, -1 },
-        { 0x0004, -1 },
-        { 0x0100, -1 },
-        { 0x011E, -1 },
-    };
-
-    private int[][] mDefaultPReg = {
-        { 0x0199, -1 },
-    };
-
-    //
     //  for debug
     //
-    public boolean IsCheckCabinet() {
+    public boolean IsCheckCabinetNum() {
         return false;
     }
 
@@ -128,10 +92,6 @@ public class CinemaInfo extends Application {
         return true;
     }
 
-    public boolean IsFirstBootAccessEEPRom() {
-		return true;
-	}
-
     public int GetBootTime() {
         return 30;
     }
@@ -145,8 +105,6 @@ public class CinemaInfo extends Application {
 
         mPrefConfig = new VdPreference( getApplicationContext(), CINEMA_CONFIG );
         mLog = new CinemaLog( getApplicationContext() );
-
-        UpdateDefaultRegister();
     }
 
     //
@@ -234,8 +192,25 @@ public class CinemaInfo extends Application {
     //
     public void AddCabinet( byte cabinetId ) {
         byte[] tmpData = Arrays.copyOf(mCabinet, mCabinet.length + 1);
-        tmpData[mCabinet.length] = cabinetId;
-        mCabinet = tmpData;
+
+        boolean bDuplicate = false;
+        for( byte cabinet : mCabinet ) {
+            if( cabinet == cabinetId ) {
+                bDuplicate = true;
+                break;
+            }
+        }
+
+        if( !bDuplicate ) {
+            tmpData[mCabinet.length] = cabinetId;
+            mCabinet = Sort( tmpData );
+            Log.i(VD_DTAG, String.format(Locale.US, "Add Cabinet Id. ( 0x%02X - port: %d, slave: 0x%02X )",
+                    cabinetId, (cabinetId & 0x80) >> 7, (cabinetId & 0x7F)));
+        }
+        else {
+            Log.i(VD_DTAG, String.format(Locale.US, "Warning, Duplicate Cabinet Id. ( 0x%02X - port: %d, slave: 0x%02X )",
+                    cabinetId, (cabinetId & 0x80) >> 7, (cabinetId & 0x7F)));
+        }
     }
 
     public void ClearCabinet() {
@@ -246,29 +221,29 @@ public class CinemaInfo extends Application {
         return mCabinet;
     }
 
-    public void SortCabinet() {
-        Byte[] tmpData = new Byte[mCabinet.length];
-        for( int i = 0; i < tmpData.length; i++ ) {
-            tmpData[i] = mCabinet[i];
+    private byte[] Sort( byte[] src ) {
+        Byte[] tmp = new Byte[src.length];
+        for( int i = 0; i < src.length; i++ ) {
+            tmp[i] = src[i];
         }
 
-        Arrays.sort( tmpData, new Comparator<Byte>() {
+        Arrays.sort( tmp, new Comparator<Byte>() {
             @Override
             public int compare(Byte lhs, Byte rhs) {
-                byte srcData1 = lhs;
-                byte srcData2 = rhs;
+                byte src1 = lhs;
+                byte src2 = rhs;
 
-                if( (srcData1 & 0x7F) < (srcData2 & 0x7F) ) {
+                if( (src1 & 0x7F) < (src2 & 0x7F) ) {
                     return -1;
                 }
-                else if( (srcData1 & 0x7F) > (srcData2 & 0x7F) ) {
+                else if( (src1 & 0x7F) > (src2 & 0x7F) ) {
                     return 1;
                 }
                 else {
-                    if( srcData1 < srcData2 ) {
+                    if( src1 < src2 ) {
                         return 1;
                     }
-                    else if( srcData1 > srcData2 ) {
+                    else if( src1 > src2 ) {
                         return -1;
                     }
                 }
@@ -276,52 +251,10 @@ public class CinemaInfo extends Application {
             }
         });
 
-        mCabinet = new byte[tmpData.length];
-        for(int i = 0; i < tmpData.length; i++) {
-            mCabinet[i] = tmpData[i];
+        byte[] dst = new byte[tmp.length];
+        for( int i = 0; i < tmp.length; i++ ) {
+            dst[i] = tmp[i];
         }
-    }
-
-    //
-    //  For Default Register
-    //
-    public void UpdateDefaultRegister() {
-        for( int i = 0; i < KEY_TREG_DEFAULT.length; i++ )
-        {
-            String strTemp = GetValue( KEY_TREG_DEFAULT[i] );
-            if(strTemp == null)
-                continue;
-
-            mDefaultTReg[i][1] = Integer.parseInt(strTemp, 10);
-        }
-
-        for( int i = 0; i < KEY_PREG_DEFAULT.length; i++ )
-        {
-            String strTemp = GetValue( KEY_PREG_DEFAULT[i] );
-            if(strTemp == null)
-                continue;
-
-            mDefaultPReg[i][1] = Integer.parseInt(strTemp, 10);
-        }
-
-//        Log.i(VD_DTAG, ">>> TREG Default Value.");
-//        for( int i = 0; i < KEY_TREG_DEFAULT.length; i++ )
-//        {
-//            Log.i(VD_DTAG, String.format(">>> reg( 0x%04X ), dat( 0x%04X )", mDefaultTReg[i][0], mDefaultTReg[i][1]));
-//        }
-//
-//        Log.i(VD_DTAG, ">>> PREG Default Value.");
-//        for( int i = 0; i < KEY_PREG_DEFAULT.length; i++ )
-//        {
-//            Log.i(VD_DTAG, String.format(">>> reg( 0x%04X ), dat( 0x%04X )", mDefaultPReg[i][0], mDefaultPReg[i][1]));
-//        }
-    }
-
-    public int[][] GetDefaultTReg() {
-        return mDefaultTReg;
-    }
-
-    public int[][] GetDefaultPReg() {
-        return mDefaultPReg;
+        return dst;
     }
 }

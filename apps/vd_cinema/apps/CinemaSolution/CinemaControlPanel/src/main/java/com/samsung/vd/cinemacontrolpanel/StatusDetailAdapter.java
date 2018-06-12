@@ -1,8 +1,6 @@
 package com.samsung.vd.cinemacontrolpanel;
 
 import android.content.Context;
-import android.os.AsyncTask;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -107,7 +105,32 @@ public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                new AsyncTaskLedPos(context, mData.get(pos).GetSlave()).execute();
+                final LedPosAdapter adapter = new LedPosAdapter(context.getApplicationContext(), R.layout.listview_row_info_led);
+
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_LED_OPEN_POS,
+                        context,
+                        adapter,
+                        mData.get(pos).GetSlave(),
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute() {
+                                CinemaLoading.Show( context );
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute() {
+                                new LedPosDialog(context, adapter).show();
+                                CinemaLoading.Hide();
+                            }
+
+                            @Override
+                            public void onPostExecute(int[] values) {
+
+                            }
+                        }
+                );
             }
         });
 
@@ -139,66 +162,5 @@ public class StatusDetailAdapter extends ArrayAdapter<StatusDetailInfo> {
         RadioButton mRadio3;
         TextView    mDescribe;
         Button      mButton;
-    }
-
-    private class AsyncTaskLedPos extends AsyncTask<Void, Void, Void> {
-        private Context mContext;
-        private LedPosAdapter mAdapter;
-
-        private byte mId;
-
-        public AsyncTaskLedPos( Context context, int position ) {
-            mContext = context;
-            mAdapter = new LedPosAdapter(mContext.getApplicationContext(), R.layout.listview_row_info_led);
-
-//            byte[] cabinet = ((CinemaInfo)(context.getApplicationContext())).GetCabinet();
-//            mId = cabinet[position];
-            mId = (byte)(position & 0xFF);
-        }
-
-        @Override
-        protected Void doInBackground(Void... params) {
-            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-            ctrl.Send( NxCinemaCtrl.CMD_TCON_MODE_LOD, new byte[]{mId} );
-
-            byte[] resultNum = ctrl.Send( NxCinemaCtrl.CMD_TCON_OPEN_NUM, new byte[]{mId});
-            if (resultNum == null || resultNum.length == 0)
-                return null;
-
-            int numOfValue = ctrl.ByteArrayToInt16(resultNum, NxCinemaCtrl.FORMAT_INT16);
-            for( int i = 0; i < numOfValue; i++ ) {
-                if (isCancelled()) {
-                    return null;
-                }
-
-                byte[] resultPos = ctrl.Send( NxCinemaCtrl.CMD_TCON_OPEN_POS, new byte[]{mId} );
-                if (resultPos == null || resultPos.length == 0)
-                    continue;
-
-                int posX = ctrl.ByteArrayToInt16( resultPos, NxCinemaCtrl.MASK_INT16_MSB);
-                int posY = ctrl.ByteArrayToInt16( resultPos, NxCinemaCtrl.MASK_INT16_LSB);
-                mAdapter.add( new LedPosInfo(String.valueOf(i), String.valueOf(posX), String.valueOf(posY)));
-            }
-
-            ctrl.Send( NxCinemaCtrl.CMD_TCON_MODE_NORMAL, new byte[]{mId} );
-            return null;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            Log.i(VD_DTAG, "Led Open Position Check Start.");
-            CinemaLoading.Show( mContext );
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-
-            new LedPosDialog(mContext, mAdapter).show();
-            CinemaLoading.Hide();
-            Log.i(VD_DTAG, "Led Open Position Check Done.");
-        }
     }
 }

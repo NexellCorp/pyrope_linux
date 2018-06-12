@@ -37,12 +37,12 @@ public class NxCinemaCtrl {
     public static final int CMD_TCON_DGAM_B					= 0x0020;
     public static final int CMD_TCON_DOT_CORRECTION			= 0x0021;
     public static final int CMD_TCON_DOT_CORRECTION_EXTRACT	= 0x0022;
-    public static final int CMD_TCON_WHITE_SEAM_READ    	= 0x0023;
-    public static final int CMD_TCON_WHITE_SEAM_WRITE       = 0x0024;
+    public static final int CMD_TCON_WHITE_SEAM_READ		= 0x0023;
+    public static final int CMD_TCON_WHITE_SEAM_WRITE		= 0x0024;
     public static final int CMD_TCON_ELAPSED_TIME			= 0x0025;
     public static final int CMD_TCON_ACCUMULATE_TIME		= 0x0026;
-    public static final int CMD_TCON_SW_RESET               = 0x0027;
-    public static final int CMD_TCON_EEPROM_READ            = 0x0028;
+    public static final int CMD_TCON_SW_RESET				= 0x0027;
+    public static final int CMD_TCON_EEPROM_READ			= 0x0028;
     public static final int CMD_TCON_VERSION				= 0x0029;
 
     public static final int CMD_PFPGA_REG_WRITE				= 0x0100;
@@ -57,6 +57,17 @@ public class NxCinemaCtrl {
     public static final int CMD_PLATFORM_SAP_VERSION		= 0x0211;
     public static final int CMD_PLATFORM_IPC_SERVER_VERSION	= 0x0212;
     public static final int CMD_PLATFORM_IPC_CLIENT_VERSION	= 0x0213;
+    public static final int CMD_PLATFORM_TMS_SERVER_VERSION	= 0x0214;
+    public static final int CMD_PLATFORM_TMS_CLIENT_VERSION	= 0x0215;
+    public static final int CMD_PLATFORM_IS_BUSY            = 0x0216;
+    public static final int CMD_PLATFORM_CHANGE_MODE		= 0x021F;
+
+//    public static final int CMD_IMB_CHANGE_CONTENTS			= 0x0C10;
+    public static final int CMD_IMB_CHANGE_CONTENTS			= 0x0C20;
+    public static final int CMD_IMB_CHANGE_MODE				= 0x0C21;
+    public static final int CMD_IMB_GET_CURRENT_MODE		= 0x0C22;
+    public static final int CMD_IMB_WRITE_FILE				= 0x0C23;
+    public static final int CMD_IMB_READ_MODE_DESC			= 0x0C24;
 
     //
     //  Register
@@ -64,6 +75,24 @@ public class NxCinemaCtrl {
     public static final int REG_PFPGA_NUC_EN                = 0x01B0;
     public static final int REG_TCON_SEAM_EN                = 0x0192;
     public static final int REG_TCON_SEAM_TEST              = 0x0186;
+
+    public static final int REG_TCON_FLASH_CC               = 0x0044;
+    public static final int REG_TCON_CC_MODULE              = 0x0052;
+    public static final int REG_TCON_XYZ_TO_RGB             = 0x0004;
+    public static final int REG_TCON_SEAM_ON                = 0x0192;
+
+    public static final int REG_TCON_0x018B                 = 0x018B;
+    public static final int REG_TCON_0x018C                 = 0x018C;
+    public static final int REG_TCON_0x018A                 = 0x018A;
+    public static final int REG_TCON_0x018D                 = 0x018D;
+    public static final int REG_TCON_0x018E                 = 0x018E;
+    public static final int REG_TCON_0x0192                 = 0x0192;
+    public static final int REG_TCON_0x0055                 = 0x0055;
+    public static final int REG_TCON_0x0004                 = 0x0004;
+    public static final int REG_TCON_0x0100                 = 0x0100;
+    public static final int REG_TCON_0x011E                 = 0x011E;
+
+    public static final int REG_PFPGA_0x0199                = 0x0199;
 
     private static NxCinemaCtrl mInstance;
 

@@ -20,7 +20,7 @@
 #ifndef __NX_IPCCLIENT_H__
 #define __NX_IPCCLIENT_H__
 
-#include <NX_IPCCommand.h>
+#include <NX_CinemaCommand.h>
 
 int32_t NX_IPCSendCommand( int32_t iCmd, uint8_t *pBuf, int32_t *iSize );
 

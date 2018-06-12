@@ -23,7 +23,7 @@ import com.samsung.vd.baseutils.VdTitleBar;
 /**
  * Created by doriya on 8/18/16.
  */
-public class AccountActivity extends AppCompatActivity {
+public class AccountActivity extends CinemaBaseActivity {
     private static final String VD_DTAG = "AccountActivity";
 
     private static final int MAX_ACCOUNT_GROUP_NUM = 3;
@@ -38,46 +38,8 @@ public class AccountActivity extends AppCompatActivity {
     private AccountPreference mAccountPreference;
 
     @Override
-    protected void onResume() {
-        super.onResume();
-
-        mAccountServiceLayout = new LinearLayout[MAX_ACCOUNT_GROUP_NUM];
-        for( int i = 0; i < mAccountServiceLayout.length; i++ ) {
-            mAccountServiceLayout[i] = (LinearLayout) mInflater.inflate(R.layout.layout_item_account, mParentLayout, false );
-            AddViewAccount( mAccountServiceLayout[i], AccountPreference.GROUP_SERVICE, i );
-        }
-
-        mAccountCalibratorLayout = new LinearLayout[MAX_ACCOUNT_GROUP_NUM];
-        for( int i = 0; i < mAccountCalibratorLayout.length; i++ ) {
-            mAccountCalibratorLayout[i] = (LinearLayout) mInflater.inflate(R.layout.layout_item_account, mParentLayout, false );
-            AddViewAccount( mAccountCalibratorLayout[i], AccountPreference.GROUP_CALIBRATOR, i );
-        }
-
-        mAccountOperatorLayout = new LinearLayout[MAX_ACCOUNT_GROUP_NUM];
-        for( int i = 0; i < mAccountOperatorLayout.length; i++ ) {
-            mAccountOperatorLayout[i] = (LinearLayout) mInflater.inflate(R.layout.layout_item_account, mParentLayout, false );
-            AddViewAccount( mAccountOperatorLayout[i], AccountPreference.GROUP_OPERATOR, i );
-        }
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-
-//        for( LinearLayout layout : mAccountServiceLayout )
-//            RemoveViewAccount(layout);
-//
-//        for( LinearLayout layout : mAccountCalibratorLayout )
-//            RemoveViewAccount(layout);
-//
-//        for( LinearLayout layout : mAccountOperatorLayout )
-//            RemoveViewAccount(layout);
-    }
-
-    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        SetScreenRotation();
         setContentView(R.layout.activity_account);
 
         //
@@ -95,15 +57,13 @@ public class AccountActivity extends AppCompatActivity {
         titleBar.SetListener(VdTitleBar.BTN_BACK, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity( new Intent(v.getContext(), TopActivity.class) );
-                overridePendingTransition(0, 0);
-                finish();
+                Launch(v.getContext(), TopActivity.class);
             }
         });
         titleBar.SetListener(VdTitleBar.BTN_EXIT, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mService.TurnOff();
+                TurnOff();
             }
         });
 
@@ -127,6 +87,27 @@ public class AccountActivity extends AppCompatActivity {
 
         mInflater =  (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         mParentLayout = (LinearLayout)findViewById(R.id.layoutAccount);
+
+        //
+        //
+        //
+        mAccountServiceLayout = new LinearLayout[MAX_ACCOUNT_GROUP_NUM];
+        for( int i = 0; i < mAccountServiceLayout.length; i++ ) {
+            mAccountServiceLayout[i] = (LinearLayout) mInflater.inflate(R.layout.layout_item_account, mParentLayout, false );
+            AddViewAccount( mAccountServiceLayout[i], AccountPreference.GROUP_SERVICE, i );
+        }
+
+        mAccountCalibratorLayout = new LinearLayout[MAX_ACCOUNT_GROUP_NUM];
+        for( int i = 0; i < mAccountCalibratorLayout.length; i++ ) {
+            mAccountCalibratorLayout[i] = (LinearLayout) mInflater.inflate(R.layout.layout_item_account, mParentLayout, false );
+            AddViewAccount( mAccountCalibratorLayout[i], AccountPreference.GROUP_CALIBRATOR, i );
+        }
+
+        mAccountOperatorLayout = new LinearLayout[MAX_ACCOUNT_GROUP_NUM];
+        for( int i = 0; i < mAccountOperatorLayout.length; i++ ) {
+            mAccountOperatorLayout[i] = (LinearLayout) mInflater.inflate(R.layout.layout_item_account, mParentLayout, false );
+            AddViewAccount( mAccountOperatorLayout[i], AccountPreference.GROUP_OPERATOR, i );
+        }
     }
 
     private void AddViewAccount( View childView, String strGroup, int index ) {
@@ -200,119 +181,8 @@ public class AccountActivity extends AppCompatActivity {
         id.setFocusableInTouchMode(enable);
     }
 
-    private boolean ConfirmPassword( String strPw, String strConfirm )
-    {
+    private boolean ConfirmPassword( String strPw, String strConfirm ) {
         return !(strPw == null || strConfirm == null || strPw.equals("") || strConfirm.equals(""))
                 && strPw.equals(strConfirm);
     }
-
-    //
-    //  For Internal Toast Message
-    //
-    private static Toast mToast;
-
-    private void ShowMessage( String strMsg ) {
-        if( mToast == null )
-            mToast = Toast.makeText(getApplicationContext(), null, Toast.LENGTH_SHORT);
-
-        mToast.setText(strMsg);
-        mToast.show();
-    }
-
-    //
-    //  For Screen Rotation
-    //
-    private void SetScreenRotation() {
-        String orientation = ((CinemaInfo) getApplicationContext()).GetValue(CinemaInfo.KEY_SCREEN_ROTATE);
-        if( orientation == null ) {
-            orientation = String.valueOf(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-        }
-
-        switch( Integer.parseInt(orientation) ) {
-            case ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE:
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                break;
-            case ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE:
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                break;
-            default:
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                break;
-        }
-    }
-
-    private void ChangeScreenRotation() {
-        String orientation = ((CinemaInfo) getApplicationContext()).GetValue(CinemaInfo.KEY_SCREEN_ROTATE);
-        if( orientation == null ) {
-            orientation = String.valueOf(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-        }
-
-        int curRotate;
-        int prvRotate = Integer.parseInt(orientation);
-        switch (prvRotate) {
-            case ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE:
-                curRotate = ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                break;
-            case ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE:
-                curRotate = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                break;
-            default:
-                curRotate = ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                break;
-        }
-
-        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_SCREEN_ROTATE, String.valueOf(curRotate));
-    }
-
-    //
-    //  For ScreenSaver
-    //
-    private CinemaService mService = null;
-    private boolean mServiceRun = false;
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        Intent intent = new Intent(this, CinemaService.class);
-        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-
-        if( mServiceRun ) {
-            unbindService(mConnection);
-            mServiceRun = false;
-        }
-    }
-
-    @Override
-    public boolean dispatchTouchEvent(MotionEvent ev) {
-        boolean isOn = false;
-        if( mService != null ) {
-            isOn = mService.IsOn();
-            mService.RefreshScreenSaver();
-        }
-
-        return !isOn || super.dispatchTouchEvent(ev);
-    }
-
-    private ServiceConnection mConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            CinemaService.LocalBinder binder = (CinemaService.LocalBinder)service;
-            mService = binder.GetService();
-            mServiceRun = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            mServiceRun = false;
-        }
-    };
 }

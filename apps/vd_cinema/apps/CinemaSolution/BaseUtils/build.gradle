@@ -1,3 +1,5 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
 apply plugin: 'com.android.library'
 
 android {
@@ -15,6 +17,29 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+    //
+    // For Android JNI
+    //
+    sourceSets.main {
+        jniLibs.srcDir 'src/main/libs'
+        jni.srcDirs = []
+    }
+    //noinspection GroovyAssignabilityCheck
+    task ndkBuild(type: Exec, description: 'Compile JNI source via NDK') {
+        Properties properties = new Properties()
+        properties.load(project.rootProject.file('local.properties').newDataInputStream())
+
+        def command = properties.getProperty('ndk.dir')
+        if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+            command += "\\ndk-build.cmd"
+        } else {
+            command += "/ndk-build"
+        }
+        commandLine command, '-C', file('src/main').absolutePath
+    }
+    tasks.withType(JavaCompile) {
+        compileTask -> compileTask.dependsOn ndkBuild
     }
 }
 

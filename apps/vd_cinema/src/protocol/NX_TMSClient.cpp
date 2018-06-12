@@ -84,7 +84,7 @@ int32_t CNX_TMSClient::SendCommand( const char *pIpAddr, uint32_t iCmd, uint8_t 
 		return -1;
 	}
 
-	sendSize = GDC_MakePacket( GDC_KEY(iCmd), pBuf, *iSize, m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = GDC_MakePacket( KEY_GDC(iCmd), pBuf, *iSize, m_SendBuf, sizeof(m_SendBuf) );
 	if( 0 > sendSize )
 	{
 		NxErrMsg( "Error: GDC_MakePacket().\n" );
@@ -111,7 +111,7 @@ int32_t CNX_TMSClient::SendCommand( const char *pIpAddr, uint32_t iCmd, uint8_t 
 	//
 	//	Condition of pBuf
 	//	 1. The pBuf must not be NULL.
-	//	 2. The pBuf's size must be same payload's size. ( 65533 bytes )
+	//	 2. The pBuf's size must be same payload's size. ( 65535 bytes )
 	//   3. The iSize is not payload's size.
 	//	    The iSize is real data size in pBuf.
 	//

@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //
-//	Copyright (C) 2016 Nexell Co. All Rights Reserved
+//	Copyright (C) 2018 Nexell Co. All Rights Reserved
 //	Nexell Co. Proprietary & Confidential
 //
 //	NEXELL INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
@@ -17,18 +17,33 @@
 //
 //------------------------------------------------------------------------------
 
-#ifndef __NX_IPCSERVER_H__
-#define __NX_IPCSERVER_H__
+#ifndef __CNX_UNIFORMITY_H__
+#define __CNX_UNIFORMITY_H__
 
 #include <stdint.h>
 
-#define	IPC_SERVER_FILE		"/data/local/tmp/ipc_server"
-#define	MAX_PAYLOAD_SIZE	65535
+class CNX_Uniformity
+{
+public:
+	CNX_Uniformity();
+	~CNX_Uniformity();
 
-int32_t NX_IPCServerStart();
-void	NX_IPCServerStop();
+public:
+	enum { MAX_DATA_NUM = 4096 };
 
-void	NX_SetNapVersion( uint8_t *pVersion );
-void	NX_SetSapVersion( uint8_t *pVersion );
+	int32_t		Parse( const char *pFile );
+	uint16_t*	GetData();
 
-#endif	// __NX_IPCSERVER_H__
+private:
+	int32_t		Init();
+	void		Deinit();
+
+private:
+	uint16_t*	m_pData;
+
+private:
+	CNX_Uniformity (const CNX_Uniformity &Ref);
+	CNX_Uniformity &operator=(const CNX_Uniformity &Ref);
+};
+
+#endif	// __CNX_UNIFORMITY_H__

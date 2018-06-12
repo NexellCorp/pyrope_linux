@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //
-//	Copyright (C) 2016 Nexell Co. All Rights Reserved
+//	Copyright (C) 2018 Nexell Co. All Rights Reserved
 //	Nexell Co. Proprietary & Confidential
 //
 //	NEXELL INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
@@ -17,18 +17,13 @@
 //
 //------------------------------------------------------------------------------
 
-#ifndef __NX_IPCSERVER_H__
-#define __NX_IPCSERVER_H__
+#ifndef __NX_TOKEN_H__
+#define __NX_TOKEN_H__
 
 #include <stdint.h>
 
-#define	IPC_SERVER_FILE		"/data/local/tmp/ipc_server"
-#define	MAX_PAYLOAD_SIZE	65535
+int32_t NX_GetToken( char *pData, int32_t iIndex, char *pResult );
+int32_t NX_GetTokenParse( char *pData, const char *pFormat, ... );
+int32_t NX_GetTokenNum( char *pData );
 
-int32_t NX_IPCServerStart();
-void	NX_IPCServerStop();
-
-void	NX_SetNapVersion( uint8_t *pVersion );
-void	NX_SetSapVersion( uint8_t *pVersion );
-
-#endif	// __NX_IPCSERVER_H__
+#endif	// __NX_TOKEN_H__

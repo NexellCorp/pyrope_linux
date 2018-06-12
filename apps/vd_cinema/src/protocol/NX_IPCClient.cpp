@@ -28,7 +28,7 @@
 
 #include <NX_IPCServer.h>
 #include <NX_IPCClient.h>
-#include <NX_IPCCommand.h>
+#include <NX_CinemaCommand.h>
 
 #include <NX_Version.h>
 
@@ -57,7 +57,7 @@ private:
 
 private:
 	//	Rx/Tx Buffer
-	//	Key(4bytes) + Length(2bytes) + Command(2bytes) + Payload(MAX 65533bytes )
+	//	Key(4bytes) + Length(2bytes) + Command(2bytes) + Payload(MAX 65535bytes )
 	uint8_t m_SendBuf[MAX_PAYLOAD_SIZE + 8];
 	uint8_t m_ReceiveBuf[MAX_PAYLOAD_SIZE + 8];
 
@@ -105,7 +105,7 @@ int32_t CNX_IPCClient::Send( uint32_t iCmd, uint8_t *pBuf, int32_t *iSize )
 		return -1;
 	}
 
-	sendSize = IPC_MakePacket( NXP_KEY_VALUE, iCmd, pBuf, *iSize, m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( KEY_NXP, iCmd, pBuf, *iSize, m_SendBuf, sizeof(m_SendBuf) );
 	if( 0 > sendSize )
 	{
 		NxErrMsg( "Error: IPC_MakePacket().\n" );
@@ -125,7 +125,7 @@ int32_t CNX_IPCClient::Send( uint32_t iCmd, uint8_t *pBuf, int32_t *iSize )
 	//
 	//	Condition of pBuf
 	//	 1. The pBuf must not be NULL.
-	//	 2. The pBuf's size must be same payload's size. ( 65533 bytes )
+	//	 2. The pBuf's size must be same payload's size. ( 65535 bytes )
 	//   3. The iSize is not payload's size.
 	//	    The iSize is real data size in pBuf.
 	//

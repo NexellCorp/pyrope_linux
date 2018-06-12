@@ -30,9 +30,11 @@
 #include <SockUtils.h>
 #include <gdc_protocol.h>
 
-#include <NX_IPCCommand.h>
+#include <NX_CinemaCommand.h>
 #include <NX_TMSServer.h>
-#include <CNX_BaseClass.h>
+#include <CNX_Base.h>
+#include <CNX_CinemaManager.h>
+
 #include <NX_Utils.h>
 
 #define NX_DTAG	"[TMS Server]"
@@ -70,10 +72,6 @@ protected:
 private:
 	int32_t WaitClient();
 
-	int32_t IMB_ChangeContents( int32_t fd, uint32_t iCmd, uint8_t *pBuf, int32_t iSize );
-
-	int32_t ProcessCommand( int32_t fd, uint32_t key, void *pPayload, int32_t payloadSize );
-
 private:
 	//	Private Member Variables
 	bool		m_bThreadRun;
@@ -81,6 +79,9 @@ private:
 
 	//	Key(4bytes) + Length(2bytes) + Payload(MAX 65535bytes)
 	uint8_t		m_SendBuf[MAX_PAYLOAD_SIZE + 6];
+	uint8_t		m_RecvBuf[MAX_PAYLOAD_SIZE + 6];
+
+	CNX_CinemaManager* m_pCinema;
 
 private:
 	//	For Singletone
@@ -94,6 +95,7 @@ CNX_TMSServer::CNX_TMSServer()
 	: m_bThreadRun( false )
 	, m_hSocket( -1 )
 {
+	m_pCinema = CNX_CinemaManager::GetInstance();
 }
 
 //------------------------------------------------------------------------------
@@ -158,73 +160,114 @@ void CNX_TMSServer::StopServer()
 //------------------------------------------------------------------------------
 void CNX_TMSServer::ThreadProc()
 {
-	int32_t iSize;
-	uint8_t payloadBuf[MAX_PAYLOAD_SIZE+6];
+	int32_t iReadSize;
+	uint32_t iKey = 0, iCmd = 0;
+	uint8_t *pPayload;
+	uint16_t iPayloadSize;
+
+	uint8_t outBuf[MAX_PAYLOAD_SIZE];
+	int32_t iOutSize;
+	int32_t iSendSize;
 
 	while( m_bThreadRun )
 	{
-		uint32_t iKey = 0;
-		uint8_t *pPayload = NULL;
-		uint16_t iPayloadSize = 0;
-
-		int32_t clientSocket = WaitClient();
-		if( !clientSocket )
+		uint8_t *pRecvBuf = m_RecvBuf;
+		int32_t iClientSocket = WaitClient();
+		if( !iClientSocket )
 		{
 			continue;
 		}
-		else if( 0 > clientSocket )	//	Error
+		else if( 0 > iClientSocket )
 		{
 			goto ERROR;
 		}
 
 		do {
-			uint8_t tempData;
-			iSize = ReadData( clientSocket, &tempData, 1 );
-			if( 1 > iSize )
+			uint8_t temp;
+			iReadSize = ReadData( iClientSocket, &temp, 1 );
+			if( iReadSize != 1 )
 			{
 				NxErrMsg( "Fail, ReadData().\n" );
 				break;
 			}
 
-			iKey = (iKey << 8) | tempData;
-			if( iKey == GDC_KEY(tempData) )
+			iKey = (iKey << 8) | temp;
+			if( iKey == KEY_GDC(temp) )
 			{
 				break;
 			}
 		} while( m_bThreadRun );
 
-		if( 1 > iSize )
+		if( 1 > iReadSize )
 		{
 			goto ERROR;
 		}
 
-		iSize = ReadData( clientSocket, payloadBuf, 2 );
-		if( 2 > iSize )
+		//	Key
+		*pRecvBuf++ = (( iKey >> 24) & 0xFF);
+		*pRecvBuf++ = (( iKey >> 16) & 0xFF);
+		*pRecvBuf++ = (( iKey >>  8) & 0xFF);
+		*pRecvBuf++ = (( iKey      ) & 0xFF);
+
+		iCmd = iKey & 0xFF;
+
+		//	Read Length
+		iReadSize = ReadData( iClientSocket, pRecvBuf, 2 );
+		if( 2 != iReadSize )
 		{
-			NxErrMsg( "Fail, ReadData().\n" );
+			NxDbgMsg( NX_DBG_ERR, "Fail, ReadData().\n" );
 			goto ERROR;
 		}
 
-		iPayloadSize = MAKE_LENGTH_2BYTE( payloadBuf[0], payloadBuf[1] );
+		iPayloadSize = MAKE_LENGTH( pRecvBuf[0], pRecvBuf[1] );
+		pRecvBuf += 2;
+
+		//	Size Check
+		if( iPayloadSize+8 > (int32_t)sizeof(m_RecvBuf) )
+		{
+			NxDbgMsg( NX_DBG_ERR, "Fail, Data Size.\n" );
+			goto ERROR;
+		}
+
+		//	Read all data
 		if( iPayloadSize != 0 )
 		{
-			iSize = ReadData( clientSocket, payloadBuf + 2, iPayloadSize );
-			if( 0 >= iSize || iSize != iPayloadSize )
+			iReadSize = ReadData( iClientSocket, pRecvBuf, iPayloadSize );
+			if( iReadSize != iPayloadSize )
 			{
 				NxErrMsg( "Fail, ReadData().\n" );
 				goto ERROR;
 			}
-
-			pPayload = payloadBuf + 2;
 		}
 
-		ProcessCommand( clientSocket, iKey, pPayload, iPayloadSize );
+		pPayload = pRecvBuf;
+
+		NxDbgMsg( NX_DBG_VBS, "\n================================================\n");
+		NxDbgMsg( NX_DBG_VBS, "iCmd = 0x%08x, readSize = %d\n", iCmd, iReadSize );
+
+		if( !m_pCinema->IsBusy() )
+		{
+			SendRemote( "cinema.tms", "run" );
+			m_pCinema->SendCommand( iCmd, pPayload, iPayloadSize, outBuf, &iOutSize );
+			SendRemote( "cinema.tms", "stop" );
+		}
+		else
+		{
+			outBuf[0] = 0xFF;
+			outBuf[1] = 0xFF;
+			outBuf[2] = 0xFF;
+			outBuf[3] = 0xFE;
+			iOutSize = 4;
+		}
+
+		iSendSize = GDC_MakePacket( KEY_SEC(iCmd), outBuf, iOutSize, m_SendBuf, sizeof(m_SendBuf) );
+		WriteData( iClientSocket, m_SendBuf, iSendSize );
 
 ERROR:
-		if( 0 < clientSocket )
+		if( 0 < iClientSocket )
 		{
-			close( clientSocket );
-			clientSocket = -1;
+			close( iClientSocket );
+			iClientSocket = -1;
 		}
 	}
 }
@@ -257,7 +300,7 @@ int32_t CNX_TMSServer::WaitClient()
 				return -1;
 			}
 
-			printf( "Connect Success. ( %d )\n", clnSocket );
+			// printf( "Connect Success. ( %d )\n", clnSocket );
 			return clnSocket;
 		}
 	}
@@ -268,54 +311,6 @@ int32_t CNX_TMSServer::WaitClient()
 	}
 
 	NxDbgMsg( NX_DBG_VBS, "Timeout. WaitClient().\n");
-	return 0;
-}
-
-//------------------------------------------------------------------------------
-int32_t CNX_TMSServer::IMB_ChangeContents( int32_t fd, uint32_t iCmd, uint8_t *pBuf, int32_t iSize )
-{
-	UNUSED( iSize );
-
-	uint8_t result = 0xFF;
-	int32_t sendSize;
-
-	if( pBuf[0] < 0x0A )
-	{
-		uint8_t sendData[2] = { 0x00, };
-		sprintf( (char*)sendData, "%d", pBuf[0] );
-
-		if( !SendRemote( "cinema.change.contents", (const char*)sendData ) )
-		{
-			result = 0x01;
-		}
-		else
-		{
-			printf("Fail, SendRemote. ( node: cinema.change.contents )\n");
-			NxDbgMsg( NX_DBG_VBS, "Fail, SendRemote. ( node: cinema.change.contents )\n");
-		}
-	}
-
-	sendSize = GDC_MakePacket( SEC_KEY(iCmd), &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	WriteData( fd, m_SendBuf, sendSize );
-	NX_HexDump( m_SendBuf, sendSize );
-
-	return 0;
-}
-
-//------------------------------------------------------------------------------
-int32_t CNX_TMSServer::ProcessCommand( int32_t fd, uint32_t key, void *pPayload, int32_t payloadSize )
-{
-	int32_t iCmd = key & 0xFF;
-
-	switch( iCmd )
-	{
-		case GDC_COMMAND( CMD_TYPE_IMB, IMB_CMD_CHANGE_CONTENTS ):
-			return IMB_ChangeContents( fd, iCmd, (uint8_t*)pPayload, payloadSize );
-		default:
-			return -1;
-	}
-
 	return 0;
 }
 
@@ -403,6 +398,7 @@ static int32_t SendRemote( const char *pSockName, const char *pMsg )
 	close( sock );
 	return 0;
 }
+
 
 //------------------------------------------------------------------------------
 //

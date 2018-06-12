@@ -42,6 +42,40 @@ uint64_t NX_GetTickCount( void )
 }
 
 //------------------------------------------------------------------------------
+void NX_WaitTime( uint64_t iWaitTime )
+{
+	uint64_t iTimeout = NX_GetTickCount() + iWaitTime;
+	uint64_t iCurTime;
+	uint64_t iMiliSecond = 0;
+
+	{
+#ifndef ANDROID
+		fprintf(stdout, "Wait time : %llu sec.\n", iWaitTime / 1000);
+		fflush(stdout);
+#else
+		__android_log_print( ANDROID_LOG_DEBUG, "", "Wait time : %llu mSec.\n", iWaitTime);
+#endif
+	}
+
+	do {
+#ifndef ANDROID
+		fprintf( stdout, "Wait %llu mSec\r", iMiliSecond * 100 );
+		fflush(stdout);
+#else
+		__android_log_print( ANDROID_LOG_DEBUG, "", "Wait %llu mSec\r", iMiliSecond * 100);
+#endif
+
+		iCurTime = NX_GetTickCount();
+		usleep(100000);
+		iMiliSecond++;
+	} while( iCurTime <= iTimeout );
+
+#ifndef ANDROID
+	printf("\n");
+#endif
+}
+
+//------------------------------------------------------------------------------
 int32_t NX_GetRandomValue( int32_t iStartNum, int32_t iEndNum )
 {
 	if( iStartNum >= iEndNum )
@@ -55,7 +89,7 @@ int32_t NX_GetRandomValue( int32_t iStartNum, int32_t iEndNum )
 void NX_HexDump( const void *data, int32_t size, const char *msg )
 {
 	const uint8_t *byte = (const uint8_t *)data;
-	
+
 	printf("%s ( %d bytes ):", msg, size);
 
 	for( int32_t i = 0; i < size; ++i)

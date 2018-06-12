@@ -11,7 +11,7 @@
 //	Module		:
 //	File		:
 //	Description	:
-//	Author		: 
+//	Author		:
 //	Export		:
 //	History		:
 //
@@ -26,6 +26,7 @@
 #define	NX_SHELL_MAX_STR		64
 
 uint64_t	NX_GetTickCount( void );
+void		NX_WaitTime( uint64_t iWaitTime );	// mSec
 int32_t		NX_GetRandomValue( int32_t iStartNum, int32_t iEndNum );
 
 void		NX_HexDump( const void *data, int32_t size, const char *msg );

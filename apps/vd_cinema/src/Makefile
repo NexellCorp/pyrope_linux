@@ -13,10 +13,10 @@ CPPFLAGS+= -fpic -DARM_11
 
 INCLUDE += \
 	-I $(VD_CINEMA_TOP)/src/include \
-	-I $(VD_CINEMA_TOP)/src/ipc \
+	-I $(VD_CINEMA_TOP)/src/protocol \
+	-I $(VD_CINEMA_TOP)/src/cinema \
 	-I $(VD_CINEMA_TOP)/src/uart \
 	-I $(VD_CINEMA_TOP)/src/i2c \
-	-I $(VD_CINEMA_TOP)/src/gdc \
 	-I $(VD_CINEMA_TOP)/src/utils
 
 LIBRARY += -lssl -lcrypto
@@ -27,25 +27,11 @@ LIBRARY	+= -lstdc++ -lpthread
 COBJS	:=
 CPPOBJS	:=
 
-CPPOBJS +=	\
-	ipc/ipc_protocol.o \
-	ipc/NX_IPCClient.o \
-	ipc/NX_IPCServer.o
-
-# Add EEPROM Sources
-CPPOBJS += \
-	eeprom/CNX_EEPRom.o	\
-	eeprom/CNX_EEPRomDataParser.o
-
 # Add UART Sources
 CPPOBJS += \
 	uart/CNX_Uart.o	\
 	uart/NX_UartProtocol.o \
 	uart/NX_SecureLinkServer.o
-
-# Add I2C Sources
-CPPOBJS += \
-	i2c/CNX_I2C.o
 
 # Add Utils Sources
 CPPOBJS += \
@@ -59,11 +45,10 @@ CPPOBJS += \
 	utils/SockUtils.o
 
 CPPOBJS +=	\
-	gdc/gdc_protocol.o		\
-	gdc/CNX_OpenSSL.o		\
-	gdc/NX_GDCServer.o		\
-	gdc/NX_GDCClient.o
-
+	protocol/gdc_protocol.o		\
+	protocol/CNX_OpenSSL.o		\
+	protocol/NX_GDCServer.o		\
+	protocol/NX_GDCClient.o
 
 LIBNAME	:= libnxcinema_linux
 TARGET	:= $(LIBNAME).so

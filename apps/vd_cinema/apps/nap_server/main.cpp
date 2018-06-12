@@ -447,7 +447,9 @@ int32_t main( void )
 	register_signal();
 
 	//	Set Version Information
-	NX_SetNapVersion( (uint8_t*)NX_VERSION_NAP, strlen(NX_VERSION_NAP) );
+	char szVersion[1024] = { 0x00, };
+	snprintf( szVersion, sizeof(szVersion), "%s ( %lld )", NX_VERSION_NAP, NX_DATE(__DATE__) );
+	NX_SetNapVersion( (uint8_t*)szVersion, strlen(szVersion) );
 
 	//	Start IPC Server
 	if( 0 != NX_IPCServerStart() )

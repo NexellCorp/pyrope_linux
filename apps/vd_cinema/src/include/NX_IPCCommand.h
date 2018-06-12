@@ -55,8 +55,8 @@
 #define TCON_CMD_DGAM_R					0x001E	//	TCON Device Gamma Red				// 0x00 | 0x1E
 #define TCON_CMD_DGAM_G					0x001F	//	TCON Device Gamma Green				// 0x00 | 0x1F
 #define TCON_CMD_DGAM_B					0x0020	//	TCON Device Gamma Blue				// 0x00 | 0x20
-#define TCON_CMD_PIXEL_CORRECTION			0x0021	//	TCON Dot Correction					// 0x00 | 0x21
-#define TCON_CMD_PIXEL_CORRECTION_EXTRACT	0x0022	//	TCON Dot Correction Extract			// 0x00 | 0x22
+#define TCON_CMD_DOT_CORRECTION			0x0021	//	TCON Dot Correction					// 0x00 | 0x21
+#define TCON_CMD_DOT_CORRECTION_EXTRACT	0x0022	//	TCON Dot Correction Extract			// 0x00 | 0x22
 #define TCON_CMD_WHITE_SEAM_READ		0x0023	//	TCON White Seam	Read				// 0x00 | 0x23
 #define TCON_CMD_WHITE_SEAM_WRITE		0x0024	//	TCON White Seam Write				// 0x00 | 0x24
 #define TCON_CMD_ELAPSED_TIME			0x0025	//	LED Elapsed Time					// 0x00 | 0x25
@@ -78,11 +78,6 @@
 #define PFPGA_CMD_MUTE					0x0112	//	PFPGA Mute							// 0x40 | 0x12
 #define PFPGA_CMD_VERSION				0x0113	//	PFPGA Version						// 0x40 | 0x13
 
-
-//
-//  BURST
-#define CINEMA_CMD_BURST_START      	0xFFFF	// I2C Burst start
-#define CINEMA_CMD_BURST_STOP         	0xFFFE	// I2C Burst stop
 
 //
 //	Platform Command

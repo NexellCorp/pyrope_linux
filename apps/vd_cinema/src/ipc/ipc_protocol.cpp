@@ -23,54 +23,57 @@
 #include <ipc_protocol.h>
 //
 //	Prameters
-//		Input  : key, cmd, payload, payloadSize, pOutBuf, outBufSize
+//		Input  : key, cmd, payload, payloadSize, outBufSize
 //		Output : pOutBuf
 //	Return
 //		on success, the number of bytes is returned.
-//		if pOutBuf is NULL or size is wrong 0 is returned.
+//		otherwise, -1 is returned.
 //
-uint32_t IPC_MakePacket (
-	uint32_t key, uint32_t cmd, void *payload, uint32_t payloadSize,
-	void *pOutBuf, uint32_t outBufSize )
+int32_t IPC_MakePacket (
+	uint32_t key, uint32_t cmd, void *payload, int32_t payloadSize,
+	void *pOutBuf, int32_t outBufSize )
 {
 	uint8_t *pBuf = (uint8_t *)pOutBuf;
+	uint32_t length;
+	// uint8_t *pCrcStart;
 
 	//	Check pointer & buffer size
-	if( (NULL == pOutBuf) || (payloadSize+10 > outBufSize) )
+	if( !pOutBuf || payloadSize+8 > outBufSize )
 	{
-		return 0;
+		return -1;
 	}
 
-	//	Write Key Code 4bytes
+	length = 2 /* Command */ + payloadSize /* payload */;
+
+	//	Write Key Code
 	*pBuf++ = (( key >> 24) & 0xFF);
 	*pBuf++ = (( key >> 16) & 0xFF);
 	*pBuf++ = (( key >>  8) & 0xFF);
 	*pBuf++ = (( key      ) & 0xFF);
 
-	//	Write Command 2bytes
+	//	Write Length
+	*pBuf++ = (( length >>  8) & 0xFF);
+	*pBuf++ = (( length      ) & 0xFF);
+
+	//	Write Command
+	// pCrcStart = pBuf;
 	*pBuf++ = (( cmd >>  8) & 0xFF);
 	*pBuf++ = (( cmd      ) & 0xFF);
 
-	//	Write Length 4bytes
-	*pBuf++ = (( payloadSize >> 24) & 0xFF);
-	*pBuf++ = (( payloadSize >> 16) & 0xFF);
-	*pBuf++ = (( payloadSize >>  8) & 0xFF);
-	*pBuf++ = (( payloadSize      ) & 0xFF);
-
-	if( payload != NULL && payloadSize != 0 )
+	//	Write Payload
+	if( payloadSize > 0 )
 	{
-		//	Write Payload
 		memcpy( pBuf, payload, payloadSize );
 		pBuf += payloadSize;
 	}
 
-	return payloadSize+10;
+	return length + 6;
 }
 
 //
 //	Parameters
-//		Input : pInBuf, inBufSize key, cmd, payload, payloadSize
-//		Output : key, cmd, payload, payloadSize
+//		Input : pInBuf, inBufSize
+//		Output : inBufSize
 //	Return
 //		On success, 0 is returned.
 //		otherwise, negetive value is returned.
@@ -78,32 +81,26 @@ uint32_t IPC_MakePacket (
 //			-2 : invalid length or size error.
 //
 int32_t IPC_ParsePacket (
-	void *pInBuf, uint32_t inBufSize,
-	uint32_t *key, uint32_t *cmd, void **payload, uint32_t *payloadSize )
+	void *pInBuf, int32_t inBufSize,
+	uint32_t *key, uint32_t *cmd, void **payload, int32_t *playloadSize )
 {
-	uint32_t len;
-	uint8_t* pBuf = (uint8_t*)pInBuf;
-
-	if( !key || !pInBuf )
+	int32_t len;
+	uint8_t *pBuf = (uint8_t *)pInBuf;
+	if( !key || !cmd || !pInBuf )
 	{
-		return -1;
+		return -1;	//	Invalid argument
 	}
 
-	*key = pBuf[0]<<24 | pBuf[1]<<16 | pBuf[2]<<8 | pBuf[3];
-	pBuf += 4;
+	*key = pBuf[0]<<24 | pBuf[1]<<16 | pBuf[2]<<8 | pBuf[3];	pBuf += 4;
+	len  = pBuf[0]<<8 | pBuf[1];	pBuf += 2;
+	*cmd = pBuf[0]<<8 | pBuf[1];	pBuf += 2;
 
-	*cmd = pBuf[0]<<8 | pBuf[1];
-	pBuf += 2;
-
-	len  = pBuf[0]<<24 | pBuf[1]<<16 | pBuf[2]<<8 | pBuf[3];
-	pBuf += 4;
-
-	if ( (len+10) != inBufSize )
+	if ( (len+6) != inBufSize )
 	{
 		return -2;
 	}
 
-	*payloadSize = len;
+	*playloadSize = len - 2;
 	*payload = pBuf;
 
 	return 0;
@@ -112,13 +109,13 @@ int32_t IPC_ParsePacket (
 //
 //	Debug Packet Functions
 //
-void DumpIpcPacket(void *pData, uint32_t dataSize, int32_t protocol)
+void DumpIpcPacket(void *pData, int32_t dataSize, int32_t protocol)
 {
 	if( protocol )
 	{
 		void *payload;
 		uint32_t key, cmd;
-		uint32_t payloadSize, ret;
+		int32_t payloadSize, ret;
 		ret = IPC_ParsePacket( pData, dataSize, &key, &cmd, &payload, &payloadSize );
 		if( ret != 0 )
 		{

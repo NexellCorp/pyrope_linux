@@ -20,6 +20,6 @@
 #ifndef __NX_TMSCLIENT_H__
 #define __NX_TMSCLIENT_H__
 
-int32_t NX_TMSSendCommand( const char *pIpAddr, uint32_t iCmd, uint8_t** pBuf, uint32_t* nBufSize );
+int32_t NX_TMSSendCommand( const char *pIpAddr, int32_t iCmd, uint8_t *pBuf, int32_t *iSize );
 
 #endif	// __NX_TMSCLIENT_H__

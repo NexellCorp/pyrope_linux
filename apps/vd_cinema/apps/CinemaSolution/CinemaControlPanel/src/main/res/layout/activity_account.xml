@@ -3,107 +3,104 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:tools="http://schemas.android.com/tools"
-    tools:context="com.samsung.vd.cinemacontrolpanel.Activity.AccountActivity">
+    android:orientation="vertical">
 
     <LinearLayout
         android:id="@+id/layoutTitleBar"
+        android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:orientation="vertical"/>
+        android:layout_height="50dp" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/layoutStatusBar"
-        android:layout_below="@+id/layoutTitleBar"
+        android:orientation="vertical"
         android:layout_marginTop="10dp"
-        android:orientation="vertical">
+        android:layout_below="@+id/layoutTitleBar"
+        android:layout_above="@+id/layoutStatusBar" >
 
         <LinearLayout
+            android:background="#FFE0E0E0"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginLeft="5dp"
             android:layout_marginRight="5dp"
-            android:background="#FFE0E0E0"
             android:gravity="center"
-            android:orientation="horizontal"
             android:weightSum="1">
 
             <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="0.15"
                 android:background="@drawable/draw_line_border"
-                android:gravity="center"
-                android:paddingBottom="15dp"
-                android:paddingTop="15dp"
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
                 android:text="@string/txt_account"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:textStyle="bold"/>
+                android:textStyle="bold"
+                android:gravity="center"
+                android:paddingTop="15dp"
+                android:paddingBottom="15dp"
+                android:layout_weight="0.15" />
 
             <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="0.24"
                 android:background="@drawable/draw_line_border"
-                android:gravity="center"
-                android:paddingBottom="15dp"
-                android:paddingTop="15dp"
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
                 android:text="@string/txt_identify_num"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:textStyle="bold"/>
+                android:textStyle="bold"
+                android:gravity="center"
+                android:paddingTop="15dp"
+                android:paddingBottom="15dp"
+                android:layout_weight="0.24" />
 
             <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="0.24"
                 android:background="@drawable/draw_line_border"
-                android:gravity="center"
-                android:paddingBottom="15dp"
-                android:paddingTop="15dp"
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
                 android:text="@string/txt_password"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:textStyle="bold"/>
+                android:textStyle="bold"
+                android:gravity="center"
+                android:paddingTop="15dp"
+                android:paddingBottom="15dp"
+                android:layout_weight="0.24" />
 
             <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="0.24"
                 android:background="@drawable/draw_line_border"
-                android:gravity="center"
-                android:paddingBottom="15dp"
-                android:paddingTop="15dp"
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
                 android:text="@string/txt_confirm"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:textStyle="bold"/>
+                android:textStyle="bold"
+                android:gravity="center"
+                android:paddingTop="15dp"
+                android:paddingBottom="15dp"
+                android:layout_weight="0.24" />
 
             <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="0.13"
                 android:background="@drawable/draw_line_border"
-                android:gravity="center"
-                android:paddingBottom="15dp"
-                android:paddingTop="15dp"
-                android:text="@string/txt_modify"
+                android:layout_width="0px"
+                android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceMedium"
-                android:textStyle="bold"/>
+                android:text="@string/txt_modify"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:paddingTop="15dp"
+                android:paddingBottom="15dp"
+                android:layout_weight="0.13" />
         </LinearLayout>
-
+        
         <LinearLayout
             android:id="@+id/layoutAccount"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:orientation="vertical"/>
-
+            android:orientation="vertical"
+            android:layout_height="wrap_content" />
     </LinearLayout>
 
     <LinearLayout
         android:id="@+id/layoutStatusBar"
+        android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="50dp"
-        android:layout_alignParentBottom="true"
-        android:orientation="vertical"/>
+        android:layout_alignParentBottom="true"/>
 
 </RelativeLayout>

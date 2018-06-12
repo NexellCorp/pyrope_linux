@@ -14,19 +14,7 @@
         android:gravity="center"
         android:paddingTop="10dp"
         android:paddingBottom="10dp"
-        android:layout_weight="0.1"/>
-
-    <TextView
-        android:id="@+id/listview_row_text_button_mode"
-        android:background="@drawable/draw_line_left"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:gravity="center"
-        android:paddingTop="13dp"
-        android:paddingBottom="13dp"
-        android:layout_weight="0.1"
-        />
+        android:layout_weight="0.2"/>
 
     <TextView
         android:id="@+id/listview_row_text_button_text"
@@ -37,33 +25,14 @@
         android:gravity="center"
         android:paddingTop="13dp"
         android:paddingBottom="13dp"
-        android:layout_weight="0.45"/>
-
-    <Button
-        android:id="@+id/listview_row_text_button_remove"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:text="Del"
-        android:layout_weight="0.08"
-        />
-
-    <Button
-        android:id="@+id/listview_row_text_button_update"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:text="update"
-        android:layout_weight="0.14"
-        />
-
+        android:layout_weight="0.65"/>
 
     <Button
         android:id="@+id/listview_row_text_button_button"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:layout_weight="0.13"
+        android:layout_weight="0.15"
         android:text="Apply"/>
 
 </LinearLayout>

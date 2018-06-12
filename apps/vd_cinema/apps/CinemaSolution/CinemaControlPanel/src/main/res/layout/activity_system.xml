@@ -15,74 +15,64 @@
         android:layout_alignParentTop="true"
         android:layout_alignParentStart="true"/>
 
-    <RelativeLayout
-        android:id="@+id/contentParentSystem"
+    <TabHost
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:id="@+id/tabHost"
         android:layout_below="@+id/layoutTitleBar"
         android:layout_above="@+id/layoutStatusBar"
-        android:layout_alignParentStart="true"
-        >
+        android:layout_alignParentStart="true">
 
-        <TabHost
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:id="@+id/tabHost"
-            android:layout_alignParentStart="true">
+            android:orientation="vertical">
 
-            <LinearLayout
+            <TabWidget
+                android:id="@android:id/tabs"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical">
+                android:layout_height="wrap_content" />
 
-                <TabWidget
-                    android:id="@android:id/tabs"
+            <FrameLayout
+                android:id="@android:id/tabcontent"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <RelativeLayout
+                    android:id="@+id/tab_system_ip"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
+                    android:layout_height="match_parent"
+                    android:orientation="vertical">
+                    <include
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        layout="@layout/layout_system_ip" />
+                </RelativeLayout>
 
-                <FrameLayout
-                    android:id="@android:id/tabcontent"
+                <RelativeLayout
+                    android:id="@+id/tab_system_log"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent">
-
-                    <RelativeLayout
-                        android:id="@+id/tab_system_ip"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical">
+                    <include
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical">
-                        <include
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            layout="@layout/layout_system_ip" />
-                    </RelativeLayout>
+                        android:layout_height="wrap_content"
+                        layout="@layout/layout_system_log" />
+                </RelativeLayout>
 
-                    <RelativeLayout
-                        android:id="@+id/tab_system_log"
+                <RelativeLayout
+                    android:id="@+id/tab_system_version"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical">
+                    <include
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical">
-                        <include
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            layout="@layout/layout_system_log" />
-                    </RelativeLayout>
-
-                    <RelativeLayout
-                        android:id="@+id/tab_system_version"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical">
-                        <include
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            layout="@layout/layout_system_version" />
-                    </RelativeLayout>
-                </FrameLayout>
-            </LinearLayout>
-        </TabHost>
-
-    </RelativeLayout>
-
+                        android:layout_height="wrap_content"
+                        layout="@layout/layout_system_version" />
+                </RelativeLayout>
+            </FrameLayout>
+        </LinearLayout>
+    </TabHost>
 
     <LinearLayout
         android:id="@+id/layoutStatusBar"

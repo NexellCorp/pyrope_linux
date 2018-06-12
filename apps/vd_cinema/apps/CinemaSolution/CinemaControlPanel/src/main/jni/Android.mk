@@ -22,10 +22,9 @@ LOCAL_LDFLAGS	+= \
 	-L$(LOCAL_PATH)/lib		\
 	-lnxcinema
 
-#LOCAL_SHARED_LIBRARIES :=     \
-#    liblog                                    \
-#    libandroid
-
+LOCAL_SHARED_LIBRARIES	:=	\
+    liblog					\
+    libandroid
 
 LOCAL_LDFLAGS	+= \
 	-L$(LOCAL_PATH)/lib

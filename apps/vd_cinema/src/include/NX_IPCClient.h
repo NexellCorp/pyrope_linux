@@ -22,6 +22,6 @@
 
 #include <NX_IPCCommand.h>
 
-int32_t NX_IPCSendCommand( uint32_t nCmd, uint8_t** pBuf, uint32_t* nBufSize );
+int32_t NX_IPCSendCommand( int32_t iCmd, uint8_t *pBuf, int32_t *iSize );
 
 #endif	// __NX_IPCCLIENT_H__

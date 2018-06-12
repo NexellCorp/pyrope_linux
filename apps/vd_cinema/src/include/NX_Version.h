@@ -22,8 +22,7 @@
 
 #define NX_VERSION_NAP			"Version 1.0.0"
 #define NX_VERSION_SAP			"Version 1.0.0"
-#define NX_VERSION_IPC_SERVER	"IPC_SER_v1.10.00"
-#define NX_VERSION_IPC_CLIENT	"IPC_CLI_v1.10.00"
-#define APPLICATION				"Version 1.0.0"
+#define NX_VERSION_IPC_SERVER	"IPC_SER_v1.00.00"
+#define NX_VERSION_IPC_CLIENT	"IPC_CLI_v1.00.00"
 
 #endif	// __NX_VERSION_H__

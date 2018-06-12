@@ -12,74 +12,67 @@
         android:layout_alignParentTop="true"
         android:layout_alignParentStart="true"/>
 
-    <RelativeLayout
-        android:id="@+id/contentParentDisplayCheck"
+    <TabHost
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:id="@+id/tabHost"
         android:layout_below="@+id/layoutTitleBar"
         android:layout_above="@+id/layoutStatusBar"
         android:layout_alignParentStart="true">
 
-        <TabHost
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:id="@+id/tabHost"
-            android:layout_alignParentStart="true">
+            android:orientation="vertical">
 
-            <LinearLayout
+            <TabWidget
+                android:id="@android:id/tabs"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical">
+                android:layout_height="wrap_content" />
 
-                <TabWidget
-                    android:id="@android:id/tabs"
+            <FrameLayout
+                android:id="@android:id/tabcontent"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <RelativeLayout
+                    android:id="@+id/tabTestPattern"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
+                    android:layout_height="match_parent"
+                    android:orientation="vertical">
+                    <include
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        layout="@layout/layout_display_check_test_pattern" />
+                </RelativeLayout>
 
-                <FrameLayout
-                    android:id="@android:id/tabcontent"
+                <RelativeLayout
+                    android:id="@+id/tabLedAccumulation"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent">
+                    android:layout_height="match_parent"
+                    android:orientation="vertical">
 
-                    <RelativeLayout
-                        android:id="@+id/tabTestPattern"
+                    <include
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical">
-                        <include
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            layout="@layout/layout_display_check_test_pattern" />
-                    </RelativeLayout>
+                        android:layout_height="wrap_content"
+                        layout="@layout/layout_display_check_accumulation_time" />
+                </RelativeLayout>
 
-                    <RelativeLayout
-                        android:id="@+id/tabLedAccumulation"
+                <RelativeLayout
+                    android:id="@+id/tabAdditionalInformation"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical">
+
+                    <include
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical">
+                        android:layout_height="wrap_content"
+                        layout="@layout/layout_display_check_additional_information" />
+                </RelativeLayout>
+            </FrameLayout>
+        </LinearLayout>
+    </TabHost>
 
-                        <include
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            layout="@layout/layout_display_check_accumulation_time" />
-                    </RelativeLayout>
-
-                    <RelativeLayout
-                        android:id="@+id/tabAdditionalInformation"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical">
-
-                        <include
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            layout="@layout/layout_display_check_additional_information" />
-                    </RelativeLayout>
-                </FrameLayout>
-            </LinearLayout>
-        </TabHost>
-
-    </RelativeLayout>
     <LinearLayout
         android:id="@+id/layoutStatusBar"
         android:orientation="vertical"

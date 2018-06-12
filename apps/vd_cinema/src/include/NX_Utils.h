@@ -25,8 +25,6 @@
 #define	NX_SHELL_MAX_ARG		1024
 #define	NX_SHELL_MAX_STR		64
 
-#define ENABLE_HEX_DUMP			0
-
 uint64_t	NX_GetTickCount( void );
 int32_t		NX_GetRandomValue( int32_t iStartNum, int32_t iEndNum );
 

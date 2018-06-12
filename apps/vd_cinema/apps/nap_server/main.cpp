@@ -32,7 +32,7 @@
 #include <netinet/in.h>
 #include <net/if.h>
 
-#include <CNX_BaseClass.h>
+#include <CNX_Base.h>
 #include <CNX_GpioControl.h>
 
 #include <NX_IPCServer.h>
@@ -410,10 +410,10 @@ static int32_t SecurelinkeEventCallback( void * /*pParam*/, int32_t eventCode, v
 
 	if( eventCode == 0x00000701 && pEvtData != NULL && dataSize != 0 && !bSetVersion )	// CMD_VERSION
 	{
-		char version[64] = { 0x00, };
-		memcpy( version, pEvtData, dataSize );
+		char szVersion[64] = { 0x00, };
+		memcpy( szVersion, pEvtData, dataSize );
 
-		NX_SetSapVersion( (uint8_t*)version, strlen(version) );
+		NX_SetSapVersion( (uint8_t*)szVersion );
 		bSetVersion = true;
 	}
 
@@ -447,7 +447,9 @@ int32_t main( void )
 	register_signal();
 
 	//	Set Version Information
-	NX_SetNapVersion( (uint8_t*)NX_VERSION_NAP, strlen(NX_VERSION_NAP) );
+	char szVersion[1024] = { 0x00, };
+	snprintf( szVersion, sizeof(szVersion), "%s ( %lld )", NX_VERSION_NAP, NX_DATE(__DATE__) );
+	NX_SetNapVersion( (uint8_t*)szVersion );
 
 	//	Start IPC Server
 	if( 0 != NX_IPCServerStart() )
@@ -459,7 +461,7 @@ int32_t main( void )
 	//	Start TMS Server
 	if( 0 != NX_TMSServerStart() )
 	{
-		NxErrMsg("IPC service demon start failed!!!\n");
+		NxErrMsg("TMS demon start failed!!!\n");
 		exit(-1);
 	}
 

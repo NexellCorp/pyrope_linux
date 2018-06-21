@@ -137,6 +137,8 @@ public:
 	CEdit m_EditPfpgaRepeat;
 	CEdit m_EditTamperRepeat;
 	CEdit m_EditNetworkRepeat;
+	CEdit m_EditVersion;
+
 	CSpinButtonCtrl m_SpinTconRepeat;
 	CSpinButtonCtrl m_SpinPfpgaRepeat;
 	CSpinButtonCtrl m_SpinTamperRepeat;

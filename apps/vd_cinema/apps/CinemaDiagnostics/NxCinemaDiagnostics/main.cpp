@@ -34,6 +34,8 @@
 #include <NX_Utils.h>
 #include <NX_SecureLinkServer.h>
 
+#include "version.h"
+
 //------------------------------------------------------------------------------
 #define MAX_TIMEOUT				1000
 
@@ -431,6 +433,7 @@ static void Usage( const char *pAppName )
 	printf("Usage : %s [option]                 \n", pAppName);
 	printf("                                              \n");
 	printf(" Options                                      \n");
+	printf("   -v           : Version Information.        \n");
 	printf("   -c [command] : Command Type.               \n");
 	printf("            0   : I2C0 ( TCON Left )          \n");
 	printf("            1   : I2C1 ( TCON Right )         \n");
@@ -464,12 +467,15 @@ int32_t main( int32_t argc, char *argv[] )
 	info.iCommand = -1;
 	info.iType    = -1;
 
-	while( -1 != (iOpt = getopt(argc, argv, "hc:i:t:")) )
+	while( -1 != (iOpt = getopt(argc, argv, "hvc:i:t:")) )
 	{
 		switch( iOpt )
 		{
 		case 'h':
 			Usage(argv[0]);
+			return 0;
+		case 'v':
+			printf("%s\n", NX_CINEMA_DIAGNOSTICS_VERSION);
 			return 0;
 		case 'c':
 			info.iCommand = atoi(optarg);

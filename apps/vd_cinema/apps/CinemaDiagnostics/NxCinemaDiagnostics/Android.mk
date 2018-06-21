@@ -22,6 +22,6 @@ LOCAL_LDFLAGS += \
 	-L$(VD_TOP)/lib -lnxcinema
 
 LOCAL_MODULE:= NxCinemaDiagnostics
-LOCAL_MODULE_PATH := $(VD_TOP)/bin
+LOCAL_MODULE_PATH := $(LOCAL_PATH)
 
 include $(BUILD_EXECUTABLE)

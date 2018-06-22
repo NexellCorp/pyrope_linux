@@ -64,6 +64,8 @@ LOCAL_SHARED_LIBRARIES += \
 	liblog				\
 	libicuuc
 
+LOCAL_STATIC_LIBRARIES +=
+
 LOCAL_LDFLAGS += \
 	-L$(LOCAL_PATH)/../lib	\
 	-lxml2
@@ -92,36 +94,13 @@ LOCAL_SHARED_LIBRARIES += \
 	liblog				\
 	libicuuc
 
+LOCAL_STATIC_LIBRARIES +=
+
 LOCAL_LDFLAGS += \
 	-L$(LOCAL_PATH)/../lib	\
 	-lxml2
 
 LOCAL_MODULE:= libnxpreference
-LOCAL_MODULE_PATH := $(LOCAL_PATH)/../lib
-
-#
-#	Nexell Hardware Control Library
-#
-include $(CLEAR_VARS)
-
-LOCAL_MODULE_TAGS := optional
-
-LOCAL_SRC_FILES += \
-	eeprom/CNX_EEPRom.cpp		\
-	i2c/CNX_I2C.cpp				\
-	utils/CNX_GpioControl.cpp	\
-	utils/NX_Pwm.cpp			\
-	utils/NX_DbgMsg.cpp
-
-LOCAL_C_INCLUDES += \
-	$(LOCAL_PATH)/include
-
-LOCAL_SHARED_LIBRARIES += \
-	liblog
-
-LOCAL_LDFLAGS +=
-
-LOCAL_MODULE:= libnxhardware
 LOCAL_MODULE_PATH := $(LOCAL_PATH)/../lib
 
 include $(BUILD_SHARED_LIBRARY)

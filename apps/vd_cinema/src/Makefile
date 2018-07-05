@@ -13,9 +13,7 @@ CPPFLAGS+= -fpic -DARM_11
 
 INCLUDE += \
 	-I $(VD_CINEMA_TOP)/src/include \
-	-I $(VD_CINEMA_TOP)/src/ipc \
 	-I $(VD_CINEMA_TOP)/src/uart \
-	-I $(VD_CINEMA_TOP)/src/i2c \
 	-I $(VD_CINEMA_TOP)/src/gdc \
 	-I $(VD_CINEMA_TOP)/src/utils
 
@@ -27,20 +25,11 @@ LIBRARY	+= -lstdc++ -lpthread
 COBJS	:=
 CPPOBJS	:=
 
-CPPOBJS +=	\
-	ipc/ipc_protocol.o \
-	ipc/NX_IPCClient.o \
-	ipc/NX_IPCServer.o
-
 # Add UART Sources
 CPPOBJS += \
 	uart/CNX_Uart.o	\
 	uart/NX_UartProtocol.o \
 	uart/NX_SecureLinkServer.o
-
-# Add I2C Sources
-CPPOBJS += \
-	i2c/CNX_I2C.o
 
 # Add Utils Sources
 CPPOBJS += \
@@ -49,7 +38,6 @@ CPPOBJS += \
 	utils/ping.o \
 	utils/NX_DbgMsg.o \
 	utils/NX_Queue.o \
-	utils/NX_Pwm.o \
 	utils/CNX_GpioControl.o \
 	utils/SockUtils.o
 
@@ -58,7 +46,6 @@ CPPOBJS +=	\
 	gdc/CNX_OpenSSL.o		\
 	gdc/NX_GDCServer.o		\
 	gdc/NX_GDCClient.o
-
 
 LIBNAME	:= libnxcinema_linux
 TARGET	:= $(LIBNAME).so

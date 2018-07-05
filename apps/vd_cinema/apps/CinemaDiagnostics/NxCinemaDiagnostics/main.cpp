@@ -37,10 +37,26 @@
 #include "version.h"
 
 //------------------------------------------------------------------------------
+#define NX_RET_PASS				"PASS"
+#define NX_RET_FAIL				"FAIL"
+
+//------------------------------------------------------------------------------
 #define MAX_TIMEOUT				1000
 
 #define TCON_REG_VALIDATE		0x0170
 #define PFPGA_REG_VALIDATE		0x01C2
+
+//------------------------------------------------------------------------------
+#define NX_DBG_VBS			0
+#define	NX_DBG_INFO			1
+
+static int32_t gNxDebugLevel = NX_DBG_INFO;
+
+#define NxDbgMsg(A, ...)	do {								\
+								if( gNxDebugLevel <= A ) {		\
+									printf(__VA_ARGS__);		\
+								}								\
+							} while(0)
 
 //------------------------------------------------------------------------------
 enum {
@@ -142,24 +158,38 @@ static int32_t DiagnosticsTconLeft( __attribute__((unused)) void *pObj )
 {
 	int32_t iPort = 0;
 	uint8_t iSlave = 0x09;
-	int32_t iWriteData, iReadData = 0x0000;
+	uint16_t iReg = TCON_REG_VALIDATE;
+	uint16_t iWriteData;
+	int32_t iReadData = 0x0000;
 
 	CNX_I2C i2c( iPort );
 	if( 0 > i2c.Open() )
+	{
+		NxDbgMsg( NX_DBG_VBS, "> Fail, i2c open.\n" );
 		goto ERROR;
+	}
 
 	iWriteData = (uint16_t)NX_GetRandomValue( 0x0000, 0x7FFF );
-	if( 0 > i2c.Write( iSlave, TCON_REG_VALIDATE, (uint16_t*)&iWriteData, 1 ) )
+	if( 0 > i2c.Write( iSlave, iReg, (uint16_t*)&iWriteData, 1 ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "> Fail, i2c write. ( port: %d, slave: 0x%02X, reg: 0x%04X, dat: 0x%04X )\n",
+			iPort, iSlave, iReg, iWriteData );
 		goto ERROR;
+	}
 
-	if( 0 > (iReadData = i2c.Read( iSlave, TCON_REG_VALIDATE )) )
+	if( 0 > (iReadData = i2c.Read( iSlave, iReg )) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "> Fail, i2c read. ( port: %d, slave: 0x%02X, reg: 0x%04X )\n",
+			iPort, iSlave, iReg );
 		goto ERROR;
+	}
 
-	printf( "%s\n", (iWriteData == iReadData) ? "PASS" : "FAIL" );
+	NxDbgMsg( NX_DBG_VBS, "> WriteData( 0x%04X ), ReadData( 0x%04X )\n", iWriteData, (uint16_t)iReadData );
+	NxDbgMsg( NX_DBG_INFO, "%s\n", (iWriteData == (uint16_t)iReadData) ? NX_RET_PASS : NX_RET_FAIL );
 	return 0;
 
 ERROR:
-	printf( "FAIL\n" );
+	NxDbgMsg( NX_DBG_INFO, "%s\n", NX_RET_FAIL );
 	return -1;
 }
 
@@ -168,24 +198,38 @@ static int32_t DiagnosticsTconRight( __attribute__((unused)) void *pObj )
 {
 	int32_t iPort = 1;
 	uint8_t iSlave = 0x09;
-	int32_t iWriteData, iReadData = 0x0000;
+	uint16_t iReg = TCON_REG_VALIDATE;
+	uint16_t iWriteData;
+	int32_t iReadData = 0x0000;
 
 	CNX_I2C i2c( iPort );
 	if( 0 > i2c.Open() )
+	{
+		NxDbgMsg( NX_DBG_VBS, "> Fail, i2c open.\n" );
 		goto ERROR;
+	}
 
 	iWriteData = (uint16_t)NX_GetRandomValue( 0x0000, 0x7FFF );
-	if( 0 > i2c.Write( iSlave, TCON_REG_VALIDATE, (uint16_t*)&iWriteData, 1 ) )
+	if( 0 > i2c.Write( iSlave, iReg, (uint16_t*)&iWriteData, 1 ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "> Fail, i2c write. ( port: %d, slave: 0x%02X, reg: 0x%04X, dat: 0x%04X )\n",
+			iPort, iSlave, iReg, iWriteData );
 		goto ERROR;
+	}
 
-	if( 0 > (iReadData = i2c.Read( iSlave, TCON_REG_VALIDATE )) )
+	if( 0 > (iReadData = i2c.Read( iSlave, iReg )) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "> Fail, i2c read. ( port: %d, slave: 0x%02X, reg: 0x%04X )\n",
+			iPort, iSlave, iReg );
 		goto ERROR;
+	}
 
-	printf( "%s\n", (iWriteData == iReadData) ? "PASS" : "FAIL" );
+	NxDbgMsg( NX_DBG_VBS, "> WriteData( 0x%04X ), ReadData( 0x%04X )\n", iWriteData, (uint16_t)iReadData );
+	NxDbgMsg( NX_DBG_INFO, "%s\n", (iWriteData == (uint16_t)iReadData) ? NX_RET_PASS : NX_RET_FAIL );
 	return 0;
 
 ERROR:
-	printf( "FAIL\n" );
+	NxDbgMsg( NX_DBG_INFO, "%s\n", NX_RET_FAIL );
 	return -1;
 }
 
@@ -194,26 +238,38 @@ static int32_t DiagnosticsPfpga( __attribute__((unused)) void *pObj )
 {
 	int32_t iPort = 2;
 	uint8_t iSlave = 0x0A;
-	int32_t iWriteData, iReadData = 0x0000;
+	uint16_t iReg = PFPGA_REG_VALIDATE;
+	uint16_t iWriteData;
+	int32_t iReadData = 0x0000;
 
 	CNX_I2C i2c( iPort );
 	if( 0 > i2c.Open() )
-		goto ERROR;
-
-	iWriteData = (uint16_t)NX_GetRandomValue( 0x0000, 0xFFFF );
-	if( 0 > i2c.Write( iSlave, PFPGA_REG_VALIDATE, (uint16_t*)&iWriteData, 1 ) ) {
-		printf("0x%02X, 0x%04X\n", iSlave, PFPGA_REG_VALIDATE);
+	{
+		NxDbgMsg( NX_DBG_VBS, "> Fail, i2c open.\n" );
 		goto ERROR;
 	}
 
-	if( 0 > (iReadData = i2c.Read( iSlave, PFPGA_REG_VALIDATE )) )
+	iWriteData = (uint16_t)NX_GetRandomValue( 0x0000, 0xFFFF );
+	if( 0 > i2c.Write( iSlave, iReg, (uint16_t*)&iWriteData, 1 ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "> Fail, i2c write. ( port: %d, slave: 0x%02X, reg: 0x%04X, dat: 0x%04X )\n",
+			iPort, iSlave, iReg, iWriteData );
 		goto ERROR;
+	}
 
-	printf( "%s\n", (iWriteData == iReadData) ? "PASS" : "FAIL" );
+	if( 0 > (iReadData = i2c.Read( iSlave, iReg )) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "> Fail, i2c read. ( port: %d, slave: 0x%02X, reg: 0x%04X )\n",
+			iPort, iSlave, iReg );
+		goto ERROR;
+	}
+
+	NxDbgMsg( NX_DBG_VBS, "> WriteData( 0x%04X ), ReadData( 0x%04X )\n", iWriteData, (uint16_t)iReadData );
+	NxDbgMsg( NX_DBG_INFO, "%s\n", (iWriteData == (uint16_t)iReadData) ? NX_RET_PASS : NX_RET_FAIL );
 	return 0;
 
 ERROR:
-	printf( "FAIL\n" );
+	NxDbgMsg( NX_DBG_INFO, "%s\n", NX_RET_FAIL );
 	return -1;
 }
 
@@ -231,7 +287,7 @@ static int32_t DiagnosticsEEPRom( void *pObj )
 	CNX_EEPRomDataParser parser;
 	TCON_EEPROM_INFO *pTconInfo = NULL;
 
-	int32_t iAddr = 0, iReadSize;
+	int32_t iAddr = 0, iReadSize, iTotalSize;
 	int32_t iRemainSize;
 	uint8_t *pPtr;
 
@@ -239,63 +295,50 @@ static int32_t DiagnosticsEEPRom( void *pObj )
 	uint8_t version[TCON_EEPROM_MAX_VERSION_SIZE];
 
 	if( 0 > pInfo->iType )
+	{
+		NxDbgMsg( NX_DBG_VBS, "> Fail, EEPRom Access Type. ( %d )\n", pInfo->iType );
 		goto ERROR;
-
-	if( 0 == pInfo->iType )
-	{
-		iAddr       = 0;
-		pPtr        = buf;
-		iRemainSize = TCON_EEPROM_DATA_SIZE;
-
-		while( 0 < iRemainSize )
-		{
-			if( iRemainSize > TCON_EEPROM_PAGE_SIZE ) iReadSize = TCON_EEPROM_PAGE_SIZE;
-			else iReadSize = iRemainSize;
-
-			if( 0 > eeprom.Read( iAddr, pPtr, iReadSize) )
-				goto ERROR;
-
-			iAddr		+= iReadSize;
-			pPtr		+= iReadSize;
-			iRemainSize -= iReadSize;
-
-			// fprintf(stdout, "EEPRom Read. ( 0x%08X / 0x%08x )\r", iAddr, TCON_EEPROM_DATA_SIZE);
-			// fflush(stdout);
-		}
-		// printf("\nEEPRom Read Done. ( %d bytes )\n", TCON_EEPROM_DATA_SIZE);
 	}
-	else
+
+	iTotalSize = (0 == pInfo->iType) ? TCON_EEPROM_DATA_SIZE : TCON_EEPROM_VERSION_SIZE;
+
+	iAddr       = 0;
+	pPtr        = buf;
+	iRemainSize = iTotalSize;
+
+	while( 0 < iRemainSize )
 	{
-		iAddr       = 0;
-		pPtr        = buf;
-		iRemainSize = TCON_EEPROM_VERSION_SIZE;
+		if( iRemainSize > TCON_EEPROM_PAGE_SIZE ) iReadSize = TCON_EEPROM_PAGE_SIZE;
+		else iReadSize = iRemainSize;
 
-		while( 0 < iRemainSize )
+		if( 0 > eeprom.Read( iAddr, pPtr, iReadSize) )
 		{
-			if( iRemainSize > TCON_EEPROM_PAGE_SIZE ) iReadSize = TCON_EEPROM_PAGE_SIZE;
-			else iReadSize = iRemainSize;
-
-			if( 0 > eeprom.Read( iAddr, pPtr, iReadSize) )
-				goto ERROR;
-
-			iAddr		+= iReadSize;
-			pPtr		+= iReadSize;
-			iRemainSize -= iReadSize;
-
-			// fprintf(stdout, "EEPRom Read. ( 0x%08X / 0x%08x )\r", iAddr, TCON_EEPROM_DATA_SIZE);
-			// fflush(stdout);
+			NxDbgMsg( NX_DBG_VBS, "> Fail, EEPRom Read().\n" );
+			goto ERROR;
 		}
-		// printf("\nEEPRom Read Done. ( %d bytes )\n", TCON_EEPROM_VERSION_SIZE);
+
+		iAddr		+= iReadSize;
+		pPtr		+= iReadSize;
+		iRemainSize -= iReadSize;
+
+		NxDbgMsg( NX_DBG_VBS, "> EEPRom Read. ( 0x%08X / 0x%08x )\n", iAddr, iTotalSize);
 	}
+	NxDbgMsg( NX_DBG_VBS, "> EEPRom Read Done. ( %d bytes )\n", iTotalSize );
 
 	if( 0 > parser.Init( buf, TCON_EEPROM_VERSION_SIZE ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "> Fail, EEPRomParser Init().\n" );
 		goto ERROR;
+	}
 
 	if( 0 > parser.ParseVersion( &pTconInfo ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "> Fail, EEPRomParser ParseVersion().\n" );
 		goto ERROR;
+	}
 
 	memcpy( version, pTconInfo->version, TCON_EEPROM_MAX_VERSION_SIZE );
-	printf("%s\n", version);
+	NxDbgMsg( NX_DBG_INFO, "%s ( %s )\n", NX_RET_PASS, version );
 
 	parser.Deinit();
 	return 0;
@@ -303,7 +346,7 @@ static int32_t DiagnosticsEEPRom( void *pObj )
 ERROR:
 	parser.Deinit();
 
-	printf("FAIL\n");
+	NxDbgMsg( NX_DBG_INFO, "%s\n", NX_RET_FAIL );
 	return -1;
 }
 
@@ -320,7 +363,10 @@ static int32_t DiagnosticsMarriageTamper( __attribute__((unused)) void *pObj )
 	char buf[128];
 
 	if( 0 > (iSock = socket(AF_UNIX, SOCK_STREAM, 0)) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "> Fail, socket(). ( %s )\n", pSockName );
 		goto ERROR;
+	}
 
 	stAddr.sun_family  = AF_UNIX;
 	stAddr.sun_path[0] = '\0';	// for abstract namespace
@@ -328,35 +374,45 @@ static int32_t DiagnosticsMarriageTamper( __attribute__((unused)) void *pObj )
 	iLen = 1 + strlen(pSockName) + offsetof(struct sockaddr_un, sun_path);
 
 	if( 0 > bind(iSock, (struct sockaddr *)&stAddr, iLen) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "> Fail, bind().\n" );
 		goto ERROR;
+	}
 
 	if( 0 > listen(iSock, 5) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "> Fail, listen().\n" );
 		goto ERROR;
+	}
 
 	iClnSock = Accept( iSock, (struct sockaddr*)&stAddr, (socklen_t*)&iLen );
 	if( 0 > iClnSock )
+	{
+		NxDbgMsg( NX_DBG_VBS, "> Fail, Accept().\n" );
 		goto ERROR;
+	}
 
 	memset( buf, 0x00, sizeof(buf) );
 	if( 0 > Read( iClnSock, buf, sizeof(buf) ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "> Fail, Read().\n" );
 		goto ERROR;
+	}
 
 	if( !strncmp( buf, pResult, strlen(pResult)) )
+	{
 		bPass = true;
-
-	printf("%s\n", bPass ? "PASS" : "FAIL");
-	return 0;
+	}
 
 ERROR:
-	printf("FAIL\n");
-
 	if( 0 < iClnSock )
 	{
 		close( iClnSock );
 		iClnSock = -1;
 	}
 
-	return -1;
+	NxDbgMsg( NX_DBG_INFO, "%s\n", bPass ? NX_RET_PASS : NX_RET_FAIL );
+	return bPass ? 0 : -1;
 }
 
 //------------------------------------------------------------------------------
@@ -372,7 +428,10 @@ static int32_t DiagnosticsDoorTamper( __attribute__((unused)) void *pObj )
 	char buf[128];
 
 	if( 0 > (iSock = socket(AF_UNIX, SOCK_STREAM, 0)) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "> Fail, socket(). ( %s )\n", pSockName );
 		goto ERROR;
+	}
 
 	stAddr.sun_family  = AF_UNIX;
 	stAddr.sun_path[0] = '\0';	// for abstract namespace
@@ -380,35 +439,47 @@ static int32_t DiagnosticsDoorTamper( __attribute__((unused)) void *pObj )
 	iLen = 1 + strlen(pSockName) + offsetof(struct sockaddr_un, sun_path);
 
 	if( 0 > bind(iSock, (struct sockaddr *)&stAddr, iLen) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "> Fail, bind().\n" );
 		goto ERROR;
+	}
 
 	if( 0 > listen(iSock, 5) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "> Fail, listen().\n" );
 		goto ERROR;
+	}
 
 	iClnSock = Accept( iSock, (struct sockaddr*)&stAddr, (socklen_t*)&iLen );
 	if( 0 > iClnSock )
+	{
+		NxDbgMsg( NX_DBG_VBS, "> Fail, Accept().\n" );
 		goto ERROR;
+	}
 
 	memset( buf, 0x00, sizeof(buf) );
 	if( 0 > Read( iClnSock, buf, sizeof(buf) ) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "> Fail, Read().\n" );
 		goto ERROR;
+	}
 
 	if( !strncmp( buf, pResult, strlen(pResult)) )
+	{
 		bPass = true;
+	}
 
 	printf("%s\n", bPass ? "PASS" : "FAIL");
-	return 0;
 
 ERROR:
-	printf("FAIL\n");
-
 	if( 0 < iClnSock )
 	{
 		close( iClnSock );
 		iClnSock = -1;
 	}
 
-	return -1;
+	NxDbgMsg( NX_DBG_INFO, "%s\n", bPass ? NX_RET_PASS : NX_RET_FAIL );
+	return bPass ? 0 : -1;
 }
 
 //------------------------------------------------------------------------------
@@ -418,12 +489,15 @@ static int32_t DiagnosticsNetwork( void *pObj )
 	int32_t iRet = -1;
 
 	if( 0 == strlen(pInfo->szIpAddr) )
+	{
+		NxDbgMsg( NX_DBG_INFO, "Fail, IP Address. ( %s )\n", pInfo->szIpAddr );
 		goto ERROR;
+	}
 
 	iRet = ping( pInfo->szIpAddr );
 
 ERROR:
-	printf("%s\n", !iRet ? "PASS" : "FAIL");
+	NxDbgMsg( NX_DBG_INFO, "%s\n", !iRet ? "PASS" : "FAIL" );
 	return iRet;
 }
 
@@ -444,6 +518,8 @@ static void Usage( const char *pAppName )
 	printf("            6   : Network                     \n");
 	printf("   -i [ip addr] : IP Address for Network Test.\n");
 	printf("   -t [type]    : Type for EEPRom Test        \n");
+	printf("   -d [level]   : Change Debug Level. (0 - 1) \n");
+	printf("   -l [loop]    : Repeat Number. ( def: 1 )   \n");
 	printf("                                              \n");
 }
 
@@ -452,6 +528,7 @@ int32_t main( int32_t argc, char *argv[] )
 {
 	NX_DIAG_INFO info;
 
+	int32_t iLoopCount = 1;
 	int32_t iOpt;
 	int32_t (*pDiagnosticsFunc[NX_DIAG_MAX])( void *pObj );
 
@@ -467,7 +544,7 @@ int32_t main( int32_t argc, char *argv[] )
 	info.iCommand = -1;
 	info.iType    = -1;
 
-	while( -1 != (iOpt = getopt(argc, argv, "hvc:i:t:")) )
+	while( -1 != (iOpt = getopt(argc, argv, "hvc:i:t:d:l:")) )
 	{
 		switch( iOpt )
 		{
@@ -486,14 +563,26 @@ int32_t main( int32_t argc, char *argv[] )
 		case 't':
 			info.iType = atoi(optarg);
 			break;
+		case 'd':
+			gNxDebugLevel = atoi(optarg);
+			break;
+		case 'l':
+			iLoopCount = atoi(optarg);
+			break;
 		default	:
 			break;
 		}
 	}
 
 	if( 0 > info.iCommand )
+	{
 		return -1;
+	}
 
-	pDiagnosticsFunc[info.iCommand]( (void*)&info );
+	for( int32_t i = 0; i < iLoopCount; i++ )
+	{
+		pDiagnosticsFunc[info.iCommand]( (void*)&info );
+	}
+
 	return 0;
 }

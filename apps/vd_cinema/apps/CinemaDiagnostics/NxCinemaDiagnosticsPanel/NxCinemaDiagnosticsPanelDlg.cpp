@@ -59,6 +59,7 @@ void CNxCinemaDiagnosticsPanelDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_BTN_RUN, m_BtnRun);
 	DDX_Control(pDX, IDC_BTN_WORKING_OPEN, m_BtnWorkingOpen);
 	DDX_Control(pDX, IDC_BTN_WORKING_SELECT, m_BtnWorkingSelect);
+	DDX_Control(pDX, IDC_BTN_CLEAR, m_BtnClear);
 	DDX_Control(pDX, IDC_EDIT_STATUS_SAP, m_EditStatusSap);
 	DDX_Control(pDX, IDC_EDIT_SERIAL, m_EditSerial);
 	DDX_Control(pDX, IDC_EDIT_PRODUCT, m_EditProduct);
@@ -92,12 +93,13 @@ BEGIN_MESSAGE_MAP(CNxCinemaDiagnosticsPanelDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_WM_CLOSE()
-	ON_BN_CLICKED(IDC_BTN_TEST, &CNxCinemaDiagnosticsPanelDlg::OnBnClickedBtnTest)
 	ON_BN_CLICKED(IDC_BTN_WORKING_SELECT, &CNxCinemaDiagnosticsPanelDlg::OnBnClickedBtnWorkingSelect)
 	ON_BN_CLICKED(IDC_BTN_WORKING_OPEN, &CNxCinemaDiagnosticsPanelDlg::OnBnClickedBtnWorkingOpen)
+	ON_BN_CLICKED(IDC_BTN_TEST, &CNxCinemaDiagnosticsPanelDlg::OnBnClickedBtnTest)
 	ON_BN_CLICKED(IDC_BTN_RUN, &CNxCinemaDiagnosticsPanelDlg::OnBnClickedBtnRun)
 	ON_BN_CLICKED(IDC_BTN_RESTART_APP, &CNxCinemaDiagnosticsPanelDlg::OnBnClickedBtnRestartApp)
 	ON_BN_CLICKED(IDC_BTN_REBOOT, &CNxCinemaDiagnosticsPanelDlg::OnBnClickedBtnReboot)
+	ON_BN_CLICKED(IDC_BTN_CLEAR, &CNxCinemaDiagnosticsPanelDlg::OnBnClickedBtnClear)
 END_MESSAGE_MAP()
 
 
@@ -109,11 +111,18 @@ END_MESSAGE_MAP()
 
 //
 //	Version Information
+//
+//	* Version 0.2.0 at 2018.07.03
+//	  -. fixed bug related working directory. ( the working directory is default directory when directory is not exist. )
+//	  -. add error case. ( device not found )
+//    -. add debug options.
+//	  -. add to skip test. ( repeat number is zero, select none menu )
+//
 //	* Version 0.1.0 at 2018.06.12
-//		- First Draft.
+//	  -. First Draft.
 //
 
-#define NX_DIAG_VERSION		L"v0.1.0"
+#define NX_DIAG_VERSION		L"v0.2.0"
 
 BOOL CNxCinemaDiagnosticsPanelDlg::OnInitDialog()
 {
@@ -146,11 +155,8 @@ BOOL CNxCinemaDiagnosticsPanelDlg::OnInitDialog()
 
 	// TODO: 여기에 추가 초기화 작업을 추가합니다.
 	CString szTitle;
-	this->GetWindowTextW( szTitle );
-	
-	szTitle += L" ";
-	szTitle += NX_DIAG_VERSION;
-	this->SetWindowText( szTitle);
+	this->GetText( this, szTitle );
+	this->SetText( this, L"%s %s", szTitle, NX_DIAG_VERSION );
 
 	m_ToolTip.Create( this );
 
@@ -268,24 +274,19 @@ void CNxCinemaDiagnosticsPanelDlg::OnClose()
 	CDialogEx::OnClose();
 }
 
-void CNxCinemaDiagnosticsPanelDlg::OnBnClickedBtnTest()
-{
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-}
-
 #include "BrowseFolderDialog.h"
 
 void CNxCinemaDiagnosticsPanelDlg::OnBnClickedBtnWorkingSelect()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 	CString szWorking;
-	m_EditWorking.GetWindowTextW( szWorking );
-	
+	GetText( &m_EditWorking, szWorking );
+
 	CBrowseFolderDialog dlg;
 	if( dlg.DoModal(szWorking) == IDOK )
 	{
 		dlg.GetSelectStr( szWorking );
-		m_EditWorking.SetWindowTextW( szWorking );
+		SetText( &m_EditWorking, szWorking );
 		
 		m_EditWorking.SetSel( 0, -1 );
 		m_EditWorking.SetSel( -1, -1 );
@@ -297,15 +298,27 @@ void CNxCinemaDiagnosticsPanelDlg::OnBnClickedBtnWorkingOpen()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 	CString szWorking;
-	m_EditWorking.GetWindowTextW( szWorking );
+	GetText( &m_EditWorking, szWorking );
 
 	ShellExecute( NULL, L"open", L"explorer.exe",  szWorking, NULL, SW_SHOW ); 
 }
 
-void CNxCinemaDiagnosticsPanelDlg::OnBnClickedBtnRun()
+void CNxCinemaDiagnosticsPanelDlg::OnBnClickedBtnTest()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+
+	ClearEditControl();
+	LogClear();
+
+	Run( &RunTest, this );
+}
+
+void CNxCinemaDiagnosticsPanelDlg::OnBnClickedBtnRun()    
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 	ClearEditControl();
+	LogClear();
+
 	Run( &RunDiagnostics, this );
 }
 
@@ -313,6 +326,7 @@ void CNxCinemaDiagnosticsPanelDlg::OnBnClickedBtnRestartApp()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 	ClearEditControl();
+
 	Run( &RunRestartApplication, this );
 }
 
@@ -320,10 +334,28 @@ void CNxCinemaDiagnosticsPanelDlg::OnBnClickedBtnReboot()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 	ClearEditControl();
+
 	Run( &RunReboot, this );
 }
 
-BOOL CNxCinemaDiagnosticsPanelDlg::Execute( CString szCommand, CString *pResult )
+void CNxCinemaDiagnosticsPanelDlg::OnBnClickedBtnClear()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	LogClear();
+}
+
+BOOL CNxCinemaDiagnosticsPanelDlg::Execute( LPCTSTR szFormat, ... )
+{
+	CString szTemp, szResult;
+	va_list args;
+	va_start( args, szFormat );
+	szTemp.FormatV( szFormat, args );
+	va_end( args );
+
+	return Execute( szResult, szTemp );
+}
+
+BOOL CNxCinemaDiagnosticsPanelDlg::Execute( CString &szResult, LPCTSTR szFormat, ... )
 {
 	SECURITY_ATTRIBUTES securityAttr;
 	ZeroMemory( &securityAttr, sizeof(SECURITY_ATTRIBUTES) );
@@ -346,21 +378,29 @@ BOOL CNxCinemaDiagnosticsPanelDlg::Execute( CString szCommand, CString *pResult 
 	startupInfo.hStdOutput = hWritePipe;
 	startupInfo.hStdError = hWritePipe;
 
+	CString szTemp;
+	va_list args;
+	va_start( args, szFormat );
+	szTemp.FormatV( szFormat, args );
+	va_end( args );
+
 	TCHAR tcPath[MAX_PATH];
 	GetModuleFileName( NULL, tcPath, MAX_PATH );
 
-	CString szFullCommand;
-	szFullCommand.Format( L"%s", tcPath );
-	szFullCommand = szFullCommand.Left( szFullCommand.ReverseFind('\\') );
-	szFullCommand += L"\\bin\\";
-	szFullCommand += szCommand;
+	CString szCommand;
+	szCommand.Format( L"%s", tcPath );
+	szCommand = szCommand.Left( szCommand.ReverseFind('\\') );
+	szCommand += L"\\bin\\";
+	szCommand += szTemp;
 
-	int iRet = CreateProcess( NULL, (TCHAR*)(LPCTSTR)szFullCommand, NULL, NULL, TRUE, 0, NULL, NULL, &startupInfo, &processInfo );
+	int iRet = CreateProcess( NULL, (TCHAR*)(LPCTSTR)szCommand, NULL, NULL, TRUE, 0, NULL, NULL, &startupInfo, &processInfo );
 	if( FALSE == iRet )
 	{
 		return FALSE;
 	}
 
+	szResult = L"";
+	
 	do {
 		CHAR result[1024];
 		DWORD dwTotalByteAvail = 0, dwRead = 0, dwLeftThisMessage = 0;
@@ -374,10 +414,9 @@ BOOL CNxCinemaDiagnosticsPanelDlg::Execute( CString szCommand, CString *pResult 
 				if( TRUE == bSuccess )
 				{
 					result[dwRead] = NULL;
-					CString szTemp(result);
 
-					if( pResult != NULL ) 
-						*pResult += szTemp;
+					CString szTemp(result);
+					szResult += szTemp;
 				}
 			}
 		}
@@ -406,21 +445,28 @@ BOOL CNxCinemaDiagnosticsPanelDlg::IsConnected( CString szProduct )
 
 BOOL CNxCinemaDiagnosticsPanelDlg::IsPass( CString szResult )
 {
-	szResult.Trim();
-	szResult.MakeUpper();
-	return ( 0 <= szResult.Find( L"PASS" )) ? TRUE : FALSE;
+	return ( 0 <= szResult.Find( NX_RET_PASS )) ? TRUE : FALSE;
 }
 
 BOOL CNxCinemaDiagnosticsPanelDlg::IsFail( CString szResult )
 {
-	szResult.Trim();
-	szResult.MakeUpper();
-	return ( 0 <= szResult.Find( L"FAIL" )) ? TRUE : FALSE;
+	return ( 0 <= szResult.Find( NX_RET_FAIL )) ? TRUE : FALSE;
+}
+
+BOOL CNxCinemaDiagnosticsPanelDlg::IsError( CString szResult )
+{
+	return ( 0 <= szResult.Find( NX_RET_ERROR )) ? TRUE : FALSE;
+}
+
+BOOL CNxCinemaDiagnosticsPanelDlg::IsDebug()
+{
+	return (GetCheckedRadioButton( IDC_RADIO_DEBUG_ON, IDC_RADIO_DEBUG_OFF ) == IDC_RADIO_DEBUG_ON);
 }
 
 void CNxCinemaDiagnosticsPanelDlg::EnableControl( BOOL bEnable )
 {
 	m_BtnRun.EnableWindow( bEnable );
+	m_BtnClear.EnableWindow( bEnable );
 	m_BtnRestartApp.EnableWindow( bEnable );
 	m_BtnReboot.EnableWindow( bEnable );
 	m_BtnWorkingSelect.EnableWindow( bEnable );
@@ -432,6 +478,9 @@ void CNxCinemaDiagnosticsPanelDlg::EnableControl( BOOL bEnable )
 	m_SpinPfpgaRepeat.EnableWindow( bEnable );
 	GetDlgItem(IDC_RADIO_EEPROM_ALL)->EnableWindow( bEnable );
 	GetDlgItem(IDC_RADIO_EEPROM_VERSION)->EnableWindow( bEnable );
+	GetDlgItem(IDC_RADIO_EEPROM_NONE)->EnableWindow( bEnable );
+	GetDlgItem(IDC_RADIO_DEBUG_ON)->EnableWindow( bEnable );
+	GetDlgItem(IDC_RADIO_DEBUG_OFF)->EnableWindow( bEnable );
 	m_EditTamperRepeat.EnableWindow( bEnable );
 	m_SpinTamperRepeat.EnableWindow( bEnable );
 	m_IpAddr.EnableWindow( bEnable );
@@ -441,34 +490,63 @@ void CNxCinemaDiagnosticsPanelDlg::EnableControl( BOOL bEnable )
 
 void CNxCinemaDiagnosticsPanelDlg::ClearEditControl()
 {
-	m_EditStatusSap.SetWindowTextW(L"");
-	m_EditProduct.SetWindowTextW(L"");
-	m_EditSerial.SetWindowTextW(L"");
-	m_EditCertificateText.SetWindowTextW(L"");
-	m_EditCertificate.SetWindowTextW(L"");
+	SetText( &m_EditStatusSap,		L"" );
+	SetText( &m_EditProduct,		L"" );
+	SetText( &m_EditSerial,			L"" );
+	SetText( &m_EditCertificateText,L"" );
+	SetText( &m_EditCertificate,	L"" );
 
-	m_EditStatusNap.SetWindowTextW(L"");
-	m_EditTconLeft.SetWindowTextW(L"");
-	m_EditTconRight.SetWindowTextW(L"");
-	m_EditPfpga.SetWindowTextW(L"");
-	m_EditEEPRom.SetWindowTextW(L"");
-	m_EditDoorTamper.SetWindowTextW(L"");
-	m_EditMarriageTamper.SetWindowTextW(L"");
-	m_EditNetwork.SetWindowTextW(L"");
+	SetText( &m_EditStatusNap,		L"" );
+	SetText( &m_EditTconLeft,		L"" );
+	SetText( &m_EditTconRight,		L"" );
+	SetText( &m_EditPfpga,			L"" );
+	SetText( &m_EditEEPRom,			L"" );
+	SetText( &m_EditDoorTamper,		L"" );
+	SetText( &m_EditMarriageTamper, L"" );
+	SetText( &m_EditNetwork,		L"" );
 }
 
-void CNxCinemaDiagnosticsPanelDlg::LogPrint( const CString& szMsg, ... )
+void CNxCinemaDiagnosticsPanelDlg::SetText( CWnd *pWnd, LPCTSTR szFormat, ... )
 {
-	CString szLog;
-	va_list valist;
-	va_start( valist, szMsg );
-	szLog.Format( szMsg, valist );
-	va_end(valist);
+	CString szText;
+	va_list args;
+	va_start( args, szFormat );
+	szText.FormatV( szFormat, args );
+	va_end( args );
+
+	if( pWnd ) pWnd->SetWindowTextW( szText );
+}
+
+void CNxCinemaDiagnosticsPanelDlg::GetText( CWnd *pWnd, CString &szResult )
+{
+	if( pWnd ) pWnd->GetWindowTextW( szResult );
+}
+
+void CNxCinemaDiagnosticsPanelDlg::LogPrint( LPCTSTR szFormat, ... )
+{
+	CString szTemp;
+
+	va_list args;
+	va_start( args, szFormat );
+	szTemp.FormatV( szFormat, args );
+	va_end( args );
 
 	int nLength = m_EditLog.GetWindowTextLengthW();
 	m_EditLog.SetSel( nLength, nLength );
-	m_EditLog.ReplaceSel( szLog + L"\r\n" );
+	m_EditLog.ReplaceSel( szTemp );
 	m_EditLog.LineScroll( m_EditLog.GetLineCount() );
+}
+
+void CNxCinemaDiagnosticsPanelDlg::LogPrint( BOOL bEnable, LPCTSTR szFormat, ... )
+{
+	CString szTemp;
+
+	va_list args;
+	va_start( args, szFormat );
+	szTemp.FormatV( szFormat, args );
+	va_end( args );
+
+	if( bEnable ) LogPrint( szTemp );
 }
 
 void CNxCinemaDiagnosticsPanelDlg::LogClear()
@@ -489,6 +567,7 @@ void CNxCinemaDiagnosticsPanelDlg::LoadConfig()
 	szConfig = szConfig.Left( szConfig.ReverseFind('.') );
 	szConfig += L".ini";
 
+	int iValue;
 	TCHAR tcValue[MAX_PATH];
 
 	CString szDefaultPath;
@@ -496,23 +575,23 @@ void CNxCinemaDiagnosticsPanelDlg::LoadConfig()
 	szDefaultPath = szDefaultPath.Left( szDefaultPath.ReverseFind('\\') );
 
 	GetPrivateProfileString( L"app",	L"working",			szDefaultPath,		tcValue,	MAX_PATH,	szConfig );
-	m_EditWorking.SetWindowTextW( (LPCTSTR)tcValue );
+	SetText( &m_EditWorking, (INVALID_FILE_ATTRIBUTES == GetFileAttributes( (LPCTSTR)tcValue ))  ? szDefaultPath : (LPCTSTR)tcValue );
+	m_ToolTip.AddTool( GetDlgItem(IDC_EDIT_WORKING), (INVALID_FILE_ATTRIBUTES == GetFileAttributes( (LPCTSTR)tcValue ))  ? szDefaultPath : (LPCTSTR)tcValue );
 	m_EditWorking.SetSel( 0, -1 );
 	m_EditWorking.SetSel( -1, -1 );
-	m_ToolTip.AddTool( GetDlgItem(IDC_EDIT_WORKING), (LPCTSTR)tcValue );
 
 	GetPrivateProfileString( L"app",	L"tcon_repeat",		L"16",				tcValue,	MAX_PATH,	szConfig );
-	m_EditTconRepeat.SetWindowTextW( (LPCTSTR)tcValue );
+	SetText( &m_EditTconRepeat, (LPCTSTR)tcValue );
 
 	GetPrivateProfileString( L"app",	L"pfpga_repeat",	L"16",				tcValue,	MAX_PATH,	szConfig );
-	m_EditPfpgaRepeat.SetWindowTextW( (LPCTSTR)tcValue );
+	SetText( &m_EditPfpgaRepeat, (LPCTSTR)tcValue );
 
 	GetPrivateProfileString( L"app",	L"eeprom_access",	L"1",				tcValue,	MAX_PATH,	szConfig );
-	int iValue = _wtoi( tcValue );
-	CheckRadioButton( IDC_RADIO_EEPROM_ALL, IDC_RADIO_EEPROM_VERSION, (iValue == 0) ? IDC_RADIO_EEPROM_ALL : IDC_RADIO_EEPROM_VERSION );
+	iValue = _wtoi( tcValue );
+	CheckRadioButton( IDC_RADIO_EEPROM_ALL, IDC_RADIO_EEPROM_NONE, (iValue == 0) ? IDC_RADIO_EEPROM_ALL : ((iValue == 1) ? IDC_RADIO_EEPROM_VERSION : IDC_RADIO_EEPROM_NONE));
 
 	GetPrivateProfileString( L"app",	L"tamper_repeat",	L"8",				tcValue,	MAX_PATH,	szConfig );
-	m_EditTamperRepeat.SetWindowTextW( (LPCTSTR)tcValue );
+	SetText( &m_EditTamperRepeat, (LPCTSTR)tcValue );
 
 	GetPrivateProfileString( L"app",	L"target_ip",		L"192.168.1.108",	tcValue,	MAX_PATH,	szConfig );
 	CString szField, szField0, szField1, szField2, szField3;
@@ -533,7 +612,11 @@ void CNxCinemaDiagnosticsPanelDlg::LoadConfig()
 	m_IpAddr.SetAddress( nField0, nField1, nField2, nField3 );
 
 	GetPrivateProfileString( L"app",	L"network_repeat",	L"8",				tcValue,	MAX_PATH,	szConfig );
-	m_EditNetworkRepeat.SetWindowTextW( (LPCTSTR)tcValue );
+	SetText( &m_EditNetworkRepeat, (LPCTSTR)tcValue );
+
+	GetPrivateProfileString( L"app",	L"debug",			L"0",				tcValue,	MAX_PATH,	szConfig );
+	iValue = _wtoi( tcValue );
+	CheckRadioButton( IDC_RADIO_DEBUG_ON, IDC_RADIO_DEBUG_OFF, (iValue == 0) ? IDC_RADIO_DEBUG_OFF : IDC_RADIO_DEBUG_ON );
 }
 
 void CNxCinemaDiagnosticsPanelDlg::SaveConfig()
@@ -546,22 +629,23 @@ void CNxCinemaDiagnosticsPanelDlg::SaveConfig()
 	szConfig = szConfig.Left( szConfig.ReverseFind('.') );
 	szConfig += L".ini";
 
+	int iChecked;
 	CString szValue;
 
-	m_EditWorking.GetWindowTextW( szValue );
+	GetText( &m_EditWorking, szValue );
 	WritePrivateProfileStringW( L"app",		L"working",			szValue,	szConfig );
 
-	m_EditTconRepeat.GetWindowTextW( szValue );
+	GetText( &m_EditTconRepeat, szValue );
 	WritePrivateProfileStringW( L"app",		L"tcon_repeat",		szValue,	szConfig );
 
-	m_EditPfpgaRepeat.GetWindowTextW( szValue );
+	GetText( &m_EditPfpgaRepeat, szValue );
 	WritePrivateProfileStringW( L"app",		L"pfpga_repeat",	szValue,	szConfig );
 
-	int iChecked = GetCheckedRadioButton( IDC_RADIO_EEPROM_ALL, IDC_RADIO_EEPROM_VERSION );
-	szValue.Format( L"%d", (iChecked == IDC_RADIO_EEPROM_ALL) ? 0 : 1 );
+	iChecked = GetCheckedRadioButton( IDC_RADIO_EEPROM_ALL, IDC_RADIO_EEPROM_NONE );
+	szValue.Format( L"%d", (iChecked == IDC_RADIO_EEPROM_ALL) ? 0 : ((iChecked == IDC_RADIO_EEPROM_VERSION) ? 1 : 2) );
 	WritePrivateProfileStringW( L"app",		L"eeprom_access",	szValue,	szConfig );
 
-	m_EditTamperRepeat.GetWindowTextW( szValue );
+	GetText( &m_EditTamperRepeat, szValue );
 	WritePrivateProfileStringW( L"app",		L"tamper_repeat",	szValue,	szConfig );
 
 	BYTE nField0, nField1, nField2, nField3;
@@ -569,8 +653,12 @@ void CNxCinemaDiagnosticsPanelDlg::SaveConfig()
 	szValue.Format( L"%d.%d.%d.%d", nField0, nField1, nField2, nField3 );
 	WritePrivateProfileStringW( L"app",		L"target_ip",		szValue,	szConfig );
 
-	m_EditNetworkRepeat.GetWindowTextW( szValue );
+	GetText( &m_EditNetworkRepeat, szValue );
 	WritePrivateProfileStringW( L"app",		L"network_repeat",	szValue,	szConfig );
+
+	iChecked = GetCheckedRadioButton( IDC_RADIO_DEBUG_ON, IDC_RADIO_DEBUG_OFF );
+	szValue.Format( L"%d", (iChecked == IDC_RADIO_DEBUG_OFF) ? 0 : 1 );
+	WritePrivateProfileStringW( L"app",		L"debug",			szValue,	szConfig );
 }
 
 void CNxCinemaDiagnosticsPanelDlg::Run( void (*cbFunc)(void *pObj), void *pObj )
@@ -600,6 +688,23 @@ void CNxCinemaDiagnosticsPanelDlg::ThreadProc( void )
 	}
 
 	EnableControl( TRUE );
+}
+
+void CNxCinemaDiagnosticsPanelDlg::RunTest( void *pObj )
+{
+	CNxCinemaDiagnosticsPanelDlg *pDlg = (CNxCinemaDiagnosticsPanelDlg*)pObj;
+	
+	Init( pObj );
+	StopControlPanel( pObj );
+
+	for( int i = 0; i < 100; i++ )
+	{
+		TestTconLeft( pObj );
+		TestTconRight( pObj );
+	}
+
+	StartControlPanel( pObj );
+	Deinit( pObj );
 }
 
 void CNxCinemaDiagnosticsPanelDlg::RunDiagnostics( void *pObj )
@@ -661,14 +766,17 @@ void CNxCinemaDiagnosticsPanelDlg::RunReboot( void *pObj )
 void CNxCinemaDiagnosticsPanelDlg::Init( void *pObj )
 {
 	CNxCinemaDiagnosticsPanelDlg *pDlg = (CNxCinemaDiagnosticsPanelDlg*)pObj;
+	pDlg->m_InfoNum = 0;
 
-	//pDlg->LogPrint( L"Start ADB." );
+	pDlg->LogPrint( pDlg->IsDebug(), NX_PERFORATED_LINE );
+	pDlg->LogPrint( pDlg->IsDebug(), L"Start ADB.\r\n" );
 
 	CString szResult;
 	pDlg->Execute( L"adb start-server" );
-	pDlg->Execute( L"adb devices", &szResult ); 
+	pDlg->Execute( szResult, L"adb devices" ); 
 
-	pDlg->m_InfoNum = 0;
+	szResult.Trim();
+	pDlg->LogPrint( pDlg->IsDebug(), szResult + L"\r\n" );
 
 	int iLIneCount = 0;
 	do {
@@ -700,16 +808,27 @@ void CNxCinemaDiagnosticsPanelDlg::Init( void *pObj )
 
 	if( pDlg->IsConnected( L"NAP" ) )
 	{
-		szResult = L"";
-		pDlg->m_EditStatusNap.SetWindowTextW( L"Connected" );
-		pDlg->Execute( L"adb -s NAP root", &szResult );
+		pDlg->SetText( &pDlg->m_EditStatusNap, L"Connected" );
+		pDlg->Execute( szResult, L"adb -s NAP root" );
 
 		szResult.Trim();
+		pDlg->LogPrint( pDlg->IsDebug(), NX_PERFORATED_LINE );
+		pDlg->LogPrint( pDlg->IsDebug(), L"Change Root.\r\n" );
 
 		if( 0 <= szResult.Find( L"restarting adbd as root" ) )
 		{
 			// Change root permission at First.
-			Sleep( 2000 );
+			int iWaitCount = 0;
+			do {
+				iWaitCount++;
+				pDlg->LogPrint( pDlg->IsDebug(), L"wait for changing root permission. ( %d sec / %d sec )\r\n", iWaitCount, MAX_WAIT_TIME );
+
+				Sleep( 1000 );
+			} while(iWaitCount < MAX_WAIT_TIME );
+		}
+		else
+		{
+			pDlg->LogPrint( pDlg->IsDebug(), L"already root permission.\r\n" );
 		}
 		
 		TCHAR tcPath[MAX_PATH];
@@ -720,28 +839,31 @@ void CNxCinemaDiagnosticsPanelDlg::Init( void *pObj )
 		szBin = szBin.Left( szBin.ReverseFind('\\') );
 		szBin += L"\\bin\\NxCinemaDiagnostics";
 		
-		CString szCommand;
-		szCommand.Format( L"adb -s NAP push %s /system/bin/", szBin );
-		pDlg->Execute( szCommand );
+		pDlg->Execute( szResult, L"adb -s NAP push %s /system/bin/", szBin );
 		pDlg->Execute( L"adb -s NAP shell sync" );
-
-		szResult = L"";
-		pDlg->Execute( L"adb -s NAP shell NxCinemaDiagnostics -v", &szResult );
+		
 		szResult.Trim();
-		pDlg->m_EditVersion.SetWindowTextW( szResult );
+		pDlg->LogPrint( pDlg->IsDebug(), NX_PERFORATED_LINE );
+		pDlg->LogPrint( pDlg->IsDebug(), L"Push Diagnostics.\r\n" );
+		pDlg->LogPrint( pDlg->IsDebug(), szResult + L"\r\n" );
+
+		pDlg->Execute( szResult, L"adb -s NAP shell NxCinemaDiagnostics -v" );
+		
+		szResult.Trim();
+		pDlg->SetText( &pDlg->m_EditVersion, szResult );
 	}
 	else
 	{
-		pDlg->m_EditStatusNap.SetWindowTextW( L"Disconnected" );
+		pDlg->SetText( &pDlg->m_EditStatusNap, L"Disconnected" );
 	}
 
 	if( pDlg->IsConnected( L"SAP" ) )
 	{
-		pDlg->m_EditStatusSap.SetWindowTextW( L"Connected" );
+		pDlg->SetText( &pDlg->m_EditStatusSap, L"Connected" );
 	}
 	else
 	{
-		pDlg->m_EditStatusSap.SetWindowTextW( L"Disconnected" );
+		pDlg->SetText( &pDlg->m_EditStatusSap, L"Disconnected" );
 	}
 }
 
@@ -750,9 +872,10 @@ void CNxCinemaDiagnosticsPanelDlg::Deinit( void *pObj )
 	CNxCinemaDiagnosticsPanelDlg *pDlg = (CNxCinemaDiagnosticsPanelDlg*)pObj;
 
 	pDlg->m_InfoNum = 0;
-
 	pDlg->Execute( L"adb kill-server" );
-	//pDlg->LogPrint( L"Stop ADB." );
+
+	pDlg->LogPrint( pDlg->IsDebug(), NX_PERFORATED_LINE );
+	pDlg->LogPrint( pDlg->IsDebug(), L"Stop ADB.\r\n" );
 }
 
 void CNxCinemaDiagnosticsPanelDlg::StartControlPanel( void *pObj )
@@ -761,7 +884,9 @@ void CNxCinemaDiagnosticsPanelDlg::StartControlPanel( void *pObj )
 
 	pDlg->Execute( L"adb -s NAP shell pm enable com.samsung.vd.cinemacontrolpanel" );
 	pDlg->Execute( L"adb -s NAP shell am start -a android.intent.action.MAIN -n com.samsung.vd.cinemacontrolpanel/com.samsung.vd.cinemacontrolpanel.InitialActivity" );
-	//pDlg->LogPrint( L"Start CinemaControlPanel." );
+
+	pDlg->LogPrint( pDlg->IsDebug(), NX_PERFORATED_LINE );
+	pDlg->LogPrint( pDlg->IsDebug(), L"Start CinemaControlPanel.\r\n" );
 }
 
 void CNxCinemaDiagnosticsPanelDlg::StopControlPanel( void *pObj )
@@ -769,21 +894,21 @@ void CNxCinemaDiagnosticsPanelDlg::StopControlPanel( void *pObj )
 	CNxCinemaDiagnosticsPanelDlg *pDlg = (CNxCinemaDiagnosticsPanelDlg*)pObj;
 
 	pDlg->Execute( L"adb -s NAP shell pm disable com.samsung.vd.cinemacontrolpanel" );
-	//pDlg->LogPrint( L"Stop CinemaControlPanel." );
+
+	pDlg->LogPrint( pDlg->IsDebug(), NX_PERFORATED_LINE );
+	pDlg->LogPrint( pDlg->IsDebug(), L"Stop CinemaControlPanel.\r\n" );
 }
 
 BOOL CNxCinemaDiagnosticsPanelDlg::CheckFile( CString szFile, void *pObj )
 {
 	CNxCinemaDiagnosticsPanelDlg *pDlg = (CNxCinemaDiagnosticsPanelDlg*)pObj;
 
-	CString szCommand, szResult;
-	
 	CString szPath, szName;
 	szPath = szFile.Left( szFile.ReverseFind(L'/') );
 	szName = szFile.Right( szFile.GetLength() - szFile.ReverseFind(L'/') - 1 );
-	szCommand.Format( L"adb -s NAP shell busybox find %s -name %s",szPath.GetLength() ? szPath : L".", szName );
 
-	pDlg->Execute( szCommand, &szResult );
+	CString szResult;
+	pDlg->Execute( szResult, L"adb -s NAP shell busybox find %s -name %s",szPath.GetLength() ? szPath : L".", szName );
 
 	szResult.Trim();
 
@@ -799,14 +924,12 @@ BOOL CNxCinemaDiagnosticsPanelDlg::CheckProcess( CString szProcess, void *pObj )
 {
 	CNxCinemaDiagnosticsPanelDlg *pDlg = (CNxCinemaDiagnosticsPanelDlg*)pObj;
 
-	CString szCommand, szResult;
-
-	//szCommand.Format( L"adb -s NAP shell ps | grep com.samsung.vd.cinemadiagnostics" );
-	szCommand.Format( L"adb -s NAP shell ps | grep %s", szProcess );	// com.samsung.vd.cinemadiagnostics
-
-	pDlg->Execute( szCommand, &szResult );
+	CString szResult;
+	//pDlg->Execute( szResult, L"adb -s NAP shell ps | grep com.samsung.vd.cinemadiagnostics" );
+	pDlg->Execute( szResult, L"adb -s NAP shell ps | grep %s", szProcess );	// com.samsung.vd.cinemadiagnostics
 
 	szResult.Trim();
+
 	if( 0 < szResult.GetLength() )
 	{
 		return TRUE;
@@ -821,14 +944,12 @@ void CNxCinemaDiagnosticsPanelDlg::GetProduct( void *pObj )
 
 	if( !pDlg->IsConnected( L"SAP" ) )
 	{
-		pDlg->m_EditProduct.SetWindowTextW( L"FAIL" );
+		pDlg->SetText( &pDlg->m_EditProduct, NX_RET_FAIL );
 		return;
 	}
 	
-	CString szCommand, szResult;
-	szCommand.Format( L"adb -s SAP shell openssl x509 -text -in /mnt/mmc/bin/cert/leaf.signed.pem" );
-
-	pDlg->Execute( szCommand, &szResult );
+	CString szResult;
+	pDlg->Execute( szResult, L"adb -s SAP shell openssl x509 -text -in /mnt/mmc/bin/cert/leaf.signed.pem" );
 
 	int iStart, iEnd;
 	iStart = szResult.Find( L"CN=PR SPB." );
@@ -839,11 +960,11 @@ void CNxCinemaDiagnosticsPanelDlg::GetProduct( void *pObj )
 		CString szTemp = szResult.Mid( iStart + 10, iEnd - (iStart + 10) );
 		CString szProduct;
 		AfxExtractSubString( szProduct, szTemp, 1, '.' );
-		pDlg->m_EditProduct.SetWindowTextW( szProduct );
+		pDlg->SetText( &pDlg->m_EditProduct, szProduct );
 		return ;
 	}
 
-	pDlg->m_EditProduct.SetWindowTextW( L"FAIL" );
+	pDlg->SetText( &pDlg->m_EditProduct, NX_RET_FAIL );
 }
 
 void CNxCinemaDiagnosticsPanelDlg::GetSerial( void *pObj )
@@ -852,14 +973,12 @@ void CNxCinemaDiagnosticsPanelDlg::GetSerial( void *pObj )
 	
 	if( !pDlg->IsConnected( L"SAP" ) )
 	{
-		pDlg->m_EditSerial.SetWindowTextW( L"FAIL" );
+		pDlg->SetText( &pDlg->m_EditSerial, NX_RET_FAIL );
 		return;
 	}
 
-	CString szCommand, szResult;
-	szCommand.Format( L"adb -s SAP shell openssl x509 -text -in /mnt/mmc/bin/cert/leaf.signed.pem" );
-
-	pDlg->Execute( szCommand, &szResult );
+	CString szResult;
+	pDlg->Execute( szResult, L"adb -s SAP shell openssl x509 -text -in /mnt/mmc/bin/cert/leaf.signed.pem" );
 
 	int iStart, iEnd;
 	iStart = szResult.Find( L"CN=PR SPB." );
@@ -870,11 +989,11 @@ void CNxCinemaDiagnosticsPanelDlg::GetSerial( void *pObj )
 		CString szTemp = szResult.Mid( iStart + 10, iEnd - (iStart + 10) );
 		CString szSerial;
 		AfxExtractSubString( szSerial, szTemp, 0, '.' );
-		pDlg->m_EditSerial.SetWindowTextW( szSerial );
+		pDlg->SetText( &pDlg->m_EditSerial, szSerial );
 		return ;
 	}
 
-	pDlg->m_EditSerial.SetWindowTextW( L"FAIL" );
+	pDlg->SetText( &pDlg->m_EditSerial, NX_RET_FAIL );
 }
 
 void CNxCinemaDiagnosticsPanelDlg::GetLeafCertificate( void *pObj )
@@ -883,21 +1002,21 @@ void CNxCinemaDiagnosticsPanelDlg::GetLeafCertificate( void *pObj )
 
 	if( !pDlg->IsConnected( L"SAP" ) )
 	{
-		pDlg->m_EditCertificate.SetWindowTextW( L"FAIL" );
+		pDlg->SetText( &pDlg->m_EditCertificate, NX_RET_FAIL );
 		return;
 	}
 
 	CString szSerial;
-	pDlg->m_EditSerial.GetWindowText( szSerial );
+	pDlg->GetText( &pDlg->m_EditSerial, szSerial );
 
 	if( !szSerial.Trim().Compare( L"" ) )
 	{
-		pDlg->m_EditCertificate.SetWindowTextW( L"FAIL" );
+		pDlg->SetText( &pDlg->m_EditCertificate, NX_RET_FAIL );
 		return ;
 	}
 
 	CString szWorking;
-	pDlg->m_EditWorking.GetWindowTextW( szWorking );
+	pDlg->GetText( &pDlg->m_EditWorking, szWorking );
 
 	szWorking += L"\\";
 	szWorking += szSerial;
@@ -905,17 +1024,16 @@ void CNxCinemaDiagnosticsPanelDlg::GetLeafCertificate( void *pObj )
 	
 	CreateDirectory( szWorking, NULL );
 
-	CString szCommand, szResult;
-	szCommand.Format( L"adb -s SAP pull /mnt/mmc/bin/cert/leaf.signed.pem %sleaf.signed.pem", szWorking );
-
-	pDlg->Execute( szCommand, &szResult );
+	CString szResult;
+	pDlg->Execute( szResult,  L"adb -s SAP pull /mnt/mmc/bin/cert/leaf.signed.pem %sleaf.signed.pem", szWorking );
 
 	if( 0 <= szResult.Find( L"does not exist" ) )
 	{
-		pDlg->m_EditCertificate.SetWindowTextW( L"FAIL" );
+		pDlg->SetText( &pDlg->m_EditCertificate, NX_RET_FAIL );
+		return;
 	}
 
-	pDlg->m_EditCertificate.SetWindowTextW( L"DONE" );
+	pDlg->SetText( &pDlg->m_EditCertificate, L"DONE" );
 }
 
 void CNxCinemaDiagnosticsPanelDlg::GetLeafCertificateText( void *pObj )
@@ -924,21 +1042,21 @@ void CNxCinemaDiagnosticsPanelDlg::GetLeafCertificateText( void *pObj )
 
 	if( !pDlg->IsConnected( L"SAP" ) )
 	{
-		pDlg->m_EditCertificateText.SetWindowTextW( L"FAIL" );
+		pDlg->SetText( &pDlg->m_EditCertificateText, NX_RET_FAIL );
 		return;
 	}
 
 	CString szSerial;
-	pDlg->m_EditSerial.GetWindowText( szSerial );
+	pDlg->GetText( &pDlg->m_EditSerial, szSerial );
 
 	if( !szSerial.Trim().Compare( L"" ) )
 	{
-		pDlg->m_EditCertificateText.SetWindowTextW( L"FAIL" );
+		pDlg->SetText( &pDlg->m_EditCertificateText, NX_RET_FAIL );
 		return ;
 	}
 
 	CString szWorking;
-	pDlg->m_EditWorking.GetWindowTextW( szWorking );
+	pDlg->GetText( &pDlg->m_EditWorking, szWorking );
 
 	szWorking += L"\\";
 	szWorking += szSerial;
@@ -946,26 +1064,22 @@ void CNxCinemaDiagnosticsPanelDlg::GetLeafCertificateText( void *pObj )
 	
 	CreateDirectory( szWorking, NULL );
 
-	CString szCommand;
 	CString szResult;
-	szCommand.Format( L"adb -s SAP shell openssl x509 -text -in /mnt/mmc/bin/cert/leaf.signed.pem" );
-
-	pDlg->Execute( szCommand, &szResult );
+	pDlg->Execute( szResult, L"adb -s SAP shell openssl x509 -text -in /mnt/mmc/bin/cert/leaf.signed.pem" );
 
 	if( 0 <= szResult.Find( L"unable to load certificate" ) )
 	{
-		pDlg->m_EditCertificateText.SetWindowTextW( L"FAIL" );
+		pDlg->SetText( &pDlg->m_EditCertificateText, NX_RET_FAIL );
 		return;
 	}
 
-	szWorking += L"leaf.signed.txt";
-	
 	CFile file;
+	szWorking += L"leaf.signed.txt";
 	file.Open( szWorking, CFile::modeCreate | CFile::modeWrite, NULL );
 	file.Write( szResult, szResult.GetLength()*sizeof(TCHAR));
 	file.Close();
 
-	pDlg->m_EditCertificateText.SetWindowTextW( L"DONE" );
+	pDlg->SetText( &pDlg->m_EditCertificateText, L"DONE" );
 }
 
 void CNxCinemaDiagnosticsPanelDlg::TestTconLeft( void *pObj )
@@ -974,30 +1088,41 @@ void CNxCinemaDiagnosticsPanelDlg::TestTconLeft( void *pObj )
 
 	if( !pDlg->IsConnected( L"NAP" ) )
 	{
-		pDlg->m_EditTconLeft.SetWindowText( L"FAIL" );
+		pDlg->SetText( &pDlg->m_EditTconLeft, NX_RET_FAIL );
 		return;
 	}
+	
+	CString szResult, szRepeat;
+	int iRepeat = 0;
 
-	CString szRepeat;
-	pDlg->m_EditTconRepeat.GetWindowTextW( szRepeat );
+	pDlg->GetText( &pDlg->m_EditTconRepeat, szRepeat );
+	iRepeat = _wtoi( szRepeat );
 
-	for( int i = 0; i < _wtoi( szRepeat ); i++ )
+	for( int i = 0; i < iRepeat; i++ )
 	{
-		CString szLog;
-		szLog.Format( L"check: %d", i+1 );
-		pDlg->m_EditTconLeft.SetWindowText( szLog );
+		pDlg->SetText( &pDlg->m_EditTconLeft, L"check: %d", i+1 );
+		pDlg->Execute( szResult, L"adb -s NAP shell NxCinemaDiagnostics -c 0 -d %d", pDlg->IsDebug() ? 0 : 1 );
 
-		CString szResult;
-		pDlg->Execute( L"adb -s NAP shell NxCinemaDiagnostics -c 0", &szResult );
+		szResult.Trim();
+
+		pDlg->LogPrint( pDlg->IsDebug(), NX_PERFORATED_LINE );
+		pDlg->LogPrint( pDlg->IsDebug(), L"Check TCON Left( %d / %d )\r\n", i+1, iRepeat );
+		pDlg->LogPrint( pDlg->IsDebug(), L"%s\r\n", szResult );
 		
+		if( pDlg->IsError( szResult ) )
+		{
+			pDlg->SetText( &pDlg->m_EditTconLeft, NX_RET_ERROR );
+			return;
+		}
+
 		if( pDlg->IsFail( szResult ) )
 		{
-			pDlg->m_EditTconLeft.SetWindowText( L"FAIL" );
+			pDlg->SetText( &pDlg->m_EditTconLeft, NX_RET_FAIL );
 			return;
 		}
 	}
 
-	pDlg->m_EditTconLeft.SetWindowText( L"PASS" );
+	pDlg->SetText( &pDlg->m_EditTconLeft, (0 < iRepeat) ? NX_RET_PASS : NX_RET_NONE );
 }
 
 void CNxCinemaDiagnosticsPanelDlg::TestTconRight( void *pObj )
@@ -1006,30 +1131,41 @@ void CNxCinemaDiagnosticsPanelDlg::TestTconRight( void *pObj )
 
 	if( !pDlg->IsConnected( L"NAP" ) )
 	{
-		pDlg->m_EditTconRight.SetWindowText( L"FAIL" );
+		pDlg->SetText( &pDlg->m_EditTconRight, NX_RET_FAIL );
 		return;
 	}
 
-	CString szRepeat;
-	pDlg->m_EditTconRepeat.GetWindowTextW( szRepeat );
+	CString szResult, szRepeat;
+	int iRepeat = 0;
 
-	for( int i = 0; i < _wtoi( szRepeat ); i++ )
+	pDlg->GetText( &pDlg->m_EditTconRepeat, szRepeat );
+	iRepeat = _wtoi( szRepeat );
+
+	for( int i = 0; i < iRepeat; i++ )
 	{
-		CString szLog;
-		szLog.Format( L"check: %d", i+1 );
-		pDlg->m_EditTconRight.SetWindowText( szLog );
-
-		CString szResult = L"";
-		pDlg->Execute( L"adb -s NAP shell NxCinemaDiagnostics -c 1", &szResult );
+		pDlg->SetText( &pDlg->m_EditTconRight, L"check: %d", i+1 );
+		pDlg->Execute( szResult, L"adb -s NAP shell NxCinemaDiagnostics -c 1 -d %d", pDlg->IsDebug() ? 0 : 1 );
 		
+		szResult.Trim();
+
+		pDlg->LogPrint( pDlg->IsDebug(), NX_PERFORATED_LINE );
+		pDlg->LogPrint( pDlg->IsDebug(), L"Check TCON Right( %d / %d )\r\n", i+1, iRepeat );
+		pDlg->LogPrint( pDlg->IsDebug(), L"%s\r\n", szResult);
+
+		if( pDlg->IsError( szResult ) )
+		{
+			pDlg->SetText( &pDlg->m_EditTconRight, NX_RET_ERROR );
+			return;
+		}
+
 		if( pDlg->IsFail( szResult ) )
 		{
-			pDlg->m_EditTconRight.SetWindowText( L"FAIL" );
+			pDlg->SetText( &pDlg->m_EditTconRight, NX_RET_FAIL );
 			return;
 		}
 	}
 
-	pDlg->m_EditTconRight.SetWindowText( L"PASS" );
+	pDlg->SetText( &pDlg->m_EditTconRight, (0 < iRepeat) ? NX_RET_PASS : NX_RET_NONE );
 }
 
 void CNxCinemaDiagnosticsPanelDlg::TestPfpga( void *pObj )
@@ -1038,30 +1174,41 @@ void CNxCinemaDiagnosticsPanelDlg::TestPfpga( void *pObj )
 
 	if( !pDlg->IsConnected( L"NAP" ) )
 	{
-		pDlg->m_EditPfpga.SetWindowText( L"FAIL" );
+		pDlg->SetText( &pDlg->m_EditPfpga, NX_RET_FAIL );
 		return;
 	}
 
-	CString szRepeat;
-	pDlg->m_EditPfpgaRepeat.GetWindowTextW( szRepeat );
+	CString szResult, szRepeat;
+	int iRepeat = 0;
 
-	for( int i = 0; i < _wtoi( szRepeat ); i++ )
+	pDlg->GetText( &pDlg->m_EditPfpgaRepeat, szRepeat );
+	iRepeat = _wtoi( szRepeat );
+
+	for( int i = 0; i < iRepeat; i++ )
 	{
-		CString szLog;
-		szLog.Format( L"check: %d", i+1 );
-		pDlg->m_EditPfpga.SetWindowText( szLog );
+		pDlg->SetText( &pDlg->m_EditPfpga, L"check: %d", i+1 );
+		pDlg->Execute( szResult, L"adb -s NAP shell NxCinemaDiagnostics -c 2 -d %d", pDlg->IsDebug() ? 0 : 1 );
 
-		CString szResult = L"";
-		pDlg->Execute( L"adb -s NAP shell NxCinemaDiagnostics -c 2", &szResult );
+		szResult.Trim();
+
+		pDlg->LogPrint( pDlg->IsDebug(), NX_PERFORATED_LINE );
+		pDlg->LogPrint( pDlg->IsDebug(), L"Check PFPGA( %d / %d )\r\n", i+1, iRepeat );
+		pDlg->LogPrint( pDlg->IsDebug(), L"%s\r\n", szResult );
 		
+		if( pDlg->IsError( szResult ) )
+		{
+			pDlg->SetText( &pDlg->m_EditPfpga, NX_RET_ERROR );
+			return;
+		}
+
 		if( pDlg->IsFail( szResult ) )
 		{
-			pDlg->m_EditPfpga.SetWindowText( L"FAIL" );
+			pDlg->SetText( &pDlg->m_EditPfpga, NX_RET_FAIL );
 			return;
 		}
 	}
 
-	pDlg->m_EditPfpga.SetWindowText( L"PASS" );
+	pDlg->SetText( &pDlg->m_EditPfpga, (0 < iRepeat) ? NX_RET_PASS : NX_RET_NONE );
 }
 
 void CNxCinemaDiagnosticsPanelDlg::TestEEPRom( void *pObj )
@@ -1070,26 +1217,34 @@ void CNxCinemaDiagnosticsPanelDlg::TestEEPRom( void *pObj )
 
 	if( !pDlg->IsConnected( L"NAP" ) )
 	{
-		pDlg->m_EditEEPRom.SetWindowText( L"FAIL" );
+		pDlg->SetText( &pDlg->m_EditEEPRom, NX_RET_FAIL );
 		return;
 	}
 
-	int iChecked = pDlg->GetCheckedRadioButton( IDC_RADIO_EEPROM_ALL, IDC_RADIO_EEPROM_VERSION );
-
-	CString szCommand, szResult;
-	szCommand.Format( L"adb -s NAP shell NxCinemaDiagnostics -c 3 -t %d", (iChecked == IDC_RADIO_EEPROM_ALL) ? 0 : 1);
-
-	pDlg->Execute( szCommand, &szResult );
-
-	if( pDlg->IsFail( szResult ) )
+	int iChecked = pDlg->GetCheckedRadioButton( IDC_RADIO_EEPROM_ALL, IDC_RADIO_EEPROM_NONE );
+	if( iChecked == IDC_RADIO_EEPROM_NONE )
 	{
-		pDlg->m_EditEEPRom.SetWindowTextW( L"FAIL" );
+		pDlg->SetText( &pDlg->m_EditEEPRom, NX_RET_NONE );
 		return;
 	}
+
+	CString szResult;
+	pDlg->Execute( szResult, L"adb -s NAP shell NxCinemaDiagnostics -c 3 -t %d -d %d", (iChecked == IDC_RADIO_EEPROM_ALL) ? 0 : 1, pDlg->IsDebug() ? 0 : 1);
 
 	szResult.Trim();
-	szResult = szResult.Mid( szResult.ReverseFind( L'\n' ), szResult.GetLength() - szResult.ReverseFind( L'\n' ) );
-	pDlg->m_EditEEPRom.SetWindowTextW( szResult );
+
+	pDlg->LogPrint( pDlg->IsDebug(), NX_PERFORATED_LINE );
+	pDlg->LogPrint( pDlg->IsDebug(), L"Check EEPRom\r\n" );
+	pDlg->LogPrint( pDlg->IsDebug(), szResult + L"\r\n" );
+	
+    
+	if( pDlg->IsFail( szResult ) )
+	{
+		pDlg->SetText( &pDlg->m_EditEEPRom, NX_RET_FAIL );
+		return;
+	}
+
+	pDlg->SetText( &pDlg->m_EditEEPRom, szResult.Mid( szResult.ReverseFind( L'\n' ), szResult.GetLength() - szResult.ReverseFind( L'\n' ) ) );
 }
 
 void CNxCinemaDiagnosticsPanelDlg::TestMarriageTamper( void *pObj )
@@ -1098,30 +1253,35 @@ void CNxCinemaDiagnosticsPanelDlg::TestMarriageTamper( void *pObj )
 
 	if( !pDlg->IsConnected( L"NAP" ) )
 	{
-		pDlg->m_EditMarriageTamper.SetWindowText( L"FAIL" );
+		pDlg->SetText( &pDlg->m_EditMarriageTamper, NX_RET_FAIL );
 		return;
 	}
 
-	CString szRepeat;
-	pDlg->m_EditTamperRepeat.GetWindowTextW( szRepeat );
+	CString szResult, szRepeat;
+	int iRepeat = 0;
 
-	for( int i = 0; i < _wtoi( szRepeat ); i++ )
+	pDlg->GetText( &pDlg->m_EditTamperRepeat, szRepeat );
+	iRepeat = _wtoi( szRepeat );
+
+	for( int i = 0; i < iRepeat; i++ )
 	{
-		CString szLog;
-		szLog.Format( L"check: %d", i+1 );
-		pDlg->m_EditMarriageTamper.SetWindowText( szLog );
+		pDlg->SetText( &pDlg->m_EditMarriageTamper, L"check: %d", i+1 );
+		pDlg->Execute( szResult, L"adb -s NAP shell NxCinemaDiagnostics -c 4 -d %d", pDlg->IsDebug() ? 0 : 1 );
 
-		CString szResult = L"";
-		pDlg->Execute( L"adb -s NAP shell NxCinemaDiagnostics -c 4", &szResult );
-		
+		szResult.Trim();
+
+		pDlg->LogPrint( pDlg->IsDebug(), NX_PERFORATED_LINE );
+		pDlg->LogPrint( pDlg->IsDebug(), L"Check Marriage Tamper( %d / %d )\r\n", i+1, iRepeat ); 
+		pDlg->LogPrint( pDlg->IsDebug(), szResult + L"\r\n" );
+
 		if( pDlg->IsPass( szResult ) )
 		{
-			pDlg->m_EditMarriageTamper.SetWindowText( L"PASS" );
+			pDlg->SetText( &pDlg->m_EditMarriageTamper, NX_RET_PASS );
 			return;
 		}
 	}
 
-	pDlg->m_EditMarriageTamper.SetWindowText( L"FAIL" );
+	pDlg->SetText( &pDlg->m_EditMarriageTamper, (0 < iRepeat) ? NX_RET_FAIL : NX_RET_NONE );
 }
 
 void CNxCinemaDiagnosticsPanelDlg::TestDoorTamper( void *pObj )
@@ -1130,31 +1290,35 @@ void CNxCinemaDiagnosticsPanelDlg::TestDoorTamper( void *pObj )
 
 	if( !pDlg->IsConnected( L"NAP" ) )
 	{
-		pDlg->m_EditDoorTamper.SetWindowText( L"FAIL" );
+		pDlg->SetText( &pDlg->m_EditDoorTamper, NX_RET_FAIL );
 		return;
 	}
 
-	CString szRepeat;
-	pDlg->m_EditTamperRepeat.GetWindowTextW( szRepeat );
+	CString szResult, szRepeat;
+	int iRepeat = 0;
 
-	for( int i = 0; i < _wtoi( szRepeat ); i++ )
+	pDlg->GetText( &pDlg->m_EditTamperRepeat, szRepeat );
+	iRepeat = _wtoi( szRepeat );
+
+	for( int i = 0; i < iRepeat; i++ )
 	{
-		CString szLog;
-		szLog.Format( L"check: %d", i+1 );
-		pDlg->m_EditDoorTamper.SetWindowText( szLog );
+		pDlg->SetText( &pDlg->m_EditDoorTamper, L"check: %d", i+1 );
+		pDlg->Execute( szResult, L"adb -s NAP shell NxCinemaDiagnostics -c 5 -d %d", pDlg->IsDebug() ? 0 : 1 );
 
-		CString szResult = L"";
-		pDlg->Execute( L"adb -s NAP shell NxCinemaDiagnostics -c 5", &szResult );
-		
 		szResult.Trim();
+
+		pDlg->LogPrint( pDlg->IsDebug(), NX_PERFORATED_LINE );
+		pDlg->LogPrint( pDlg->IsDebug(), L"Check Door Tamper( %d / %d )\r\n", i+1, iRepeat );
+		pDlg->LogPrint( pDlg->IsDebug(), szResult + L"\r\n" );
+
 		if( pDlg->IsPass( szResult ) )
 		{
-			pDlg->m_EditDoorTamper.SetWindowText( L"PASS" );
+			pDlg->SetText( &pDlg->m_EditDoorTamper, NX_RET_PASS );
 			return;
 		}
 	}
 
-	pDlg->m_EditDoorTamper.SetWindowText( L"FAIL" );
+	pDlg->SetText( &pDlg->m_EditDoorTamper, (0 < iRepeat) ? NX_RET_FAIL : NX_RET_NONE );
 }
 
 void CNxCinemaDiagnosticsPanelDlg::TestNetwork( void *pObj )
@@ -1163,43 +1327,50 @@ void CNxCinemaDiagnosticsPanelDlg::TestNetwork( void *pObj )
 
 	if( !pDlg->IsConnected( L"NAP" ) )
 	{
-		pDlg->m_EditNetwork.SetWindowText( L"FAIL" );
+		pDlg->SetText( &pDlg->m_EditNetwork, NX_RET_FAIL );
 		return;
 	}
 
-	CString szRepeat;
-	pDlg->m_EditNetworkRepeat.GetWindowTextW( szRepeat );
+	CString szResult, szRepeat;
+	int iRepeat = 0;
 
-	for( int i = 0; i < _wtoi( szRepeat ); i++ )
+	pDlg->GetText( &pDlg->m_EditNetworkRepeat, szRepeat );
+	iRepeat = _wtoi( szRepeat );
+
+	for( int i = 0; i < iRepeat; i++ )
 	{
-		CString szLog;
-		szLog.Format( L"check: %d", i+1 );
-		pDlg->m_EditNetwork.SetWindowText( szLog );
-
-		CString szResult = L"";
-		CString szCommand;
-
 		BYTE nField0, nField1, nField2, nField3;
 		pDlg->m_IpAddr.GetAddress( nField0, nField1, nField2, nField3 );
 
-		szCommand.Format( L"adb -s NAP shell NxCinemaDiagnostics -c 6 -i %d.%d.%d.%d", nField0, nField1, nField2, nField3);
-		pDlg->Execute( szCommand, &szResult );
+		pDlg->SetText( &pDlg->m_EditNetwork, L"check: %d", i+1 );
+		pDlg->Execute( szResult, L"adb -s NAP shell NxCinemaDiagnostics -c 6 -i %d.%d.%d.%d -d %d", nField0, nField1, nField2, nField3, pDlg->IsDebug() ? 0 : 1 );
 
-		if( pDlg->IsFail( szResult ) )
+		szResult.Trim();
+
+		pDlg->LogPrint( pDlg->IsDebug(), NX_PERFORATED_LINE );
+		pDlg->LogPrint( pDlg->IsDebug(), L"Check Network( %d / %d )\r\n", i+1, iRepeat );
+		pDlg->LogPrint( pDlg->IsDebug(), szResult + L"\r\n" );
+
+		if( pDlg->IsError( szResult) )
 		{
-			pDlg->m_EditNetwork.SetWindowText( L"FAIL" );
+			pDlg->SetText( &pDlg->m_EditNetwork, NX_RET_FAIL );
 			return;
 		}
 
-		if( pDlg->IsPass( szResult ) )
+		if( pDlg->IsFail( szResult ) )
 		{
-			if( 0 <= szResult.Find( L"Unknown ICMP message received" ) )
-			{
-				pDlg->m_EditNetwork.SetWindowText( L"FAIL" );
-				return;
-			}
+			pDlg->SetText( &pDlg->m_EditNetwork, NX_RET_FAIL );
+			return;
 		}
+
+#if 0
+		if( pDlg->IsPass( szResult ) && (0 <= szResult.Find( L"Unknown ICMP message received" )) )
+		{
+			pDlg->SetText( &pDlg->m_EditNetwork, NX_RET_FAIL );
+			return;
+		}
+#endif
 	}
 
-	pDlg->m_EditNetwork.SetWindowText( L"PASS" );
+	pDlg->SetText( &pDlg->m_EditNetwork, (0 < iRepeat) ? NX_RET_PASS : NX_RET_NONE );
 }

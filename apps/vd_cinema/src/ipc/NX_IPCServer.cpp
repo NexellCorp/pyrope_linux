@@ -117,7 +117,6 @@ private:
 	int32_t TCON_DotCorrectionExtract( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
 	int32_t TCON_WhiteSeamRead( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
 	int32_t TCON_WhiteSeamWrite( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t TCON_AccumulateTime( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
 	int32_t TCON_OptionalData( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
 	int32_t TCON_SwReset( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
 	int32_t TCON_EEPRomRead( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );;
@@ -423,7 +422,7 @@ int32_t CNX_IPCServer::TCON_RegWrite( int32_t fd, uint32_t cmd, uint8_t *pBuf, i
 		goto ERROR_TCON;
 	}
 
-	NxDbgMsg( NX_DBG_INFO, "Write Data. ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+	NxDbgMsg( NX_DBG_ERR, "Write Data. ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, inReg, inData );
 
 	// printf( "Write Data. ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n", port, slave, inReg, inData );
@@ -479,7 +478,7 @@ int32_t CNX_IPCServer::TCON_RegRead( int32_t fd, uint32_t cmd, uint8_t *pBuf, in
 		goto ERROR_TCON;
 	}
 
-	NxDbgMsg( NX_DBG_INFO, "Read Data. ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+	NxDbgMsg( NX_DBG_ERR, "Read Data. ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, inReg, iReadData );
 
 	result[0] = (uint8_t)((iReadData >> 24) & 0xFF);
@@ -640,6 +639,7 @@ int32_t CNX_IPCServer::TCON_DoorStatus( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 	result = NX_GetRandomValue( 0, 2 );
 #else
 	uint8_t index	= pBuf[0];
+	uint8_t bRead	= pBuf[1];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
@@ -652,27 +652,57 @@ int32_t CNX_IPCServer::TCON_DoorStatus( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 		goto ERROR_TCON;
 	}
 
-	if( 0 > (iReadData = i2c.Read( slave, TCON_REG_CHECK_DOOR_READ )) )
+	if( bRead )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
-			port, slave, TCON_REG_CHECK_DOOR_READ );
-		goto ERROR_TCON;
+		if( 0 > (iReadData = i2c.Read( slave, TCON_REG_CHECK_DOOR_READ )) )
+		{
+			NxDbgMsg( NX_DBG_VBS, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
+				port, slave, TCON_REG_CHECK_DOOR_READ );
+			goto ERROR_TCON;
+		}
+
+		if( 0 > i2c.Write( slave, TCON_REG_RESERVED1, 2046 ) )
+		{
+			NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+				port, slave, TCON_REG_RESERVED1, 2046 );
+			goto ERROR_TCON;
+		}
+
+		result = (uint8_t)iReadData;
 	}
-
-	result = (uint8_t)iReadData;
-
-	if( 0 > i2c.Write( slave, TCON_REG_CLOSE_DOOR, 1 ) )
+	else
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
-			port, slave, TCON_REG_CLOSE_DOOR, 1 );
-		goto ERROR_TCON;
-	}
+		if( 0 > i2c.Write( slave, TCON_REG_RESERVED1, 0 ) )
+		{
+			NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+				port, slave, TCON_REG_RESERVED1, 0 );
+			goto ERROR_TCON;
+		}
 
-	if( 0 > i2c.Write( slave, TCON_REG_CLOSE_DOOR, 0 ) )
-	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
-			port, slave, TCON_REG_CLOSE_DOOR, 0 );
-		goto ERROR_TCON;
+		if( 0 > i2c.Write( slave, TCON_REG_CLOSE_DOOR, 0 ) )
+		{
+			NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+				port, slave, TCON_REG_CLOSE_DOOR, 0 );
+			goto ERROR_TCON;
+		}
+		usleep(75000);
+
+		if( 0 > i2c.Write( slave, TCON_REG_CLOSE_DOOR, 1 ) )
+		{
+			NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+				port, slave, TCON_REG_CLOSE_DOOR, 1 );
+			goto ERROR_TCON;
+		}
+		usleep(75000);
+
+		if( 0 > i2c.Write( slave, TCON_REG_CLOSE_DOOR, 0 ) )
+		{
+			NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+				port, slave, TCON_REG_CLOSE_DOOR, 0 );
+			goto ERROR_TCON;
+		}
+
+		result = 0x01;
 	}
 #endif
 
@@ -2654,21 +2684,6 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_AccumulateTime( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
-{
-	UNUSED( fd );
-	UNUSED( cmd );
-	UNUSED( pBuf );
-	UNUSED( iSize );
-
-	//
-	//	pBuf[0] : index, pBuf[1] : module,
-	//
-
-	return 0;
-}
-
-//------------------------------------------------------------------------------
 int32_t CNX_IPCServer::TCON_OptionalData( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
 {
 	UNUSED( iSize );
@@ -2860,10 +2875,12 @@ int32_t CNX_IPCServer::TCON_EEPRomRead( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 	int32_t bUpdate = true;
 
 	//
-	//	0. Check Version
+	//	1. Read EEPROM Version
 	//
-	if( !access( TCON_EEPROM_BINARY_FILE, F_OK) )
 	{
+		//
+		//	1-1. Read EEPROM Data
+		//
 		iAddr       = 0;
 		pPtr        = pInBuf;
 		iRemainSize = TCON_EEPROM_VERSION_SIZE;
@@ -2891,7 +2908,7 @@ int32_t CNX_IPCServer::TCON_EEPRomRead( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 		NxDbgMsg( NX_DBG_DEBUG, "\nEEPRom Read Done. ( %d bytes )\n", TCON_EEPROM_VERSION_SIZE );
 
 		//
-		//	0-1. EEPROM Version Parsing.
+		//	1-2. Parse EEPROM Version.
 		//
 		iRet = parser.Init( pInBuf, TCON_EEPROM_VERSION_SIZE );
 		if( 0 > iRet )
@@ -2911,7 +2928,22 @@ int32_t CNX_IPCServer::TCON_EEPRomRead( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 		parser.Deinit();
 
 		//
-		//	0-2. Binary Version Parsing.
+		//	1-3. Check Version Validation.
+		//
+		if( version[0] == 0x00 || version[0] == 0xFF )
+		{
+			NxDbgMsg( NX_DBG_ERR, "Fail, Wrong Version.\n" );
+			goto ERROR_TCON;
+		}
+	}
+
+	//
+	//	2. Check Version
+	//
+	if( !access( TCON_EEPROM_BINARY_FILE, F_OK) )
+	{
+		//
+		//	2-1. Binary Version Parsing.
 		//
 		parser.Init( TCON_EEPROM_BINARY_FILE );
 		if( 0 > iRet )
@@ -2930,6 +2962,9 @@ int32_t CNX_IPCServer::TCON_EEPRomRead( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 		// NX_HexDump( version, sizeof(version) );
 		// NX_HexDump( pInfo->version, sizeof(version) );
 
+		//
+		//	2-2. Check Version
+		//
 		if( !strcmp( (char*)pInfo->version, (char*)version ) )
 		{
 			NxDbgMsg( NX_DBG_DEBUG, "Version match.\n");
@@ -2943,10 +2978,13 @@ int32_t CNX_IPCServer::TCON_EEPRomRead( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 		parser.Deinit();
 	}
 
+	//
+	//	3. Update Binary
+	//
 	if( bUpdate )
 	{
 		//
-		//	1. Read EEPRom Data.
+		//	3-1. Read EEPRom Data.
 		//
 		iAddr       = 0;
 		pPtr        = pInBuf;
@@ -2975,7 +3013,7 @@ int32_t CNX_IPCServer::TCON_EEPRomRead( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 		NxDbgMsg( NX_DBG_DEBUG, "\nEEPRom Read Done. ( %d bytes )\n", TCON_EEPROM_DATA_SIZE );
 
 		//
-		//	2. Make Binary File.
+		//	3-2. Make Binary File.
 		//
 		pFile = fopen( TCON_EEPROM_BINARY_FILE, "wb" );
 		if( NULL == pFile )
@@ -2989,7 +3027,7 @@ int32_t CNX_IPCServer::TCON_EEPRomRead( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 		NxDbgMsg( NX_DBG_DEBUG, "Make done. ( %s )\n", TCON_EEPROM_BINARY_FILE );
 
 		//
-		//	3. Make T_REG_EEPROM.txt
+		//	3-3. Make T_REG_EEPROM.txt
 		//
 		iRet = parser.Init( pInBuf, TCON_EEPROM_DATA_SIZE );
 		if( 0 > iRet )
@@ -3125,18 +3163,18 @@ int32_t CNX_IPCServer::PFPGA_RegWrite( int32_t fd, uint32_t cmd, uint8_t *pBuf, 
 
 	if( 0 > i2c.Open() )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port );
+		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
 		goto ERROR_PFPGA;
 	}
 
 	if( 0 > i2c.Write( slave, inReg, inData ) )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, inReg, inData );
 		goto ERROR_PFPGA;
 	}
 
-	NxDbgMsg( NX_DBG_INFO, "Write Data. ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+	NxDbgMsg( NX_DBG_ERR, "Write Data. ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, inReg, inData );
 
 	result[0] = 0x00;
@@ -3178,18 +3216,18 @@ int32_t CNX_IPCServer::PFPGA_RegRead( int32_t fd, uint32_t cmd, uint8_t *pBuf, i
 
 	if( 0 > i2c.Open() )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port );
+		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
 		goto ERROR_PFPGA;
 	}
 
 	if( 0 > (iReadData = i2c.Read( slave, inReg )) )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
+		NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 			port, slave, inReg );
 		goto ERROR_PFPGA;
 	}
 
-	NxDbgMsg( NX_DBG_INFO, "Read Data. ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+	NxDbgMsg( NX_DBG_ERR, "Read Data. ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, inReg, iReadData );
 
 	result[0] = (uint8_t)((iReadData >> 24) & 0xFF);
@@ -3384,8 +3422,11 @@ static void WaitTime( uint64_t iWaitTime )
 		iMiliSecond++;
 	} while( iCurTime <= iTimeout );
 
+#if 0
 	printf("\n");
+#endif
 }
+
 
 //------------------------------------------------------------------------------
 int32_t CNX_IPCServer::PFPGA_Mute( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
@@ -3414,18 +3455,18 @@ int32_t CNX_IPCServer::PFPGA_Mute( int32_t fd, uint32_t cmd, uint8_t *pBuf, int3
 
 	if( 0 > i2c.Open() )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Open(). ( i2c-%d )\n", port );
+		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
 		goto ERROR_PFPGA;
 	}
 
 	if( 0 > i2c.Write( slave, PFPGA_REG_MUTE, data ) )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, PFPGA_REG_MUTE, data );
 		goto ERROR_PFPGA;
 	}
 
-	NxDbgMsg( NX_DBG_DEBUG, "Write Data. ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+	NxDbgMsg( NX_DBG_ERR, "Write Data. ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, PFPGA_REG_MUTE, data );
 
 	if( data == 0x01 )
@@ -3453,14 +3494,14 @@ int32_t CNX_IPCServer::PFPGA_Version( int32_t fd, uint32_t cmd, uint8_t *pBuf, i
 	//	pBuf : not used
 	//
 
-	uint8_t result[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
+	uint8_t result[8] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 	int32_t sendSize;
 
 	int32_t port	= PFPGA_I2C_PORT;
 	uint8_t slave	= PFPGA_I2C_SLAVE;
 
 	CNX_I2C i2c( port );
-	int32_t iReadData = 0x0000;
+	int32_t iReadMajor = 0x0000, iReadMinor = 0x0000;
 
 	if( 0 > i2c.Open() )
 	{
@@ -3468,17 +3509,31 @@ int32_t CNX_IPCServer::PFPGA_Version( int32_t fd, uint32_t cmd, uint8_t *pBuf, i
 		goto ERROR_PFPGA;
 	}
 
-	if( 0 > (iReadData = i2c.Read( slave, PFPGA_REG_PF_VERSION )) )
+	if( 0 > (iReadMajor = i2c.Read( slave, PFPGA_REG_PF_VERSION )) )
 	{
 		NxDbgMsg( NX_DBG_VBS, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 			port, slave, PFPGA_REG_PF_VERSION );
 		goto ERROR_PFPGA;
 	}
 
-	result[0] = (uint8_t)((iReadData >> 24) & 0xFF);
-	result[1] = (uint8_t)((iReadData >> 16) & 0xFF);
-	result[2] = (uint8_t)((iReadData >>  8) & 0xFF);
-	result[3] = (uint8_t)((iReadData >>  0) & 0xFF);
+	if( 0 > (iReadMinor = i2c.Read( slave, PFPGA_REG_PF_RESERVED1 )) )
+	{
+		NxDbgMsg( NX_DBG_VBS, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
+			port, slave, PFPGA_REG_PF_RESERVED1 );
+		goto ERROR_PFPGA;
+	}
+
+	// Major Version
+	result[0] = (uint8_t)((iReadMajor >> 24) & 0xFF);
+	result[1] = (uint8_t)((iReadMajor >> 16) & 0xFF);
+	result[2] = (uint8_t)((iReadMajor >>  8) & 0xFF);
+	result[3] = (uint8_t)((iReadMajor >>  0) & 0xFF);
+
+	// Minor Version
+	result[4] = (uint8_t)((iReadMinor >> 24) & 0xFF);
+	result[5] = (uint8_t)((iReadMinor >> 16) & 0xFF);
+	result[6] = (uint8_t)((iReadMinor >>  8) & 0xFF);
+	result[7] = (uint8_t)((iReadMinor >>  0) & 0xFF);
 
 ERROR_PFPGA:
 	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );

@@ -220,7 +220,7 @@ static int32_t ReceivePingReply( int32_t sock, const char * /*target*/ )
 		default:
 			printf("Unknown ICMP message received (type %d)\n",
 					icmp->icmp_type);
-			break;
+			return -1;
 	}
 	recvd ++;
 	return 0;
@@ -229,7 +229,7 @@ static int32_t ReceivePingReply( int32_t sock, const char * /*target*/ )
 
 int32_t ping( const char *target )
 {
-	int32_t sock;
+	int32_t sock = -1, iRet = -1;
 	// char *hostfrom = NULL;
 	int32_t on = 1;
 	int32_t querytype = ICMP_ECHO;	//	ICMP_MASKREQ
@@ -256,7 +256,13 @@ int32_t ping( const char *target )
 		return -1;
 	}
 
-	close( sock );
+	iRet = 0;
 
-	return 0;
+ERROR:
+	if( 0 < sock )
+	{
+		close( sock );
+	}
+
+	return iRet;
 }

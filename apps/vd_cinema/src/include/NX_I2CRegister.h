@@ -36,6 +36,7 @@
 //	Cabinet Door
 //
 #define TCON_REG_CHECK_DOOR_READ		0x0171
+#define TCON_REG_RESERVED1				0x0172
 #define TCON_REG_CLOSE_DOOR				0x016F
 
 //
@@ -300,6 +301,7 @@
 #define PFPGA_REG_NUC_WDATA				0x01BA
 
 #define PFPGA_REG_PF_VERSION			0x018F
+#define PFPGA_REG_PF_RESERVED1			0x01C1
 #define PFPGA_REG_PF_FPGA_TIME			0x018E
 
 

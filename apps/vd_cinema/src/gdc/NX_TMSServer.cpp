@@ -274,25 +274,23 @@ int32_t CNX_TMSServer::WaitClient()
 //------------------------------------------------------------------------------
 int32_t CNX_TMSServer::IMB_ChangeContents( int32_t fd, uint32_t iCmd, uint8_t *pBuf, int32_t iSize )
 {
+	NxDbgMsg( NX_DBG_ERR, ">>>> Receive ChangeContents(). ( curTime: %lld mSec )\n",  NX_GetTickCount() );
 	UNUSED( iSize );
 
 	uint8_t result = 0xFF;
 	int32_t sendSize;
 
-	if( pBuf[0] < 0x0A )
-	{
-		uint8_t sendData[2] = { 0x00, };
-		sprintf( (char*)sendData, "%d", pBuf[0] );
+	uint8_t sendData[4] = { 0x00, };
+	sprintf( (char*)sendData, "%d", pBuf[0] );
 
-		if( !SendRemote( "cinema.change.contents", (const char*)sendData ) )
-		{
-			result = 0x01;
-		}
-		else
-		{
-			printf("Fail, SendRemote. ( node: cinema.change.contents )\n");
-			NxDbgMsg( NX_DBG_VBS, "Fail, SendRemote. ( node: cinema.change.contents )\n");
-		}
+	if( !SendRemote( "cinema.tms", (const char*)sendData ) )
+	{
+		result = 0x01;
+	}
+	else
+	{
+		printf("Fail, SendRemote. ( node: cinema.tms )\n");
+		NxDbgMsg( NX_DBG_VBS, "Fail, SendRemote. ( node: cinema.tms )\n");
 	}
 
 	sendSize = GDC_MakePacket( SEC_KEY(iCmd), &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
@@ -300,6 +298,7 @@ int32_t CNX_TMSServer::IMB_ChangeContents( int32_t fd, uint32_t iCmd, uint8_t *p
 	WriteData( fd, m_SendBuf, sendSize );
 	NX_HexDump( m_SendBuf, sendSize );
 
+	NxDbgMsg( NX_DBG_ERR, ">>>> Receive ChangeContents() Done. ( curTime: %lld mSec )\n",  NX_GetTickCount() );
 	return 0;
 }
 

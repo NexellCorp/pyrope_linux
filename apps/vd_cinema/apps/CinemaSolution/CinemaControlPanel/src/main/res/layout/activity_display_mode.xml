@@ -37,17 +37,6 @@
                 android:layout_height="match_parent">
 
                 <RelativeLayout
-                    android:id="@+id/tabMasteringMode"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical">
-                    <include
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        layout="@layout/layout_display_mode_mastering" />
-                </RelativeLayout>
-
-                <RelativeLayout
                     android:id="@+id/tabUniformityCorrection"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent">
@@ -55,17 +44,6 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         layout="@layout/layout_display_mode_uniformity_correction" />
-                </RelativeLayout>
-
-                <RelativeLayout
-                    android:id="@+id/tabImageQuality"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical">
-                    <include
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        layout="@layout/layout_display_mode_image_quality" />
                 </RelativeLayout>
 
                 <RelativeLayout

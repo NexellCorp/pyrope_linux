@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:background="#FFE0E0E0"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:gravity="center"
+        android:weightSum="1">
+
+        <TextView
+            android:background="@drawable/draw_line_border"
+            android:layout_width="0px"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="Item"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:paddingTop="15dp"
+            android:paddingBottom="15dp"
+            android:layout_weight="0.4" />
+
+        <TextView
+            android:background="@drawable/draw_line_border"
+            android:layout_width="0px"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="Value"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:paddingTop="15dp"
+            android:paddingBottom="15dp"
+            android:layout_weight="0.6" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:gravity="center"
+        android:weightSum="1">
+
+        <TextView
+            android:background="@drawable/draw_line_border"
+            android:layout_width="0px"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="Resolution"
+            android:gravity="center"
+            android:paddingTop="15dp"
+            android:paddingBottom="15dp"
+            android:layout_weight="0.4" />
+
+        <LinearLayout
+            android:background="@drawable/draw_line_border"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:paddingTop="11dp"
+            android:paddingBottom="12dp"
+            android:gravity="center"
+            android:weightSum="1"
+            android:layout_weight="0.6">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_weight="0.3" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_weight="0.15" >
+                <RadioButton
+                    android:id="@+id/radioResolution2k"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="2K       "/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_weight="0.1" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_weight="0.15" >
+                <RadioButton
+                    android:id="@+id/radioResolution4k"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="4K       "/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_weight="0.3" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:gravity="center"
+        android:weightSum="1">
+
+        <TextView
+            android:background="@drawable/draw_line_border"
+            android:layout_width="0px"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="3D Mode"
+            android:gravity="center"
+            android:paddingTop="15dp"
+            android:paddingBottom="15dp"
+            android:layout_weight="0.4" />
+
+        <LinearLayout
+            android:background="@drawable/draw_line_border"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:paddingTop="11dp"
+            android:paddingBottom="12dp"
+            android:gravity="center"
+            android:weightSum="1"
+            android:layout_weight="0.6">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_weight="0.3" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_weight="0.15" >
+                <RadioButton
+                    android:id="@+id/radio3DModeOn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="3D_ON"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_weight="0.1" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_weight="0.15" >
+                <RadioButton
+                    android:id="@+id/radio3DModeOff"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="3D_OFF"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_weight="0.3" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

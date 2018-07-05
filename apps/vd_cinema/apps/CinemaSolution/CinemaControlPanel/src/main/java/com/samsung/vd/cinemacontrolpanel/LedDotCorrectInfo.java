@@ -5,7 +5,6 @@ import android.util.Log;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -73,7 +72,8 @@ public class LedDotCorrectInfo {
         Pattern patternData = Pattern.compile(PATTERN_DATA);
         try {
             FileInputStream inStream = new FileInputStream( filePath );
-            BufferedReader bufferedReader = new BufferedReader( new InputStreamReader(inStream) );
+            InputStreamReader inStreamReader = new InputStreamReader( inStream );
+            BufferedReader bufferedReader = new BufferedReader( inStreamReader );
 
             String strValue;
             int cnt = 0;
@@ -96,6 +96,10 @@ public class LedDotCorrectInfo {
                     break;
                 }
             }
+
+            bufferedReader.close();
+            inStreamReader.close();
+            inStream.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

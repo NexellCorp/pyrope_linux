@@ -202,7 +202,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:text="Scaling ON/OFF"
+                    android:text="Scaling Method"
                     android:gravity="center"
                     android:paddingTop="15dp"
                     android:paddingBottom="15dp"
@@ -216,14 +216,6 @@
                     android:paddingTop="12dp"
                     android:paddingBottom="11dp"
                     android:layout_weight="0.7" >
-
-                    <CheckBox
-                        android:id="@+id/checkScale"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceMedium"
-                        android:layout_marginRight="80dp"
-                        android:text="2K" />
 
                     <CheckBox
                         android:id="@+id/checkZeroScale"
@@ -451,7 +443,6 @@
                         android:id="@+id/btnLodReset"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceMedium"
                         android:text="Apply" />
                 </LinearLayout>
             </LinearLayout>

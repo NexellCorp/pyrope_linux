@@ -1,24 +1,16 @@
 package com.samsung.vd.cinemacontrolpanel;
 
-import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
-import android.content.pm.ActivityInfo;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.IBinder;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ExpandableListView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TabHost;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTitleBar;
@@ -28,7 +20,7 @@ import java.util.Locale;
 /**
  * Created by doriya on 8/16/16.
  */
-public class DisplayCheckActivity extends AppCompatActivity {
+public class DisplayCheckActivity extends CinemaBaseActivity {
     private final String VD_DTAG = "DisplayCheckActivity";
 
     private String[] mFuncName = {
@@ -88,10 +80,10 @@ public class DisplayCheckActivity extends AppCompatActivity {
     };
 
     private int[] mPatternReg = {
-            0x0044,     // REG_FLASH_CC     :: restore default value
-            0x0052,     // REG_CC_MODULE    :: restore default value
-            0x0004,     // REG_XYZ_TO_RGB   :: restore default value
-            0x0192,     // REG_SEAM_ON      :: restore default value
+            CinemaInfo.REG_TCON_FLASH_CC,     // restore default value
+            CinemaInfo.REG_TCON_CC_MODULE,    // restore default value
+            CinemaInfo.REG_TCON_XYZ_TO_RGB,   // restore default value
+            CinemaInfo.REG_TCON_SEAM_ON,      // restore default value
     };
 
     private int[] mPatternDat = {
@@ -101,19 +93,32 @@ public class DisplayCheckActivity extends AppCompatActivity {
             0x0000,
     };
 
+    private CinemaInfo mCinemaInfo;
+    private byte[]  mCabinet;
+
+    private TabHost mTabHost;
+
     private SelectRunAdapter mAdapterTestPattern;
     private StatusDescribeExpandableAdapter mAdapterAccumulation;
-
-    private byte[]  mCabinet;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        SetScreenRotation();
         setContentView(R.layout.activity_display_check);
 
         //
-        // Configuration TitleBar
+        //  Common Variable
+        //
+        mCinemaInfo = (CinemaInfo)getApplicationContext();
+        mCabinet = mCinemaInfo.GetCabinet();
+
+        final ViewGroup rootGroup = null;
+        View listViewFooter = null;
+        LayoutInflater inflater = (LayoutInflater)getApplicationContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        if( inflater != null ) listViewFooter = inflater.inflate(R.layout.listview_footer_blank, rootGroup, false);
+
+        //
+        //  Configuration TitleBar
         //
         VdTitleBar titleBar = new VdTitleBar( getApplicationContext(), (LinearLayout)findViewById( R.id.layoutTitleBar ));
         titleBar.SetTitle( "Cinema LED Display System - Display Check" );
@@ -127,40 +132,43 @@ public class DisplayCheckActivity extends AppCompatActivity {
         titleBar.SetListener(VdTitleBar.BTN_BACK, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                StopTestPattern();
-                startActivity( new Intent(v.getContext(), TopActivity.class) );
-                overridePendingTransition(0, 0);
-                finish();
+                final View view = v;
+                if( mTabPrevious.equals("TAB0") ) {
+                    ClearTestPattern(
+                            new CinemaTask.PostExecuteCallback() {
+                                @Override
+                                public void onPostExecute(Object[] values) {
+                                    Launch(view.getContext(), TopActivity.class, 100);
+                                }
+                            }
+                    );
+                }
+                else {
+                    Launch(view.getContext(), TopActivity.class);
+                }
             }
         });
+
         titleBar.SetListener(VdTitleBar.BTN_EXIT, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                StopTestPattern();
-                mService.TurnOff();
+                if( mTabPrevious.equals("TAB0") ) ClearTestPattern();
+                TurnOff();
             }
         });
 
-        if( !((CinemaInfo)getApplicationContext()).IsEnableRotate() ) {
+        if( !mCinemaInfo.IsEnableRotate() ) {
             titleBar.SetVisibility(VdTitleBar.BTN_ROTATE, View.GONE);
         }
 
-        if( !((CinemaInfo)getApplicationContext()).IsEnableExit() ) {
+        if( !mCinemaInfo.IsEnableExit() ) {
             titleBar.SetVisibility(VdTitleBar.BTN_EXIT, View.GONE);
         }
 
         //
-        // Configuration StatusBar
+        //  Configuration StatusBar
         //
         new VdStatusBar( getApplicationContext(), (LinearLayout)findViewById( R.id.layoutStatusBar) );
-
-        AddTabs();
-
-        //
-        //
-        //
-        View listViewFooter = ((LayoutInflater)getApplicationContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE)).inflate(R.layout.listview_footer_blank, null, false);
-        mCabinet = ((CinemaInfo)getApplicationContext()).GetCabinet();
 
         //
         //  TEST PATTERN
@@ -171,8 +179,6 @@ public class DisplayCheckActivity extends AppCompatActivity {
         mAdapterTestPattern = new SelectRunAdapter(this, R.layout.listview_row_select_run);
         listViewTestPattern.setAdapter( mAdapterTestPattern );
 
-        UpdateTestPattern();
-
         for(int i = 0; i < mFuncName.length; i++ ) {
             boolean toggle = (i >= 5);
             String[] btnText = (i >= 7) ? new String[]{"ENABLE", "DISABLE"} : new String[]{"RUN", "STOP"};
@@ -181,12 +187,37 @@ public class DisplayCheckActivity extends AppCompatActivity {
             mAdapterTestPattern.add( new SelectRunInfo(mFuncName[i], mPatternName[i], btnText, toggle, status, new SelectRunAdapter.OnClickListener() {
                 @Override
                 public void onClickListener(int index, int spinnerIndex, boolean status ) {
-                    new AsyncTaskTestPattern( index, spinnerIndex, status ).execute();
+                    CinemaTask.GetInstance().Run(
+                            CinemaTask.CMD_TEST_PATTERN,
+                            getApplicationContext(),
+                            mAdapterTestPattern,
+                            index,
+                            spinnerIndex,
+                            status,
+                            new CinemaTask.PreExecuteCallback() {
+                                @Override
+                                public void onPreExecute(Object[] values) {
+                                    ShowProgress();
+                                }
+                            },
+                            new CinemaTask.PostExecuteCallback() {
+                                @Override
+                                public void onPostExecute(Object[] values) {
+                                    HideProgress();
+                                }
+                            }
+                    );
                 }
             }));
 
             mAdapterTestPattern.notifyDataSetChanged();
         }
+
+        //
+        //  Initialize Tab
+        //
+        AddTabs();
+        UpdateTestPattern();
 
         //
         //  ACCUMULATION TIME
@@ -196,395 +227,181 @@ public class DisplayCheckActivity extends AppCompatActivity {
 
         mAdapterAccumulation = new StatusDescribeExpandableAdapter(this, R.layout.listview_row_status_describe, R.layout.listview_row_status_describe);
         listViewAccumulation.setAdapter( mAdapterAccumulation );
+
+        //
+        //
+        //
+        mTabHost.getTabWidget().getChildTabViewAt(1).setEnabled(false);
+        ((TextView) mTabHost.getTabWidget().getChildAt(1).findViewById(android.R.id.title)).setTextColor(0xFFDCDCDC);
+
+        mTabHost.getTabWidget().getChildTabViewAt(2).setEnabled(false);
+        ((TextView) mTabHost.getTabWidget().getChildAt(2).findViewById(android.R.id.title)).setTextColor(0xFFDCDCDC);
     }
 
     private void AddTabs() {
-        TabHost tabHost = (TabHost) findViewById(R.id.tabHost);
-        tabHost.setup();
+        mTabHost = (TabHost) findViewById(R.id.tabHost);
+        mTabHost.setup();
 
-        TabHost.TabSpec tabSpec0 = tabHost.newTabSpec("TAB0");
+        TabHost.TabSpec tabSpec0 = mTabHost.newTabSpec("TAB0");
         tabSpec0.setIndicator("Test Pattern");
         tabSpec0.setContent(R.id.tabTestPattern);
 
-        TabHost.TabSpec tabSpec1 = tabHost.newTabSpec("TAB1");
+        TabHost.TabSpec tabSpec1 = mTabHost.newTabSpec("TAB1");
         tabSpec1.setIndicator("Led Accumulation time");
         tabSpec1.setContent(R.id.tabLedAccumulation);
 
-        TabHost.TabSpec tabSpec2 = tabHost.newTabSpec("TAB2");
+        TabHost.TabSpec tabSpec2 = mTabHost.newTabSpec("TAB2");
         tabSpec2.setIndicator("Additional Information");
         tabSpec2.setContent(R.id.tabAdditionalInformation);
 
-        tabHost.addTab(tabSpec0);
-        tabHost.addTab(tabSpec1);
-        tabHost.addTab(tabSpec2);
+        mTabHost.addTab(tabSpec0);
+        mTabHost.addTab(tabSpec1);
+        mTabHost.addTab(tabSpec2);
 
-        tabHost.setOnTabChangedListener(mDiagnosticsTabChange);
-        tabHost.setCurrentTab(0);
-
-        tabHost.getTabWidget().getChildTabViewAt(1).setEnabled(false);
-        ((TextView)tabHost.getTabWidget().getChildAt(1).findViewById(android.R.id.title)).setTextColor(0xFFDCDCDC);
-
-        tabHost.getTabWidget().getChildTabViewAt(2).setEnabled(false);
-        ((TextView)tabHost.getTabWidget().getChildAt(2).findViewById(android.R.id.title)).setTextColor(0xFFDCDCDC);
+        mTabHost.setOnTabChangedListener(mDiagnosticsTabChange);
+        mTabHost.setCurrentTab(0);
     }
 
+    private String mTabPrevious = "TAB0";
     private TabHost.OnTabChangeListener mDiagnosticsTabChange = new TabHost.OnTabChangeListener() {
         @Override
         public void onTabChanged(String tabId) {
+            if( mTabPrevious.equals("TAB0") ) ClearTestPattern();
+
             if( tabId.equals("TAB0") ) UpdateTestPattern();
             if( tabId.equals("TAB1") ) UpdateAccumulation();
             if( tabId.equals("TAB2") ) UpdateAdditionalInformation();
+
+            mTabPrevious = tabId;
         }
     };
 
     private void UpdateTestPattern() {
-        if( mCabinet.length == 0 )
-            return;
+        CinemaTask.GetInstance().Run(
+                CinemaTask.CMD_TCON_REG_READ,
+                getApplicationContext(),
+                mPatternReg,
+                new CinemaTask.PreExecuteCallback() {
+                    @Override
+                    public void onPreExecute(Object[] values) {
+                        ShowProgress();
+                    }
+                },
+                new CinemaTask.PostExecuteCallback() {
+                    @Override
+                    public void onPostExecute(Object[] values) {
+                        if( !(values instanceof Integer[]) )
+                            return;
 
-        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-        for( int i = 0; i < mPatternReg.length; i++ )
-        {
-            byte[] result, inData;
-            inData = new byte[] { mCabinet[0] };
-            inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mPatternReg[i], NxCinemaCtrl.FORMAT_INT16));
+                        for( int i = 0 ; i < values.length; i++ )
+                        {
+                            Log.i(VD_DTAG, String.format(">>> read default pattern register. ( reg: 0x%04X, dat: 0x%04X )", mPatternReg[i], mPatternDat[i]) );
+                            mPatternDat[i] = (Integer)values[i];
+                        }
+                        HideProgress();
+                    }
+                },
+                null
+        );
+    }
 
-            result = ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_READ, inData );
-            if( result == null || result.length == 0 ) {
-                Log.i(VD_DTAG, String.format(Locale.US, "i2c read fail.( id: 0x%02X, reg: 0x%04X )", mCabinet[0], mPatternReg[i] ));
-                return;
-            }
 
-            mPatternDat[i] = ctrl.ByteArrayToInt(result);
+    private void ClearTestPattern() {
+        ClearTestPattern(null);
+    }
+
+    private void ClearTestPattern(final CinemaTask.PostExecuteCallback postExecute) {
+        for( int i = 0; i < mFuncName.length - mPatternReg.length + 1; i++ ) {
+            CinemaTask.GetInstance().Run(
+                    CinemaTask.CMD_TEST_PATTERN,
+                    getApplicationContext(),
+                    mAdapterTestPattern,
+                    i,
+                    0,
+                    false,
+                    new CinemaTask.PreExecuteCallback() {
+                        @Override
+                        public void onPreExecute(Object[] values) {
+                            ShowProgress();
+                        }
+                    },
+                    new CinemaTask.PostExecuteCallback() {
+                        @Override
+                        public void onPostExecute(Object[] values) {
+                            HideProgress();
+                        }
+                    }
+            );
         }
 
-        for( int i = 0 ; i < mPatternReg.length; i++ )
-        {
-            Log.i(VD_DTAG, String.format(">>> read default pattern register. ( reg: 0x%04X, dat: 0x%04X )", mPatternReg[i], mPatternDat[i]) );
-        }
+        CinemaTask.GetInstance().Run(
+                CinemaTask.CMD_TCON_REG_WRITE,
+                getApplicationContext(),
+                mPatternReg,
+                mPatternDat,
+                new CinemaTask.PreExecuteCallback() {
+                    @Override
+                    public void onPreExecute(Object[] values) {
+                        ShowProgress();
+                    }
+                },
+                new CinemaTask.PostExecuteCallback() {
+                    @Override
+                    public void onPostExecute(Object[] values) {
+                        HideProgress();
+
+                        if( null != postExecute )
+                            postExecute.onPostExecute(values);
+                    }
+                },
+                null
+        );
     }
 
     private void UpdateAccumulation() {
-        StopTestPattern();
-        new AsyncTaskAccumulation(mAdapterAccumulation).execute();
+        CinemaTask.GetInstance().Run(
+                CinemaTask.CMD_ACCUMULATION,
+                getApplicationContext(),
+                new CinemaTask.PreExecuteCallback() {
+                    @Override
+                    public void onPreExecute(Object[] values) {
+                        ShowProgress();
+                        mAdapterAccumulation.clear();
+                    }
+                },
+                new CinemaTask.PostExecuteCallback() {
+                    @Override
+                    public void onPostExecute(Object[] values) {
+                        HideProgress();
+                    }
+                },
+                new CinemaTask.ProgressUpdateCallback() {
+                    @Override
+                    public void onProgressUpdate(Object[] values) {
+                        if( !(values instanceof Integer[]) )
+                            return;
+
+                        if( mAdapterAccumulation.getGroupCount() == (Integer)values[0] ) {
+                            mAdapterAccumulation.addGroup( new StatusDescribeExpandableInfo(
+                                    String.format( Locale.US, "Cabinet %02d", (mCabinet[(Integer)values[0]] & 0x7F) - CinemaInfo.TCON_ID_OFFSET )
+                            ));
+                        }
+
+                        mAdapterAccumulation.addChild(
+                                (Integer)values[0],
+                                new StatusDescribeInfo(String.format( Locale.US, "Module #%02d", (Integer)values[1]),
+                                        (Integer)values[2] == CinemaInfo.RET_ERROR ? "Error" :
+                                        String.format( Locale.US, "%d mSec", (Integer)values[2] )
+                                )
+                        );
+
+                        mAdapterAccumulation.notifyDataSetChanged();
+                    }
+                }
+        );
     }
 
     private void UpdateAdditionalInformation() {
-        StopTestPattern();
+        Log.i(VD_DTAG, "Not Implementation.");
     }
-
-    private void StopTestPattern() {
-        if( mCabinet.length == 0 )
-            return;
-
-        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-
-        boolean bValidPort0 = false, bValidPort1 = false;
-        for( byte id : mCabinet ) {
-            if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-            if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-        }
-
-        Log.i(VD_DTAG, ">>> restore default pattern register.");
-        for( int i = 0; i < mFuncName.length; i++ ) {
-            if( i < 7 ) {
-                byte[] data0 = { (byte)0x09, (byte)i, (byte)0x00 };
-                byte[] data1 = { (byte)0x89, (byte)i, (byte)0x00 };
-
-                if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data0 );
-                if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data1 );
-            }
-            else {
-                byte[] reg = ctrl.IntToByteArray(mPatternReg[i-7], NxCinemaCtrl.FORMAT_INT16);
-                byte[] dat = ctrl.IntToByteArray(mPatternDat[i-7], NxCinemaCtrl.FORMAT_INT16);
-                byte[] data = ctrl.AppendByteArray(reg, dat);
-                byte[] data0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, data);
-                byte[] data1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, data);
-
-                if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, data0 );
-                if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, data1 );
-            }
-        }
-        Log.i(VD_DTAG, ">>> restore default pattern register done.");
-    }
-
-    private class AsyncTaskTestPattern extends AsyncTask<Void, Integer, Void> {
-        private int mFuncIndex;
-        private int mPatternIndex;
-        private boolean mStatus;
-
-        public AsyncTaskTestPattern( int funcIndex, int patternIndex, boolean status ) {
-            mFuncIndex = funcIndex;
-            mPatternIndex = patternIndex;
-            mStatus = status;
-        }
-
-        @Override
-        protected Void doInBackground(Void... voids) {
-            Log.i(VD_DTAG, String.format( "funcIndex(%d), patternIndex(%d), status(%s)", mFuncIndex, mPatternIndex, String.valueOf(mStatus)) );
-            if( mCabinet.length == 0 )
-                return null;
-
-            String strLog;
-            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-
-            boolean bValidPort0 = false, bValidPort1 = false;
-            for( byte id : mCabinet ) {
-                if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-                if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-            }
-
-            if( mFuncIndex < 7 ) {
-                byte[] data = { (byte)mFuncIndex, (byte)mPatternIndex };
-
-                byte[] data0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, data);
-                byte[] data1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, data);
-
-                if( bValidPort0 ) ctrl.Send( mStatus ? NxCinemaCtrl.CMD_TCON_PATTERN_RUN : NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data0 );
-                if( bValidPort1 ) ctrl.Send( mStatus ? NxCinemaCtrl.CMD_TCON_PATTERN_RUN : NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data1 );
-
-                if( mPatternName[mFuncIndex].length == 0 ) {
-                    strLog = String.format( "%s pattern test. ( %s )", mStatus ? "Run" : "Stop", mFuncName[mFuncIndex] );
-                }
-                else {
-                    strLog = String.format( "%s pattern test. ( %s / %s )", mStatus ? "Run" : "Stop", mFuncName[mFuncIndex], mPatternName[mFuncIndex][mPatternIndex] );
-                }
-            }
-            else {
-                byte[] reg = ctrl.IntToByteArray(mPatternReg[mFuncIndex-7], NxCinemaCtrl.FORMAT_INT16);
-                byte[] dat = ctrl.IntToByteArray(mStatus ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
-                byte[] data = ctrl.AppendByteArray(reg, dat);
-                byte[] data0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, data);
-                byte[] data1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, data);
-
-                if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, data0 );
-                if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, data1 );
-
-                strLog = String.format( "%s %s", mFuncName[mFuncIndex], mStatus ? "Enable" : "Disable" );
-            }
-
-            ((CinemaInfo)getApplicationContext()).InsertLog(strLog);
-
-            //
-            //
-            //
-            int [] resDat = { 0x0000, 0x0000, 0x0000, 0x000 };
-            for( int i = 0; i < mPatternReg.length; i++ )
-            {
-                byte[] result, inData;
-                byte slave = mCabinet[0];
-
-                inData = new byte[] { slave };
-                inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mPatternReg[i], NxCinemaCtrl.FORMAT_INT16));
-
-                result = ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_READ, inData );
-                if( result == null || result.length == 0 ) {
-                    Log.i(VD_DTAG, String.format(Locale.US, "i2c read fail.( id: 0x%02X, reg: 0x%04X )", slave, mPatternReg[i] ));
-                    return null;
-                }
-
-                resDat[i] = ctrl.ByteArrayToInt(result);
-            }
-
-            for( int i = 0; i < mPatternReg.length; i++ )
-            {
-                Log.i(VD_DTAG, String.format(">>> read pattern register. ( reg: 0x%04X, dat: 0x%04X )", mPatternReg[i], resDat[i]) );
-            }
-
-            publishProgress(resDat[0], resDat[1], resDat[2], resDat[3] );
-            return null;
-        }
-
-        @Override
-        protected void onProgressUpdate(Integer... values) {
-            //
-            //
-            //
-            for( int i = 0; i < mPatternReg.length; i++ )
-            {
-                SelectRunInfo info = mAdapterTestPattern.getItem(i+7);
-                if( info == null )
-                    continue;
-
-                info.SetStatus(values[i] == 0x0001);
-            }
-            super.onProgressUpdate(values);
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            Log.i(VD_DTAG, "Test Pattern Start.");
-            CinemaLoading.Show( DisplayCheckActivity.this );
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-            CinemaLoading.Hide();
-            Log.i(VD_DTAG, "Test Pattern Done.");
-        }
-    }
-
-    private class AsyncTaskAccumulation extends AsyncTask<Void, Void, Void> {
-        private StatusDescribeExpandableAdapter mAdapter;
-
-        public AsyncTaskAccumulation( StatusDescribeExpandableAdapter adapter) {
-            mAdapter = adapter;
-            mAdapter.clear();
-        }
-
-        @Override
-        protected Void doInBackground(Void... params) {
-            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-
-            if( mCabinet == null )
-                return null;
-
-            for( int i = 0; i < mCabinet.length; i++ ) {
-                mAdapter.addGroup( new StatusDescribeExpandableInfo(String.format( Locale.US, "Cabinet %02d", (mCabinet[i] & 0x7F) - CinemaInfo.TCON_ID_OFFSET )) );
-
-                for( int j = 0; j < CinemaInfo.TCON_MODULE_NUM; j++ ) {
-                    byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_ACCUMULATE_TIME, new byte[] { mCabinet[i], (byte)j } );
-                    if( result == null || result.length == 0 ) {
-                        mAdapter.addChild(i, new StatusDescribeInfo(String.format( Locale.US, "Module #%02d", j), String.valueOf("Error")) );
-                        continue;
-                    }
-                    mAdapter.addChild(i, new StatusDescribeInfo(String.format( Locale.US, "Module #%02d", j), new String(result) ));
-                }
-	            publishProgress();
-            }
-            return null;
-        }
-
-        @Override
-        protected void onProgressUpdate(Void... values) {
-            mAdapter.notifyDataSetChanged();
-            super.onProgressUpdate(values);
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            Log.i(VD_DTAG, "Accumulation Time Check Start.");
-            CinemaLoading.Show(DisplayCheckActivity.this);
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-            CinemaLoading.Hide();
-            Log.i(VD_DTAG, "Accumulation Time Check Done.");
-        }
-    }
-
-    //
-    //  For Internal Toast Message
-    //
-    private static Toast mToast;
-
-    private void ShowMessage( String strMsg ) {
-        if( mToast == null )
-            mToast = Toast.makeText(getApplicationContext(), null, Toast.LENGTH_SHORT);
-
-        mToast.setText(strMsg);
-        mToast.show();
-    }
-
-    //
-    //  For Screen Rotation
-    //
-    private void SetScreenRotation() {
-        String orientation = ((CinemaInfo) getApplicationContext()).GetValue(CinemaInfo.KEY_SCREEN_ROTATE);
-        if( orientation == null ) {
-            orientation = String.valueOf(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-        }
-
-        switch( Integer.parseInt(orientation) ) {
-            case ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE:
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                break;
-            case ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE:
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                break;
-            default:
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                break;
-        }
-    }
-
-    private void ChangeScreenRotation() {
-        String orientation = ((CinemaInfo) getApplicationContext()).GetValue(CinemaInfo.KEY_SCREEN_ROTATE);
-        if( orientation == null ) {
-            orientation = String.valueOf(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-        }
-
-        int curRotate;
-        int prvRotate = Integer.parseInt(orientation);
-        switch (prvRotate) {
-            case ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE:
-                curRotate = ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                break;
-            case ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE:
-                curRotate = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                break;
-            default:
-                curRotate = ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-                break;
-        }
-
-        ((CinemaInfo)getApplicationContext()).SetValue(CinemaInfo.KEY_SCREEN_ROTATE, String.valueOf(curRotate));
-    }
-
-    //
-    //  For ScreenSaver
-    //
-    private CinemaService mService = null;
-    private boolean mServiceRun = false;
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        Intent intent = new Intent(this, CinemaService.class);
-        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-
-        if( mServiceRun ) {
-            unbindService(mConnection);
-            mServiceRun = false;
-        }
-    }
-
-    @Override
-    public boolean dispatchTouchEvent(MotionEvent ev) {
-        boolean isOn = false;
-        if( mService != null ) {
-            isOn = mService.IsOn();
-            mService.RefreshScreenSaver();
-        }
-
-        return !isOn || super.dispatchTouchEvent(ev);
-    }
-
-    private ServiceConnection mConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            CinemaService.LocalBinder binder = (CinemaService.LocalBinder)service;
-            mService = binder.GetService();
-            mServiceRun = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            mServiceRun = false;
-        }
-    };
-
 }

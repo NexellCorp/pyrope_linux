@@ -39,7 +39,8 @@ public class LedUniformityInfo {
 
         try {
             FileInputStream inStream = new FileInputStream(filePath);
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inStream));
+            InputStreamReader inStreamReader = new InputStreamReader(inStream);
+            BufferedReader bufferedReader = new BufferedReader(inStreamReader);
 
             String strValue;
             int index = 0;
@@ -59,6 +60,10 @@ public class LedUniformityInfo {
                     index++;
                 }
             }
+
+            bufferedReader.close();
+            inStreamReader.close();
+            inStream.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

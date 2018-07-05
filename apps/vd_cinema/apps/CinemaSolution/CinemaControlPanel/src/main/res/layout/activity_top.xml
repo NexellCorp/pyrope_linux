@@ -84,6 +84,35 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:text="- EEPROM Status : "
+                    android:paddingStart="30dp"
+                    android:textStyle=""
+                    android:layout_weight="0.25" />
+
+                <!-- Current Mode -->
+                <TextView
+                    android:id="@+id/textEEPRomStatus"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:text="Invalid"
+                    android:textStyle=""
+                    android:layout_weight="0.75" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="5dp"
+                android:layout_marginRight="15dp"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:weightSum="1">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
                     android:text="- Initialize Mode : "
                     android:paddingStart="30dp"
                     android:textStyle=""

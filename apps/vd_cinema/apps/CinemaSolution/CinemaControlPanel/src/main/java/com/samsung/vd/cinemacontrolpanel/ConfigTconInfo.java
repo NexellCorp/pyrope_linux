@@ -35,6 +35,10 @@ public class ConfigTconInfo {
     private String[] mDescription = new String[MAX_MODE_NUM];
     private int[] mDataNum = new int[MAX_MODE_NUM];
     private int[][][] mData = new int[MAX_MODE_NUM][2][];
+    private int[] mDataMode = new int[MAX_MODE_NUM];
+
+    public static final int MODE_BOTH   = 0;
+    public static final int MODE_3D     = 1;
 
     public ConfigTconInfo() {
     }
@@ -48,12 +52,15 @@ public class ConfigTconInfo {
         if( !fileName.equals(NAME) )
             return false;
 
-        for( int i = 0; i < MAX_MODE_NUM; i++ )
+        for( int i = 0; i < MAX_MODE_NUM; i++ ) {
             mDataNum[i] = 0;
+            mDataMode[i] = MODE_BOTH;
+        }
 
         try {
             FileInputStream inStream = new FileInputStream( filePath );
-            BufferedReader bufferedReader = new BufferedReader( new InputStreamReader(inStream) );
+            InputStreamReader inStreamReader = new InputStreamReader(inStream);
+            BufferedReader bufferedReader = new BufferedReader( inStreamReader );
 
             int idxLine = 0, idxData = 0;
             String strLine;
@@ -136,8 +143,24 @@ public class ConfigTconInfo {
 
                 idxLine++;
             }
+
+            bufferedReader.close();
+            inStreamReader.close();
+            inStream.close();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+
+        for( int i = 0; i < mModeNum; i++ ) {
+            int[] reg = GetRegister(i);
+            int[] dat = GetData(i);
+
+            for(int j = 0; j < reg.length; j++ ) {
+                if( reg[j] == 0x0030 ) {
+                    mDataMode[i] = dat[j];
+                    break;
+                }
+            }
         }
 
         //
@@ -148,6 +171,7 @@ public class ConfigTconInfo {
 //                continue;
 //
 //            Log.i(VD_DTAG, String.format("* mode %d : %s", i, mDescription[i]));
+//            Log.i(VD_DTAG, String.format("-. 3D Mode : %b", mData3D[i]));
 //            Log.i(VD_DTAG, String.format("-. TGAM0 ( %d ), TGAM1 ( %d ), DGAM0 ( %d ), DGAM1 ( %d )",
 //                    mEnable[i][0], mEnable[i][1], mEnable[i][2], mEnable[i][3]) );
 //
@@ -183,5 +207,9 @@ public class ConfigTconInfo {
 
     int[][] GetRegData( int mode ) {
         return (mModeNum > mode) ? mData[mode] : null;
+    }
+
+    int GetDataMode( int mode ) {
+        return (mModeNum > mode) ? mDataMode[mode] : MODE_BOTH;
     }
 }

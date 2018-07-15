@@ -57,6 +57,8 @@ public class ConfigTconInfo {
             mDataMode[i] = MODE_BOTH;
         }
 
+        mModeNum = 0;
+
         try {
             FileInputStream inStream = new FileInputStream( filePath );
             InputStreamReader inStreamReader = new InputStreamReader(inStream);
@@ -210,6 +212,6 @@ public class ConfigTconInfo {
     }
 
     int GetDataMode( int mode ) {
-        return (mModeNum > mode) ? mDataMode[mode] : MODE_BOTH;
+        return (mModeNum > mode) ? mDataMode[mode] : -1;
     }
 }

@@ -187,7 +187,10 @@ public class TopActivity extends CinemaBaseActivity {
         mInitMode = (strTemp == null) ? 0 : Integer.parseInt(strTemp);
 
         mTextInitMode = (TextView)findViewById(R.id.textInitModeCurrent);
-        mTextInitMode.setText(String.format(Locale.US, "Mode #%d", mInitMode+1));
+        mTextInitMode.setText( (0 > mInitMode) ?
+                String.format(Locale.US, "Mode Invalid") :
+                String.format(Locale.US, "Mode #%d", mInitMode + 1)
+        );
 
         mBtnInitMode = (Button)findViewById(R.id.btnInitModeUpdate);
         mBtnInitMode.setOnClickListener(new View.OnClickListener() {
@@ -262,9 +265,18 @@ public class TopActivity extends CinemaBaseActivity {
                 if( !(values instanceof Integer[]) )
                     return;
 
-                if( 20 > (Integer)values[0] ) {
+                if( 0 > (Integer)values[0] ) {
+
+                    return;
+                }
+
+                if( CinemaTask.CMD_TMS_QUE > (Integer)values[0] ) {
                     mInitMode = (Integer)values[0];
                     mTextInitMode.setText(String.format(Locale.US, "Mode #%d", mInitMode +1));
+                }
+
+                if( CinemaTask.CMD_TMS_QUE <= (Integer)values[0] ) {
+                    UpdateInitialValue();
                 }
             }
         });
@@ -286,12 +298,17 @@ public class TopActivity extends CinemaBaseActivity {
                     new CinemaTask.PostExecuteCallback() {
                         @Override
                         public void onPostExecute(Object[] values) {
-                            String strTemp = mCinemaInfo.GetValue(CinemaInfo.KEY_INITIAL_MODE);
+                            if( !(values instanceof Integer[]) )
+                                return;
 
-                            mInitMode = (strTemp == null) ? 0 : Integer.parseInt(strTemp);
-                            mTextInitMode.setText(String.format(Locale.US, "Mode #%d", mInitMode + 1));
+                            if( 0 > (Integer)values[0] )
+                                Log.i(VD_DTAG, "Fail, Change Mode.");
+                            else {
+                                mInitMode = (Integer)values[0];
+                                mTextInitMode.setText(String.format(Locale.US, "Mode #%d", mInitMode + 1));
 
-                            Log.i(VD_DTAG, String.format("Change Mode Done. ( mode = %d )", mInitMode));
+                                Log.i(VD_DTAG, String.format("Change Mode Done. ( mode = %d )", (Integer)values[0] + 1));
+                            }
                             HideProgress();
                         }
                     },

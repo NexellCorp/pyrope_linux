@@ -13,21 +13,21 @@ LIBRARY	+= -lstdc++ -lpthread
 ################################################################################
 # Target
 COBJS	:=
-CPPOBJS	:= main.o
+CXXOBJS	:= main.o
 
 TARGET	:= test_marriage
 
 ################################################################################
 # Build
-OBJS	:= $(COBJS) $(CPPOBJS)
+OBJS	:= $(COBJS) $(CXXOBJS)
 
-all: $(TARGET) $(TARGET2)
+all: $(TARGET)
 
 $(TARGET): depend $(OBJS)
-	$(CC) $(CPPFLAGS) $(OBJS) -o $(TARGET) $(LIBRARY) -g
+	$(CC) $(CFLAGS) $(CXXFLAGS) $(AFLGAS) $(OBJS) -o $(TARGET) $(LIBRARY) -g
 
 clean:
-	rm -f $(TARGET) $(TARGET2) *.o .depend
+	rm -f $(TARGET) *.o .depend
 
 install:
 
@@ -37,7 +37,7 @@ ifeq (.depend,$(wildcard .depend))
 include .depend
 endif
 
-SRCS := $(COBJS:.o=.c) $(CPPOBJS:.o=.cpp)
+SRCS := $(COBJS:.o=.c) $(CXXOBJS:.o=.cpp) $(AOBJS:.o=.s)
 INCS := $(INCLUDE)
 depend dep:
-	$(CC) -M $(CFLAGS) $(INCS) $(SRCS) > .depend
+	$(CC) -M $(CFLAGS) $(CXXFLAGS) $(AFLGAS) $(INCS) $(SRCS) > .depend

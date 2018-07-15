@@ -7,7 +7,7 @@ include ../../build.env
 
 # Prevent: "warning: creating a DT_TEXTREL in object"
 CFLAGS	+= -fpic -DARM_11
-CPPFLAGS+= -fpic -DARM_11
+CXXFLAGS+= -fpic -DARM_11
 
 INCLUDE +=		\
 	-I../include\
@@ -21,15 +21,15 @@ LIBRARY	+= -lstdc++ -lpthread
 ################################################################################
 # Target
 COBJS	:=
-CPPOBJS	:=
+CXXOBJS	:=
 
-CPPOBJS +=	\
+CXXOBJS +=	\
 	gdc_protocol.o		\
 	CNX_OpenSSL.o		\
 	NX_GDCServer.o		\
 	NX_GDCClient.o
 
-CPPOBJS +=	\
+CXXOBJS +=	\
 	../utils/NX_DbgMsg.o\
 	../utils/SockUtils.o
 
@@ -38,7 +38,7 @@ TARGET	:= $(LIBNAME).so
 
 ################################################################################
 # Build
-OBJS	:= $(COBJS) $(CPPOBJS)
+OBJS	:= $(COBJS) $(CXXOBJS)
 
 all: $(TARGET)
 
@@ -60,7 +60,7 @@ ifeq (.depend,$(wildcard .depend))
 include .depend
 endif
 
-SRCS := $(COBJS:.o=.c) $(CPPOBJS:.o=.cpp)
+SRCS := $(COBJS:.o=.c) $(CXXOBJS:.o=.cpp)
 INCS := $(INCLUDE)
 depend dep:
-	$(CC) -M $(CFLAGS) $(INCS) $(SRCS) > .depend
+	$(CC) -M $(CFLAGS) $(CXXFLAGS) $(AFLGAS) $(INCS) $(SRCS) > .depend

@@ -9,7 +9,7 @@ include $(VD_CINEMA_TOP)/build.env
 
 # Prevent: "warning: creating a DT_TEXTREL in object"
 CFLAGS	+= -fpic -DARM_11
-CPPFLAGS+= -fpic -DARM_11
+CXXFLAGS+= -fpic -DARM_11
 
 INCLUDE += \
 	-I $(VD_CINEMA_TOP)/src/include \
@@ -26,13 +26,13 @@ COBJS	:=
 CPPOBJS	:=
 
 # Add UART Sources
-CPPOBJS += \
+CXXOBJS += \
 	uart/CNX_Uart.o	\
 	uart/NX_UartProtocol.o \
 	uart/NX_SecureLinkServer.o
 
 # Add Utils Sources
-CPPOBJS += \
+CXXOBJS += \
 	utils/crc32.o	\
 	utils/NX_Utils.o \
 	utils/ping.o \
@@ -41,7 +41,7 @@ CPPOBJS += \
 	utils/CNX_GpioControl.o \
 	utils/SockUtils.o
 
-CPPOBJS +=	\
+CXXOBJS +=	\
 	gdc/gdc_protocol.o		\
 	gdc/CNX_OpenSSL.o		\
 	gdc/NX_GDCServer.o		\
@@ -52,7 +52,7 @@ TARGET	:= $(LIBNAME).so
 
 ################################################################################
 # Build
-OBJS	:= $(COBJS) $(CPPOBJS)
+OBJS	:= $(COBJS) $(CXXOBJS)
 
 all: $(TARGET)
 
@@ -74,7 +74,7 @@ ifeq (.depend,$(wildcard .depend))
 include .depend
 endif
 
-SRCS := $(COBJS:.o=.c) $(CPPOBJS:.o=.cpp)
+SRCS := $(COBJS:.o=.c) $(CXXOBJS:.o=.cpp)
 INCS := $(INCLUDE)
 depend dep:
-	$(CC) -M $(CFLAGS) $(INCS) $(SRCS) > .depend
+	$(CC) -M $(CFLAGS) $(CXXFLAGS) $(AFLGAS) $(INCS) $(SRCS) > .depend

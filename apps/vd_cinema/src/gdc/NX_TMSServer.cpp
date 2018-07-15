@@ -45,10 +45,6 @@
 #define UNUSED(x)			(void)(x)
 #endif
 
-static int32_t ReadData( int32_t fd, uint8_t *pBuf, int32_t iSize );
-static int32_t WriteData( int32_t fd, uint8_t *pBuf, int32_t iSize );
-static int32_t SendRemote( const char *pSockName, const char *pMsg );
-
 //------------------------------------------------------------------------------
 class CNX_TMSServer
 	: protected CNX_Thread
@@ -62,6 +58,7 @@ public:
 
 	int32_t	StartServer();
 	void	StopServer();
+	void	RegisterProcessCallback( void (*cbCallback)(uint32_t, uint8_t*, int32_t, uint8_t*, int32_t*, void*), void *pObj );
 
 protected:
 	//	Implementation CNX_Thread pure virtual function
@@ -70,9 +67,12 @@ protected:
 private:
 	int32_t WaitClient();
 
-	int32_t IMB_ChangeContents( int32_t fd, uint32_t iCmd, uint8_t *pBuf, int32_t iSize );
+	int32_t ReadData( int32_t fd, uint8_t *pBuf, int32_t iSize );
+	int32_t WriteData( int32_t fd, uint8_t *pBuf, int32_t iSize );
+	int32_t SendRemote( const char *pSockName, const char *pMsg );
 
 	int32_t ProcessCommand( int32_t fd, uint32_t key, void *pPayload, int32_t payloadSize );
+	int32_t IMB_QueCommand( int32_t fd, uint32_t iCmd, uint8_t *pBuf, int32_t iSize );
 
 private:
 	//	Private Member Variables
@@ -81,6 +81,9 @@ private:
 
 	//	Key(4bytes) + Length(2bytes) + Payload(MAX 65535bytes)
 	uint8_t		m_SendBuf[MAX_PAYLOAD_SIZE + 6];
+
+	void 		(*m_cbProcessCallback)( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize, void *pObj );
+	void		*m_pObj;
 
 private:
 	//	For Singletone
@@ -93,6 +96,8 @@ CNX_TMSServer* CNX_TMSServer::m_psInstance = NULL;
 CNX_TMSServer::CNX_TMSServer()
 	: m_bThreadRun( false )
 	, m_hSocket( -1 )
+	, m_cbProcessCallback( NULL )
+	, m_pObj( NULL )
 {
 }
 
@@ -113,13 +118,13 @@ int32_t CNX_TMSServer::StartServer()
 	m_hSocket = TCP_Open( TMS_SERVER_PORT );
 	if( m_hSocket < 0 )
 	{
-		NxErrMsg( "Fail, TCP_Open().\n" );
+		NxDbgMsg( NX_DBG_ERR, "Fail, TCP_Open().\n" );
 		return -1;
 	}
 
 	if( 0 > listen(m_hSocket, 5) )
 	{
-		NxErrMsg( "Fail : listen (err = %d)\n", errno );
+		NxDbgMsg( NX_DBG_ERR, "Fail : listen (err = %d)\n", errno );
 		goto ErrorExit;
 	}
 
@@ -127,7 +132,7 @@ int32_t CNX_TMSServer::StartServer()
 
 	if( 0 != Start() )
 	{
-		NxErrMsg( "Fail, Start().\n" );
+		NxDbgMsg( NX_DBG_ERR, "Fail, Start().\n" );
 		goto ErrorExit;
 	}
 
@@ -156,15 +161,22 @@ void CNX_TMSServer::StopServer()
 }
 
 //------------------------------------------------------------------------------
+void CNX_TMSServer::RegisterProcessCallback( void (*cbCallback)(uint32_t, uint8_t*, int32_t, uint8_t*, int32_t*, void*), void *pObj )
+{
+	m_cbProcessCallback = cbCallback;
+	m_pObj = pObj;
+}
+
+//------------------------------------------------------------------------------
 void CNX_TMSServer::ThreadProc()
 {
-	int32_t iSize;
-	uint8_t payloadBuf[MAX_PAYLOAD_SIZE+6];
+	static uint8_t payloadBuf[MAX_PAYLOAD_SIZE+6];
 
 	while( m_bThreadRun )
 	{
+		int32_t iReadSize = 0;
 		uint32_t iKey = 0;
-		uint8_t *pPayload = NULL;
+		uint8_t *pPayload = payloadBuf;
 		uint16_t iPayloadSize = 0;
 
 		int32_t clientSocket = WaitClient();
@@ -179,46 +191,65 @@ void CNX_TMSServer::ThreadProc()
 
 		do {
 			uint8_t tempData;
-			iSize = ReadData( clientSocket, &tempData, 1 );
-			if( 1 > iSize )
+			iReadSize = ReadData( clientSocket, &tempData, 1 );
+			if( 1 != iReadSize && 0 > iReadSize )
 			{
-				NxErrMsg( "Fail, ReadData().\n" );
-				break;
+				NxDbgMsg( NX_DBG_ERR, "Fail, ReadData(). ( line: %d, iReadSize: %d )\n", __LINE__, iReadSize );
+				if( 0 < iReadSize ) NX_HexDump( &tempData, iReadSize );
+				goto ERROR;
 			}
 
 			iKey = (iKey << 8) | tempData;
+			*(pPayload++) = tempData;
 			if( iKey == GDC_KEY(tempData) )
 			{
 				break;
 			}
 		} while( m_bThreadRun );
 
-		if( 1 > iSize )
+		iReadSize = ReadData( clientSocket, pPayload, 2 );
+		if( 2 != iReadSize && 0 > iReadSize )
 		{
+			NxDbgMsg( NX_DBG_ERR, "Fail, ReadData(). ( line: %d, iReadSize: %d )\n", __LINE__, iReadSize );
+			if( 0 < iReadSize ) NX_HexDump( pPayload, iReadSize );
 			goto ERROR;
 		}
 
-		iSize = ReadData( clientSocket, payloadBuf, 2 );
-		if( 2 > iSize )
-		{
-			NxErrMsg( "Fail, ReadData().\n" );
-			goto ERROR;
-		}
-
-		iPayloadSize = MAKE_LENGTH_2BYTE( payloadBuf[0], payloadBuf[1] );
+		iPayloadSize = MAKE_LENGTH_2BYTE( pPayload[0], pPayload[1] );
 		if( iPayloadSize != 0 )
 		{
-			iSize = ReadData( clientSocket, payloadBuf + 2, iPayloadSize );
-			if( 0 >= iSize || iSize != iPayloadSize )
+			iReadSize = ReadData( clientSocket, pPayload + 2, iPayloadSize );
+			if( 0 >= iReadSize || iReadSize != iPayloadSize )
 			{
-				NxErrMsg( "Fail, ReadData().\n" );
+				NxDbgMsg( NX_DBG_ERR, "Fail, ReadData(). ( line: %d, iReadSize: %d, expected: %d )\n",
+					__LINE__, iReadSize, iPayloadSize );
+				if( 0 < iReadSize ) NX_HexDump( pPayload+2, iReadSize );
 				goto ERROR;
 			}
 
-			pPayload = payloadBuf + 2;
+			pPayload += 2;
 		}
 
-		ProcessCommand( clientSocket, iKey, pPayload, iPayloadSize );
+		if( NULL == m_cbProcessCallback )
+		{
+			ProcessCommand( clientSocket, iKey, pPayload, iPayloadSize );
+		}
+		else
+		{
+			uint8_t outBuf[256] = { 0x00, };
+			int32_t iOutSize = sizeof(outBuf);
+			int32_t iSendSize = 0;
+
+			NX_HexDump( payloadBuf, 4 + 2 + iPayloadSize, "Recv: " );
+			printf("\n");
+
+			m_cbProcessCallback( iKey, pPayload, iPayloadSize, outBuf, &iOutSize, m_pObj );
+			iSendSize = GDC_MakePacket( SEC_KEY(iKey), outBuf, iOutSize, m_SendBuf, sizeof(m_SendBuf) );
+			WriteData( clientSocket, m_SendBuf, iSendSize );
+
+			NX_HexDump( m_SendBuf, iSendSize, "Send: " );
+			printf("\n");
+		}
 
 ERROR:
 		if( 0 < clientSocket )
@@ -253,11 +284,11 @@ int32_t CNX_TMSServer::WaitClient()
 
 			if( 0 > clnSocket )
 			{
-				NxErrMsg( "Fail, accept().\n" );
+				NxDbgMsg( NX_DBG_ERR, "Fail, accept().\n" );
 				return -1;
 			}
 
-			printf( "Connect Success. ( %d )\n", clnSocket );
+			NxDbgMsg( NX_DBG_DEBUG, "Connect Success. ( %d )\n", clnSocket );
 			return clnSocket;
 		}
 	}
@@ -271,55 +302,9 @@ int32_t CNX_TMSServer::WaitClient()
 	return 0;
 }
 
-//------------------------------------------------------------------------------
-int32_t CNX_TMSServer::IMB_ChangeContents( int32_t fd, uint32_t iCmd, uint8_t *pBuf, int32_t iSize )
-{
-	NxDbgMsg( NX_DBG_ERR, ">>>> Receive ChangeContents(). ( curTime: %lld mSec )\n",  NX_GetTickCount() );
-	UNUSED( iSize );
-
-	uint8_t result = 0xFF;
-	int32_t sendSize;
-
-	uint8_t sendData[4] = { 0x00, };
-	sprintf( (char*)sendData, "%d", pBuf[0] );
-
-	if( !SendRemote( "cinema.tms", (const char*)sendData ) )
-	{
-		result = 0x01;
-	}
-	else
-	{
-		printf("Fail, SendRemote. ( node: cinema.tms )\n");
-		NxDbgMsg( NX_DBG_VBS, "Fail, SendRemote. ( node: cinema.tms )\n");
-	}
-
-	sendSize = GDC_MakePacket( SEC_KEY(iCmd), &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	WriteData( fd, m_SendBuf, sendSize );
-	NX_HexDump( m_SendBuf, sendSize );
-
-	NxDbgMsg( NX_DBG_ERR, ">>>> Receive ChangeContents() Done. ( curTime: %lld mSec )\n",  NX_GetTickCount() );
-	return 0;
-}
 
 //------------------------------------------------------------------------------
-int32_t CNX_TMSServer::ProcessCommand( int32_t fd, uint32_t key, void *pPayload, int32_t payloadSize )
-{
-	int32_t iCmd = key & 0xFF;
-
-	switch( iCmd )
-	{
-		case GDC_COMMAND( CMD_TYPE_IMB, IMB_CMD_CHANGE_CONTENTS ):
-			return IMB_ChangeContents( fd, iCmd, (uint8_t*)pPayload, payloadSize );
-		default:
-			return -1;
-	}
-
-	return 0;
-}
-
-//------------------------------------------------------------------------------
-static int32_t ReadData( int32_t fd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_TMSServer::ReadData( int32_t fd, uint8_t *pBuf, int32_t iSize )
 {
 	int32_t readSize, totalSize=0;
 	do {
@@ -345,7 +330,7 @@ static int32_t ReadData( int32_t fd, uint8_t *pBuf, int32_t iSize )
 		}
 		else if( 0 > ret )
 		{
-			NxErrMsg( "Fail, poll().\n" );
+			NxDbgMsg( NX_DBG_ERR, "Fail, poll().\n" );
 			return -1;
 		}
 		else
@@ -359,13 +344,13 @@ static int32_t ReadData( int32_t fd, uint8_t *pBuf, int32_t iSize )
 }
 
 //------------------------------------------------------------------------------
-static int32_t WriteData( int32_t fd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_TMSServer::WriteData( int32_t fd, uint8_t *pBuf, int32_t iSize )
 {
 	return write( fd, pBuf, iSize );
 }
 
 //------------------------------------------------------------------------------
-static int32_t SendRemote( const char *pSockName, const char *pMsg )
+int32_t CNX_TMSServer::SendRemote( const char *pSockName, const char *pMsg )
 {
 	int32_t sock, len;
 	struct sockaddr_un addr;
@@ -385,7 +370,7 @@ static int32_t SendRemote( const char *pSockName, const char *pMsg )
 
 	if( 0 > connect(sock, (struct sockaddr *) &addr, len))
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, connect(). ( node: %s )\n", pSockName);
+		NxDbgMsg( NX_DBG_ERR, "Fail, connect(). ( node: %s )\n", pSockName);
 		printf("Fail, connect(). ( node: %s )\n", pSockName);
 		close( sock );
 		return -1;
@@ -393,7 +378,7 @@ static int32_t SendRemote( const char *pSockName, const char *pMsg )
 
 	if( 0 > WriteData(sock, (uint8_t*)pMsg, strlen(pMsg)) )
 	{
-		NxDbgMsg( NX_DBG_VBS, "Fail, write().\n");
+		NxDbgMsg( NX_DBG_ERR, "Fail, write().\n");
 		printf("Fail, write().\n");
 		close( sock );
 		return -1;
@@ -402,6 +387,54 @@ static int32_t SendRemote( const char *pSockName, const char *pMsg )
 	close( sock );
 	return 0;
 }
+
+//------------------------------------------------------------------------------
+int32_t CNX_TMSServer::ProcessCommand( int32_t fd, uint32_t key, void *pPayload, int32_t payloadSize )
+{
+	int32_t iCmd = key & 0xFF;
+
+	switch( iCmd )
+	{
+		case GDC_COMMAND( CMD_TYPE_IMB, IMB_CMD_QUE ):
+			return IMB_QueCommand( fd, iCmd, (uint8_t*)pPayload, payloadSize );
+		default:
+			return -1;
+	}
+
+	return 0;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_TMSServer::IMB_QueCommand( int32_t fd, uint32_t iCmd, uint8_t *pBuf, int32_t iSize )
+{
+	NxDbgMsg( NX_DBG_DEBUG, ">>>> Receive QueCommand. ( curTime: %lld mSec )\n",  NX_GetTickCount() );
+	UNUSED( iSize );
+
+	uint8_t result = 0xFF;
+	int32_t sendSize;
+
+	uint8_t sendData[4] = { 0x00, };
+	sprintf( (char*)sendData, "%d", pBuf[0] );
+
+	if( !SendRemote( "cinema.tms", (const char*)sendData ) )
+	{
+		result = 0x01;
+	}
+	else
+	{
+		NxDbgMsg( NX_DBG_ERR, "Fail, SendRemote. ( node: cinema.tms )\n");
+		printf("Fail, SendRemote. ( node: cinema.tms )\n");
+	}
+
+	sendSize = GDC_MakePacket( SEC_KEY(iCmd), &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+
+	WriteData( fd, m_SendBuf, sendSize );
+	NX_HexDump( m_SendBuf, sendSize );
+
+	NxDbgMsg( NX_DBG_DEBUG, ">>>> Receive QueCommand Done. ( curTime: %lld mSec )\n",  NX_GetTickCount() );
+	return 0;
+}
+
 
 //------------------------------------------------------------------------------
 //
@@ -446,4 +479,11 @@ void NX_TMSServerStop()
 {
 	CNX_TMSServer *hTms = CNX_TMSServer::GetInstance();
 	hTms->StopServer();
+}
+
+//------------------------------------------------------------------------------
+void NX_TMSServerProcessCallback( void (*cbCallback)(uint32_t, uint8_t*, int32_t, uint8_t*, int32_t*, void*), void *pObj )
+{
+	CNX_TMSServer *hTms = CNX_TMSServer::GetInstance();
+	hTms->RegisterProcessCallback( cbCallback, pObj );
 }

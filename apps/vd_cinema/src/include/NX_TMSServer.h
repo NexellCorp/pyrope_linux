@@ -26,5 +26,6 @@
 
 int32_t NX_TMSServerStart();
 void	NX_TMSServerStop();
+void	NX_TMSServerProcessCallback( void (*cbCallback)(uint32_t, uint8_t*, int32_t, uint8_t*, int32_t*, void*), void *pObj = NULL );
 
 #endif	// __NX_TMSSERVER_H__

@@ -48,6 +48,8 @@ public class ConfigPfpgaInfo {
         for( int i = 0; i < MAX_MODE_NUM; i++ )
             mDataNum[i] = 0;
 
+        mModeNum = 0;
+
         try {
             FileInputStream inStream = new FileInputStream( filePath );
             InputStreamReader inStreamReader = new InputStreamReader( inStream );

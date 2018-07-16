@@ -63,13 +63,16 @@ public class CinemaTask {
     public static final int CMD_TCON_VERSION            = 85;
     public static final int CMD_PFPGA_VERSION           = 86;
 
+    public static final int CMD_CHANGE_3D               = 97;
     public static final int CMD_CHANGE_SCALE            = 98;
     public static final int CMD_CHANGE_MODE             = 99;
 
-    public static final int CMD_MODE                    = 20;
-    public static final int CMD_TMS                     = 150;
-    public static final int SCALE_4K                    = 150;
-    public static final int SCALE_2K                    = 151;
+    public static final int CMD_TMS_QUE                 = 150;  // MODE: 0 - 149, CUE: 145 - 255
+    public static final int TMS_4K_2D                   = 150;
+    public static final int TMS_2K_2D                   = 151;
+    public static final int TMS_4K_3D                   = 152;
+    public static final int TMS_2K_3D                   = 153;
+    public static final int TMS_MAX                     = 153;
 
     private Semaphore mSem = new Semaphore(1);
     private long mStartTime;
@@ -166,9 +169,6 @@ public class CinemaTask {
             case CMD_UNIFORMITY:
                 new AsyncTaskUniformity(context, value, preExecute, postExecute, progressUpdate).execute();
                 break;
-            case CMD_CHANGE_SCALE:
-                new AsyncTaskChangeScale(context, value, preExecute, postExecute, progressUpdate).execute();
-                break;
             case CMD_CHANGE_MODE:
                 new AsyncTaskChangeMode(context, value, preExecute, postExecute).execute();
                 break;
@@ -198,6 +198,12 @@ public class CinemaTask {
                 break;
             case CMD_CABINET_DOOR:
                 new AsyncTaskCabinetDoor(context, value, preExecute, postExecute, progressUpdate).execute();
+                break;
+            case CMD_CHANGE_3D:
+                new AsyncTaskChange3D(context, value, preExecute, postExecute, progressUpdate).execute();
+                break;
+            case CMD_CHANGE_SCALE:
+                new AsyncTaskChangeScale(context, value, preExecute, postExecute, progressUpdate).execute();
                 break;
             default:
                 Log.i(VD_DTAG, String.format("Fail, Invalid Command. ( %d )", cmd));
@@ -708,7 +714,7 @@ public class CinemaTask {
                     continue;
 
                 ((CinemaInfo)mContext).AddCabinet( (byte)i );
-                Log.i(VD_DTAG, String.format(Locale.US, "Add Cabinet ( Cabinet : %d, port : %d, slave : 0x%02x )", (i & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (i & 0x80) >> 7, i & 0x7F ));
+                Log.i(VD_DTAG, String.format(Locale.US, "Add Cabinet ( Cabinet: %d, port: %d, slave: 0x%02x )", (i & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (i & 0x80) >> 7, i & 0x7F ));
             }
             return null;
         }
@@ -818,6 +824,7 @@ public class CinemaTask {
         private ProgressUpdateCallback mProgressUpdate = null;
 
         private int mInitMode = -1;
+        private int[] mResult = new int[]{-1, };
 
         public AsyncTaskBootingComplete(Context context, PreExecuteCallback preExecute, PostExecuteCallback postExecute, ProgressUpdateCallback progressUpdate ) {
             mContext = context;
@@ -827,6 +834,11 @@ public class CinemaTask {
 
             mInitMode = (((CinemaInfo)mContext).GetValue(CinemaInfo.KEY_INITIAL_MODE) == null) ?
                     0 : Integer.parseInt(((CinemaInfo)mContext).GetValue(CinemaInfo.KEY_INITIAL_MODE));
+
+            if( 0 > mInitMode ) {
+                Log.i(VD_DTAG, ">>> Wrong Initialize Mode. Set default Initialize Mode. ( mode: 0 )");
+                mInitMode = 0;
+            }
         }
 
         @Override
@@ -911,7 +923,7 @@ public class CinemaTask {
                         continue;
 
                     ((CinemaInfo) mContext).AddCabinet((byte) i);
-                    Log.i(VD_DTAG, String.format(Locale.US, "Add Cabinet ( Cabinet : %d, port : %d, slave : 0x%02x )", (i & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (i & 0x80) >> 7, i & 0x7F));
+                    Log.i(VD_DTAG, String.format(Locale.US, "Add Cabinet ( Cabinet: %d, port: %d, slave: 0x%02x )", (i & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (i & 0x80) >> 7, i & 0x7F));
                 }
 
                 for( byte id : ((CinemaInfo)mContext).GetCabinet() ) {
@@ -992,6 +1004,46 @@ public class CinemaTask {
                 }
 
                 //
+                //  Prepare T_REG.txt parsing
+                //
+                String[] resultPath;
+                ConfigTconInfo tconEEPRomInfo = new ConfigTconInfo();
+                ConfigTconInfo tconUsbInfo = new ConfigTconInfo();
+
+                resultPath = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET_EEPROM, ConfigTconInfo.NAME);
+                for( String file : resultPath ) {
+                    tconEEPRomInfo.Parse(file);
+                }
+
+                resultPath = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET_USB, ConfigTconInfo.NAME);
+                for( String file : resultPath ) {
+                    tconUsbInfo.Parse(file);
+                }
+
+                if( ((10 > mInitMode) && (mInitMode >= tconEEPRomInfo.GetModeNum())) ||
+                    (10 <= mInitMode) && ((mInitMode-10) >= tconUsbInfo.GetModeNum())) {
+                    Log.i(VD_DTAG, String.format(Locale.US, "Fail, Change Mode. ( mode: %d, eeprom: %d, usb: %d )",
+                            mInitMode, tconEEPRomInfo.GetModeNum(), tconUsbInfo.GetModeNum() ));
+                    return null;
+                }
+
+                if( 10 > mInitMode &&
+                    !((CinemaInfo)mContext).IsMode3D() &&
+                    tconEEPRomInfo.GetDataMode(mInitMode) == ConfigTconInfo.MODE_3D ) {
+                    Log.i(VD_DTAG, String.format(Locale.US, "Skip. Change Mode. ( mode: %d, is3D: %b, dataMode: %d )",
+                            mInitMode, ((CinemaInfo)mContext).IsMode3D(), tconEEPRomInfo.GetDataMode(mInitMode)));
+                    return null;
+                }
+
+                if( 10 <= mInitMode &&
+                    !((CinemaInfo)mContext).IsMode3D() &&
+                    tconUsbInfo.GetDataMode(mInitMode-10) == ConfigTconInfo.MODE_3D ) {
+                    Log.i(VD_DTAG, String.format(Locale.US, "Skip. Change Mode. ( mode: %d, is3D: %b, dataMode: %d )",
+                            mInitMode, ((CinemaInfo)mContext).IsMode3D(), tconUsbInfo.GetDataMode(mInitMode)));
+                    return null;
+                }
+
+                //
                 //  Check TCON Booting Status
                 //
                 if( ((CinemaInfo)mContext).IsCheckTconBooting() ) {
@@ -1000,12 +1052,20 @@ public class CinemaTask {
                         byte[] result;
                         result = ctrl.Send(NxCinemaCtrl.CMD_TCON_BOOTING_STATUS, new byte[]{id});
                         if (result == null || result.length == 0) {
-                            Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / port: %d / slave : 0x%02x )", (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (id & 0x80), id));
+                            Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet: %d, port: %d, slave: 0x%02x )",
+                                    (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET,
+                                    (id & 0x80) >> 7,
+                                    id
+                            ));
                             continue;
                         }
 
                         if( result[0] == 0 ) {
-                            Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / port: %d / slave : 0x%02x / result : %d )", (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (id & 0x80), id, result[0] ));
+                            Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet: %d, port: %d, slave: 0x%02x, result: %d )",
+                                    (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET,
+                                    (id & 0x80) >> 7,
+                                    id
+                            ));
                             bTconBooting = false;
                         }
                     }
@@ -1022,9 +1082,14 @@ public class CinemaTask {
                 ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x01} );
 
                 //
+                //  TCON Mute on
+                //
+                if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MUTE, new byte[] {(byte)0x09, (byte)0x01} );
+                if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MUTE, new byte[] {(byte)0x89, (byte)0x01} );
+
+                //
                 //  Parse P_REG.txt
                 //
-                String[] resultPath;
                 int enableUniformity = 0;
                 int[] enableGamma = {0, 0, 0, 0};
 
@@ -1063,12 +1128,6 @@ public class CinemaTask {
                 //
                 //  Parse T_REG.txt
                 //
-                ConfigTconInfo tconEEPRomInfo = new ConfigTconInfo();
-                resultPath = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET_EEPROM, ConfigTconInfo.NAME);
-                for( String file : resultPath ) {
-                    tconEEPRomInfo.Parse(file);
-                }
-
                 if( (10 > mInitMode) && (mInitMode < tconEEPRomInfo.GetModeNum())) {
                     enableGamma = tconEEPRomInfo.GetEnableUpdateGamma(mInitMode);
                     for( int i = 0; i < tconEEPRomInfo.GetRegister(mInitMode).length; i++ ) {
@@ -1082,12 +1141,6 @@ public class CinemaTask {
                         if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
                         if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
                     }
-                }
-
-                ConfigTconInfo tconUsbInfo = new ConfigTconInfo();
-                resultPath = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET_USB, ConfigTconInfo.NAME);
-                for( String file : resultPath ) {
-                    tconUsbInfo.Parse(file);
                 }
 
                 if( (10 <= mInitMode) && ((mInitMode-10) < tconUsbInfo.GetModeNum())) {
@@ -1217,6 +1270,12 @@ public class CinemaTask {
                 if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_SW_RESET, new byte[]{(byte)0x89});
 
                 //
+                //  TCON Mute off
+                //
+                if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MUTE, new byte[] {(byte)0x09, (byte)0x00} );
+                if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MUTE, new byte[] {(byte)0x89, (byte)0x00} );
+
+                //
                 //  PFPGA Mute off
                 //
                 ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x00} );
@@ -1228,6 +1287,7 @@ public class CinemaTask {
                 if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_INIT, new byte[]{(byte)0x89});
             }
 
+            mResult[0] = mInitMode;
             return null;
         }
 
@@ -1253,8 +1313,14 @@ public class CinemaTask {
 
         @Override
         protected void onPostExecute(Void aVoid) {
+            if( 0 > mResult[0] ) {
+                Log.i(VD_DTAG, String.format( Locale.US, ">>> Booting Complete Fail. ( expected: %d )", mInitMode));
+            }
+
+            ((CinemaInfo)mContext).SetValue(CinemaInfo.KEY_INITIAL_MODE, String.valueOf(mResult[0]));
+
             if( mPostExecute != null )
-                mPostExecute.onPostExecute(null);
+                mPostExecute.onPostExecute( ToInteger(mResult) );
 
             Log.i(VD_DTAG, String.format(Locale.US, ">>> Booting Complete Done. ( %d mSec )", System.currentTimeMillis() - mStartTime ));
             Unlock();
@@ -3140,6 +3206,61 @@ public class CinemaTask {
         }
     }
 
+    private class AsyncTaskChange3D extends AsyncTask<Void, Void, Void> {
+        private Context mContext = null;
+        private PreExecuteCallback mPreExecute = null;
+        private PostExecuteCallback mPostExecute = null;
+        private ProgressUpdateCallback mProgressUpdate = null;
+
+        private boolean mMode = false;
+        private int[] mResult = new int[]{ -1 };
+
+        public AsyncTaskChange3D( Context context, boolean mode, PreExecuteCallback preExecute, PostExecuteCallback postExecute, ProgressUpdateCallback progressUpdate ) {
+            mContext = context;
+            mPreExecute = preExecute;
+            mPostExecute = postExecute;
+            mMode = mode;
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            ((CinemaInfo)mContext).SetMode3D(mMode);
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Void... values) {
+            if( mProgressUpdate != null )
+                mProgressUpdate.onProgressUpdate(null);
+
+            super.onProgressUpdate();
+        }
+
+        @Override
+        protected void onPreExecute() {
+            Lock();
+            Log.i(VD_DTAG, ">>> Change 3D Start.");
+            Log.i(VD_DTAG, String.format( Locale.US, ">>> Change 3D Start. ( curTime: %d mSec )", System.currentTimeMillis()));
+            mStartTime = System.currentTimeMillis();
+
+            if( mPreExecute != null )
+                mPreExecute.onPreExecute( null );
+
+            super.onPreExecute();
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            if( mPostExecute != null )
+                mPostExecute.onPostExecute( ToInteger(mResult) );
+
+            Log.i(VD_DTAG, String.format( Locale.US, ">>> Change 3D Done. ( curTime: %d mSec )", System.currentTimeMillis()));
+            Log.i(VD_DTAG, String.format(Locale.US, ">>> Change 3D Done. ( %d mSec )", System.currentTimeMillis() - mStartTime ));
+            Unlock();
+            super.onPostExecute(aVoid);
+        }
+    }
+
     private class AsyncTaskChangeScale extends AsyncTask<Void, Void, Void> {
         private Context mContext = null;
         private PreExecuteCallback mPreExecute = null;
@@ -3147,10 +3268,10 @@ public class CinemaTask {
         private ProgressUpdateCallback mProgressUpdate = null;
 
         private byte[] mCabinet;
-        private int mMode = -1;
+        private boolean mMode = false;
         private int[] mResult = new int[]{ -1 };
 
-        public AsyncTaskChangeScale( Context context, int mode, PreExecuteCallback preExecute, PostExecuteCallback postExecute, ProgressUpdateCallback progressUpdate ) {
+        public AsyncTaskChangeScale( Context context, boolean mode, PreExecuteCallback preExecute, PostExecuteCallback postExecute, ProgressUpdateCallback progressUpdate ) {
             mContext = context;
             mPreExecute = preExecute;
             mPostExecute = postExecute;
@@ -3160,9 +3281,6 @@ public class CinemaTask {
 
         @Override
         protected Void doInBackground(Void... voids) {
-            if( mMode != SCALE_2K && mMode != SCALE_4K )
-                return null;
-
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
 
             boolean bValidPort0 = false, bValidPort1 = false;
@@ -3171,12 +3289,10 @@ public class CinemaTask {
                 if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
             }
 
-            boolean bCheck = (mMode == SCALE_2K);
-
             ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x01} );
             {
                 byte[] reg = ctrl.IntToByteArray(CinemaInfo.REG_PFPGA_0x0199, NxCinemaCtrl.FORMAT_INT16);
-                byte[] dat = ctrl.IntToByteArray(bCheck ? 0x0000 : 0x0001, NxCinemaCtrl.FORMAT_INT16);
+                byte[] dat = ctrl.IntToByteArray(mMode ? 0x0000 : 0x0001, NxCinemaCtrl.FORMAT_INT16);
                 byte[] inData = ctrl.AppendByteArray(reg, dat);
                 ctrl.Send( NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData );
             }
@@ -3194,12 +3310,12 @@ public class CinemaTask {
                         continue;
 
                     ((CinemaInfo)mContext).AddCabinet( (byte)i );
-                    Log.i(VD_DTAG, String.format(Locale.US, "Add Cabinet ( Cabinet : %d, port : %d, slave : 0x%02x )", (i & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (i & 0x80) >> 7, i & 0x7F ));
+                    Log.i(VD_DTAG, String.format(Locale.US, "Add Cabinet ( Cabinet: %d, port: %d, slave: 0x%02x )", (i & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (i & 0x80) >> 7, i & 0x7F ));
                 }
             }
             {
                 byte[] reg = ctrl.IntToByteArray(CinemaInfo.REG_TCON_0x018D, NxCinemaCtrl.FORMAT_INT16);
-                byte[] dat = ctrl.IntToByteArray(bCheck ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
+                byte[] dat = ctrl.IntToByteArray(mMode ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
                 byte[] inData = ctrl.AppendByteArray(reg, dat);
 
                 byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
@@ -3210,7 +3326,7 @@ public class CinemaTask {
             }
             ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x00} );
 
-            mResult[0] = mMode;
+            mResult[0] = mMode ? 1 : 0;
             return null;
         }
 
@@ -3284,6 +3400,46 @@ public class CinemaTask {
             }
 
             //
+            //  Prepare T_REG.txt parsing
+            //
+            String[] resultPath;
+            ConfigTconInfo tconEEPRomInfo = new ConfigTconInfo();
+            ConfigTconInfo tconUsbInfo = new ConfigTconInfo();
+
+            resultPath = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET_USB, ConfigTconInfo.NAME);
+            for( String file : resultPath ) {
+                tconUsbInfo.Parse(file);
+            }
+
+            resultPath = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET_EEPROM, ConfigTconInfo.NAME);
+            for( String file : resultPath ) {
+                tconEEPRomInfo.Parse(file);
+            }
+
+            if( ((10 > mMode) && (mMode >= tconEEPRomInfo.GetModeNum())) ||
+                (10 <= mMode) && ((mMode-10) >= tconUsbInfo.GetModeNum())) {
+                Log.i(VD_DTAG, String.format(Locale.US, "Fail, Change Mode. ( mode: %d, eeprom: %d, usb: %d )",
+                        mMode, tconEEPRomInfo.GetModeNum(), tconUsbInfo.GetModeNum() ));
+                return null;
+            }
+
+            if( 10 > mMode &&
+                !((CinemaInfo)mContext).IsMode3D() &&
+                tconEEPRomInfo.GetDataMode(mMode) == ConfigTconInfo.MODE_3D ) {
+                Log.i(VD_DTAG, String.format(Locale.US, "Skip. Change Mode. ( mode: %d, is3D: %b, dataMode: %d )",
+                        mMode, ((CinemaInfo)mContext).IsMode3D(), tconEEPRomInfo.GetDataMode(mMode)));
+                return null;
+            }
+
+            if( 10 <= mMode &&
+                !((CinemaInfo)mContext).IsMode3D() &&
+                tconUsbInfo.GetDataMode(mMode-10) == ConfigTconInfo.MODE_3D ) {
+                Log.i(VD_DTAG, String.format(Locale.US, "Skip. Change Mode. ( mode: %d, is3D: %b, dataMode: %d )",
+                        mMode, ((CinemaInfo)mContext).IsMode3D(), tconUsbInfo.GetDataMode(mMode)));
+                return null;
+            }
+
+            //
             //  Check TCON Booting Status
             //
             if( ((CinemaInfo)mContext).IsCheckTconBooting() ) {
@@ -3292,12 +3448,20 @@ public class CinemaTask {
                     byte[] result;
                     result = ctrl.Send(NxCinemaCtrl.CMD_TCON_BOOTING_STATUS, new byte[]{id});
                     if (result == null || result.length == 0) {
-                        Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet : %d / port: %d / slave : 0x%02x )", (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (id & 0x80), id));
+                        Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet: %d, port: %d, slave: 0x%02x )",
+                                (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET,
+                                (id & 0x80) >> 7,
+                                id
+                        ));
                         continue;
                     }
 
                     if( result[0] == 0 ) {
-                        Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet : %d / port: %d / slave : 0x%02x / result : %d )", (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (id & 0x80), id, result[0] ));
+                        Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet: %d, port: %d, slave: 0x%02x, result: %d )",
+                                (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET,
+                                (id & 0x80) >> 7,
+                                id
+                        ));
                         bTconBooting = false;
                     }
                 }
@@ -3314,9 +3478,14 @@ public class CinemaTask {
             ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x01} );
 
             //
+            //  TCON Mute on
+            //
+            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MUTE, new byte[] {(byte)0x09, (byte)0x01} );
+            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MUTE, new byte[] {(byte)0x89, (byte)0x01} );
+
+            //
             //  Parse P_REG.txt
             //
-            String[] resultPath;
             int enableUniformity = 0;
             int[] enableGamma = {0, 0, 0, 0};
 
@@ -3355,12 +3524,6 @@ public class CinemaTask {
             //
             //  Parse T_REG.txt
             //
-            ConfigTconInfo tconEEPRomInfo = new ConfigTconInfo();
-            resultPath = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET_EEPROM, ConfigTconInfo.NAME);
-            for( String file : resultPath ) {
-                tconEEPRomInfo.Parse(file);
-            }
-
             if( (10 > mMode) && (mMode < tconEEPRomInfo.GetModeNum())) {
                 enableGamma = tconEEPRomInfo.GetEnableUpdateGamma(mMode);
                 for( int i = 0; i < tconEEPRomInfo.GetRegister(mMode).length; i++ ) {
@@ -3374,12 +3537,6 @@ public class CinemaTask {
                     if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
                     if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
                 }
-            }
-
-            ConfigTconInfo tconUsbInfo = new ConfigTconInfo();
-            resultPath = FileManager.CheckFile(ConfigTconInfo.PATH_TARGET_USB, ConfigTconInfo.NAME);
-            for( String file : resultPath ) {
-                tconUsbInfo.Parse(file);
             }
 
             if( (10 <= mMode) && ((mMode-10) < tconUsbInfo.GetModeNum())) {
@@ -3533,6 +3690,12 @@ public class CinemaTask {
             if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_SW_RESET, new byte[]{(byte)0x89});
 
             //
+            //  TCON Mute off
+            //
+            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MUTE, new byte[] {(byte)0x09, (byte)0x00} );
+            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_MUTE, new byte[] {(byte)0x89, (byte)0x00} );
+
+            //
             //  PFPGA Mute off
             //
             ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x00} );
@@ -3558,7 +3721,7 @@ public class CinemaTask {
         @Override
         protected void onPostExecute(Void aVoid) {
             if( 0 > mResult[0] ) {
-                Log.i(VD_DTAG, ">>> Change Mode Fail.");
+                Log.i(VD_DTAG, String.format( Locale.US, ">>> Change Mode Fail. ( expected: %d )", mMode ));
             }
 
             if( 0 <= mResult[0] && 20 > mResult[0] ) {

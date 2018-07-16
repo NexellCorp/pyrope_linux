@@ -63,7 +63,8 @@
 #define TCON_CMD_ACCUMULATE_TIME		0x0026	//	Total LED Accumulate Time			// 0x00 | 0x26
 #define TCON_CMD_SW_RESET				0x0027	//	TCON Software Reset					// 0x00 | 0x27	:: Internal Command
 #define TCON_CMD_EEPROM_READ			0x0028	//	TCON EEPRom Read					// 0x00 | 0x28	:: Internal Command
-#define TCON_CMD_VERSION				0x0029	//	TCON Version						// 0x00 | 0x29
+#define TCON_CMD_MUTE					0x0029	//	TCON Version						// 0x00 | 0x29
+#define TCON_CMD_VERSION				0x0030	//	TCON Mute 							// 0x00 | 0x30
 
 
 //
@@ -92,6 +93,6 @@
 //	IMB Command
 //
 // #define IMB_CMD_CHANGE_CONTENTS			0x0C10	//	IMB Change Contents					// 0xC0 | 0x10
-#define IMB_CMD_CHANGE_CONTENTS			0x0C20	//	IMB Change Contents					// 0xC0 | 0x20
+#define IMB_CMD_QUE							0x0C20	//	IMB QUE Command					// 0xC0 | 0x20
 
 #endif	// __NX_IPCCOMMAND_H__

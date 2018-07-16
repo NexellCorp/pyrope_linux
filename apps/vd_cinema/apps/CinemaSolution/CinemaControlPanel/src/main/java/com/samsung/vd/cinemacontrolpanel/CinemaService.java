@@ -388,32 +388,97 @@ public class CinemaService extends Service {
                         String strValue = Read(lSocket.getInputStream());
                         if( null != strValue ) {
                             final int mode = Integer.parseInt(strValue, 10);
-                            CinemaTask.GetInstance().Run(
-                                    (mode < CinemaTask.CMD_MODE) ? CinemaTask.CMD_CHANGE_MODE : CinemaTask.CMD_CHANGE_SCALE,
-                                    getApplicationContext(),
-                                    mode,
-                                    new CinemaTask.PreExecuteCallback() {
-                                        @Override
-                                        public void onPreExecute(Object[] values) {
-                                            CinemaLoading.Show( getApplicationContext() );
-                                        }
-                                    },
-                                    new CinemaTask.PostExecuteCallback() {
-                                        @Override
-                                        public void onPostExecute(Object[] values) {
-                                            Log.i(VD_DTAG, String.format("%s. ( mode = %d )",
-                                                    (mode < CinemaTask.CMD_MODE) ? "Change Mode Done" : "Change Scale Done",
-                                                    mode + 1
-                                            ));
 
-                                            if( mTmsEventCallback != null )
-                                                mTmsEventCallback.onTmsEventCallback( new Integer[] { mode } );
+                            if( CinemaTask.CMD_TMS_QUE > mode ) {
+                                CinemaTask.GetInstance().Run(
+                                        CinemaTask.CMD_CHANGE_MODE,
+                                        getApplicationContext(),
+                                        mode,
+                                        new CinemaTask.PreExecuteCallback() {
+                                            @Override
+                                            public void onPreExecute(Object[] values) {
+                                                CinemaLoading.Show(getApplicationContext());
+                                            }
+                                        },
+                                        new CinemaTask.PostExecuteCallback() {
+                                            @Override
+                                            public void onPostExecute(Object[] values) {
+                                                if( !(values instanceof Integer[]) )
+                                                    return;
 
-                                            CinemaLoading.Hide();
-                                        }
-                                    },
-                                    null
-                            );
+                                                if( 0 > (Integer)values[0] )
+                                                    Log.i(VD_DTAG, "Fail, Change Mode.");
+                                                else
+                                                    Log.i(VD_DTAG, String.format("Change Mode Done. ( mode = %d )", (Integer)values[0] + 1));
+
+                                                if( mTmsEventCallback != null )
+                                                    mTmsEventCallback.onTmsEventCallback( (Integer[])values );
+
+                                                CinemaLoading.Hide();
+                                            }
+                                        },
+                                        null
+                                );
+                            }
+
+                            if( CinemaTask.CMD_TMS_QUE <= mode ) {
+                                final boolean bScale2K= (CinemaTask.TMS_2K_2D == mode || CinemaTask.TMS_2K_3D == mode);
+                                final boolean bMode3D = (CinemaTask.TMS_2K_3D == mode || CinemaTask.TMS_4K_3D == mode);
+
+                                CinemaTask.GetInstance().Run(
+                                        CinemaTask.CMD_CHANGE_SCALE,
+                                        getApplicationContext(),
+                                        bScale2K,
+                                        new CinemaTask.PreExecuteCallback() {
+                                            @Override
+                                            public void onPreExecute(Object[] values) {
+                                                CinemaLoading.Show(getApplicationContext());
+                                            }
+                                        },
+                                        new CinemaTask.PostExecuteCallback() {
+                                            @Override
+                                            public void onPostExecute(Object[] values) {
+                                                if( !(values instanceof Integer[]) )
+                                                    return;
+
+                                                Log.i(VD_DTAG, String.format("Change Scale Done. ( mode = %d, is2K = %b )", mode, bScale2K));
+
+                                                if( mTmsEventCallback != null )
+                                                    mTmsEventCallback.onTmsEventCallback( new Integer[]{ mode } );
+
+                                                CinemaLoading.Hide();
+                                            }
+                                        },
+                                        null
+                                );
+
+                                CinemaTask.GetInstance().Run(
+                                        CinemaTask.CMD_CHANGE_3D,
+                                        getApplicationContext(),
+                                        bMode3D,
+                                        new CinemaTask.PreExecuteCallback() {
+                                            @Override
+                                            public void onPreExecute(Object[] values) {
+                                                CinemaLoading.Show(getApplicationContext());
+                                            }
+                                        },
+                                        new CinemaTask.PostExecuteCallback() {
+                                            @Override
+                                            public void onPostExecute(Object[] values) {
+                                                if( !(values instanceof Integer[]) )
+                                                    return;
+
+                                                Log.i(VD_DTAG, String.format("Change 3D Done. ( mode = %d, is3D = %b )", mode, bMode3D));
+
+                                                if( mTmsEventCallback != null )
+                                                    mTmsEventCallback.onTmsEventCallback( new Integer[]{ mode } );
+
+                                                CinemaLoading.Hide();
+                                            }
+                                        },
+                                        null
+                                );
+                            }
                         }
                         lSocket.close();
                     }

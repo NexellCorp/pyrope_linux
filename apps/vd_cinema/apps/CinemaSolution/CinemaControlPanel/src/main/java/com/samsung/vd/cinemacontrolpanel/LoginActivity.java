@@ -53,6 +53,9 @@ public class LoginActivity extends CinemaBaseActivity {
                 new CinemaTask.PostExecuteCallback() {
                     @Override
                     public void onPostExecute(Object[] values) {
+                        if( !(values instanceof Integer[]) )
+                            return;
+
                         if( !mCinemaInfo.IsCheckLogin() ) {
                             Launch(getApplicationContext(), TopActivity.class);
                         }

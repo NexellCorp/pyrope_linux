@@ -1,14 +1,9 @@
 package com.samsung.vd.cinemacontrolpanel;
 
-import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.os.AsyncTask;
-import android.os.Binder;
 import android.os.Bundle;
-import android.os.PowerManager;
 import android.util.Log;
 import android.util.Patterns;
 import android.view.LayoutInflater;
@@ -165,11 +160,19 @@ public class SystemActivity extends CinemaBaseActivity {
                 if( !(values instanceof Integer[]) )
                     return;
 
-                if( CinemaTask.SCALE_4K == (Integer)values[0] || CinemaTask.SCALE_2K == (Integer)values[0] ) {
-                    UnregisterListener();
-                    SetCheckResolution((Integer) values[0] == CinemaTask.SCALE_4K ? R.id.radioResolution4k : R.id.radioResolution2k);
-                    RegisterListener();
-                }
+                if( 0 > (Integer)values[0] )
+                    return;
+
+                if( CinemaTask.CMD_TMS_QUE > (Integer)values[0] )
+                    return;
+
+                boolean bScale2K= (CinemaTask.TMS_2K_2D == (Integer)values[0] || CinemaTask.TMS_2K_3D == (Integer)values[0]);
+                boolean bMode3D = (CinemaTask.TMS_2K_3D == (Integer)values[0] || CinemaTask.TMS_4K_3D == (Integer)values[0]);
+
+                UnregisterListener();
+                SetCheckResolution(bScale2K ? R.id.radioResolution2k : R.id.radioResolution4k);
+                SetCheck3DMode(bMode3D ? R.id.radio3DModeOn : R.id.radio3DModeOff);
+                RegisterListener();
             }
         });
 
@@ -177,7 +180,6 @@ public class SystemActivity extends CinemaBaseActivity {
         //  Initialize Tab
         //
         AddTabs();
-        RegisterListener();
         UpdateInitial();
    }
 
@@ -382,17 +384,19 @@ public class SystemActivity extends CinemaBaseActivity {
     RadioButton.OnClickListener mRadioButtonClickResolution = new RadioButton.OnClickListener() {
         @Override
         public void onClick(View view) {
-            SetCheckResolution( view.getId() );
+            final View radioButton = view;
+            final boolean bScale2K = (radioButton.getId() == R.id.radioResolution2k);
 
-            final boolean bCheck = (view.getId() == R.id.radioResolution2k);
             CinemaTask.GetInstance().Run(
                     CinemaTask.CMD_CHANGE_SCALE,
                     getApplicationContext(),
-                    bCheck ? CinemaTask.SCALE_2K : CinemaTask.SCALE_4K,
+                    bScale2K,
                     new CinemaTask.PreExecuteCallback() {
                         @Override
                         public void onPreExecute(Object[] values) {
                             ShowProgress();
+                            UnregisterListener();
+                            SetCheckResolution( radioButton.getId() );
                         }
                     },
                     new CinemaTask.PostExecuteCallback() {
@@ -400,13 +404,14 @@ public class SystemActivity extends CinemaBaseActivity {
                         public void onPostExecute(Object[] values) {
                             mCinemaInfo.SetValue(
                                     CinemaInfo.KEY_PREG_0x0199,
-                                    String.valueOf(bCheck ? 0 : 1)
+                                    String.valueOf(bScale2K ? 0 : 1)
                             );
                             mCinemaInfo.SetValue(
                                     CinemaInfo.KEY_TREG_0x018D,
-                                    String.valueOf(bCheck ? 1 : 0)
+                                    String.valueOf(bScale2K ? 1 : 0)
                             );
                             mCinemaInfo.UpdateDefaultRegister();
+                            RegisterListener();
                             HideProgress();
                         }
                     },
@@ -418,8 +423,31 @@ public class SystemActivity extends CinemaBaseActivity {
     RadioButton.OnClickListener mRadioButtonClick3DMode = new RadioButton.OnClickListener() {
         @Override
         public void onClick(View view) {
-            SetCheck3DMode( view.getId() );
-            mCinemaInfo.SetMode3D( (view.getId() == R.id.radio3DModeOn) );
+            final View radioButton = view;
+            final boolean bMode3D = (view.getId() == R.id.radio3DModeOn);
+
+            CinemaTask.GetInstance().Run(
+                    CinemaTask.CMD_CHANGE_3D,
+                    getApplicationContext(),
+                    bMode3D,
+                    new CinemaTask.PreExecuteCallback() {
+                        @Override
+                        public void onPreExecute(Object[] values) {
+                            ShowProgress();
+                            UnregisterListener();
+                            SetCheck3DMode( radioButton.getId() );
+                        }
+                    },
+                    new CinemaTask.PostExecuteCallback() {
+                        @Override
+                        public void onPostExecute(Object[] values) {
+                            RegisterListener();
+                            HideProgress();
+                        }
+                    },
+                    null
+            );
+
         }
     };
 

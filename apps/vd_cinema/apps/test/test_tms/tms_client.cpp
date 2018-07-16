@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //
-//	Copyright (C) 2016 Nexell Co. All Rights Reserved
+//	Copyright (C) 2018 Nexell Co. All Rights Reserved
 //	Nexell Co. Proprietary & Confidential
 //
 //	NEXELL INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
@@ -17,48 +17,86 @@
 //
 //------------------------------------------------------------------------------
 
-#include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <stdint.h>
+#include <signal.h>
 #include <string.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <sys/un.h>
-#include <errno.h>
+#include <stdlib.h>
 
-#include <SockUtils.h>
-#include <tms_protocol.h>
-#include <NX_Utils.h>
+#include <NX_TMSClient.h>
+#include <NX_IPCCommand.h>
 
-#define	TMS_SERVER_FILE "/data/local/tmp/ipc_server"
-#define	MAX_PAYLOAD_SIZE	4096
+#define MAX_PAYLOAD_SIZE	65533
 
 //------------------------------------------------------------------------------
-int32_t main( void )
+static void signal_handler( int32_t signal )
 {
-	int32_t clntSock;
-	char buff[MAX_PAYLOAD_SIZE+12];
-	uint32_t loopCount = 10000;
-	uint32_t cmd = 0;
-	int32_t sendSize;
+	printf("Aborted by signal %s (%d)..\n", (char*)strsignal(signal), signal);
 
-	while ( --loopCount > 0 )
+	switch( signal )
 	{
-		clntSock = LS_Connect(TMS_SERVER_FILE);
-		if( -1 == clntSock)
-		{
-			printf( "Error : socket (%s)\n", TMS_SERVER_FILE);
-			exit( 1);
-		}
-
-		sendSize = TMS_MakePacket( TMS_KEY_VALUE, cmd++, (void*)TMS_SERVER_FILE, sizeof(TMS_SERVER_FILE), buff, sizeof(buff) );
-
-		write( clntSock, buff, sendSize );      // +1: NULL까지 포함해서 전송
-		printf( "cmd = %d\n", cmd);
-		close( clntSock);
-		usleep(10000);
+		case SIGINT :
+			printf("SIGINT..\n"); 	break;
+		case SIGTERM :
+			printf("SIGTERM..\n");	break;
+		case SIGABRT :
+			printf("SIGABRT..\n");	break;
+		default :
+			break;
 	}
 
+	exit(EXIT_FAILURE);
+}
+
+//------------------------------------------------------------------------------
+static void register_signal( void )
+{
+	signal( SIGINT,  signal_handler );
+	signal( SIGTERM, signal_handler );
+	signal( SIGABRT, signal_handler );
+}
+
+//------------------------------------------------------------------------------
+static int32_t IMB_QueCommand( int32_t iMode )
+{
+	uint8_t buf[MAX_PAYLOAD_SIZE];
+	int32_t iBufSize;
+
+	buf[0]   = iMode;
+	iBufSize = 1;
+
+	return NX_TMSSendCommand( "127.0.0.1", GDC_COMMAND(CMD_TYPE_IMB, IMB_CMD_QUE), buf, &iBufSize );
+}
+
+//------------------------------------------------------------------------------
+static const char* GetQueCommandString( int32_t iMode )
+{
+	if( 150 == iMode )		return "4K2D( 150 )";
+	else if( 151 == iMode ) return "2K2D( 151 )";
+	else if( 152 == iMode ) return "4K3D( 152 )";
+	else if( 153 == iMode ) return "2K3D( 153 )";
+
+	return "";
+}
+
+
+//------------------------------------------------------------------------------
+int32_t main( int32_t argc, char *argv[] )
+{
+	register_signal();
+
+	if( argc < 2 )
+	{
+		printf("Usage : %s [mode number]\n", argv[0]);
+		return -1;
+	}
+
+	char *pResult = NULL;
+	int32_t iValue = strtol(argv[1], &pResult, 10);
+
+	printf(">> Send QueCommand: %s\n", (iValue < 150) ? argv[1] : GetQueCommandString(iValue));
+
+	IMB_QueCommand( iValue );
+	
 	return 0;
 }

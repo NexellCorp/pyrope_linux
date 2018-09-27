@@ -43,6 +43,11 @@ public class InitialActivity extends CinemaBaseActivity {
         //
         mCinemaInfo = (CinemaInfo)getApplicationContext();
 
+        if( !mCinemaInfo.IsCheckInitial() ) {
+            Launch(getApplicationContext(), LoginActivity.class);
+            return;
+        }
+
         //
         //  Test Code : Run Initialize Activity.
         //

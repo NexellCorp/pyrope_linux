@@ -6,11 +6,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
 
-import java.util.Locale;
 import java.util.concurrent.Semaphore;
 
 /**

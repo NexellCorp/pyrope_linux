@@ -169,6 +169,12 @@ public class TopActivity extends CinemaBaseActivity {
         textComment.append(String.format(Locale.US, "-. Dot Correct Extract Path\t: [USB_TOP]/DOT_CORRECTION_IDxxx/\n"));
 
         //
+        //  Screen Type
+        //
+        TextView textScreenType = (TextView)findViewById(R.id.textScreenType);
+        textScreenType.setText( mCinemaInfo.GetScreenType() == CinemaInfo.SCREEN_TYPE_P33 ? "P3.3" : "P2.5" );
+
+        //
         //  EEPROM Status
         //
         TextView textEEPRomStatus = (TextView)findViewById(R.id.textEEPRomStatus);

@@ -480,7 +480,7 @@ public class DiagnosticsActivity extends CinemaBaseActivity {
 
                         if( (Integer)values[1] != CinemaInfo.RET_PASS ) {
                             mAdapterTconStatus.add( new StatusSimpleInfo(
-                                    String.format( Locale.US, "Cabinet %02d", (mCabinet[(Integer)values[0]] & 0x7F) - CinemaInfo.TCON_ID_OFFSET ),
+                                    String.format( Locale.US, "Cabinet %02d", mCinemaInfo.GetCabinetNumber(mCabinet[(Integer)values[0]])),
                                     (Integer)values[1]
                             ));
                             mAdapterTconStatus.notifyDataSetChanged();
@@ -522,7 +522,7 @@ public class DiagnosticsActivity extends CinemaBaseActivity {
 
                         if( (Integer)values[1] != CinemaInfo.RET_PASS ) {
                             mAdapterTconLvds.add( new StatusSimpleInfo(
-                                    String.format( Locale.US, "Cabinet %02d", (mCabinet[(Integer)values[0]] & 0x7F) - CinemaInfo.TCON_ID_OFFSET ),
+                                    String.format( Locale.US, "Cabinet %02d", mCinemaInfo.GetCabinetNumber(mCabinet[(Integer)values[0]])),
                                     (Integer)values[1]
                             ));
                             mAdapterTconLvds.notifyDataSetChanged();
@@ -563,7 +563,7 @@ public class DiagnosticsActivity extends CinemaBaseActivity {
 
                         if( (Integer)values[1] != 0 ) {
                             mAdapterLedOpen.add( new StatusDetailInfo(
-                                    String.format(Locale.US, "Cabinet %02d", (mCabinet[(Integer)values[0]] & 0x7F) - CinemaInfo.TCON_ID_OFFSET ),
+                                    String.format(Locale.US, "Cabinet %02d", mCinemaInfo.GetCabinetNumber(mCabinet[(Integer)values[0]])),
                                     mCabinet[(Integer)values[0]],
                                     0,
                                     (0 > (Integer)values[1]) ? "-" : String.valueOf(values[1])
@@ -608,7 +608,7 @@ public class DiagnosticsActivity extends CinemaBaseActivity {
 
                         if( (Integer)values[1] != CinemaInfo.RET_PASS ) {
                             mAdapterCabinetDoor.add( new StatusSimpleInfo(
-                                    String.format( Locale.US, "Cabinet %02d", (mCabinet[(Integer)values[0]] & 0x7F) - CinemaInfo.TCON_ID_OFFSET ),
+                                    String.format( Locale.US, "Cabinet %02d", mCinemaInfo.GetCabinetNumber(mCabinet[(Integer)values[0]])),
                                     (Integer)values[1]
                             ));
                             mAdapterCabinetDoor.notifyDataSetChanged();
@@ -707,7 +707,7 @@ public class DiagnosticsActivity extends CinemaBaseActivity {
                             return;
 
                         mAdapterVersion.add( new StatusDescribeInfo(
-                                String.format( Locale.US, "Cabinet %02d", (mCabinet[(Integer)values[0]] & 0x7F) - CinemaInfo.TCON_ID_OFFSET ),
+                                String.format( Locale.US, "Cabinet %02d", mCinemaInfo.GetCabinetNumber(mCabinet[(Integer)values[0]])),
                                 (String)values[1]
                         ));
                         mAdapterVersion.notifyDataSetChanged();

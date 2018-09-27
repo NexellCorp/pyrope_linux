@@ -1,7 +1,5 @@
 package com.samsung.vd.cinemacontrolpanel;
 
-import android.widget.Button;
-
 /**
  * Created by doriya on 10/20/17.
  */

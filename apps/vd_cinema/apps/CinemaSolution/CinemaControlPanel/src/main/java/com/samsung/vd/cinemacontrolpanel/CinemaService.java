@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.net.LocalServerSocket;
 import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
-import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
@@ -18,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.ref.WeakReference;
-import java.util.Locale;
 
 /**
  * Created by doriya on 11/9/16.
@@ -422,9 +420,23 @@ public class CinemaService extends Service {
                             }
 
                             if( CinemaTask.CMD_TMS_QUE <= mode ) {
-                                final boolean bScale2K= (CinemaTask.TMS_2K_2D == mode || CinemaTask.TMS_2K_3D == mode);
-                                final boolean bMode3D = (CinemaTask.TMS_2K_3D == mode || CinemaTask.TMS_4K_3D == mode);
+                                final boolean bScale2K= (
+                                        CinemaTask.TMS_P25_2K_2D == mode || CinemaTask.TMS_P25_2K_3D == mode ||
+                                        CinemaTask.TMS_P33_2K_2D == mode || CinemaTask.TMS_P33_2K_3D == mode );
+                                final boolean bMode3D = (
+                                        CinemaTask.TMS_P25_2K_3D == mode || CinemaTask.TMS_P25_4K_3D == mode ||
+                                        CinemaTask.TMS_P33_2K_3D == mode || CinemaTask.TMS_P33_4K_3D == mode );
 
+                                //
+                                //  Do not allow to change pitch ( P25 <--> P33 )
+                                //
+                                // final boolean bPitch25= (
+                                //         CinemaTask.TMS_P25_4K_2D == mode || CinemaTask.TMS_P25_2K_2D == mode ||
+                                //         CinemaTask.TMS_P25_4K_3D == mode || CinemaTask.TMS_P25_2K_3D == mode );
+
+                                //
+                                //  Change Scale ( 2K <-> 4K )
+                                //
                                 CinemaTask.GetInstance().Run(
                                         CinemaTask.CMD_CHANGE_SCALE,
                                         getApplicationContext(),
@@ -452,6 +464,9 @@ public class CinemaService extends Service {
                                         null
                                 );
 
+                                //
+                                //  Change 3D/2D ( 2D <-> 3D )
+                                //
                                 CinemaTask.GetInstance().Run(
                                         CinemaTask.CMD_CHANGE_3D,
                                         getApplicationContext(),

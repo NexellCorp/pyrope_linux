@@ -200,14 +200,14 @@ public class DisplayModeActivity extends CinemaBaseActivity {
         titleBar.SetListener(VdTitleBar.BTN_BACK, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if( mTabPrevious.equals("TAB5") ) ClearWhiteSeamValue();;
+                if( mTabPrevious.equals("TAB5") ) ClearWhiteSeamValue();
                 Launch(v.getContext(), TopActivity.class);
             }
         });
         titleBar.SetListener(VdTitleBar.BTN_EXIT, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if( mTabPrevious.equals("TAB5") ) ClearWhiteSeamValue();;
+                if( mTabPrevious.equals("TAB5") ) ClearWhiteSeamValue();
                 TurnOff();
             }
         });
@@ -233,7 +233,7 @@ public class DisplayModeActivity extends CinemaBaseActivity {
         else {
             strCabinetNumber = new String[mCabinet.length];
             for( int i = 0; i < mCabinet.length; i++ ) {
-                strCabinetNumber[i] = String.valueOf((mCabinet[i] & 0x7F) - CinemaInfo.TCON_ID_OFFSET);
+                strCabinetNumber[i] = String.valueOf(mCinemaInfo.GetCabinetNumber(mCabinet[i]));
             }
         }
 
@@ -246,7 +246,7 @@ public class DisplayModeActivity extends CinemaBaseActivity {
             strCabinetNumberWithAll = new String[mCabinet.length+1];
             strCabinetNumberWithAll[0] = "ALL";
             for( int i = 0; i < mCabinet.length; i++ ) {
-                strCabinetNumberWithAll[i+1] = String.valueOf((mCabinet[i] & 0x7F) - CinemaInfo.TCON_ID_OFFSET);
+                strCabinetNumberWithAll[i+1] = String.valueOf(mCinemaInfo.GetCabinetNumber(mCabinet[i]));
             }
         }
 
@@ -447,41 +447,6 @@ public class DisplayModeActivity extends CinemaBaseActivity {
 
         mSpinnerWhiteSeamCabinetId = (Spinner)findViewById(R.id.spinnerWhiteSeamCabinetId);
         mSpinnerWhiteSeamCabinetId.setAdapter( new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, strCabinetNumberWithAll) );
-        mSpinnerWhiteSeamCabinetId.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                CinemaTask.GetInstance().Run(
-                        CinemaTask.CMD_WHITESEAM_READ,
-                        getApplicationContext(),
-                        mSpinnerWhiteSeamCabinetId.getSelectedItemPosition(),
-                        mCheckWhiteSeamEmulation.isChecked(),
-                        new CinemaTask.PreExecuteCallback() {
-                            @Override
-                            public void onPreExecute(Object[] values) {
-                                ShowProgress();
-                            }
-                        },
-                        new CinemaTask.PostExecuteCallback() {
-                            @Override
-                            public void onPostExecute(Object[] values) {
-                                if( !(values instanceof Integer[]) )
-                                    return ;
-
-                                for( int i = 0; i < values.length; i++ ) {
-                                    mSpinWhiteSeam[i].SetValue((Integer)values[i]);
-                                }
-                                HideProgress();
-                            }
-                        },
-                        null
-                );
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {
-
-            }
-        });
 
         mSpinWhiteSeam[0] = (VdSpinCtrl)findViewById(R.id.spinWhiteSeamTop);
         mSpinWhiteSeam[1] = (VdSpinCtrl)findViewById(R.id.spinWhiteSeamBottom);
@@ -841,9 +806,6 @@ public class DisplayModeActivity extends CinemaBaseActivity {
     }
 
     private void ClearWhiteSeamValue() {
-        mCheckWhiteSeamEmulation.setOnCheckedChangeListener(null);
-        mCheckWhiteSeamEmulation.setChecked(false);
-
         CinemaTask.GetInstance().Run(
                 CinemaTask.CMD_TCON_REG_WRITE,
                 getApplicationContext(),
@@ -853,80 +815,50 @@ public class DisplayModeActivity extends CinemaBaseActivity {
                     @Override
                     public void onPreExecute(Object[] values) {
                         ShowProgress();
+                        UnregisterListener();
+                        mCheckWhiteSeamEmulation.setChecked(false);
                     }
                 },
                 new CinemaTask.PostExecuteCallback() {
                     @Override
                     public void onPostExecute(Object[] values) {
+                        RegisterListener();
                         HideProgress();
                     }
                 },
                 null
         );
-
-        mCheckWhiteSeamEmulation.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                Log.i(VD_DTAG, String.format(">>> onCheckedChanged() ( %b )", mCheckWhiteSeamEmulation.isChecked()));
-
-                mBtnWhiteSeamApply.setEnabled(b);
-                for( VdSpinCtrl spin : mSpinWhiteSeam ) {
-                    spin.setEnabled(b);
-                }
-
-                CinemaTask.GetInstance().Run(
-                        CinemaTask.CMD_WHITESEAM_ENABLE,
-                        getApplicationContext(),
-                        mSpinnerWhiteSeamCabinetId.getSelectedItemPosition(),
-                        b,
-                        null,
-                        null,
-                        null
-                );
-
-                CinemaTask.GetInstance().Run(
-                        CinemaTask.CMD_WHITESEAM_READ,
-                        getApplicationContext(),
-                        mSpinnerWhiteSeamCabinetId.getSelectedItemPosition(),
-                        b,
-                        null,
-                        new CinemaTask.PostExecuteCallback() {
-                            @Override
-                            public void onPostExecute(Object[] values) {
-                                if( !(values instanceof Integer[]) )
-                                    return;
-
-                                for( int i = 0; i < values.length; i++ ) {
-                                    mSpinWhiteSeam[i].SetValue((Integer)values[i]);
-                                }
-                            }
-                        },
-                        null
-                );
-            }
-        });
     }
 
     private void UpdateWhiteSeamValue() {
-        mBtnWhiteSeamApply.setEnabled(mCheckWhiteSeamEmulation.isChecked());
-        for( VdSpinCtrl spin : mSpinWhiteSeam )
-            spin.setEnabled(mCheckWhiteSeamEmulation.isChecked());
-
         CinemaTask.GetInstance().Run(
                 CinemaTask.CMD_WHITESEAM_READ,
                 getApplicationContext(),
                 mSpinnerWhiteSeamCabinetId.getSelectedItemPosition(),
                 mCheckWhiteSeamEmulation.isChecked(),
-                null,
+                new CinemaTask.PreExecuteCallback() {
+                    @Override
+                    public void onPreExecute(Object[] values) {
+                        ShowProgress();
+                        UnregisterListener();
+
+                        mBtnWhiteSeamApply.setEnabled(mCheckWhiteSeamEmulation.isChecked());
+                        for( VdSpinCtrl spin : mSpinWhiteSeam )
+                            spin.setEnabled(mCheckWhiteSeamEmulation.isChecked());
+                    }
+                },
                 new CinemaTask.PostExecuteCallback() {
                     @Override
                     public void onPostExecute(Object[] values) {
-                        if( !(values instanceof Integer[]) )
+                        if (!(values instanceof Integer[]))
                             return;
 
-                        for( int i = 0; i < values.length; i++ ) {
-                            mSpinWhiteSeam[i].SetValue((Integer)values[i]);
+                        for (int i = 0; i < values.length; i++) {
+                            mSpinWhiteSeam[i].SetValue((Integer) values[i]);
                         }
+
+                        RegisterListener();
+                        HideProgress();
                     }
                 },
                 null
@@ -1011,10 +943,21 @@ public class DisplayModeActivity extends CinemaBaseActivity {
     }
 
     private void UpdateSetup() {
-        mEditCabinet.setText(mCinemaInfo.GetValue(CinemaInfo.KEY_CABINET_NUM));
+        String cabinetNum = mCinemaInfo.GetValue(CinemaInfo.KEY_CABINET_NUM);
+        if( cabinetNum == null ) {
+            cabinetNum = String.valueOf(0);
+            mCinemaInfo.SetValue(CinemaInfo.KEY_CABINET_NUM, cabinetNum);
+        }
+        mEditCabinet.setText(cabinetNum);
 
         for( int i = 0; i < CinemaService.OFF_TIME.length; i++ ) {
-            if( mCinemaInfo.GetValue(CinemaInfo.KEY_SCREEN_SAVING).equals(CinemaService.OFF_TIME[i]) ) {
+            String offTime = mCinemaInfo.GetValue(CinemaInfo.KEY_SCREEN_SAVING);
+            if( offTime == null ) {
+                offTime = String.valueOf(CinemaService.OFF_TIME[0]);
+                mCinemaInfo.SetValue(CinemaInfo.KEY_SCREEN_SAVING, offTime);
+            }
+
+            if( offTime.equals(CinemaService.OFF_TIME[i]) ) {
                 mSpinnerSuspendTime.setSelection(i);
                 break;
             }
@@ -1027,6 +970,84 @@ public class DisplayModeActivity extends CinemaBaseActivity {
     }
 
     private void RegisterListener() {
+        mCheckWhiteSeamEmulation.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                Log.i(VD_DTAG, String.format(">>> onCheckedChanged() ( %b )", mCheckWhiteSeamEmulation.isChecked()));
+
+                mBtnWhiteSeamApply.setEnabled(b);
+                for( VdSpinCtrl spin : mSpinWhiteSeam ) {
+                    spin.setEnabled(b);
+                }
+
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_WHITESEAM_ENABLE,
+                        getApplicationContext(),
+                        mSpinnerWhiteSeamCabinetId.getSelectedItemPosition(),
+                        b,
+                        null,
+                        null,
+                        null
+                );
+
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_WHITESEAM_READ,
+                        getApplicationContext(),
+                        mSpinnerWhiteSeamCabinetId.getSelectedItemPosition(),
+                        b,
+                        null,
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute(Object[] values) {
+                                if( !(values instanceof Integer[]) )
+                                    return;
+
+                                for( int i = 0; i < values.length; i++ ) {
+                                    mSpinWhiteSeam[i].SetValue((Integer)values[i]);
+                                }
+                            }
+                        },
+                        null
+                );
+            }
+        });
+
+        mSpinnerWhiteSeamCabinetId.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_WHITESEAM_READ,
+                        getApplicationContext(),
+                        mSpinnerWhiteSeamCabinetId.getSelectedItemPosition(),
+                        mCheckWhiteSeamEmulation.isChecked(),
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute(Object[] values) {
+                                ShowProgress();
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute(Object[] values) {
+                                if( !(values instanceof Integer[]) )
+                                    return ;
+
+                                for( int i = 0; i < values.length; i++ ) {
+                                    mSpinWhiteSeam[i].SetValue((Integer)values[i]);
+                                }
+                                HideProgress();
+                            }
+                        },
+                        null
+                );
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+
+            }
+        });
+
         mBtnApplySyncWidth.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -1431,6 +1452,8 @@ public class DisplayModeActivity extends CinemaBaseActivity {
     }
 
     private void UnregisterListener() {
+        mCheckWhiteSeamEmulation.setOnCheckedChangeListener(null);
+        mSpinnerWhiteSeamCabinetId.setOnItemSelectedListener(null);
         mBtnApplySyncWidth.setOnClickListener(null);
         mSpinSyncWidth.SetOnChangeListener(null);
         mSpinSyncWidth.SetOnEditorActionListener(null);

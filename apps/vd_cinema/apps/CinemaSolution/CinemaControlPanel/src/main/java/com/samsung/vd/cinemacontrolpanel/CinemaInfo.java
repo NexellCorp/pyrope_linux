@@ -46,10 +46,15 @@ public class CinemaInfo extends Application {
     //
     //  Register
     //
+    public static final int REG_TCON_PITCH_INFO             = 0x000E;   // P2.5: d'25xxx, P3.3: d'33xxx
+    public static final int REG_PFPGA_PF_MODEL              = 0x01F0;   // P2.5: 0      , P3.3: 1
+    public static final int REG_PFPGA_PF_SCREEN_SEL         = 0x01C8;   // 01: Left, 10: Right, 11: Both
+
     public static final int REG_TCON_FLASH_CC               = 0x0044;
     public static final int REG_TCON_CC_MODULE              = 0x0052;
     public static final int REG_TCON_XYZ_TO_RGB             = 0x0004;
     public static final int REG_TCON_SEAM_ON                = 0x0192;
+    public static final int REG_TCON_SCAN_MODE              = 0x0120;
 
     public static final int REG_TCON_0x018B                 = 0x018B;
     public static final int REG_TCON_0x018C                 = 0x018C;
@@ -86,7 +91,8 @@ public class CinemaInfo extends Application {
         KEY_PREG_0x0199,
     };
 
-    public static final int TCON_ID_OFFSET = 16;
+    public static final int TCON_BASE_OFFSET = 16;
+    public static final int TCON_P33_RIGHT_OFFSET = 200;
     public static final int TCON_MODULE_NUM = 24;
 
     private VdPreference mPrefConfig;
@@ -105,9 +111,19 @@ public class CinemaInfo extends Application {
     private boolean mValidEEPRom    = false;
 
     //
-    //  Cabinet Number  = (slave address & 0x7F ) - offset(16)      :: 0, 1, 2, .., 95
-    //  Cabinet ID      = (slave address        ) & (0x00 or 0x80 ) :: 16, 17, 18, .., 112
+    //  Cabinet Number  = cabinet number for display ( 0, 1, 2, 3 ... )
+    //  Cabinet Id      = cabinet slave address with i2c port information.
+    //  Cabinet Slave   = cabinet slave address without i2c port information.
+    //  Cabinet Port    = cabinet i2c port
     //
+    public static final int SCREEN_TYPE_P25     = 0;
+    public static final int SCREEN_TYPE_P33     = 1;
+
+    public static final int PORT_L = 0;
+    public static final int PORT_R = 1;
+
+    private int mScreenType = SCREEN_TYPE_P25;
+
     private byte[] mCabinet = new byte[0];
 
     //
@@ -133,6 +149,10 @@ public class CinemaInfo extends Application {
     //
     //  for debug
     //
+    public boolean IsCheckInitial() {
+        return false;
+    }
+
     public boolean IsCheckCabinetNum() {
         return false;
     }
@@ -167,6 +187,10 @@ public class CinemaInfo extends Application {
 
     public int GetBootTime() {
         return 30;
+    }
+
+    public boolean IsCheckScreenInJni() {
+        return true;
     }
 
     //
@@ -293,72 +317,291 @@ public class CinemaInfo extends Application {
     //
     //  For TCON Index
     //
-    public void AddCabinet( byte cabinetId ) {
-        byte[] tmpData = Arrays.copyOf(mCabinet, mCabinet.length + 1);
-
-        boolean bDuplicate = false;
-        for( byte cabinet : mCabinet ) {
-            if( cabinet == cabinetId ) {
-                bDuplicate = true;
-                break;
-            }
-        }
-
-        if( !bDuplicate ) {
-            tmpData[mCabinet.length] = cabinetId;
-            mCabinet = Sort( tmpData );
-            Log.i(VD_DTAG, String.format(Locale.US, "Add Cabinet Id. ( 0x%02X - port: %d, slave: 0x%02X )",
-                    cabinetId, (cabinetId & 0x80) >> 7, (cabinetId & 0x7F)));
-        }
-        else {
-            Log.i(VD_DTAG, String.format(Locale.US, "Warning, Duplicate Cabinet Id. ( 0x%02X - port: %d, slave: 0x%02X )",
-                    cabinetId, (cabinetId & 0x80) >> 7, (cabinetId & 0x7F)));
-        }
-    }
-
-    public void ClearCabinet() {
-        mCabinet = new byte[0];
+    public int GetScreenType() {
+        return mScreenType;
     }
 
     public byte[] GetCabinet() {
         return mCabinet;
     }
 
-    private byte[] Sort( byte[] src ) {
-        Byte[] tmp = new Byte[src.length];
-        for( int i = 0; i < src.length; i++ ) {
-            tmp[i] = src[i];
+    public boolean IsCabinetValidPort( int port ) {
+        for( byte id : mCabinet ) {
+            if( port == ((id & 0x80) >> 7) )
+                return true;
+        }
+        return false;
+    }
+
+    public byte GetCabinetId( int number ) {
+        byte id = 0x00;
+        switch( mScreenType ) {
+            case SCREEN_TYPE_P25:
+                id = ((number % TCON_BASE_OFFSET) < 8) ? (byte)(number + TCON_BASE_OFFSET) : (byte)((number | 0x80) + TCON_BASE_OFFSET);
+                break;
+            case SCREEN_TYPE_P33:
+                id = (number < TCON_P33_RIGHT_OFFSET) ? (byte)(number + TCON_BASE_OFFSET) : (byte)((number + TCON_BASE_OFFSET) | 0x80);
+                break;
+            default:
+                break;
+        }
+        return id;
+    }
+
+    public int GetCabinetPort( byte id ) {
+        return (id & 0x80) >> 7;
+    }
+
+    public byte GetCabinetSlave( byte id ) {
+        return (byte)(id & 0x7F);
+    }
+
+    public int GetCabinetNumber( byte id ) {
+        int cabinet = -1;
+
+        switch( mScreenType ) {
+            case SCREEN_TYPE_P25:
+                cabinet = ((id & 0x7F) - TCON_BASE_OFFSET);
+                break;
+            case SCREEN_TYPE_P33:
+                cabinet = ((id & 0x7F) - TCON_BASE_OFFSET) + (((id & 0x80) >> 7) * TCON_P33_RIGHT_OFFSET);
+                break;
+            default:
+                break;
         }
 
-        Arrays.sort( tmp, new Comparator<Byte>() {
-            @Override
-            public int compare(Byte lhs, Byte rhs) {
-                byte src1 = lhs;
-                byte src2 = rhs;
+        return cabinet;
+    }
 
-                if( (src1 & 0x7F) < (src2 & 0x7F) ) {
-                    return -1;
+    public void AddCabinet() {
+        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+
+        mCabinet = new byte[0];
+
+        for (int i = 0; i < 255; i++) {
+            // Read Slave Address
+            if ((i & 0x7F) < 0x10)
+                continue;
+
+            byte[] result = ctrl.Send(NxCinemaCtrl.CMD_TCON_STATUS, new byte[]{(byte) i});
+            if (result == null || result.length == 0)
+                continue;
+
+            if (0x01 != result[0])
+                continue;
+
+            boolean bDuplicate = false;
+            for (byte cabinet : mCabinet) {
+                if (cabinet == i) {
+                    bDuplicate = true;
+                    break;
                 }
-                else if( (src1 & 0x7F) > (src2 & 0x7F) ) {
+            }
+
+            if (!bDuplicate) {
+                mCabinet = Arrays.copyOf(mCabinet, mCabinet.length + 1);
+                mCabinet[mCabinet.length - 1] = (byte) i;
+            }
+        }
+
+        if( 0 < mCabinet.length ) {
+            //  Cabinet Sorting
+            Byte[] cabinet = new Byte[mCabinet.length];
+            for( int i = 0; i < mCabinet.length; i++ ) {
+                cabinet[i] = mCabinet[i];
+            }
+
+            Arrays.sort(
+                    cabinet,
+                    (mScreenType == SCREEN_TYPE_P33) ? mComparatorScreenTypeP33 : mComparatorScreenTypeP25
+            );
+
+            for( int i = 0; i < cabinet.length; i++ ) {
+                mCabinet[i] = cabinet[i];
+            }
+        }
+    }
+
+    public void ShowCabinet() {
+        for( byte id : mCabinet ) {
+            Log.i(VD_DTAG, String.format(Locale.US, "Add Cabinet. ( cabinet: %d, port: %d, slave: 0x%02x )",
+                    GetCabinetNumber(id), GetCabinetPort(id), GetCabinetSlave(id)));
+        }
+    }
+
+    private Comparator<Byte> mComparatorScreenTypeP25 = new Comparator<Byte>() {
+        @Override
+        public int compare(Byte lhs, Byte rhs) {
+            byte src1 = lhs;
+            byte src2 = rhs;
+
+            if( (src1 & 0x7F) < (src2 & 0x7F) ) {
+                return -1;
+            }
+            else if( (src1 & 0x7F) > (src2 & 0x7F) ) {
+                return 1;
+            }
+            else {
+                if( src1 < src2 ) {
                     return 1;
                 }
-                else {
-                    if( src1 < src2 ) {
-                        return 1;
-                    }
-                    else if( src1 > src2 ) {
-                        return -1;
-                    }
+                else if( src1 > src2 ) {
+                    return -1;
                 }
-                return 0;
             }
-        });
 
-        byte[] dst = new byte[tmp.length];
-        for( int i = 0; i < tmp.length; i++ ) {
-            dst[i] = tmp[i];
+            return 0;
         }
-        return dst;
+    };
+
+    private Comparator<Byte> mComparatorScreenTypeP33 = new Comparator<Byte>() {
+        @Override
+        public int compare(Byte lhs, Byte rhs) {
+            byte src1 = lhs;
+            byte src2 = rhs;
+
+            if( ((src1 & 0x80) >> 7) == ((src2 & 0x80) >> 7) ) {
+                if( src1 < src2 ) {
+                    return -1;
+                }
+                else if( src1 > src2 ) {
+                    return 1;
+                }
+            }
+            else {
+                if( src1 < src2 ) {
+                    return 1;
+                }
+                else if( src1 > src2 ) {
+                    return -1;
+                }
+            }
+            return 0;
+        }
+    };
+
+    //
+    //  For Check ScreenType
+    //
+    public void CheckScreenType() {
+        if( IsCheckScreenInJni() ) {
+            Log.i(VD_DTAG, ">>> Start CheckScreenType().");
+            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+            byte[] result;
+
+            result = ctrl.Send(NxCinemaCtrl.CMD_PLATFORM_SCREEN_TYPE, null);
+            if( result == null || result.length == 0 ) {
+                Log.i(VD_DTAG, "Fail, CheckScreen.");
+                return;
+            }
+
+            mScreenType = (int)result[0];
+        }
+        else {
+            //
+            //  Not Use This Function
+            //
+            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+            byte[] result, inData;
+            byte[] reg, dat;
+            int defScreenSel;
+
+            {
+                reg = ctrl.IntToByteArray(REG_PFPGA_PF_SCREEN_SEL, NxCinemaCtrl.FORMAT_INT16);
+                result = ctrl.Send(NxCinemaCtrl.CMD_PFPGA_REG_READ, reg);
+                if( result == null || result.length == 0 ) {
+                    Log.i(VD_DTAG, String.format(Locale.US, "fail, pfpga register read.( reg: 0x%04x )", NxCinemaCtrl.CMD_PFPGA_REG_READ));
+                    return;
+                }
+
+                defScreenSel = ctrl.ByteArrayToInt(result);
+
+                reg = ctrl.IntToByteArray(REG_PFPGA_PF_SCREEN_SEL, NxCinemaCtrl.FORMAT_INT16);
+                dat = ctrl.IntToByteArray(0x0003, NxCinemaCtrl.FORMAT_INT16);
+                inData = ctrl.AppendByteArray(reg, dat);
+                ctrl.Send(NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData);
+            }
+
+            for( int j = 0; j < 2; j++ ) {
+                reg = ctrl.IntToByteArray(REG_PFPGA_PF_MODEL, NxCinemaCtrl.FORMAT_INT16);
+                dat = ctrl.IntToByteArray(j, NxCinemaCtrl.FORMAT_INT16);
+                inData = ctrl.AppendByteArray(reg, dat);
+                ctrl.Send(NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData);
+
+                for( int i = 0; i < 255; i++ ) {
+                    if( (i & 0x7F) < 0x10 )
+                        continue;
+
+                    result = ctrl.Send(NxCinemaCtrl.CMD_TCON_STATUS, new byte[]{(byte)i});
+                    if (result == null || result.length == 0)
+                        continue;
+
+                    if( 0x01 != result[0] )
+                        continue;
+
+                    Log.i(VD_DTAG, String.format(Locale.US, ">>> Check Screen Type in Cabinet #%d. ( port: %d, slave: 0x%02x )",
+                            GetCabinetNumber((byte)i), GetCabinetPort((byte)i), GetCabinetSlave((byte)i)));
+
+                    inData = new byte[] { (byte)i };
+                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(REG_TCON_PITCH_INFO, NxCinemaCtrl.FORMAT_INT16));
+                    result = ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_READ, inData );
+
+                    if( result == null || result.length != NxCinemaCtrl.FORMAT_INT32 )
+                        continue;
+
+                    int type = ctrl.ByteArrayToInt(result) / 1000;
+                    switch( type ) {
+                        case 33:
+                            Log.i(VD_DTAG, String.format(">>> Screen Type is P3.3 ( %d )", ctrl.ByteArrayToInt(result)));
+
+                            reg = ctrl.IntToByteArray(REG_PFPGA_PF_MODEL, NxCinemaCtrl.FORMAT_INT16);
+                            dat = ctrl.IntToByteArray(0x0001, NxCinemaCtrl.FORMAT_INT16);
+                            inData = ctrl.AppendByteArray(reg, dat);
+                            ctrl.Send(NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData);
+
+                            reg = ctrl.IntToByteArray(REG_PFPGA_PF_SCREEN_SEL, NxCinemaCtrl.FORMAT_INT16);
+                            dat = ctrl.IntToByteArray(0x0003, NxCinemaCtrl.FORMAT_INT16);
+                            inData = ctrl.AppendByteArray(reg, dat);
+                            ctrl.Send(NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData);
+
+                            mScreenType = SCREEN_TYPE_P33;
+                            break;
+
+                        default:
+                            Log.i(VD_DTAG, String.format(">>> Screen Type is P2.5 ( %d )", ctrl.ByteArrayToInt(result)));
+
+                            reg = ctrl.IntToByteArray(REG_PFPGA_PF_MODEL, NxCinemaCtrl.FORMAT_INT16);
+                            dat = ctrl.IntToByteArray(0x0000, NxCinemaCtrl.FORMAT_INT16);
+                            inData = ctrl.AppendByteArray(reg, dat);
+                            ctrl.Send(NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData);
+
+                            reg = ctrl.IntToByteArray(REG_PFPGA_PF_SCREEN_SEL, NxCinemaCtrl.FORMAT_INT16);
+                            dat = ctrl.IntToByteArray(defScreenSel, NxCinemaCtrl.FORMAT_INT16);
+                            inData = ctrl.AppendByteArray(reg, dat);
+                            ctrl.Send(NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData);
+
+                            mScreenType = SCREEN_TYPE_P25;
+                            break;
+                    }
+                    return;
+                }
+            }
+
+            Log.i(VD_DTAG, ">>> Unknown Screen Type. --> Set Default Screen Type P2.5");
+            {
+                reg = ctrl.IntToByteArray(REG_PFPGA_PF_MODEL, NxCinemaCtrl.FORMAT_INT16);
+                dat = ctrl.IntToByteArray(0x0000, NxCinemaCtrl.FORMAT_INT16);
+                inData = ctrl.AppendByteArray(reg, dat);
+                ctrl.Send(NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData);
+
+                reg = ctrl.IntToByteArray(REG_PFPGA_PF_SCREEN_SEL, NxCinemaCtrl.FORMAT_INT16);
+                dat = ctrl.IntToByteArray(defScreenSel, NxCinemaCtrl.FORMAT_INT16);
+                inData = ctrl.AppendByteArray(reg, dat);
+                ctrl.Send(NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData);
+
+                mScreenType = SCREEN_TYPE_P25;
+            }
+        }
     }
 
     //

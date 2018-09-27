@@ -2,7 +2,6 @@ package com.samsung.vd.cinemacontrolpanel;
 
 import android.content.Context;
 import android.database.Cursor;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Patterns;
@@ -23,10 +22,6 @@ import android.widget.TabHost;
 import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTitleBar;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.Locale;
 
 /**
@@ -111,7 +106,83 @@ public class SystemActivity extends CinemaBaseActivity {
         btnApply.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                new AsyncTaskSetNetwork().execute();
+                String[] networkParam = new String[6];
+                networkParam[0] = ((EditText)findViewById(R.id.editIpAddress)).getText().toString();
+                networkParam[1] = ((EditText)findViewById(R.id.editSubnetMask)).getText().toString();
+                networkParam[2] = ((EditText)findViewById(R.id.editDefaultGateway)).getText().toString();
+                networkParam[3] = ((EditText)findViewById(R.id.editDns1)).getText().toString();
+                networkParam[4] = ((EditText)findViewById(R.id.editDns2)).getText().toString();
+                networkParam[5] = ((EditText)findViewById(R.id.editImbAddress)).getText().toString();
+
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_SET_NETWORK,
+                        getApplicationContext(),
+                        networkParam,
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute(Object[] values) {
+                                Log.i(VD_DTAG, "Set Network Start.");
+                                ShowProgress();
+
+                                if( !(values instanceof String[]) )
+                                    return;
+
+                                String[] param = (String[])values;
+                                if( !Patterns.IP_ADDRESS.matcher(param[0]).matches() ) {
+                                    ShowMessage(String.format(Locale.US, "Please check ip address. ( %s )", param[0]));
+                                    return ;
+                                }
+
+                                if( !Patterns.IP_ADDRESS.matcher(param[1]).matches() ) {
+                                    ShowMessage(String.format(Locale.US, "Please check netmask. ( %s )", param[1]));
+                                    return ;
+                                }
+
+                                if( !Patterns.IP_ADDRESS.matcher(param[2]).matches() ) {
+                                    ShowMessage(String.format(Locale.US, "Please check gateway. ( %s )", param[2]));
+                                    return ;
+                                }
+
+                                if( (param[0]).equals(param[2]) ) {
+                                    ShowMessage(String.format(Locale.US, "Please check ip address and gateway. ( ip:%s, gateway:%s )", param[0], param[2]));
+                                    return ;
+                                }
+
+                                if( !(param[3]).equals("") && !Patterns.IP_ADDRESS.matcher(param[3]).matches() ) {
+                                    ShowMessage(String.format(Locale.US, "Please check check dns1. ( %s )", param[3]));
+                                    return ;
+                                }
+
+                                if( !(param[4]).equals("") && !Patterns.IP_ADDRESS.matcher(param[4]).matches() ) {
+                                    ShowMessage(String.format(Locale.US, "Please check check dns2. ( %s )", param[4]));
+                                    return ;
+                                }
+
+                                if( !(param[5]).equals("") && !Patterns.IP_ADDRESS.matcher(param[5]).matches() ) {
+                                    ShowMessage(String.format(Locale.US, "Please check check IMB ip address. ( %s )", param[5]));
+                                    return ;
+                                }
+
+                                Log.i(VD_DTAG, "Network Parameter is clean.");
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute(Object[] values) {
+                                if( !(values instanceof Integer[]) )
+                                    return;
+
+                                if( (Integer)values[0] == CinemaInfo.RET_PASS ) {
+                                    ShowMessage("Change IP Address.");
+                                    mCinemaInfo.InsertLog("Change IP Address.");
+                                }
+
+                                Log.i(VD_DTAG, String.format("Set Network Done. ( ret = %d )", (Integer)values[0]));
+                                HideProgress();
+                            }
+                        },
+                        null
+                );
             }
         });
 
@@ -166,8 +237,19 @@ public class SystemActivity extends CinemaBaseActivity {
                 if( CinemaTask.CMD_TMS_QUE > (Integer)values[0] )
                     return;
 
-                boolean bScale2K= (CinemaTask.TMS_2K_2D == (Integer)values[0] || CinemaTask.TMS_2K_3D == (Integer)values[0]);
-                boolean bMode3D = (CinemaTask.TMS_2K_3D == (Integer)values[0] || CinemaTask.TMS_4K_3D == (Integer)values[0]);
+                boolean bScale2K= (
+                        CinemaTask.TMS_P25_2K_2D == (Integer)values[0] || CinemaTask.TMS_P25_2K_3D == (Integer)values[0] ||
+                        CinemaTask.TMS_P33_2K_2D == (Integer)values[0] || CinemaTask.TMS_P33_2K_3D == (Integer)values[0] );
+                boolean bMode3D = (
+                        CinemaTask.TMS_P25_2K_3D == (Integer)values[0] || CinemaTask.TMS_P25_4K_3D == (Integer)values[0] ||
+                        CinemaTask.TMS_P33_2K_3D == (Integer)values[0] || CinemaTask.TMS_P33_4K_2D == (Integer)values[0] );
+
+                //
+                //  Do not allow to change pitch ( P25 <--> P33 )
+                //
+                // final boolean bPitch25= (
+                //         CinemaTask.TMS_P25_4K_2D == mode || CinemaTask.TMS_P25_2K_2D == mode ||
+                //         CinemaTask.TMS_P25_4K_3D == mode || CinemaTask.TMS_P25_2K_3D == mode );
 
                 UnregisterListener();
                 SetCheckResolution(bScale2K ? R.id.radioResolution2k : R.id.radioResolution4k);
@@ -258,7 +340,46 @@ public class SystemActivity extends CinemaBaseActivity {
     }
 
     private void UpdateIpAddress() {
-        new AsyncTaskGetNetwork().execute();
+        CinemaTask.GetInstance().Run(
+                CinemaTask.CMD_GET_NETWORK,
+                getApplicationContext(),
+                new CinemaTask.PreExecuteCallback() {
+                    @Override
+                    public void onPreExecute(Object[] values) {
+                        ShowProgress();
+                    }
+                },
+                new CinemaTask.PostExecuteCallback() {
+                    @Override
+                    public void onPostExecute(Object[] values) {
+                        HideProgress();
+                    }
+                },
+                new CinemaTask.ProgressUpdateCallback() {
+                    @Override
+                    public void onProgressUpdate(Object[] values) {
+                        if( !(values[0] instanceof Integer) || !(values[1] instanceof String) )
+                            return;
+
+                        EditText[] editNetwork = new EditText[7];
+                        editNetwork[0] = (EditText)findViewById(R.id.editIpAddress);
+                        editNetwork[1] = (EditText)findViewById(R.id.editSubnetMask);
+                        editNetwork[2] = (EditText)findViewById(R.id.editDefaultGateway);
+                        editNetwork[3] = null;
+                        editNetwork[4] = (EditText)findViewById(R.id.editDns1);
+                        editNetwork[5] = (EditText)findViewById(R.id.editDns2);
+                        editNetwork[6] = (EditText)findViewById(R.id.editImbAddress);
+
+                        // Log.i(VD_DTAG, String.format(Locale.US, ">> network #%d : %s", (Integer)values[0], (String)values[1]) );
+
+                        if( editNetwork.length <= (Integer)values[0] ||
+                            editNetwork[(Integer)values[0]] == null )
+                            return;
+
+                        editNetwork[(Integer)values[0]].setText((String)values[1]);
+                    }
+                }
+        );
     }
 
     private void UpdateSystemLog() {
@@ -450,145 +571,4 @@ public class SystemActivity extends CinemaBaseActivity {
 
         }
     };
-
-    private class AsyncTaskGetNetwork extends AsyncTask<Void, Object, Void> {
-        private EditText[] mEditNetwork;
-        private String[] mStrNetwork;
-
-        public AsyncTaskGetNetwork() {
-            mEditNetwork = new EditText[7];
-            mEditNetwork[0] = (EditText)findViewById(R.id.editIpAddress);
-            mEditNetwork[1] = (EditText)findViewById(R.id.editSubnetMask);
-            mEditNetwork[2] = (EditText)findViewById(R.id.editDefaultGateway);
-            mEditNetwork[3] = null;
-            mEditNetwork[4] = (EditText)findViewById(R.id.editDns1);
-            mEditNetwork[5] = (EditText)findViewById(R.id.editDns2);
-            mEditNetwork[6] = (EditText)findViewById(R.id.editImbAddress);
-
-            mStrNetwork = new String[7];
-        }
-
-        @Override
-        protected Void doInBackground(Void... voids) {
-
-            try {
-                FileReader inFile = new FileReader("/system/bin/nap_network");
-                BufferedReader inReader = new BufferedReader(inFile);
-
-                try {
-                    for( int i = 0; i < mStrNetwork.length; i++ ) {
-                        mStrNetwork[i] = inReader.readLine();
-                        publishProgress( i, mStrNetwork[i] );
-                    }
-                    inReader.close();
-                    inFile.close();
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            }
-
-            return null;
-        }
-
-        @Override
-        protected void onProgressUpdate(Object... values) {
-            if( mEditNetwork[(Integer)values[0]] != null ) {
-                Log.i(VD_DTAG, String.format(Locale.US, ">> network %d : %s", (Integer)values[0], (String)values[1]) );
-                mEditNetwork[(Integer)values[0]].setText((String)values[1]);
-            }
-
-            super.onProgressUpdate(values);
-        }
-
-        @Override
-        protected void onPreExecute() {
-            ShowProgress();
-            super.onPreExecute();
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            HideProgress();
-            super.onPostExecute(aVoid);
-        }
-    }
-
-    private class AsyncTaskSetNetwork extends AsyncTask<Void, Void, Void> {
-        private EditText[] mEditNetwork;
-        private String[] mStrNetwork;
-
-        public AsyncTaskSetNetwork() {
-            mEditNetwork = new EditText[6];
-            mEditNetwork[0] = (EditText)findViewById(R.id.editIpAddress);
-            mEditNetwork[1] = (EditText)findViewById(R.id.editSubnetMask);
-            mEditNetwork[2] = (EditText)findViewById(R.id.editDefaultGateway);
-            mEditNetwork[3] = (EditText)findViewById(R.id.editDns1);
-            mEditNetwork[4] = (EditText)findViewById(R.id.editDns2);
-            mEditNetwork[5] = (EditText)findViewById(R.id.editImbAddress);
-
-            mStrNetwork = new String[6];
-        }
-
-        @Override
-        protected Void doInBackground(Void... voids) {
-            for( int i = 0; i < mEditNetwork.length; i++ ) {
-                mStrNetwork[i] = mEditNetwork[i].getText().toString();
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            if( !Patterns.IP_ADDRESS.matcher(mStrNetwork[0]).matches() ) {
-                ShowMessage(String.format(Locale.US, "Please check ip address. ( %s )", mStrNetwork[0]));
-                return ;
-            }
-
-            if( !Patterns.IP_ADDRESS.matcher(mStrNetwork[1]).matches() ) {
-                ShowMessage(String.format(Locale.US, "Please check netmask. ( %s )", mStrNetwork[1]));
-                return ;
-            }
-
-            if( !Patterns.IP_ADDRESS.matcher(mStrNetwork[2]).matches() ) {
-                ShowMessage(String.format(Locale.US, "Please check gateway. ( %s )", mStrNetwork[2]));
-                return ;
-            }
-
-            if( mStrNetwork[0].equals(mStrNetwork[2]) ) {
-                ShowMessage(String.format(Locale.US, "Please check ip address and gateway. ( ip:%s, gateway:%s )", mStrNetwork[0], mStrNetwork[2]));
-                return ;
-            }
-
-            if( !mStrNetwork[3].equals("") && !Patterns.IP_ADDRESS.matcher(mStrNetwork[3]).matches() ) {
-                ShowMessage(String.format(Locale.US, "Please check check dns1. ( %s )", mStrNetwork[3]));
-                return ;
-            }
-
-            if( !mStrNetwork[4].equals("") && !Patterns.IP_ADDRESS.matcher(mStrNetwork[4]).matches() ) {
-                ShowMessage(String.format(Locale.US, "Please check check dns2. ( %s )", mStrNetwork[4]));
-                return ;
-            }
-
-            if( !mStrNetwork[5].equals("") && !Patterns.IP_ADDRESS.matcher(mStrNetwork[5]).matches() ) {
-                ShowMessage(String.format(Locale.US, "Please check check IMB ip address. ( %s )", mStrNetwork[5]));
-                return ;
-            }
-
-            // NetworkTools tools = new NetworkTools();
-            // tools.SetConfig( mStrNetwork[0], mStrNetwork[1], mStrNetwork[2], mStrNetwork[3], mStrNetwork[4], mStrNetwork[5] );
-            // if( tools.Ping( strGateway ) ) ShowMessage( "Valid IP Address.");
-            // else ShowMessage("Please Check IP Address. ( Invalid IP Address )");
-
-            NetworkTools tools = new NetworkTools();
-            tools.SetConfig( mStrNetwork[0], mStrNetwork[1], mStrNetwork[2], mStrNetwork[3], mStrNetwork[4], mStrNetwork[5] );
-            ShowMessage("Change IP Address.");
-            mCinemaInfo.InsertLog("Change IP Address.");
-
-            HideProgress();
-            super.onPostExecute(aVoid);
-        }
-    }
 }

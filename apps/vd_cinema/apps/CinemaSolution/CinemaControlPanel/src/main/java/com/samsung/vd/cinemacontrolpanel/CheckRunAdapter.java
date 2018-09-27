@@ -9,7 +9,6 @@ import android.widget.CheckBox;
 import android.widget.TextView;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 
 /**
  * Created by doriya on 12/16/16.

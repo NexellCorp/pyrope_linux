@@ -1,8 +1,5 @@
 package com.samsung.vd.cinemacontrolpanel;
 
-import android.view.View;
-import android.widget.Spinner;
-
 /**
  * Created by doriya on 11/25/16.
  */

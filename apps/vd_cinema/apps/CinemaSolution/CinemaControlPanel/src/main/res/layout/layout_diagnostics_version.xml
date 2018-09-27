@@ -16,7 +16,7 @@
             android:layout_width="0px"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="@string/txt_item"
+            android:text="@string/txt_cabinet_number"
             android:textStyle="bold"
             android:gravity="center"
             android:paddingTop="15dp"

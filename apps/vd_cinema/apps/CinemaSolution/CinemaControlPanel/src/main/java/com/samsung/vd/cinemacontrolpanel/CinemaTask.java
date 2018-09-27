@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.AsyncTask;
 import android.os.SystemClock;
 import android.util.Log;
+import android.util.Patterns;
 import android.widget.Adapter;
 
 import java.io.BufferedReader;
@@ -44,7 +45,6 @@ public class CinemaTask {
     public static final int CMD_WHITESEAM_WRITE         = 23;
     public static final int CMD_LOD_RESET               = 24;
 
-    public static final int CMD_CHECK_CABINET           = 25;
     public static final int CMD_CHECK_CABINET_NUM       = 26;
     public static final int CMD_BOOTING_COMPLETE        = 27;
     public static final int CMD_DISPLAY_VERSION         = 28;
@@ -55,24 +55,32 @@ public class CinemaTask {
 
     public static final int CMD_PFPGA_MUTE              = 40;
 
-    public static final int CMD_APP_VERSION             = 80;
-    public static final int CMD_NAP_VERSION             = 81;
-    public static final int CMD_SAP_VERSION             = 82;
-    public static final int CMD_IPC_SERVER_VERSION      = 83;
-    public static final int CMD_IPC_CLIENT_VERSION      = 84;
-    public static final int CMD_TCON_VERSION            = 85;
-    public static final int CMD_PFPGA_VERSION           = 86;
+    public static final int CMD_APP_VERSION             = 50;
+    public static final int CMD_NAP_VERSION             = 51;
+    public static final int CMD_SAP_VERSION             = 52;
+    public static final int CMD_IPC_SERVER_VERSION      = 53;
+    public static final int CMD_IPC_CLIENT_VERSION      = 54;
+    public static final int CMD_TMS_SERVER_VERSION      = 55;
+    public static final int CMD_TCON_VERSION            = 56;
+    public static final int CMD_PFPGA_VERSION           = 57;
+
+    public static final int CMD_SET_NETWORK             = 60;
+    public static final int CMD_GET_NETWORK             = 61;
 
     public static final int CMD_CHANGE_3D               = 97;
     public static final int CMD_CHANGE_SCALE            = 98;
     public static final int CMD_CHANGE_MODE             = 99;
 
     public static final int CMD_TMS_QUE                 = 150;  // MODE: 0 - 149, CUE: 145 - 255
-    public static final int TMS_4K_2D                   = 150;
-    public static final int TMS_2K_2D                   = 151;
-    public static final int TMS_4K_3D                   = 152;
-    public static final int TMS_2K_3D                   = 153;
-    public static final int TMS_MAX                     = 153;
+    public static final int TMS_P25_4K_2D               = 150;
+    public static final int TMS_P25_2K_2D               = 151;
+    public static final int TMS_P25_4K_3D               = 152;
+    public static final int TMS_P25_2K_3D               = 153;
+    public static final int TMS_P33_4K_2D               = 154;
+    public static final int TMS_P33_4K_3D               = 155;
+    public static final int TMS_P33_2K_2D               = 156;
+    public static final int TMS_P33_2K_3D               = 157;
+    public static final int TMS_MAX                     = 157;
 
     private Semaphore mSem = new Semaphore(1);
     private long mStartTime;
@@ -118,9 +126,6 @@ public class CinemaTask {
             case CMD_ACCUMULATION:
                 new AsyncTaskAccumulation(context, preExecute, postExecute, progressUpdate).execute();
                 break;
-            case CMD_CHECK_CABINET:
-                new AsyncTaskCheckCabinet(context, preExecute, postExecute, progressUpdate).execute();
-                break;
             case CMD_CHECK_CABINET_NUM:
                 new AsyncTaskCheckCabinetNum(context, preExecute, postExecute, progressUpdate).execute();
                 break;
@@ -138,6 +143,9 @@ public class CinemaTask {
             case CMD_TCON_VERSION:
             case CMD_PFPGA_VERSION:
                 new AsyncTaskVersion(context, cmd, preExecute, postExecute, progressUpdate).execute();
+                break;
+            case CMD_GET_NETWORK:
+                new AsyncTaskGetNetwork(context, preExecute, postExecute, progressUpdate).execute();
                 break;
             default:
                 Log.i(VD_DTAG, String.format("Fail, Invalid Command. ( %d )", cmd));
@@ -283,6 +291,18 @@ public class CinemaTask {
         }
     }
 
+    public void Run( int cmd, Context context, String[] param, PreExecuteCallback preExecute, PostExecuteCallback postExecute, ProgressUpdateCallback progressUpdate ) {
+        switch( cmd )
+        {
+            case CMD_SET_NETWORK:
+                new AsyncTaskSetNetwork(context, param, preExecute, postExecute, progressUpdate).execute();
+                break;
+            default:
+                Log.i(VD_DTAG, String.format("Fail, Invalid Command. ( %d )", cmd));
+                break;
+        }
+    }
+
     private void Lock() {
         // try {
         //    mSem.acquire();
@@ -351,12 +371,8 @@ public class CinemaTask {
                 return null;
 
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-
-            boolean bValidPort0 = false, bValidPort1 = false;
-            for( byte id : mCabinet ) {
-                if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-                if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-            }
+            boolean bValidPort0 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_L);
+            boolean bValidPort1 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_R);
 
             for( int i = 0; i < mRegister.length; i++ ) {
                 byte[] reg = ctrl.IntToByteArray(mRegister[i], NxCinemaCtrl.FORMAT_INT16);
@@ -585,7 +601,7 @@ public class CinemaTask {
                 byte[] result;
                 byte[] reg = ctrl.IntToByteArray(mRegister[i], NxCinemaCtrl.FORMAT_INT16);
 
-                result = ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_READ, reg );
+                result = ctrl.Send( NxCinemaCtrl.CMD_PFPGA_REG_READ, reg );
                 if( result == null || result.length == 0 ) {
                     Log.i(VD_DTAG, String.format(Locale.US, "i2c read fail.( reg: 0x%04X )", mRegister[i] ));
                     publishProgress( CinemaInfo.RET_ERROR );
@@ -685,71 +701,6 @@ public class CinemaTask {
         }
     }
 
-    private class AsyncTaskCheckCabinet extends AsyncTask<Void, Integer, Void> {
-        private Context mContext = null;
-        private PreExecuteCallback mPreExecute = null;
-        private PostExecuteCallback mPostExecute = null;
-        private ProgressUpdateCallback mProgressUpdate = null;
-
-        public AsyncTaskCheckCabinet( Context context, PreExecuteCallback preExecute, PostExecuteCallback postExecute, ProgressUpdateCallback progressUpdate ) {
-            mContext = context;
-            mPreExecute = preExecute;
-            mPostExecute = postExecute;
-            mProgressUpdate = progressUpdate;
-        }
-
-        @Override
-        protected Void doInBackground(Void... voids) {
-            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-
-            for( int i = 0; i < 255; i++ ) {
-                if( (i & 0x7F) < 0x10 )
-                    continue;
-
-                byte[] result = ctrl.Send(NxCinemaCtrl.CMD_TCON_STATUS, new byte[]{(byte)i});
-                if (result == null || result.length == 0)
-                    continue;
-
-                if( 0x01 != result[0] )
-                    continue;
-
-                ((CinemaInfo)mContext).AddCabinet( (byte)i );
-                Log.i(VD_DTAG, String.format(Locale.US, "Add Cabinet ( Cabinet: %d, port: %d, slave: 0x%02x )", (i & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (i & 0x80) >> 7, i & 0x7F ));
-            }
-            return null;
-        }
-
-        @Override
-        protected void onProgressUpdate(Integer... values) {
-            if( mProgressUpdate != null )
-                mProgressUpdate.onProgressUpdate( values );
-
-            super.onProgressUpdate(values);
-        }
-
-        @Override
-        protected void onPreExecute() {
-            Lock();
-            Log.i(VD_DTAG, ">>> Check Cabinet Start.");
-            mStartTime = System.currentTimeMillis();
-
-            if( mPreExecute != null )
-                mPreExecute.onPreExecute( null );
-
-            super.onPreExecute();
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            if( mPostExecute != null )
-                mPostExecute.onPostExecute( null );
-
-            Log.i(VD_DTAG, String.format(Locale.US, ">>> Check Cabinet Done. ( %d mSec )", System.currentTimeMillis() - mStartTime ));
-            Unlock();
-            super.onPostExecute(aVoid);
-        }
-    }
-
     private class AsyncTaskCheckCabinetNum extends AsyncTask<Void, Void, Void> {
         private Context mContext = null;
         private PreExecuteCallback mPreExecute = null;
@@ -770,7 +721,7 @@ public class CinemaTask {
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
 
             for( int i = 0; i < 255; i++ ) {
-                if( (i & 0x7F) < CinemaInfo.TCON_ID_OFFSET )
+                if( (i & 0x7F) < CinemaInfo.TCON_BASE_OFFSET )
                     continue;
 
                 byte[] result = ctrl.Send(NxCinemaCtrl.CMD_TCON_STATUS, new byte[]{(byte)i});
@@ -868,7 +819,18 @@ public class CinemaTask {
             //
             //  Set Global Register
             //
+            boolean bValidPort0, bValidPort1;
             if( bFirstBoot ) {
+                //
+                //  Add Temporary Cabinet for global register restore.
+                //
+                ((CinemaInfo)mContext).CheckScreenType();
+                ((CinemaInfo)mContext).AddCabinet();
+
+                bValidPort0 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_L);
+                bValidPort1 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_R);
+
+                Log.i(VD_DTAG, ">>> Write TCON Global Register.");
                 int [][] treg = ((CinemaInfo)mContext).GetDefaultTReg();
                 for( int i = 0; i < treg.length; i++ ) {
                     if( treg[i][1] == -1 ) {
@@ -880,12 +842,13 @@ public class CinemaTask {
                     byte[] dat = ctrl.IntToByteArray(treg[i][1], NxCinemaCtrl.FORMAT_INT16);
                     byte[] inData = ctrl.AppendByteArray(reg, dat);
 
-                    ctrl.Send(NxCinemaCtrl.CMD_TCON_REG_WRITE, ctrl.AppendByteArray(new byte[]{(byte) 0x09}, inData));
-                    ctrl.Send(NxCinemaCtrl.CMD_TCON_REG_WRITE, ctrl.AppendByteArray(new byte[]{(byte) 0x89}, inData));
+                    if( bValidPort0 ) ctrl.Send(NxCinemaCtrl.CMD_TCON_REG_WRITE, ctrl.AppendByteArray(new byte[]{(byte) 0x09}, inData));
+                    if( bValidPort1 ) ctrl.Send(NxCinemaCtrl.CMD_TCON_REG_WRITE, ctrl.AppendByteArray(new byte[]{(byte) 0x89}, inData));
 
-                    Log.i(VD_DTAG, String.format(Locale.US, ">>> Write TCON Global Register. ( reg: 0x%04X, data: 0x%04X )", treg[i][0], treg[i][1]));
+                    // Log.i(VD_DTAG, String.format(Locale.US, ">>> Write TCON Global Register. ( reg: 0x%04X, data: 0x%04X )", treg[i][0], treg[i][1]));
                 }
 
+                Log.i(VD_DTAG, ">>> Write PFPGA Global Register.");
                 int [][] preg = ((CinemaInfo)mContext).GetDefaultPReg();
                 for( int i = 0; i < preg.length; i++ ) {
                     if( preg[i][1] == -1 ) {
@@ -899,37 +862,22 @@ public class CinemaTask {
 
                     ctrl.Send(NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData);
 
-                    Log.i(VD_DTAG, String.format(Locale.US, ">>> Write PFPGA Global Register. ( reg: 0x%04X, data: 0x%04X )", preg[i][0], preg[i][1]));
+                    // Log.i(VD_DTAG, String.format(Locale.US, ">>> Write PFPGA Global Register. ( reg: 0x%04X, data: 0x%04X )", preg[i][0], preg[i][1]));
                 }
             }
 
             //
             //  Detection Cabinet
             //
-            boolean bValidPort0 = false, bValidPort1 = false;
-
             {
-                ((CinemaInfo) mContext).ClearCabinet();
+                //
+                //  Add Real Cabinet.
+                //
+                ((CinemaInfo)mContext).AddCabinet();
+                ((CinemaInfo)mContext).ShowCabinet();
 
-                for (int i = 0; i < 255; i++) {
-                    if ((i & 0x7F) < 0x10)
-                        continue;
-
-                    byte[] result = ctrl.Send(NxCinemaCtrl.CMD_TCON_STATUS, new byte[]{(byte) i});
-                    if (result == null || result.length == 0)
-                        continue;
-
-                    if (0x01 != result[0])
-                        continue;
-
-                    ((CinemaInfo) mContext).AddCabinet((byte) i);
-                    Log.i(VD_DTAG, String.format(Locale.US, "Add Cabinet ( Cabinet: %d, port: %d, slave: 0x%02x )", (i & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (i & 0x80) >> 7, i & 0x7F));
-                }
-
-                for( byte id : ((CinemaInfo)mContext).GetCabinet() ) {
-                    if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-                    if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-                }
+                bValidPort0 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_L);
+                bValidPort1 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_R);
             }
 
             //
@@ -944,23 +892,25 @@ public class CinemaTask {
                 String appVersion = new SimpleDateFormat("HH:mm:ss, MMM dd yyyy ", Locale.US).format(date);
                 byte[] napVersion = ctrl.Send( NxCinemaCtrl.CMD_PLATFORM_NAP_VERSION, null );
                 byte[] sapVersion = ctrl.Send( NxCinemaCtrl.CMD_PLATFORM_SAP_VERSION, null );
-                byte[] srvVersion = ctrl.Send( NxCinemaCtrl.CMD_PLATFORM_IPC_SERVER_VERSION, null );
-                byte[] clnVersion = ctrl.Send( NxCinemaCtrl.CMD_PLATFORM_IPC_CLIENT_VERSION, null );
+                byte[] isvVersion = ctrl.Send( NxCinemaCtrl.CMD_PLATFORM_IPC_SERVER_VERSION, null );
+                byte[] icnVersion = ctrl.Send( NxCinemaCtrl.CMD_PLATFORM_IPC_CLIENT_VERSION, null );
+                byte[] tsvVersion = ctrl.Send( NxCinemaCtrl.CMD_PLATFORM_TMS_SERVER_VERSION, null );
 
                 Log.i(VD_DTAG, ">> Version Information");
                 Log.i(VD_DTAG, String.format(Locale.US, "-. Application : %s", appVersion));
                 Log.i(VD_DTAG, String.format(Locale.US, "-. N.AP        : %s", (napVersion != null && napVersion.length != 0) ? new String(napVersion).trim() : "Unknown"));
                 Log.i(VD_DTAG, String.format(Locale.US, "-. S.AP        : %s", (sapVersion != null && sapVersion.length != 0) ? new String(sapVersion).trim() : "Unknown"));
-                Log.i(VD_DTAG, String.format(Locale.US, "-. IPC Server  : %s", (srvVersion != null && srvVersion.length != 0) ? new String(srvVersion).trim() : "Unknown"));
-                Log.i(VD_DTAG, String.format(Locale.US, "-. IPC Client  : %s", (clnVersion != null && clnVersion.length != 0) ? new String(clnVersion).trim() : "Unknown"));
+                Log.i(VD_DTAG, String.format(Locale.US, "-. IPC Server  : %s", (isvVersion != null && isvVersion.length != 0) ? new String(isvVersion).trim() : "Unknown"));
+                Log.i(VD_DTAG, String.format(Locale.US, "-. IPC Client  : %s", (icnVersion != null && icnVersion.length != 0) ? new String(icnVersion).trim() : "Unknown"));
+                Log.i(VD_DTAG, String.format(Locale.US, "-. TMS Server  : %s", (tsvVersion != null && tsvVersion.length != 0) ? new String(tsvVersion).trim() : "Unknown"));
 
-                for( byte cabinet : ((CinemaInfo)mContext).GetCabinet() ) {
-                    byte[] tconVersion = ctrl.Send(NxCinemaCtrl.CMD_TCON_VERSION, new byte[] {cabinet});
+                for( byte id : ((CinemaInfo)mContext).GetCabinet() ) {
+                    byte[] tconVersion = ctrl.Send(NxCinemaCtrl.CMD_TCON_VERSION, new byte[] {id});
 
                     int msbVersion = (tconVersion != null && tconVersion.length != 0) ? ctrl.ByteArrayToInt32(tconVersion, NxCinemaCtrl.MASK_INT32_MSB) : 0;
                     int lsbVersion = (tconVersion != null && tconVersion.length != 0) ? ctrl.ByteArrayToInt32(tconVersion, NxCinemaCtrl.MASK_INT32_LSB) : 0;
 
-                    Log.i(VD_DTAG, String.format(Locale.US, "-. TCON #%02d    : %05d - %05d", (cabinet & 0x7F) - CinemaInfo.TCON_ID_OFFSET, msbVersion, lsbVersion));
+                    Log.i(VD_DTAG, String.format(Locale.US, "-. TCON #%02d    : %05d - %05d", ((CinemaInfo)mContext).GetCabinetNumber(id), msbVersion, lsbVersion));
                 }
 
                 {
@@ -1053,18 +1003,19 @@ public class CinemaTask {
                         result = ctrl.Send(NxCinemaCtrl.CMD_TCON_BOOTING_STATUS, new byte[]{id});
                         if (result == null || result.length == 0) {
                             Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet: %d, port: %d, slave: 0x%02x )",
-                                    (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET,
-                                    (id & 0x80) >> 7,
-                                    id
+                                    ((CinemaInfo)mContext).GetCabinetNumber(id),
+                                    ((CinemaInfo)mContext).GetCabinetPort(id),
+                                    ((CinemaInfo)mContext).GetCabinetSlave(id)
                             ));
                             continue;
                         }
 
                         if( result[0] == 0 ) {
                             Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet: %d, port: %d, slave: 0x%02x, result: %d )",
-                                    (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET,
-                                    (id & 0x80) >> 7,
-                                    id
+                                    ((CinemaInfo)mContext).GetCabinetNumber(id),
+                                    ((CinemaInfo)mContext).GetCabinetPort(id),
+                                    ((CinemaInfo)mContext).GetCabinetSlave(id),
+                                    result[0]
                             ));
                             bTconBooting = false;
                         }
@@ -1354,23 +1305,25 @@ public class CinemaTask {
             String appVersion = new SimpleDateFormat("HH:mm:ss, MMM dd yyyy ", Locale.US).format(date);
             byte[] napVersion = ctrl.Send( NxCinemaCtrl.CMD_PLATFORM_NAP_VERSION, null );
             byte[] sapVersion = ctrl.Send( NxCinemaCtrl.CMD_PLATFORM_SAP_VERSION, null );
-            byte[] srvVersion = ctrl.Send( NxCinemaCtrl.CMD_PLATFORM_IPC_SERVER_VERSION, null );
-            byte[] clnVersion = ctrl.Send( NxCinemaCtrl.CMD_PLATFORM_IPC_CLIENT_VERSION, null );
+            byte[] isvVersion = ctrl.Send( NxCinemaCtrl.CMD_PLATFORM_IPC_SERVER_VERSION, null );
+            byte[] icnVersion = ctrl.Send( NxCinemaCtrl.CMD_PLATFORM_IPC_CLIENT_VERSION, null );
+            byte[] tsvVersion = ctrl.Send( NxCinemaCtrl.CMD_PLATFORM_TMS_SERVER_VERSION, null );
 
             Log.i(VD_DTAG, ">> Version Information");
             Log.i(VD_DTAG, String.format(Locale.US, "-. Application : %s", appVersion));
             Log.i(VD_DTAG, String.format(Locale.US, "-. N.AP        : %s", (napVersion != null && napVersion.length != 0) ? new String(napVersion).trim() : "Unknown"));
             Log.i(VD_DTAG, String.format(Locale.US, "-. S.AP        : %s", (sapVersion != null && sapVersion.length != 0) ? new String(sapVersion).trim() : "Unknown"));
-            Log.i(VD_DTAG, String.format(Locale.US, "-. IPC Server  : %s", (srvVersion != null && srvVersion.length != 0) ? new String(srvVersion).trim() : "Unknown"));
-            Log.i(VD_DTAG, String.format(Locale.US, "-. IPC Client  : %s", (clnVersion != null && clnVersion.length != 0) ? new String(clnVersion).trim() : "Unknown"));
+            Log.i(VD_DTAG, String.format(Locale.US, "-. IPC Server  : %s", (isvVersion != null && isvVersion.length != 0) ? new String(isvVersion).trim() : "Unknown"));
+            Log.i(VD_DTAG, String.format(Locale.US, "-. IPC Client  : %s", (icnVersion != null && icnVersion.length != 0) ? new String(icnVersion).trim() : "Unknown"));
+            Log.i(VD_DTAG, String.format(Locale.US, "-. TMS Server  : %s", (tsvVersion != null && tsvVersion.length != 0) ? new String(tsvVersion).trim() : "Unknown"));
 
-            for( byte cabinet : mCabinet ) {
-                byte[] tconVersion = ctrl.Send(NxCinemaCtrl.CMD_TCON_VERSION, new byte[] {cabinet});
+            for( byte id : mCabinet ) {
+                byte[] tconVersion = ctrl.Send(NxCinemaCtrl.CMD_TCON_VERSION, new byte[] {id});
 
                 int msbVersion = (tconVersion != null && tconVersion.length != 0) ? ctrl.ByteArrayToInt32(tconVersion, NxCinemaCtrl.MASK_INT32_MSB) : 0;
                 int lsbVersion = (tconVersion != null && tconVersion.length != 0) ? ctrl.ByteArrayToInt32(tconVersion, NxCinemaCtrl.MASK_INT32_LSB) : 0;
 
-                Log.i(VD_DTAG, String.format(Locale.US, "-. TCON #%02d    : %05d - %05d", (cabinet & 0x7F) - CinemaInfo.TCON_ID_OFFSET, msbVersion, lsbVersion));
+                Log.i(VD_DTAG, String.format(Locale.US, "-. TCON #%02d    : %05d - %05d", ((CinemaInfo)mContext).GetCabinetNumber(id), msbVersion, lsbVersion));
             }
 
             {
@@ -1462,10 +1415,11 @@ public class CinemaTask {
                 case CinemaInfo.RET_PASS:
                     break;
                 default:
-                    Log.i(VD_DTAG, String.format(Locale.US, "%s. ( cabinet: %d, slave: 0x%02X, result: %d )",
+                    Log.i(VD_DTAG, String.format(Locale.US, "%s. ( cabinet: %d, port: %d, slave: 0x%02x, result: %d )",
                             (values[1] == CinemaInfo.RET_FAIL) ? "Fail" : "Unknown Error",
-                            (mCabinet[values[0]] & 0x7F) - CinemaInfo.TCON_ID_OFFSET,
-                            mCabinet[values[0]],
+                            ((CinemaInfo)mContext).GetCabinetNumber(mCabinet[values[0]]),
+                            ((CinemaInfo)mContext).GetCabinetPort(mCabinet[values[0]]),
+                            ((CinemaInfo)mContext).GetCabinetSlave(mCabinet[values[0]]),
                             values[1]
                     ));
                     break;
@@ -1546,10 +1500,11 @@ public class CinemaTask {
                 case CinemaInfo.RET_PASS:
                     break;
                 default:
-                    Log.i(VD_DTAG, String.format(Locale.US, "%s. ( cabinet: %d, slave: 0x%02X, result: %d )",
+                    Log.i(VD_DTAG, String.format(Locale.US, "%s. ( cabinet: %d, port: %d, slave: 0x%02x, result: %d )",
                             (values[1] == CinemaInfo.RET_FAIL) ? "Fail" : "Unknown Error",
-                            (mCabinet[values[0]] & 0x7F) - CinemaInfo.TCON_ID_OFFSET,
-                            mCabinet[values[0]],
+                            ((CinemaInfo)mContext).GetCabinetNumber(mCabinet[values[0]]),
+                            ((CinemaInfo)mContext).GetCabinetPort(mCabinet[values[0]]),
+                            ((CinemaInfo)mContext).GetCabinetSlave(mCabinet[values[0]]),
                             values[1]
                     ));
                     break;
@@ -1609,12 +1564,8 @@ public class CinemaTask {
                 return null;
 
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-
-            boolean bValidPort0 = false, bValidPort1 = false;
-            for( byte id : mCabinet ) {
-                if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-                if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-            }
+            boolean bValidPort0 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_L);
+            boolean bValidPort1 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_R);
 
             if( bValidPort0 )   ctrl.Send( NxCinemaCtrl.CMD_TCON_MODE_LOD, new byte[]{(byte)0x09} );
             if( bValidPort1 )   ctrl.Send( NxCinemaCtrl.CMD_TCON_MODE_LOD, new byte[]{(byte)0x89} );
@@ -1643,10 +1594,11 @@ public class CinemaTask {
                 case 0:
                     break;
                 default:
-                    Log.i(VD_DTAG, String.format(Locale.US, "%s. ( cabinet: %d, slave: 0x%02X, result: %d )",
+                    Log.i(VD_DTAG, String.format(Locale.US, "%s. ( cabinet: %d, port: %d, slave: 0x%02x, result: %d )",
                             (0 > values[1]) ? "Unknown Error" : "Led Open Detect",
-                            (mCabinet[values[0]] & 0x7F) - CinemaInfo.TCON_ID_OFFSET,
-                            mCabinet[values[0]],
+                            ((CinemaInfo)mContext).GetCabinetNumber(mCabinet[values[0]]),
+                            ((CinemaInfo)mContext).GetCabinetPort(mCabinet[values[0]]),
+                            ((CinemaInfo)mContext).GetCabinetSlave(mCabinet[values[0]]),
                             values[1]
                     ));
                     break;
@@ -1808,11 +1760,8 @@ public class CinemaTask {
                 }
             }
             else {
-                boolean bValidPort0 = false, bValidPort1 = false;
-                for( byte id : mCabinet ) {
-                    if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-                    if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-                }
+                boolean bValidPort0 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_L);
+                boolean bValidPort1 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_R);
 
                 if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_DOOR_STATUS, new byte[]{(byte)0x09, (byte)0} );
                 if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_DOOR_STATUS, new byte[]{(byte)0x89, (byte)0} );
@@ -1827,10 +1776,11 @@ public class CinemaTask {
                 case CinemaInfo.RET_PASS:
                     break;
                 default:
-                    Log.i(VD_DTAG, String.format(Locale.US, "%s. ( cabinet: %d, slave: 0x%02X, result: %d )",
+                    Log.i(VD_DTAG, String.format(Locale.US, "%s. ( cabinet: %d, port: %d, slave: 0x%02x, result: %d )",
                             (values[1] == CinemaInfo.RET_FAIL) ? "Fail" : "Unknown Error",
-                            (mCabinet[values[0]] & 0x7F) - CinemaInfo.TCON_ID_OFFSET,
-                            mCabinet[values[0]],
+                            ((CinemaInfo)mContext).GetCabinetNumber(mCabinet[values[0]]),
+                            ((CinemaInfo)mContext).GetCabinetPort(mCabinet[values[0]]),
+                            ((CinemaInfo)mContext).GetCabinetSlave(mCabinet[values[0]]),
                             values[1]
                     ));
                     break;
@@ -2041,6 +1991,7 @@ public class CinemaTask {
                       (mType == CMD_SAP_VERSION)        ? NxCinemaCtrl.CMD_PLATFORM_SAP_VERSION :
                       (mType == CMD_IPC_SERVER_VERSION) ? NxCinemaCtrl.CMD_PLATFORM_IPC_SERVER_VERSION :
                       (mType == CMD_IPC_CLIENT_VERSION) ? NxCinemaCtrl.CMD_PLATFORM_IPC_CLIENT_VERSION :
+                      (mType == CMD_TMS_SERVER_VERSION) ? NxCinemaCtrl.CMD_PLATFORM_TMS_SERVER_VERSION :
                       (mType == CMD_TCON_VERSION)       ? NxCinemaCtrl.CMD_TCON_VERSION :
                       (mType == CMD_PFPGA_VERSION)      ? NxCinemaCtrl.CMD_PFPGA_VERSION : -1;
 
@@ -2151,18 +2102,16 @@ public class CinemaTask {
                 return null;
 
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-
-            boolean bValidPort0 = false, bValidPort1 = false;
-            for( byte id : mCabinet ) {
-                if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-                if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-            }
+            boolean bValidPort0 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_L);
+            boolean bValidPort1 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_R);
 
             if( mFunc < 7 ) {
                 byte[] data = { (byte)mFunc, (byte)mPattern };
 
                 byte[] data0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, data);
                 byte[] data1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, data);
+
+                Log.i(VD_DTAG, String.format( Locale.US, ">>>>> mFunc = %d, mPattern = %d, mStatus = %b", mFunc, mPattern, mStatus));
 
                 if( bValidPort0 ) ctrl.Send( mStatus ? NxCinemaCtrl.CMD_TCON_PATTERN_RUN : NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data0 );
                 if( bValidPort1 ) ctrl.Send( mStatus ? NxCinemaCtrl.CMD_TCON_PATTERN_RUN : NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data1 );
@@ -2173,6 +2122,8 @@ public class CinemaTask {
                 byte[] data = ctrl.AppendByteArray(reg, dat);
                 byte[] data0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, data);
                 byte[] data1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, data);
+
+                Log.i(VD_DTAG, String.format( Locale.US, ">>>>> mFunc = %d, mPattern = %d, mStatus = %b", mFunc, mPattern, mStatus));
 
                 if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, data0 );
                 if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, data1 );
@@ -2265,12 +2216,8 @@ public class CinemaTask {
             }
 
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-
-            boolean bValidPort0 = false, bValidPort1 = false;
-            for( byte id : mCabinet ) {
-                if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-                if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-            }
+            boolean bValidPort0 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_L);
+            boolean bValidPort1 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_R);
 
             byte[] reg, dat;
             byte[] inData, inData0, inData1;
@@ -2401,13 +2348,13 @@ public class CinemaTask {
             switch( values[2] ) {
                 case CinemaInfo.RET_ERROR:
                     Log.i(VD_DTAG, String.format(Locale.US, ">>> Cabinet %02d-%02d : Error",
-                            (mCabinet[values[0]] & 0x7F) - CinemaInfo.TCON_ID_OFFSET,
+                            ((CinemaInfo)mContext).GetCabinetNumber(mCabinet[values[0]]),
                             values[1]
                     ));
                     break;
                 default:
                     Log.i(VD_DTAG, String.format(Locale.US, ">>> Cabinet %02d-%02d : %d mSec",
-                            (mCabinet[values[0]] & 0x7F) - CinemaInfo.TCON_ID_OFFSET,
+                            ((CinemaInfo)mContext).GetCabinetNumber(mCabinet[values[0]]),
                             values[1],
                             values[2]
                     ));
@@ -2469,11 +2416,8 @@ public class CinemaTask {
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
 
             if( mIndexPos == 0 ) {
-                boolean bValidPort0 = false, bValidPort1 = false;
-                for( byte id : mCabinet ) {
-                    if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-                    if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-                }
+                boolean bValidPort0 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_L);
+                boolean bValidPort1 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_R);
 
                 byte[] reg = ctrl.IntToByteArray(0x0189, NxCinemaCtrl.FORMAT_INT16);
                 byte[] dat = ctrl.IntToByteArray(mEmulate ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
@@ -2487,11 +2431,11 @@ public class CinemaTask {
             }
             else {
                 int pos = mIndexPos - 1;
-                byte slave = ((mCabinet[pos] % 16) < 8) ? (mCabinet[pos]) : (byte)(mCabinet[pos] | 0x80);
-                byte[] inData;
-                inData = new byte[] { slave };
-                inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(0x0189, NxCinemaCtrl.FORMAT_INT16));
-                inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mEmulate ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16));
+                byte[] reg = ctrl.IntToByteArray(0x0189, NxCinemaCtrl.FORMAT_INT16);
+                byte[] dat = ctrl.IntToByteArray(mEmulate ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
+                byte[] inData = ctrl.AppendByteArray(reg, dat);
+
+                inData = ctrl.AppendByteArray(new byte[]{(byte)mCabinet[pos]}, inData);
 
                 ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, inData );
             }
@@ -2678,11 +2622,8 @@ public class CinemaTask {
             if( mIndexPos == 0 ) {
                 Log.i(VD_DTAG, "WhiteSeam Emulate. ( index: all )");
 
-                boolean bValidPort0 = false, bValidPort1 = false;
-                for( byte id : mCabinet ) {
-                    if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-                    if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-                }
+                boolean bValidPort0 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_L);
+                boolean bValidPort1 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_R);
 
                 for( int j = 0; j < mSeamReg.length; j++ ) {
                     byte[] reg = ctrl.IntToByteArray(mSeamReg[j], NxCinemaCtrl.FORMAT_INT16);
@@ -2780,11 +2721,8 @@ public class CinemaTask {
             //  1. Update White Seam in Emulate Register.
             //
             if( mIndexPos == 0 ) {
-                boolean bValidPort0 = false, bValidPort1 = false;
-                for( byte id : mCabinet ) {
-                    if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-                    if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-                }
+                boolean bValidPort0 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_L);
+                boolean bValidPort1 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_R);
 
                 for( int j = 0; j < mSeamReg.length; j++ ) {
                     byte[] reg = ctrl.IntToByteArray(mSeamReg[j], NxCinemaCtrl.FORMAT_INT16);
@@ -3071,7 +3009,7 @@ public class CinemaTask {
                 for( String file : result ) {
                     Log.i(VD_DTAG, "Dot Correct Info : " + file);
 
-                    LedDotCorrectInfo info = new LedDotCorrectInfo();
+                    LedDotCorrectInfo info = new LedDotCorrectInfo(mContext);
                     if( info.Parse(file) ) {
                         byte[] sel = ctrl.IntToByteArray( info.GetModule(), NxCinemaCtrl.FORMAT_INT8 );         // size: 1
                         byte[] data = ctrl.IntArrayToByteArray( info.GetData(), NxCinemaCtrl.FORMAT_INT16 );    // size: 61440
@@ -3163,13 +3101,13 @@ public class CinemaTask {
                     continue;
 
                 String[] extPath = FileManager.GetExternalPath();
-                String strDir = String.format(Locale.US, "%s/DOT_CORRECTION_ID%03d", extPath[0], (mIndex & 0x7F) - CinemaInfo.TCON_ID_OFFSET);
+                String strDir = String.format(Locale.US, "%s/DOT_CORRECTION_ID%03d", extPath[0], ((CinemaInfo)mContext).GetCabinetNumber((byte)mIndex));
                 if( !FileManager.MakeDirectory( strDir ) ) {
                     Log.i(VD_DTAG, String.format(Locale.US, "Fail, Create Directory. ( %s )", strDir));
                     continue;
                 }
 
-                new LedDotCorrectInfo().Make(mIndex, i, result, strDir);
+                new LedDotCorrectInfo(mContext).Make(mIndex, i, result, strDir);
             }
 
             return null;
@@ -3201,6 +3139,152 @@ public class CinemaTask {
                 mPostExecute.onPostExecute( null );
 
             Log.i(VD_DTAG, String.format(Locale.US, ">>> Pixel Correction Extract Done. ( %d mSec )", System.currentTimeMillis() - mStartTime ));
+            Unlock();
+            super.onPostExecute(aVoid);
+        }
+    }
+
+    private class AsyncTaskSetNetwork extends AsyncTask<Void, Void, Void> {
+        private Context mContext = null;
+        private PreExecuteCallback mPreExecute = null;
+        private PostExecuteCallback mPostExecute = null;
+        private ProgressUpdateCallback mProgressUpdate = null;
+
+        private String[] mNetworkParam;
+        private int[] mResult = new int[]{-1, };
+
+        public AsyncTaskSetNetwork( Context context, String[] param, PreExecuteCallback preExecute, PostExecuteCallback postExecute, ProgressUpdateCallback progressUpdate ) {
+            mContext = context;
+            mPreExecute = preExecute;
+            mPostExecute = postExecute;
+            mProgressUpdate = progressUpdate;
+
+            mNetworkParam = param;
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            if( mNetworkParam.length != 6 )
+                return null;
+
+            if( !Patterns.IP_ADDRESS.matcher(mNetworkParam[0]).matches() ||
+                !Patterns.IP_ADDRESS.matcher(mNetworkParam[1]).matches() ||
+                !Patterns.IP_ADDRESS.matcher(mNetworkParam[2]).matches() ||
+                mNetworkParam[0].equals(mNetworkParam[2]) ||
+                (!mNetworkParam[3].equals("") && !Patterns.IP_ADDRESS.matcher(mNetworkParam[3]).matches()) ||
+                (!mNetworkParam[4].equals("") && !Patterns.IP_ADDRESS.matcher(mNetworkParam[4]).matches()) ||
+                (!mNetworkParam[5].equals("") && !Patterns.IP_ADDRESS.matcher(mNetworkParam[5]).matches()) ) {
+                return null;
+            }
+
+            // NetworkTools tools = new NetworkTools();
+            // tools.SetConfig( mNetworkParam[0], mNetworkParam[1], mNetworkParam[2], mNetworkParam[3], mNetworkParam[4], mNetworkParam[5] );
+            // if( tools.Ping( mNetworkParam[2] ) ) ShowMessage( "Valid IP Address.");
+            // else ShowMessage("Please Check IP Address. ( Invalid IP Address )");
+
+            NetworkTools tools = new NetworkTools();
+            tools.SetConfig( mNetworkParam[0], mNetworkParam[1], mNetworkParam[2], mNetworkParam[3], mNetworkParam[4], mNetworkParam[5] );
+
+            mResult[0] = CinemaInfo.RET_PASS;
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Void... values) {
+            if( mProgressUpdate != null )
+                mProgressUpdate.onProgressUpdate( null );
+
+            super.onProgressUpdate(values);
+        }
+
+        @Override
+        protected void onPreExecute() {
+            Lock();
+            Log.i(VD_DTAG, ">>> Set Network Start.");
+            mStartTime = System.currentTimeMillis();
+
+            if( mPreExecute != null )
+                mPreExecute.onPreExecute( mNetworkParam );
+
+            super.onPreExecute();
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            if( mPostExecute != null )
+                mPostExecute.onPostExecute( ToInteger(mResult) );
+
+            Log.i(VD_DTAG, String.format(Locale.US, ">>> Set Network Done. ( %d mSec )", System.currentTimeMillis() - mStartTime ));
+            Unlock();
+            super.onPostExecute(aVoid);
+        }
+    }
+
+    private class AsyncTaskGetNetwork extends AsyncTask<Void, Object, Void> {
+        private Context mContext = null;
+        private PreExecuteCallback mPreExecute = null;
+        private PostExecuteCallback mPostExecute = null;
+        private ProgressUpdateCallback mProgressUpdate = null;
+
+        private String[] mNetworkParam = new String[7];
+
+        public AsyncTaskGetNetwork( Context context, PreExecuteCallback preExecute, PostExecuteCallback postExecute, ProgressUpdateCallback progressUpdate ) {
+            mContext = context;
+            mPreExecute = preExecute;
+            mPostExecute = postExecute;
+            mProgressUpdate = progressUpdate;
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            try {
+                FileReader inFile = new FileReader("/system/bin/nap_network");
+                BufferedReader inReader = new BufferedReader(inFile);
+
+                try {
+                    for( int i = 0; i < mNetworkParam.length; i++ ) {
+                        mNetworkParam[i] = inReader.readLine();
+                        publishProgress( i, mNetworkParam[i] );
+                    }
+                    inReader.close();
+                    inFile.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Object... values) {
+            if( mProgressUpdate != null ) {
+                Log.i(VD_DTAG, String.format(Locale.US, ">> network #%d : %s", (Integer)values[0], (String)values[1]) );
+                mProgressUpdate.onProgressUpdate(values);
+            }
+            super.onProgressUpdate(values);
+        }
+
+        @Override
+        protected void onPreExecute() {
+            Lock();
+            Log.i(VD_DTAG, ">>> Get Network Start.");
+            mStartTime = System.currentTimeMillis();
+
+            if( mPreExecute != null )
+                mPreExecute.onPreExecute( null );
+
+            super.onPreExecute();
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            if( mPostExecute != null )
+                mPostExecute.onPostExecute( null );
+
+            Log.i(VD_DTAG, String.format(Locale.US, ">>> Get Network Done. ( %d mSec )", System.currentTimeMillis() - mStartTime ));
             Unlock();
             super.onPostExecute(aVoid);
         }
@@ -3283,12 +3367,7 @@ public class CinemaTask {
         protected Void doInBackground(Void... voids) {
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
 
-            boolean bValidPort0 = false, bValidPort1 = false;
-            for( byte id : mCabinet ) {
-                if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-                if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-            }
-
+            boolean bValidPort0, bValidPort1;
             ctrl.Send( NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[] {0x01} );
             {
                 byte[] reg = ctrl.IntToByteArray(CinemaInfo.REG_PFPGA_0x0199, NxCinemaCtrl.FORMAT_INT16);
@@ -3297,21 +3376,11 @@ public class CinemaTask {
                 ctrl.Send( NxCinemaCtrl.CMD_PFPGA_REG_WRITE, inData );
             }
             {
-                ((CinemaInfo)mContext).ClearCabinet();
-                for( int i = 0; i < 255; i++ ) {
-                    if( (i & 0x7F) < 0x10 )
-                        continue;
+                ((CinemaInfo)mContext).AddCabinet();
+                ((CinemaInfo)mContext).ShowCabinet();
 
-                    byte[] result = ctrl.Send(NxCinemaCtrl.CMD_TCON_STATUS, new byte[]{(byte)i});
-                    if (result == null || result.length == 0)
-                        continue;
-
-                    if( 0x01 != result[0] )
-                        continue;
-
-                    ((CinemaInfo)mContext).AddCabinet( (byte)i );
-                    Log.i(VD_DTAG, String.format(Locale.US, "Add Cabinet ( Cabinet: %d, port: %d, slave: 0x%02x )", (i & 0x7F) - CinemaInfo.TCON_ID_OFFSET, (i & 0x80) >> 7, i & 0x7F ));
-                }
+                bValidPort0 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_L);
+                bValidPort1 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_R);
             }
             {
                 byte[] reg = ctrl.IntToByteArray(CinemaInfo.REG_TCON_0x018D, NxCinemaCtrl.FORMAT_INT16);
@@ -3392,12 +3461,8 @@ public class CinemaTask {
                 return null;
 
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
-
-            boolean bValidPort0 = false, bValidPort1 = false;
-            for( byte id : mCabinet ) {
-                if( 0 == ((id >> 7) & 0x01) ) bValidPort0 = true;
-                if( 1 == ((id >> 7) & 0x01) ) bValidPort1 = true;
-            }
+            boolean bValidPort0 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_L);
+            boolean bValidPort1 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_R);
 
             //
             //  Prepare T_REG.txt parsing
@@ -3449,18 +3514,19 @@ public class CinemaTask {
                     result = ctrl.Send(NxCinemaCtrl.CMD_TCON_BOOTING_STATUS, new byte[]{id});
                     if (result == null || result.length == 0) {
                         Log.i(VD_DTAG, String.format(Locale.US, "Unknown Error. ( cabinet: %d, port: %d, slave: 0x%02x )",
-                                (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET,
-                                (id & 0x80) >> 7,
-                                id
+                                ((CinemaInfo)mContext).GetCabinetNumber(id),
+                                ((CinemaInfo)mContext).GetCabinetPort(id),
+                                ((CinemaInfo)mContext).GetCabinetSlave(id)
                         ));
                         continue;
                     }
 
                     if( result[0] == 0 ) {
                         Log.i(VD_DTAG, String.format(Locale.US, "Fail. ( cabinet: %d, port: %d, slave: 0x%02x, result: %d )",
-                                (id & 0x7F) - CinemaInfo.TCON_ID_OFFSET,
-                                (id & 0x80) >> 7,
-                                id
+                                ((CinemaInfo)mContext).GetCabinetNumber(id),
+                                ((CinemaInfo)mContext).GetCabinetPort(id),
+                                ((CinemaInfo)mContext).GetCabinetSlave(id),
+                                result[0]
                         ));
                         bTconBooting = false;
                     }

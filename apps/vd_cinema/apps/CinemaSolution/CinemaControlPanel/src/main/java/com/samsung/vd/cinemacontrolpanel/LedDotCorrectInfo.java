@@ -1,5 +1,6 @@
 package com.samsung.vd.cinemacontrolpanel;
 
+import android.content.Context;
 import android.util.Log;
 
 import java.io.BufferedReader;
@@ -21,19 +22,22 @@ public class LedDotCorrectInfo {
 
     public static final String PATH = "DCI/DOT";
     public static final String PATTERN_DIR  = "ID(\\d*)";
-    public static final String PATTERN_NAME = "RGB_P2_5_ID(\\d*)_(L|R)(\\d)(A|B).txt";
+
+    public static final String PATTERN_NAME = "RGB_P(2_5|3_3)_ID(\\d*)_(L|R)(\\d)(A|B).txt";
     public static final String PATTERN_DATA = "\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*),\\s*(\\d*)\\s*";
 
     public static final int MAX_REG_NUM = 9;
     public static final int MAX_MODULE_NUM = 24;
 
     // Sending Data Format
-    private int[] mData = new int[64*60*(MAX_REG_NUM-1)];
+    private int[] mData;
 
+    private Context mContext;
     private int mIndex;         // Slave Address
     private int mModule;        // Module Number
 
-    public LedDotCorrectInfo() {
+    public LedDotCorrectInfo( Context context ) {
+        mContext = context;
     }
 
     public boolean Parse( String filePath ) {
@@ -51,23 +55,37 @@ public class LedDotCorrectInfo {
         }
 
         //
-        //  RGB_P2_5_ID009_L0A.txt : 009, L, 0, A -> 0
-        //  RGB_P2_5_ID009_R3B.txt : 009, R, 3, B -> 15
+        //  RGB_P2_5_ID009_L0A.txt : 2_5, 009, L, 0, A -> 0
+        //  RGB_P2_5_ID009_R3B.txt : 2_5, 009, R, 3, B -> 15
+        //  RGB_P3_3_ID293_L2A.txt : 3_3, 293, L, 2, A ->
         //
-        int idx = Integer.parseInt( matcher.group(1), 10 );
-        if( (idx % 16) < 8 ) {
-            mIndex = idx + CinemaInfo.TCON_ID_OFFSET;
+        int[][][] src;
+        int col, row;
+
+        int screenType = ((CinemaInfo)mContext).GetScreenType();
+        if( (screenType == CinemaInfo.SCREEN_TYPE_P25) && matcher.group(1).equals("2_5") ) {
+            col = 64;
+            row = 60;
+        }
+        else if( (screenType == CinemaInfo.SCREEN_TYPE_P33) && matcher.group(1).equals("3_3") ) {
+            col = 48;
+            row = 45;
         }
         else {
-            mIndex = (idx | 0x80) + CinemaInfo.TCON_ID_OFFSET;
+            return false;
         }
 
-        int side = matcher.group(2).equals("L") ? 0 : 1;
-        int line = Integer.parseInt( matcher.group(3), 10 );
-        int type = matcher.group(4).equals("A") ? 0 : 1;
+        mData = new int[col*row*(MAX_REG_NUM-1)];   // 16bit aligned data
+        src = new int [col][row][MAX_REG_NUM];      // 14bit original data
+
+        int number = Integer.parseInt( matcher.group(2), 10 );
+        mIndex = ((CinemaInfo)mContext).GetCabinetId(number);
+
+        int side = matcher.group(3).equals("L") ? 0 : 1;
+        int line = Integer.parseInt( matcher.group(4), 10 );
+        int type = matcher.group(5).equals("A") ? 0 : 1;
         mModule = (4 * line) + (2 * side) + type;
 
-        int [][][] srcData = new int [64][60][MAX_REG_NUM];    // 14bit Original Data
         Log.i(VD_DTAG, "File Path : " + filePath);
         Pattern patternData = Pattern.compile(PATTERN_DATA);
         try {
@@ -82,7 +100,7 @@ public class LedDotCorrectInfo {
                 Matcher matcherData = patternData.matcher(strValue);
                 if( matcherData.matches() ) {
                     for( int i = 0; i < MAX_REG_NUM; i++ ) {
-                        srcData[cnt/srcData[0].length][cnt%srcData[0].length][i] = Integer.parseInt( matcherData.group(i+1), 10 );
+                        src[cnt/src[0].length][cnt%src[0].length][i] = Integer.parseInt( matcherData.group(i+1), 10 );
                     }
                     cnt++;
                 }
@@ -91,7 +109,7 @@ public class LedDotCorrectInfo {
                     return false;
                 }
 
-                if( 64*60 == cnt ) {
+                if( col*row == cnt ) {
                     Log.i(VD_DTAG, String.format("Warning, Out of Line Length.( name: %s )", fileName));
                     break;
                 }
@@ -105,16 +123,16 @@ public class LedDotCorrectInfo {
         }
 
         int offset = 0;
-        for( int i = 0; i < srcData.length; i++ ) {
-            for( int j = 0; j < srcData[0].length; j++ ) {
-                mData[offset    ] = ((srcData[i][j][7] & 0x0003) << 14) | ((srcData[i][j][8] & 0x3FFF)      );
-                mData[offset + 1] = ((srcData[i][j][6] & 0x000F) << 12) | ((srcData[i][j][7] & 0x3FFC) >>  2);
-                mData[offset + 2] = ((srcData[i][j][5] & 0x003F) << 10) | ((srcData[i][j][6] & 0x3FF0) >>  4);
-                mData[offset + 3] = ((srcData[i][j][4] & 0x00FF) <<  8) | ((srcData[i][j][5] & 0x3FC0) >>  6);
-                mData[offset + 4] = ((srcData[i][j][3] & 0x03FF) <<  6) | ((srcData[i][j][4] & 0x3F00) >>  8);
-                mData[offset + 5] = ((srcData[i][j][2] & 0x0FFF) <<  4) | ((srcData[i][j][3] & 0x3C00) >> 10);
-                mData[offset + 6] = ((srcData[i][j][1] & 0x3FFF) <<  2) | ((srcData[i][j][2] & 0x3000) >> 12);
-                mData[offset + 7] =                                       ((srcData[i][j][0] & 0x3FFF)      );
+        for( int i = 0; i < src.length; i++ ) {
+            for( int j = 0; j < src[0].length; j++ ) {
+                mData[offset    ] = ((src[i][j][7] & 0x0003) << 14) | ((src[i][j][8] & 0x3FFF)      );
+                mData[offset + 1] = ((src[i][j][6] & 0x000F) << 12) | ((src[i][j][7] & 0x3FFC) >>  2);
+                mData[offset + 2] = ((src[i][j][5] & 0x003F) << 10) | ((src[i][j][6] & 0x3FF0) >>  4);
+                mData[offset + 3] = ((src[i][j][4] & 0x00FF) <<  8) | ((src[i][j][5] & 0x3FC0) >>  6);
+                mData[offset + 4] = ((src[i][j][3] & 0x03FF) <<  6) | ((src[i][j][4] & 0x3F00) >>  8);
+                mData[offset + 5] = ((src[i][j][2] & 0x0FFF) <<  4) | ((src[i][j][3] & 0x3C00) >> 10);
+                mData[offset + 6] = ((src[i][j][1] & 0x3FFF) <<  2) | ((src[i][j][2] & 0x3000) >> 12);
+                mData[offset + 7] =                                   ((src[i][j][0] & 0x3FFF)      );
 
                 offset += 8;
             }
@@ -128,23 +146,41 @@ public class LedDotCorrectInfo {
         //
         //
         //
-        if( inData == null || inData.length != 61440 ) {
-            Log.i(VD_DTAG, String.format("invalid input data. ( expected: 61440 bytes, size: %s bytes )",
+        int col, row;
+        int screenType = ((CinemaInfo)mContext).GetScreenType();
+        if( screenType == CinemaInfo.SCREEN_TYPE_P25 ) {
+            col = 64;
+            row = 60;
+        }
+        else if( screenType == CinemaInfo.SCREEN_TYPE_P33 ) {
+            col = 48;
+            row = 45;
+        }
+        else {
+            return false;
+        }
+
+        int expectSize = col * row * (MAX_REG_NUM-1) * 2;
+        if( inData == null || inData.length != expectSize ) {
+            Log.i(VD_DTAG, String.format("invalid input data. ( expected: %d bytes, size: %s bytes )",
+                    expectSize,
                     (inData != null) ? String.valueOf(inData.length) : "unknown") );
 
             return false;
         }
 
+        String strPitch = (screenType == CinemaInfo.SCREEN_TYPE_P33) ? "P3_3" : "P2_5";
         String strLine = String.valueOf(module/4);
         String strSide = ((module % 4) < 2) ? "L" : "R";
         String strType = (((module % 4) % 2) == 0) ? "A" : "B";
-        String strFile = String.format(Locale.US, "%s/RGB_P2_5_ID%03d_%s%s%s.txt", outPath, (index & 0x7F) - CinemaInfo.TCON_ID_OFFSET, strSide, strLine, strType);
+        String strFile = String.format(Locale.US, "%s/RGB_%s_ID%03d_%s%s%s.txt",
+                outPath, strPitch, ((CinemaInfo)mContext).GetCabinetNumber((byte)index), strSide, strLine, strType );
 
         //
         // Convert Data
         //
-        int[] dstData = new int[64*60*MAX_REG_NUM];
-        int[] tmpData = new int[64*60*(MAX_REG_NUM-1)];
+        int[] dstData = new int[col*row*MAX_REG_NUM];
+        int[] tmpData = new int[col*row*(MAX_REG_NUM-1)];
 
         int dstOffset = 0;
         int tmpOffset = 0;

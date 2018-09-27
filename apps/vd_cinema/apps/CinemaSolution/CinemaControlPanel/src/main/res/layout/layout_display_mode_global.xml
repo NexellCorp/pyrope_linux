@@ -239,7 +239,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:text="Seam ON/OFF"
+                    android:text="Seam ON/OFF*"
                     android:gravity="center"
                     android:paddingTop="15dp"
                     android:paddingBottom="15dp"
@@ -276,7 +276,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:text="Module Correction"
+                    android:text="Module Correction*"
                     android:gravity="center"
                     android:paddingTop="15dp"
                     android:paddingBottom="15dp"
@@ -313,7 +313,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:text="RGB / XYZ Input"
+                    android:text="RGB / XYZ Input*"
                     android:gravity="center"
                     android:paddingTop="15dp"
                     android:paddingBottom="15dp"
@@ -445,6 +445,23 @@
                         android:layout_height="wrap_content"
                         android:text="Apply" />
                 </LinearLayout>
+            </LinearLayout>
+            <LinearLayout
+                android:background="@drawable/draw_line_top"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="5dp"
+                android:layout_marginRight="5dp"
+                android:gravity="center">
+				<TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:textStyle="bold"
+                    android:text="* Picture Mode setting has priority"
+                    android:gravity="right"
+                    android:paddingTop="15dp"
+                    android:paddingBottom="15dp" />
             </LinearLayout>
         </LinearLayout>
     </ScrollView>

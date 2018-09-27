@@ -80,13 +80,15 @@ public class DisplayCheckActivity extends CinemaBaseActivity {
     };
 
     private int[] mPatternReg = {
-            CinemaInfo.REG_TCON_FLASH_CC,     // restore default value
-            CinemaInfo.REG_TCON_CC_MODULE,    // restore default value
-            CinemaInfo.REG_TCON_XYZ_TO_RGB,   // restore default value
-            CinemaInfo.REG_TCON_SEAM_ON,      // restore default value
+            CinemaInfo.REG_TCON_FLASH_CC,   // restore default value
+            CinemaInfo.REG_TCON_CC_MODULE,  // restore default value
+            CinemaInfo.REG_TCON_XYZ_TO_RGB, // restore default value
+            CinemaInfo.REG_TCON_SEAM_ON,    // restore default value
+            CinemaInfo.REG_TCON_SCAN_MODE,  // restore default value
     };
 
     private int[] mPatternDat = {
+            0x0000,
             0x0000,
             0x0000,
             0x0000,
@@ -187,26 +189,72 @@ public class DisplayCheckActivity extends CinemaBaseActivity {
             mAdapterTestPattern.add( new SelectRunInfo(mFuncName[i], mPatternName[i], btnText, toggle, status, new SelectRunAdapter.OnClickListener() {
                 @Override
                 public void onClickListener(int index, int spinnerIndex, boolean status ) {
-                    CinemaTask.GetInstance().Run(
-                            CinemaTask.CMD_TEST_PATTERN,
-                            getApplicationContext(),
-                            mAdapterTestPattern,
-                            index,
-                            spinnerIndex,
-                            status,
-                            new CinemaTask.PreExecuteCallback() {
-                                @Override
-                                public void onPreExecute(Object[] values) {
-                                    ShowProgress();
+                    if( status && index == 5) {
+                        CinemaTask.GetInstance().Run(
+                                CinemaTask.CMD_TCON_REG_WRITE,
+                                getApplicationContext(),
+                                new int[]{mPatternReg[4]},
+                                new int[]{0x0000},
+                                new CinemaTask.PreExecuteCallback() {
+                                    @Override
+                                    public void onPreExecute(Object[] values) {
+                                        ShowProgress();
+                                    }
+                                },
+                                new CinemaTask.PostExecuteCallback() {
+                                    @Override
+                                    public void onPostExecute(Object[] values) {
+                                        HideProgress();
+                                    }
+                                },
+                                null
+                        );
+                    }
+
+                    {
+                        CinemaTask.GetInstance().Run(
+                                CinemaTask.CMD_TEST_PATTERN,
+                                getApplicationContext(),
+                                mAdapterTestPattern,
+                                index,
+                                spinnerIndex,
+                                status,
+                                new CinemaTask.PreExecuteCallback() {
+                                    @Override
+                                    public void onPreExecute(Object[] values) {
+                                        ShowProgress();
+                                    }
+                                },
+                                new CinemaTask.PostExecuteCallback() {
+                                    @Override
+                                    public void onPostExecute(Object[] values) {
+                                        HideProgress();
+                                    }
                                 }
-                            },
-                            new CinemaTask.PostExecuteCallback() {
-                                @Override
-                                public void onPostExecute(Object[] values) {
-                                    HideProgress();
-                                }
-                            }
-                    );
+                        );
+                    }
+
+                    if( !status && index == 5 ) {
+                        CinemaTask.GetInstance().Run(
+                                CinemaTask.CMD_TCON_REG_WRITE,
+                                getApplicationContext(),
+                                new int[]{mPatternReg[4]},
+                                new int[]{mPatternDat[4]},
+                                new CinemaTask.PreExecuteCallback() {
+                                    @Override
+                                    public void onPreExecute(Object[] values) {
+                                        ShowProgress();
+                                    }
+                                },
+                                new CinemaTask.PostExecuteCallback() {
+                                    @Override
+                                    public void onPostExecute(Object[] values) {
+                                        HideProgress();
+                                    }
+                                },
+                                null
+                        );
+                    }
                 }
             }));
 
@@ -383,8 +431,8 @@ public class DisplayCheckActivity extends CinemaBaseActivity {
 
                         if( mAdapterAccumulation.getGroupCount() == (Integer)values[0] ) {
                             mAdapterAccumulation.addGroup( new StatusDescribeExpandableInfo(
-                                    String.format( Locale.US, "Cabinet %02d", (mCabinet[(Integer)values[0]] & 0x7F) - CinemaInfo.TCON_ID_OFFSET )
-                            ));
+                                    String.format( Locale.US, "Cabinet %02d", mCinemaInfo.GetCabinetNumber(mCabinet[(Integer)values[0]])
+                            )));
                         }
 
                         mAdapterAccumulation.addChild(

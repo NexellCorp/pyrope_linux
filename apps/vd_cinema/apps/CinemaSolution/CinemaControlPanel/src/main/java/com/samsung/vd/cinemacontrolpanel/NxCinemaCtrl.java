@@ -2,7 +2,6 @@ package com.samsung.vd.cinemacontrolpanel;
 
 import android.util.Log;
 
-import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.Random;
 
@@ -58,6 +57,11 @@ public class NxCinemaCtrl {
     public static final int CMD_PLATFORM_SAP_VERSION		= 0x0211;
     public static final int CMD_PLATFORM_IPC_SERVER_VERSION	= 0x0212;
     public static final int CMD_PLATFORM_IPC_CLIENT_VERSION	= 0x0213;
+    public static final int CMD_PLATFORM_TMS_SERVER_VERSION = 0x0214;
+    public static final int CMD_PLATFORM_TMS_CLIENT_VERSION = 0x0215;
+
+    public static final int CMD_PLATFORM_IS_BUSY            = 0x0220;
+    public static final int CMD_PLATFORM_SCREEN_TYPE        = 0x0221;
 
     private static NxCinemaCtrl mInstance;
 

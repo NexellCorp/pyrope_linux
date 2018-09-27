@@ -11,9 +11,9 @@ if [ $? -ne 0 ]; then
     cp -av ./src/include/NX_IPCClient.h ./apps/CinemaSolution/CinemaControlPanel/src/main/jni/include/NX_IPCClient.h
 fi
 
-cmp -s ./src/include/NX_IPCCommand.h ./apps/CinemaSolution/CinemaControlPanel/src/main/jni/include/NX_IPCCommand.h
+cmp -s ./src/include/NX_CinemaCommand.h ./apps/CinemaSolution/CinemaControlPanel/src/main/jni/include/NX_CinemaCommand.h
 if [ $? -ne 0 ]; then
-    echo ">>> Update NX_IPCCommand.h"
-    cp -av ./src/include/NX_IPCCommand.h ./apps/CinemaSolution/CinemaControlPanel/src/main/jni/include/NX_IPCCommand.h
+    echo ">>> Update NX_CinemaCommand.h"
+    cp -av ./src/include/NX_CinemaCommand.h ./apps/CinemaSolution/CinemaControlPanel/src/main/jni/include/NX_CinemaCommand.h
 fi
 

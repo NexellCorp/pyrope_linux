@@ -22,11 +22,37 @@
 #include <signal.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <NX_TMSClient.h>
-#include <NX_IPCCommand.h>
+#include <NX_CinemaCommand.h>
 
 #define MAX_PAYLOAD_SIZE	65533
+
+//------------------------------------------------------------------------------
+enum {
+	NX_TMS_QUE			= 150,
+	NX_TMS_P25_4K_2D	= 150,
+	NX_TMS_P25_2K_2D,
+	NX_TMS_P25_4K_3D,
+	NX_TMS_P25_2K_3D,
+	NX_TMS_P33_4K_2D,
+	NX_TMS_P33_4K_3D,
+	NX_TMS_P33_2K_2D,
+	NX_TMS_P33_2K_3D,
+	NX_TMS_QUE_MAX,
+};
+
+static const char* gstQueCommandString[] = {
+	"P2.5_4K_2D (150)",
+	"P2.5_2K_2D (151)",
+	"P2.5_4K_3D (152)",
+	"P2.5_2K_3D (153)",
+	"P3.3_4K_2D (154)",
+	"P3.3_4K_3D (155)",
+	"P3.3_2K_2D (156)",
+	"P3.3_2K_3D (157)",
+};
 
 //------------------------------------------------------------------------------
 static void signal_handler( int32_t signal )
@@ -57,46 +83,92 @@ static void register_signal( void )
 }
 
 //------------------------------------------------------------------------------
-static int32_t IMB_QueCommand( int32_t iMode )
+static const char* GetQueCommandString( int32_t iQue )
 {
-	uint8_t buf[MAX_PAYLOAD_SIZE];
-	int32_t iBufSize;
+	if( iQue < NX_TMS_QUE || iQue >= NX_TMS_QUE_MAX )
+		return "";
 
-	buf[0]   = iMode;
-	iBufSize = 1;
-
-	return NX_TMSSendCommand( "127.0.0.1", GDC_COMMAND(CMD_TYPE_IMB, IMB_CMD_QUE), buf, &iBufSize );
+	return gstQueCommandString[iQue-NX_TMS_QUE];
 }
 
 //------------------------------------------------------------------------------
-static const char* GetQueCommandString( int32_t iMode )
+static void Usage( char* pAppName )
 {
-	if( 150 == iMode )		return "4K2D( 150 )";
-	else if( 151 == iMode ) return "2K2D( 151 )";
-	else if( 152 == iMode ) return "4K3D( 152 )";
-	else if( 153 == iMode ) return "2K3D( 153 )";
-
-	return "";
+	printf(
+		"usage: %s [options]\n"
+		"  -m [mode number]   [M] : mode number\n"
+		"  -i [ip address]    [O] : ip address (default: 127.0.0.1)\n",
+		pAppName
+	);
 }
-
 
 //------------------------------------------------------------------------------
 int32_t main( int32_t argc, char *argv[] )
 {
+	int32_t iRet;
+	int32_t iOpt;
+	char *pAddr = NULL, *pMode = NULL;
+
 	register_signal();
 
-	if( argc < 2 )
+	while (-1 != (iOpt = getopt(argc, argv, "hi:m:")))
 	{
-		printf("Usage : %s [mode number]\n", argv[0]);
-		return -1;
+		switch( iOpt )
+		{
+		case 'i':	pAddr = strdup(optarg);		break;
+		case 'm':	pMode = strdup(optarg);		break;
+		default:	break;
+		}
 	}
 
-	char *pResult = NULL;
-	int32_t iValue = strtol(argv[1], &pResult, 10);
+	if( NULL == pAddr )
+	{
+		pAddr = strdup("127.0.0.1");
+	}
 
-	printf(">> Send QueCommand: %s\n", (iValue < 150) ? argv[1] : GetQueCommandString(iValue));
+	if( NULL == pMode )
+	{
+		Usage(argv[0]);
+		goto TERMINATE;
+	}
 
-	IMB_QueCommand( iValue );
-	
+	{
+		uint8_t szVersion[1024] = { 0x00, };
+		uint8_t buf[MAX_PAYLOAD_SIZE];
+		int32_t iBufSize;
+
+		iRet = NX_TMSSendCommand( pAddr, GDC_COMMAND(CMD_TYPE_PLATFORM, PLATFORM_CMD_TMS_CLIENT_VERSION), buf, &iBufSize );
+		if( 0 > iRet )
+		{
+			printf("Fail, NX_TMSSendCommand().\n");
+			goto TERMINATE;
+		}
+
+		memcpy( szVersion, buf, iBufSize );
+		printf("* TMS Client Version: %s\n", szVersion);
+	}
+
+	{
+		int32_t iMode = strtol(pMode, NULL, 10);
+		uint8_t buf[MAX_PAYLOAD_SIZE];
+		int32_t iBufSize;
+
+		buf[0] = iMode;
+		iBufSize = 1;
+
+		printf(">> Send TMS Command: %s\n", (iMode < 150) ? pMode : GetQueCommandString(iMode));
+
+		iRet = NX_TMSSendCommand( pAddr, GDC_COMMAND(CMD_TYPE_IMB, IMB_CMD_QUE), buf, &iBufSize );
+		if( 0 > iRet )
+		{
+			printf("Fail, NX_TMSSendCommand().\n");
+			goto TERMINATE;
+		}
+	}
+
+TERMINATE:
+	if( pAddr ) free( pAddr );
+	if( pMode ) free( pMode );
+
 	return 0;
 }

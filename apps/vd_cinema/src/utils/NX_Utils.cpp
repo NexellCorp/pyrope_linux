@@ -55,7 +55,7 @@ int32_t NX_GetRandomValue( int32_t iStartNum, int32_t iEndNum )
 void NX_HexDump( const void *data, int32_t size, const char *msg )
 {
 	const uint8_t *byte = (const uint8_t *)data;
-	
+
 	printf("%s ( %d bytes ):", msg, size);
 
 	for( int32_t i = 0; i < size; ++i)

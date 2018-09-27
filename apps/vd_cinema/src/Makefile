@@ -14,7 +14,7 @@ CXXFLAGS+= -fpic -DARM_11
 INCLUDE += \
 	-I $(VD_CINEMA_TOP)/src/include \
 	-I $(VD_CINEMA_TOP)/src/uart \
-	-I $(VD_CINEMA_TOP)/src/gdc \
+	-I $(VD_CINEMA_TOP)/src/protocol \
 	-I $(VD_CINEMA_TOP)/src/utils
 
 LIBRARY += -lssl -lcrypto
@@ -23,7 +23,7 @@ LIBRARY	+= -lstdc++ -lpthread
 ################################################################################
 # Target
 COBJS	:=
-CPPOBJS	:=
+CXXOBJS	:=
 
 # Add UART Sources
 CXXOBJS += \
@@ -42,10 +42,10 @@ CXXOBJS += \
 	utils/SockUtils.o
 
 CXXOBJS +=	\
-	gdc/gdc_protocol.o		\
-	gdc/CNX_OpenSSL.o		\
-	gdc/NX_GDCServer.o		\
-	gdc/NX_GDCClient.o
+	protocol/gdc_protocol.o		\
+	protocol/CNX_OpenSSL.o		\
+	protocol/NX_GDCServer.o		\
+	protocol/NX_GDCClient.o
 
 LIBNAME	:= libnxcinema_linux
 TARGET	:= $(LIBNAME).so

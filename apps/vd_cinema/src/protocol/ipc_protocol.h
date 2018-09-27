@@ -20,51 +20,49 @@
 #ifndef __IPC_PROTOCOL_H__
 #define __IPC_PROTOCOL_H__
 
-#include <NX_Utils.h>
+#include <stdint.h>
 
-#ifndef MAKE_KEY_VALUE
-#define MAKE_KEY_VALUE(C0, C1, C2, C3)		\
+#define MAKE_KEY(C0, C1, C2, C3)	\
 		( ((uint32_t)(uint8_t)(C3)      ) |	\
 		  ((uint32_t)(uint8_t)(C2) << 8 ) |	\
 		  ((uint32_t)(uint8_t)(C1) << 16) |	\
 		  ((uint32_t)(uint8_t)(C0) << 24) )
-#endif
 
-#define	NXP_KEY_VALUE	MAKE_KEY_VALUE('N','X','P',' ')	// GDC --> SAM Key Value
-#define SEC_KEY_VALUE	MAKE_KEY_VALUE('S','A','M',' ')	// SAM --> GDC Key Value
-
-#define IPC_GET_LENGTH(C0, C1) \
-		( ((uint32_t)(uint8_t)(C1)      ) |	\
-		  ((uint32_t)(uint8_t)(C0) << 8 ) )
-#define IPC_GET_COMMAND(C0, C1) \
+#define MAKE_COMMAND(C0, C1)	\
 		( ((uint32_t)(uint8_t)(C1)      ) |	\
 		  ((uint32_t)(uint8_t)(C0) << 8 ) )
 
+#define MAKE_LENGTH(C0, C1)		\
+		( ((uint16_t)(uint8_t)(C1)      ) |	\
+		  ((uint16_t)(uint8_t)(C0) << 8 ) )
+
+#define	KEY_NXP		MAKE_KEY('N','X','P',' ')		// NXP --> SAM Key Value
+#define KEY_SEC		MAKE_KEY('S','A','M',' ')		// SAM --> NXP Key Value
+
 //
-//	NXP <--> N.AP Coomunication Packet Format
+//	NXP <--> N.AP Communication Packet Format
 //
-//	Key       ( 4 Bytes )
-//	Length    ( 2 Bytes )
-//	Command   ( 2 Bytes )
-//	Payload   ( n Bytes )
+//	Key( 4 Bytes ) + Command( 2 Bytes ) + Length( 2 Bytes ) + Payload( n Bytes )
 //
 //	Description
-//		KeyValue:
+//		Key		: 4Bytes
 //			a. NXP --> SEC : TMS_KEY_VALUE "NXP "
 //			b. SEC --> NXP : SEC_KEY_VALUE "SEC "
-//		Length :
-//			Command ( 2 bytes ) + Payload ( n Bytes )
+//		Command	: 2 Bytes
+//		Length	: 2 Bytes
+//		Payload : N Bytes
 
 //	APIs
 int32_t IPC_MakePacket (
-	uint32_t key, uint32_t cmd, void *payload, int32_t payloadSize,
-	void *pOutBuf, int32_t outBufSize );
+	uint32_t iKey, uint32_t iCmd, void *pPayload, int32_t iPayloadSize,
+	void *pOutBuf, int32_t iOutBufSize
+);
 
 int32_t IPC_ParsePacket (
-	void *pInBuf, int32_t inBufSize,
-	uint32_t *key, uint32_t *cmd, void **payload, int32_t *playloadSize );
+	void *pInBuf, int32_t iInBufSize,
+	uint32_t *iKey, uint32_t *iCmd, void **ppPayload, int32_t *iPlayloadSize
+);
 
-//	Debug Functions
-void DumpIpcPacket(void *pData, int32_t dataSize, int32_t protocol);
+void IPC_DumpPacket( void *pData, int32_t iDataSize, int32_t bProtocol );
 
 #endif	// __IPC_PROTOCOL_H__

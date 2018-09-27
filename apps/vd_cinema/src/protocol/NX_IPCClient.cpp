@@ -28,7 +28,7 @@
 
 #include <NX_IPCServer.h>
 #include <NX_IPCClient.h>
-#include <NX_IPCCommand.h>
+#include <NX_CinemaCommand.h>
 
 #include <NX_Version.h>
 
@@ -57,9 +57,9 @@ private:
 
 private:
 	//	Rx/Tx Buffer
-	//	Key(4bytes) + Length(2bytes) + Command(2bytes) + Payload(MAX 65533bytes )
+	//	Key(4bytes) + Length(2bytes) + Command(2bytes) + Payload(MAX 65535bytes )
 	uint8_t m_SendBuf[MAX_PAYLOAD_SIZE + 8];
-	uint8_t m_ReceiveBuf[MAX_PAYLOAD_SIZE + 8];
+	uint8_t m_RecvBuf[MAX_PAYLOAD_SIZE + 8];
 
 private:
 	//	For Singleton
@@ -105,7 +105,7 @@ int32_t CNX_IPCClient::Send( uint32_t iCmd, uint8_t *pBuf, int32_t *iSize )
 		return -1;
 	}
 
-	sendSize = IPC_MakePacket( NXP_KEY_VALUE, iCmd, pBuf, *iSize, m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = IPC_MakePacket( KEY_NXP, iCmd, pBuf, *iSize, m_SendBuf, sizeof(m_SendBuf) );
 	if( 0 > sendSize )
 	{
 		NxErrMsg( "Error: IPC_MakePacket().\n" );
@@ -114,8 +114,8 @@ int32_t CNX_IPCClient::Send( uint32_t iCmd, uint8_t *pBuf, int32_t *iSize )
 	}
 	write( clntSock, m_SendBuf, sendSize );
 
-	recvSize = read( clntSock, m_ReceiveBuf, sizeof(m_ReceiveBuf) );
-	if( 0 != IPC_ParsePacket( m_ReceiveBuf, recvSize, &key, &iCmd, &payload, &payloadSize ) )
+	recvSize = read( clntSock, m_RecvBuf, sizeof(m_RecvBuf) );
+	if( 0 != IPC_ParsePacket( m_RecvBuf, recvSize, &key, &iCmd, &payload, &payloadSize ) )
 	{
 		NxErrMsg( "Error : IPC_ParsePacket().\n" );
 		close( clntSock );
@@ -125,8 +125,8 @@ int32_t CNX_IPCClient::Send( uint32_t iCmd, uint8_t *pBuf, int32_t *iSize )
 	//
 	//	Condition of pBuf
 	//	 1. The pBuf must not be NULL.
-	//	 2. The pBuf's size must be same payload's size. ( 65533 bytes )
-	//   3. The iSize is not payload's size.
+	//	 2. The pBuf's size must be same payload's size. ( 65535 bytes )
+	//	 3. The iSize is not payload's size.
 	//	    The iSize is real data size in pBuf.
 	//
 	if( NULL == pBuf )
@@ -146,12 +146,12 @@ int32_t CNX_IPCClient::Send( uint32_t iCmd, uint8_t *pBuf, int32_t *iSize )
 //------------------------------------------------------------------------------
 int32_t CNX_IPCClient::GetVersion( uint32_t /*iCmd*/, uint8_t *pBuf, int32_t *iSize )
 {
-	uint8_t version[1024];
-	snprintf( (char*)version, sizeof(version), "%s ( %s, %s )", NX_VERSION_IPC_CLIENT, __TIME__, __DATE__ );
+	uint8_t szVersion[1024];
+	snprintf( (char*)szVersion, sizeof(szVersion), "%s ( %08lld-%06lld )", NX_VERSION_IPC_CLIENT, NX_DATE(), NX_TIME() );
 
-	int32_t payloadSize = (int32_t)strlen((const char*)version);
+	int32_t payloadSize = (int32_t)strlen((const char*)szVersion);
 
-	memcpy( pBuf, version, payloadSize );
+	memcpy( pBuf, szVersion, payloadSize );
 	*iSize = payloadSize;
 
 	return 0;

@@ -11,7 +11,7 @@
 //	Module		:
 //	File		:
 //	Description	:
-//	Author		: 
+//	Author		:
 //	Export		:
 //	History		:
 //

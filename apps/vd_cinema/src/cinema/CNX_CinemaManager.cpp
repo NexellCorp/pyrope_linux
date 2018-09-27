@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //
-//	Copyright (C) 2016 Nexell Co. All Rights Reserved
+//	Copyright (C) 2018 Nexell Co. All Rights Reserved
 //	Nexell Co. Proprietary & Confidential
 //
 //	NEXELL INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
@@ -18,38 +18,40 @@
 //------------------------------------------------------------------------------
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
-#include <pthread.h>
-#include <poll.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <string.h>
 #include <arpa/inet.h>
+#include <sys/un.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/un.h>
-#include <errno.h>
 
+#include <CNX_Base.h>
 #include <CNX_I2C.h>
 #include <CNX_EEPRom.h>
-#include <CNX_EEPRomDataParser.h>
-#include <NX_I2CRegister.h>
-#include <SockUtils.h>
-#include <ipc_protocol.h>
+#include <CNX_EEPRomData.h>
+#include <CNX_CinemaManager.h>
 
-#include <NX_IPCCommand.h>
-#include <NX_IPCServer.h>
-#include <CNX_BaseClass.h>
-
+#include <NX_CinemaCommand.h>
+#include <NX_CinemaRegister.h>
+#include <NX_Utils.h>
 #include <NX_Version.h>
 
-#define NX_DTAG	"[IPC Server]"
+#define NX_DTAG	"[CNX_CinemaManager]"
 #include <NX_DbgMsg.h>
 
+//------------------------------------------------------------------------------
 #define I2C_DEBUG			0
 #define I2C_SEPARATE_BURST	1
 
 #ifndef UNUSED
 #define UNUSED(x)			(void)(x)
 #endif
+
+#define NX_ENABLE_CHECK_SCREEN_ALL		false
+#define NX_ENABLE_CHECK_SCREEN_BOOT		false
+#define NX_ENABLE_CHECK_SCREEN_DELAY	false
 
 #define TCON_BURST_RETRY_COUNT			3
 
@@ -64,138 +66,28 @@
 
 #define TCON_EEPROM_BINARY_FILE			"/storage/sdcard0/SAMSUNG/TCON_EEPROM/T_REG.bin"
 
-
 //------------------------------------------------------------------------------
-//
-//	IPC Server APIs
-//
-class CNX_IPCServer : protected CNX_Thread
+CNX_CinemaManager::CNX_CinemaManager()
+	: m_hThreadCommand( 0x00 )
+	, m_bRun( false )
+	, m_iCmd( 0x0000 )
+#if NX_ENABLE_CHECK_SCREEN_BOOT
+	, m_iScreenType (CheckScreenType())
+#else
+	, m_iScreenType (SCREEN_TYPE_P25)
+#endif
 {
-public:
-	CNX_IPCServer();
-	~CNX_IPCServer();
-
-	static CNX_IPCServer* GetInstance();
-	static void ReleaseInstance();
-
-public:
-	int32_t StartServer();
-	void StopServer();
-
-	void SetNapVersion( uint8_t *pVersion, int32_t iSize );
-	void SetSapVersion( uint8_t *pVersion, int32_t iSize );
-
-protected:
-	//	Implementation CNX_Thread pure virtual function
-	virtual void ThreadProc();
-
-private:
-	//	Local Socket
-	int32_t WaitClient();
-	int32_t ReadData(int32_t fd, uint8_t *pBuf, int32_t size);
-
-	//	TCON Commands
-	int32_t TCON_RegWrite( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t TCON_RegRead( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t TCON_RegBurstWrite( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-
-	int32_t TCON_Init( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t TCON_Status( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t TCON_DoorStatus( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t TCON_LvdsStatus( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t TCON_BootingStatus( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t TCON_LedModeNormal( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t TCON_LedModeLod( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t TCON_LedOpenNum( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t TCON_LedOpenPos( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t TCON_TestPattern( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t	TCON_TargetGamma( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t	TCON_DeviceGamma( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t TCON_DotCorrection( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t TCON_DotCorrectionExtract( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t TCON_WhiteSeamRead( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t TCON_WhiteSeamWrite( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t TCON_OptionalData( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t TCON_SwReset( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t TCON_EEPRomRead( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t TCON_Mute( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t TCON_Version( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-
-	//	PFPGA Commands
-	int32_t PFPGA_RegWrite( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t PFPGA_RegRead( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t PFPGA_RegBurstWrite( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-
-	int32_t PFPGA_Status( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t PFPGA_Mute( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t PFPGA_UniformityData( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t PFPGA_WriteConfig( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t PFPGA_Version( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-
-	//	Platform Commands
-	int32_t PLAT_NapVersion( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t PLAT_SapVersion( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-	int32_t PLAT_IpcVersion( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-
-	//	IMB Commands
-	// int32_t IMB_ChangeContents( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize );
-
-	int32_t ProcessCommand( int32_t clientSocket, uint32_t cmd, void *pPayload, int32_t payloadSize );
-
-private:
-	//	Private Member Variables
-	enum { MAX_LOD_MODULE = 12, MAX_STR_SIZE = 1024 };
-
-	bool		m_IsRunning;
-	bool		m_ExitLoop;
-	pthread_t	m_hThread;
-
-	int32_t		m_hSocket;
-	//	Key(4bytes) + Length(2bytes) + Command(2bytes) + Payload(MAX 65533bytes)
-	uint8_t		m_SendBuf[MAX_PAYLOAD_SIZE + 8];
-	uint8_t		m_ReceiveBuf[MAX_PAYLOAD_SIZE + 8];
-
-	int32_t		(*m_pTestPatternFunc[6])( CNX_I2C*, uint8_t, uint8_t );
-
-	uint8_t		m_NapVersion[MAX_STR_SIZE];
-	uint8_t		m_SapVersion[MAX_STR_SIZE];
-	uint8_t		m_IpcVersion[MAX_STR_SIZE];
-
-private:
-	//	For Singletone
-	static CNX_IPCServer	*m_psInstance;
-};
-
-CNX_IPCServer* CNX_IPCServer::m_psInstance = NULL;
-
-//------------------------------------------------------------------------------
-static int32_t TestPatternDci( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex );
-static int32_t TestPatternColorBar( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex );
-static int32_t TestPatternFullScreenColor( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex );
-static int32_t TestPatternGrayScale( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex );
-static int32_t TestPatternDot( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex );
-static int32_t TestPatternDiagonal( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex );
-
-static int32_t SendRemote( const char *pSockName, const char *pMsg );
-static void MakeDirectory( const char *pDir );
-static void WaitTime( uint64_t iWaitTime, const char *pMsg = NULL );
-
-//------------------------------------------------------------------------------
-CNX_IPCServer::CNX_IPCServer()
-	: m_IsRunning (false)
-	, m_ExitLoop (true)
-	, m_hSocket (-1)
-{
-	m_pTestPatternFunc[0] = &TestPatternDci;
-	m_pTestPatternFunc[1] = &TestPatternColorBar;
-	m_pTestPatternFunc[2] = &TestPatternFullScreenColor;
-	m_pTestPatternFunc[3] = &TestPatternGrayScale;
-	m_pTestPatternFunc[4] = &TestPatternDot;
-	m_pTestPatternFunc[5] = &TestPatternDiagonal;
+	m_pTestPatternFunc[0] = &CNX_CinemaManager::TestPatternDci;
+	m_pTestPatternFunc[1] = &CNX_CinemaManager::TestPatternColorBar;
+	m_pTestPatternFunc[2] = &CNX_CinemaManager::TestPatternFullScreenColor;
+	m_pTestPatternFunc[3] = &CNX_CinemaManager::TestPatternGrayScale;
+	m_pTestPatternFunc[4] = &CNX_CinemaManager::TestPatternDot;
+	m_pTestPatternFunc[5] = &CNX_CinemaManager::TestPatternDiagonal;
 
 	memset( m_NapVersion, 0x00, sizeof(m_NapVersion) );
 	memset( m_SapVersion, 0x00, sizeof(m_SapVersion) );
 	memset( m_IpcVersion, 0x00, sizeof(m_IpcVersion) );
+	memset( m_TmsVersion, 0x00, sizeof(m_TmsVersion) );
 
 	snprintf( (char*)m_IpcVersion, sizeof(m_IpcVersion), "%s ( %s, %s )", NX_VERSION_IPC_SERVER, __TIME__, __DATE__ );
 
@@ -205,182 +97,224 @@ CNX_IPCServer::CNX_IPCServer()
 }
 
 //------------------------------------------------------------------------------
-CNX_IPCServer::~CNX_IPCServer()
+CNX_CinemaManager::~CNX_CinemaManager()
 {
-	StopServer();
-}
-
-//------------------------------------------------------------------------------
-int32_t CNX_IPCServer::StartServer()
-{
-	if( m_IsRunning )
-		return 1;
-
-	int32_t svrSocket = -1;
-	svrSocket = LS_Open( IPC_SERVER_FILE );
-	if( svrSocket < 0 )
+	if( m_hThreadCommand )
 	{
-		NxDbgMsg( NX_DBG_ERR, "Error : server socket \n");
-		return false;
-	}
-
-	m_hSocket = svrSocket;
-	m_ExitLoop = false;
-
-	if( 0 != Start() )
-	{
-		m_ExitLoop = true;
-		close(m_hSocket);
-		m_hSocket = -1;
-		return -1;
-	}
-
-	return 0;
-}
-
-//------------------------------------------------------------------------------
-void CNX_IPCServer::StopServer()
-{
-	if( m_IsRunning )
-	{
-		m_ExitLoop = true;
-		Stop();
+		pthread_join( m_hThreadCommand, NULL );
+		m_hThreadCommand = 0x00;
 	}
 }
 
 //------------------------------------------------------------------------------
-void CNX_IPCServer::SetNapVersion( uint8_t *pVersion, int32_t iSize )
+void CNX_CinemaManager::SetNapVersion( uint8_t *pVersion, int32_t iSize )
 {
-	memset( m_NapVersion, 0x00, sizeof(m_NapVersion) );
-	memcpy( m_NapVersion, pVersion, iSize );
+	UNUSED(iSize);
+
+	char szVersion[1024] = { 0x00, };
+	memcpy( szVersion, pVersion, iSize );
+
+	// NAP VERSION + IPC BUILD DATE
+	snprintf( (char*)m_NapVersion, sizeof(m_NapVersion), "%s ( %lld )", szVersion, NX_DATE() );
 }
 
 //------------------------------------------------------------------------------
-void CNX_IPCServer::SetSapVersion( uint8_t *pVersion, int32_t iSize )
+void CNX_CinemaManager::SetSapVersion( uint8_t *pVersion, int32_t iSize )
 {
-	memset( m_SapVersion, 0x00, sizeof(m_SapVersion) );
-	memcpy( m_SapVersion, pVersion, iSize );
+	UNUSED(iSize);
+
+	char szVersion[1024] = { 0x00, };
+	memcpy( szVersion, pVersion, iSize );
+
+	snprintf( (char*)m_SapVersion, sizeof(m_SapVersion), "%s", szVersion );
 }
 
 //------------------------------------------------------------------------------
-void CNX_IPCServer::ThreadProc()
+void CNX_CinemaManager::SetIpcVersion( uint8_t *pVersion, int32_t iSize )
 {
-	while( !m_ExitLoop )
+	UNUSED(iSize);
+
+	char szVersion[1024] = { 0x00, };
+	memcpy( szVersion, pVersion, iSize );
+
+	snprintf( (char*)m_IpcVersion, sizeof(m_IpcVersion), "%s", szVersion );
+}
+
+//------------------------------------------------------------------------------
+void CNX_CinemaManager::SetTmsVersion( uint8_t *pVersion, int32_t iSize )
+{
+	UNUSED(iSize);
+
+	char szVersion[1024] = { 0x00, };
+	memcpy( szVersion, pVersion, iSize );
+
+	snprintf( (char*)m_TmsVersion, sizeof(m_TmsVersion), "%s", szVersion );
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_CinemaManager::IsBusy()
+{
+	CNX_AutoLock lock( &m_hLock );
+	return m_bRun;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_CinemaManager::SendCommand( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
+{
 	{
-		int32_t iReadSize = 0;
-		uint32_t iKey = 0, iCmd = 0;
-		uint8_t *pPayload = m_ReceiveBuf;
-		int32_t iPayloadSize = 0;
+		CNX_AutoLock lock( &m_hLock );
 
-		int32_t clientSocket = WaitClient();
-		if( !clientSocket )
+		if( m_bRun == true )
 		{
-			continue;
-		}
-		else if( 0 > clientSocket )	//	Error
-		{
-			goto ERROR;
-		}
+			printf("Fail, Resource busy.\n");
 
-		do {
-			uint8_t tempData;
-			iReadSize = ReadData( clientSocket, &tempData, 1 );
-			if( 1 != iReadSize )
-			{
-				NxDbgMsg( NX_DBG_ERR, "Fail, ReadData(). ( line: %d, iReadSize: %d )\n", __LINE__, iReadSize );
-				if( 0 < iReadSize ) NX_HexDump( &tempData, iReadSize );
-				goto ERROR;
-			}
+			*iOutSize  = 4;
 
-			iKey = (iKey << 8) | tempData;
-			if( iKey == NXP_KEY_VALUE )
-			{
-				break;
-			}
-		} while( !m_ExitLoop );
+			pOutBuf[0] = 0xFF;
+			pOutBuf[1] = 0xFF;
+			pOutBuf[2] = 0xFF;
+			pOutBuf[3] = 0xFE;
 
-		iReadSize = ReadData( clientSocket, pPayload, 2 );
-		if( 2 > iReadSize )
-		{
-			NxDbgMsg( NX_DBG_ERR, "Fail, ReadData(). ( line: %d, iReadSize: %d )\n", __LINE__, iReadSize );
-			if( 0 < iReadSize ) NX_HexDump( pPayload, iReadSize );
-			goto ERROR;
+			return NX_RET_RESOURCE_BUSY;
 		}
 
-		iPayloadSize = IPC_GET_LENGTH( pPayload[0], pPayload[1] );
-		if( iPayloadSize+8 > (int32_t)sizeof(m_ReceiveBuf) )
-		{
-			NxDbgMsg( NX_DBG_ERR, "Fail, Buffer Overflow. ( max: %d expected: %d )\n", sizeof(m_ReceiveBuf), iPayloadSize+8 );
-			goto ERROR;
-		}
-
-		iReadSize = ReadData ( clientSocket, pPayload + 2, iPayloadSize );
-		if( 0 >= iReadSize || iReadSize != iPayloadSize )
-		{
-			NxDbgMsg( NX_DBG_ERR, "Fail, ReadData(). ( line: %d, iReadSize: %d, expected: %d )\n",
-				__LINE__, iReadSize, iPayloadSize );
-				if( 0 < iReadSize ) NX_HexDump( pPayload+2, iReadSize );
-				goto ERROR;
-		}
-
-		iCmd = IPC_GET_COMMAND( pPayload[2], pPayload[3] );
-
-		pPayload += 4;
-		iPayloadSize -= 2;
-
-		NxDbgMsg( NX_DBG_VBS, "\n================================================\n");
-		NxDbgMsg( NX_DBG_VBS, "iCmd = 0x%08x, iReadSize = %d\n", iCmd, iReadSize );
-		ProcessCommand( clientSocket, iCmd, pPayload, iPayloadSize );
-
-ERROR:
-		if( clientSocket > 0 )
-		{
-			close( clientSocket );
-			clientSocket = -1;
-		}
-	}
-}
-
-//------------------------------------------------------------------------------
-int32_t CNX_IPCServer::WaitClient()
-{
-	//	client socket
-	int32_t clientSocket;
-	struct sockaddr_un clntAddr;
-	int32_t clntAddrSize;
-
-	if( -1 == listen(m_hSocket, 5) )
-	{
-		NxErrMsg( "Error : listen (err = %d)\n", errno );
-		return -1;
+		m_bRun = true;
 	}
 
-	clntAddrSize = sizeof( clntAddr );
-	clientSocket = accept( m_hSocket, (struct sockaddr*)&clntAddr, (socklen_t*)&clntAddrSize );
+	m_iCmd     = iCmd;
+	m_pInBuf   = pInBuf;
+	m_iInSize  = iInSize;
+	m_pOutBuf  = pOutBuf;
+	m_iOutSize = 0;
 
-	if ( -1 == clientSocket )
+	if( 0 != pthread_create( &m_hThreadCommand, NULL, this->ThreadCommandStub, this ) )
 	{
-		NxErrMsg( "Error : accept (err = %d)\n", errno );
-		return -1;
+		CNX_AutoLock lock( &m_hLock );
+		printf( "Fail, pthread_create().\n" );
+
+		*iOutSize  = 4;
+
+		pOutBuf[0] = 0xFF;
+		pOutBuf[1] = 0xFF;
+		pOutBuf[2] = 0xFF;
+		pOutBuf[3] = 0xFF;
+
+		m_bRun = false;
+		return NX_RET_ERROR;
 	}
-	return clientSocket;
+
+	if( m_hThreadCommand )
+	{
+		pthread_join( m_hThreadCommand, NULL );
+		m_hThreadCommand = 0x00;
+	}
+
+	*iOutSize = m_iOutSize;
+
+#if 0
+	NX_HexDump( (void*)pInBuf, iInSize, "InBuf: " );
+	NX_HexDump( (void*)pOutBuf, *iOutSize, "OutBuf: " );
+#endif
+
+	{
+		CNX_AutoLock lock( &m_hLock );
+		m_bRun = false;
+	}
+
+	return NX_RET_DONE;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::ReadData(int32_t fd, uint8_t *pBuf, int32_t size)
+void *CNX_CinemaManager::ThreadCommandStub( void *pObj )
 {
-	int32_t readSize, totalSize=0;
-	do
+	if( NULL != pObj )
 	{
-		readSize = read( fd, pBuf, size );
-		if( readSize < 0 )
-			return -1;
+		((CNX_CinemaManager*)pObj)->ThreadCommandProc();
+	}
 
-		size -= readSize;
-		pBuf += readSize;
-		totalSize += readSize;
-	} while(size > 0);
-	return totalSize;
+	return (void*)0xDEADDEAD;
+}
+
+//------------------------------------------------------------------------------
+void CNX_CinemaManager::ThreadCommandProc()
+{
+	ProcessCommand( m_iCmd, m_pInBuf, m_iInSize, m_pOutBuf, &m_iOutSize );
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_CinemaManager::ProcessCommand( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
+{
+	switch( iCmd )
+	{
+	//
+	//	TCON Commands
+	//
+	case TCON_CMD_REG_WRITE:								return TCON_RegWrite( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case TCON_CMD_REG_READ:									return TCON_RegRead( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case TCON_CMD_REG_BURST_WRITE:							return TCON_RegBurstWrite( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case TCON_CMD_INIT:										return TCON_Init( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case TCON_CMD_STATUS:									return TCON_Status( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case TCON_CMD_DOOR_STATUS:								return TCON_DoorStatus( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case TCON_CMD_LVDS_STATUS:								return TCON_LvdsStatus( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case TCON_CMD_BOOTING_STATUS:							return TCON_BootingStatus( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case TCON_CMD_MODE_NORMAL:								return TCON_LedModeNormal( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case TCON_CMD_MODE_LOD:									return TCON_LedModeLod( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case TCON_CMD_OPEN_NUM:									return TCON_LedOpenNum( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case TCON_CMD_OPEN_POS:									return TCON_LedOpenPos( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case TCON_CMD_PATTERN_RUN:
+	case TCON_CMD_PATTERN_STOP:								return TCON_TestPattern( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case TCON_CMD_TGAM_R:
+	case TCON_CMD_TGAM_G:
+	case TCON_CMD_TGAM_B:									return TCON_TargetGamma( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case TCON_CMD_DGAM_R:
+	case TCON_CMD_DGAM_G:
+	case TCON_CMD_DGAM_B:									return TCON_DeviceGamma( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case TCON_CMD_DOT_CORRECTION:							return TCON_DotCorrection( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case TCON_CMD_DOT_CORRECTION_EXTRACT:					return TCON_DotCorrectionExtract( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case TCON_CMD_WHITE_SEAM_READ:							return TCON_WhiteSeamRead( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case TCON_CMD_WHITE_SEAM_WRITE:							return TCON_WhiteSeamWrite( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case TCON_CMD_ELAPSED_TIME:
+	case TCON_CMD_ACCUMULATE_TIME:							return TCON_OptionalData( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case TCON_CMD_SW_RESET:									return TCON_SwReset( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case TCON_CMD_EEPROM_READ:								return TCON_EEPRomRead( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case TCON_CMD_MUTE:										return TCON_Mute( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case TCON_CMD_VERSION:									return TCON_Version( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+
+	//
+	//	PFPGA Commands
+	//
+	case PFPGA_CMD_REG_WRITE:
+	case CMD_PFPGA( PFPGA_CMD_REG_WRITE ):					return PFPGA_RegWrite( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case PFPGA_CMD_REG_READ:
+	case CMD_PFPGA( PFPGA_CMD_REG_READ ):					return PFPGA_RegRead( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case PFPGA_CMD_STATUS:
+	case CMD_PFPGA( PFPGA_CMD_STATUS ):						return PFPGA_Status( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case PFPGA_CMD_MUTE:
+	case CMD_PFPGA( PFPGA_CMD_MUTE ):						return PFPGA_Mute( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case PFPGA_CMD_UNIFORMITY_DATA:
+	case CMD_PFPGA( PFPGA_CMD_UNIFORMITY_DATA ):			return PFPGA_UniformityData( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case PFPGA_CMD_VERSION:
+	case CMD_PFPGA( PFPGA_CMD_VERSION ):					return PFPGA_Version( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+
+	//
+	//	Platform Commands
+	//
+	case PLATFORM_CMD_NAP_VERSION:
+	case CMD_PLATFORM( PLATFORM_CMD_NAP_VERSION ):			return PLAT_NapVersion( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case PLATFORM_CMD_SAP_VERSION:
+	case CMD_PLATFORM( PLATFORM_CMD_SAP_VERSION ):			return PLAT_SapVersion( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case PLATFORM_CMD_IPC_SERVER_VERSION:
+	case CMD_PLATFORM( PLATFORM_CMD_IPC_SERVER_VERSION ):	return PLAT_IpcVersion( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case PLATFORM_CMD_TMS_SERVER_VERSION:
+	case CMD_PLATFORM( PLATFORM_CMD_TMS_SERVER_VERSION ):	return PLAT_TmsVersion( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case PLATFORM_CMD_SCREEN_TYPE:
+	case CMD_PLATFORM( PLATFORM_CMD_SCREEN_TYPE ):			return PLAT_ScreenType( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+
+	default :
+		break;
+	}
+
+	return -1;
 }
 
 
@@ -390,25 +324,25 @@ int32_t CNX_IPCServer::ReadData(int32_t fd, uint8_t *pBuf, int32_t size)
 //
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_RegWrite( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::TCON_RegWrite( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( iInSize );
 
 	//
-	//	pBuf[0] : index, pBuf[1] : msb reg, pBuf[2] : lsb reg, pBuf[3] : msb data, pBuf[4] : lsb data
+	//	pInBuf[0] : index, pInBuf[1] : msb reg, pInBuf[2] : lsb reg, pInBuf[3] : msb data, pInBuf[4] : lsb data
 	//
 
 	uint8_t result[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
-	int32_t sendSize;
 
-	uint8_t index	= pBuf[0];
+	uint8_t index	= pInBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
-	uint8_t msbReg	= pBuf[1];
-	uint8_t lsbReg	= pBuf[2];
-	uint8_t msbData	= pBuf[3];
-	uint8_t lsbData	= pBuf[4];
+	uint8_t msbReg	= pInBuf[1];
+	uint8_t lsbReg	= pInBuf[2];
+	uint8_t msbData	= pInBuf[3];
+	uint8_t lsbData	= pInBuf[4];
 
 	uint16_t inReg	= ((int16_t)(msbReg << 8) & 0xFF00) + (int16_t)lsbReg;
 	uint16_t inData	= ((int16_t)(msbData << 8) & 0xFF00) + (int16_t)lsbData;
@@ -437,32 +371,30 @@ int32_t CNX_IPCServer::TCON_RegWrite( int32_t fd, uint32_t cmd, uint8_t *pBuf, i
 	result[3] = 0x00;
 
 ERROR_TCON:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, result, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_RegRead( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::TCON_RegRead( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( iInSize );
 
 	//
-	//	pBuf[0] : index, pBuf[1] : msb reg, pBuf[2] : lsb reg
+	//	pInBuf[0] : index, pInBuf[1] : msb reg, pInBuf[2] : lsb reg
 	//
 
 	uint8_t result[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
-	int32_t sendSize;
 
-	uint8_t index	= pBuf[0];
+	uint8_t index	= pInBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
-	uint8_t msbReg	= pBuf[1];
-	uint8_t lsbReg	= pBuf[2];
+	uint8_t msbReg	= pInBuf[1];
+	uint8_t lsbReg	= pInBuf[2];
 
 	uint16_t inReg	= ((int16_t)(msbReg << 8) & 0xFF00) + (int16_t)lsbReg;
 	int32_t iReadData;
@@ -491,51 +423,47 @@ int32_t CNX_IPCServer::TCON_RegRead( int32_t fd, uint32_t cmd, uint8_t *pBuf, in
 	result[3] = (uint8_t)((iReadData >>  0) & 0xFF);
 
 ERROR_TCON:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, result, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_RegBurstWrite( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::TCON_RegBurstWrite( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( fd );
-	UNUSED( cmd );
-	UNUSED( pBuf );
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( pInBuf );
+	UNUSED( iInSize );
 
 	//
 	//	Not Implemeation.
 	//
 
 	uint8_t result = 0xFF;
-	int32_t sendSize;
+
+	if( 0 ) goto ERROR_TCON;
 
 ERROR_TCON:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_Init( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::TCON_Init( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( iInSize );
 
 	//
-	//	pBuf[0] : index
+	//	pInBuf[0] : index
 	//
 
 	uint8_t result	= 0xFF;
-	int32_t sendSize;
 
-	uint8_t index	= pBuf[0];
+	uint8_t index	= pInBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
@@ -564,27 +492,25 @@ int32_t CNX_IPCServer::TCON_Init( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32
 	result = 0x01;
 
 ERROR_TCON:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_Status( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::TCON_Status( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( iInSize );
 
 	//
-	//	pBuf[0] : index
+	//	pInBuf[0] : index
 	//
 
 	uint8_t result	= 0xFF;
-	int32_t sendSize;
 
-	uint8_t index	= pBuf[0];
+	uint8_t index	= pInBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
@@ -615,28 +541,26 @@ int32_t CNX_IPCServer::TCON_Status( int32_t fd, uint32_t cmd, uint8_t *pBuf, int
 	result = ((iWriteData == iReadData) ? 1 : 0);
 
 ERROR_TCON:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_DoorStatus( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::TCON_DoorStatus( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( iInSize );
 
 	//
-	//	pBuf[0] : index
+	//	pInBuf[0] : index
 	//
 
 	uint8_t result	= 0xFF;
-	int32_t sendSize;
 
-	uint8_t index	= pBuf[0];
-	uint8_t bRead	= pBuf[1];
+	uint8_t index	= pInBuf[0];
+	uint8_t bRead	= pInBuf[1];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
@@ -703,27 +627,25 @@ int32_t CNX_IPCServer::TCON_DoorStatus( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 	}
 
 ERROR_TCON:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_LvdsStatus( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::TCON_LvdsStatus( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( iInSize );
 
 	//
-	//	pBuf[0] : index
+	//	pInBuf[0] : index
 	//
 
 	uint8_t result	= 0xFF;
-	int32_t sendSize;
 
-	uint8_t index	= pBuf[0];
+	uint8_t index	= pInBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
@@ -749,27 +671,25 @@ int32_t CNX_IPCServer::TCON_LvdsStatus( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 	result = (iReadData == 1080 || iReadData == 2160) ? 1 : 0;
 
 ERROR_TCON:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_BootingStatus( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::TCON_BootingStatus( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( iInSize );
 
 	//
-	//	pBuf[0] : index
+	//	pInBuf[0] : index
 	//
 
 	uint8_t result	= 0xFF;
-	int32_t sendSize;
 
-	uint8_t index	= pBuf[0];
+	uint8_t index	= pInBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
@@ -795,27 +715,25 @@ int32_t CNX_IPCServer::TCON_BootingStatus( int32_t fd, uint32_t cmd, uint8_t *pB
 	result = (iReadData == 0x07E1 ) ? 1 : 0;
 
 ERROR_TCON:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_LedModeNormal( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::TCON_LedModeNormal( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( iInSize );
 
 	//
-	//	pBuf[0] : index
+	//	pInBuf[0] : index
 	//
 
 	uint8_t result	= 0xFF;
-	int32_t sendSize;
 
-	uint8_t index	= pBuf[0];
+	uint8_t index	= pInBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
@@ -857,33 +775,39 @@ int32_t CNX_IPCServer::TCON_LedModeNormal( int32_t fd, uint32_t cmd, uint8_t *pB
 	result = 0x01;
 
 ERROR_TCON:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, snedSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_LedModeLod( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::TCON_LedModeLod( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( iInSize );
 
 	//
-	//	pBuf[0] : index
+	//	pInBuf[0] : index
 	//
 
 	uint8_t result	= 0xFF;
-	int32_t sendSize;
 
-	uint8_t index	= pBuf[0];
+	uint8_t index	= pInBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
-	const uint16_t pattern[] = {
+	const uint16_t PatternDataP25[] = {
 		10,		0,		1024,	0,		2160,	4095,	4095,	4095
 	};
+
+	const uint16_t PatternDataP33[] = {
+		10,		0,		1056,	0,		2160,	4095,	4095,	4095
+	};
+
+	int32_t iPatternSize = (int32_t)(sizeof(PatternDataP25) / sizeof(PatternDataP25[0]));
+	const uint16_t *pPatternData =
+		(m_iScreenType == SCREEN_TYPE_P33) ? PatternDataP33 : PatternDataP25;
 
 	CNX_I2C i2c( port );
 
@@ -893,12 +817,12 @@ int32_t CNX_IPCServer::TCON_LedModeLod( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 		goto ERROR_TCON;
 	}
 
-	for( int32_t i = 0; i < (int32_t)(sizeof(pattern) / sizeof(pattern[0])); i++ )
+	for( int32_t i = 0; i < iPatternSize; i++ )
 	{
-		if( 0 > i2c.Write( slave, TCON_REG_PATTERN + i, pattern[i] ) )
+		if( 0 > i2c.Write( slave, TCON_REG_PATTERN + i, pPatternData[i] ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
-				port, slave, TCON_REG_PATTERN + i, pattern[i] );
+				port, slave, TCON_REG_PATTERN + i, pPatternData[i] );
 			goto ERROR_TCON;
 		}
 	}
@@ -932,29 +856,27 @@ int32_t CNX_IPCServer::TCON_LedModeLod( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 	result = 0x01;
 
 ERROR_TCON:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_LedOpenNum( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::TCON_LedOpenNum( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( iInSize );
 
 	//
-	//	pBuf[0] : index
+	//	pInBuf[0] : index
 	//
 
 	uint8_t result[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
-	int32_t sendSize;
 	int32_t iReadData = 0;
 	int32_t iErrorNum = 0;
 
-	uint8_t index	= pBuf[0];
+	uint8_t index	= pInBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
@@ -999,29 +921,27 @@ int32_t CNX_IPCServer::TCON_LedOpenNum( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 	result[3] = (uint8_t)(iErrorNum >>  0) & 0xFF;
 
 ERROR_TCON:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_LedOpenPos( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::TCON_LedOpenPos( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( iInSize );
 
 	//
-	//	pBuf[0] : index
+	//	pInBuf[0] : index
 	//
 
 	uint8_t result[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
-	int32_t sendSize;
 	int32_t iCoordinateX = 0, iCoordinateY = 0;
 	int32_t iErrorOutReady;
 
-	uint8_t index	= pBuf[0];
+	uint8_t index	= pInBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
@@ -1052,32 +972,29 @@ int32_t CNX_IPCServer::TCON_LedOpenPos( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 	i2c.Write( slave, TCON_REG_ERROR_OUT_CLK, 0x0000 );
 
 ERROR_TCON:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_TestPattern( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::TCON_TestPattern( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( iSize );
+	UNUSED( iInSize );
 
 	//
-	//	pBuf[0] : index, pBuf[1] : function index, pBuf[2] : pattern index
+	//	pInBuf[0] : index, pInBuf[1] : function index, pInBuf[2] : pattern index
 	//
 
 	uint8_t result	= 0xFF;
-	int32_t sendSize;
 
-	uint8_t index	= pBuf[0];
+	uint8_t index	= pInBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
-	uint8_t funcIndex = pBuf[1];
-	uint8_t patternIndex = pBuf[2];
+	uint8_t funcIndex = pInBuf[1];
+	uint8_t patternIndex = pInBuf[2];
 
 	CNX_I2C i2c( port );
 
@@ -1087,11 +1004,14 @@ int32_t CNX_IPCServer::TCON_TestPattern( int32_t fd, uint32_t cmd, uint8_t *pBuf
 		goto ERROR_TCON;
 	}
 
-	if( TCON_CMD_PATTERN_RUN == cmd )
+	if( TCON_CMD_PATTERN_RUN == iCmd )
 	{
-		if( funcIndex != sizeof(m_pTestPatternFunc)/sizeof(m_pTestPatternFunc[0]) )
+		if( funcIndex != MAX_TEST_PATTERN )
 		{
-			m_pTestPatternFunc[funcIndex](&i2c, index, patternIndex);
+			NxDbgMsg( NX_DBG_INFO, "ScreenType( %d ), Port( %d ), Slave( 0x%02X ), FuncIndex( %d ), PatternIndex( %d )",
+				m_iScreenType, port, slave, funcIndex, patternIndex );
+
+			(this->*m_pTestPatternFunc[funcIndex])(&i2c, index, patternIndex);
 		}
 		else
 		{
@@ -1132,7 +1052,7 @@ int32_t CNX_IPCServer::TCON_TestPattern( int32_t fd, uint32_t cmd, uint8_t *pBuf
 			goto ERROR_TCON;
 		}
 
-		if( funcIndex != sizeof(m_pTestPatternFunc)/sizeof(m_pTestPatternFunc[0]) )
+		if( funcIndex != MAX_TEST_PATTERN )
 		{
 			if( 0 > i2c.Write( slave, TCON_REG_PATTERN, 0x0000 ) )
 			{
@@ -1195,39 +1115,36 @@ int32_t CNX_IPCServer::TCON_TestPattern( int32_t fd, uint32_t cmd, uint8_t *pBuf
 	result = 0x01;
 
 ERROR_TCON:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_TargetGamma( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::TCON_TargetGamma( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( iSize );
+	UNUSED( iInSize );
 
 	//
-	//	pBuf[0] : index, pBuf[1] .. : data ( num of data : iSize - 1 )
+	//	pInBuf[0] : index, pInBuf[1] .. : data ( num of data : iInSize - 1 )
 	//
 
 	uint8_t result	= 0xFF;
-	int32_t sendSize;
 
-	uint8_t index	= pBuf[0];
+	uint8_t index	= pInBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
-	uint8_t *data	= pBuf + 1;
-	int32_t size	= iSize - 1;
+	uint8_t *data	= pInBuf + 1;
+	int32_t size	= iInSize - 1;
 
 	uint16_t dataReg;
 	uint16_t wrSel, burstSel;
 
-	dataReg = TCON_REG_TGAM_R_WDATA + (cmd - TCON_CMD_TGAM_R) * 2;
+	dataReg = TCON_REG_TGAM_R_WDATA + (iCmd - TCON_CMD_TGAM_R) * 2;
 	wrSel	= data[0] * 2;
-	burstSel= 0x0001 << (cmd - TCON_CMD_TGAM_R);
+	burstSel= 0x0001 << (iCmd - TCON_CMD_TGAM_R);
 
 	int32_t iDataSize = (size - 1) / 3;
 	uint16_t* pMsbData = (uint16_t*)malloc( sizeof(uint16_t) * iDataSize );
@@ -1404,10 +1321,8 @@ int32_t CNX_IPCServer::TCON_TargetGamma( int32_t fd, uint32_t cmd, uint8_t *pBuf
 	result = 0x01;
 
 ERROR_TCON:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
 
 	free( pMsbData );
 	free( pLsbData );
@@ -1416,28 +1331,27 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_DeviceGamma( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::TCON_DeviceGamma( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
 	//
-	//	pBuf[0] : index, pBuf[1] .. : data ( num of data : iSize - 1 )
+	//	pInBuf[0] : index, pInBuf[1] .. : data ( num of data : iInSize - 1 )
 	//
 
 	uint8_t result	= 0xFF;
-	int32_t sendSize;
 
-	uint8_t index	= pBuf[0];
+	uint8_t index	= pInBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
-	uint8_t *data	= pBuf + 1;
-	int32_t size	= iSize - 1;
+	uint8_t *data	= pInBuf + 1;
+	int32_t size	= iInSize - 1;
 
 	uint16_t dataReg;
 	uint16_t wrSel, burstSel;
 
-	dataReg = TCON_REG_DGAM_R_WDATA + (cmd - TCON_CMD_DGAM_R) * 2;
+	dataReg = TCON_REG_DGAM_R_WDATA + (iCmd - TCON_CMD_DGAM_R) * 2;
 	wrSel	= data[0] * 2;
-	burstSel= 0x0008 << (cmd - TCON_CMD_DGAM_R);
+	burstSel= 0x0008 << (iCmd - TCON_CMD_DGAM_R);
 
 	int32_t iDataSize = (size - 1) / 3;
 	uint16_t* pMsbData = (uint16_t*)malloc( sizeof(uint16_t) * iDataSize );
@@ -1614,10 +1528,8 @@ int32_t CNX_IPCServer::TCON_DeviceGamma( int32_t fd, uint32_t cmd, uint8_t *pBuf
 	result = 0x01;
 
 ERROR_TCON:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
 
 	free( pMsbData );
 	free( pLsbData );
@@ -1626,23 +1538,24 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_DotCorrection( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
+	UNUSED( iCmd );
+
 	uint64_t iCurTime = NX_GetTickCount();
 
 	//
-	//	pBuf[0] : index, pBuf[1] : module, pBuf[2] .. : data ( num of data : iSize - 1 )
+	//	pInBuf[0] : index, pInBuf[1] : module, pInBuf[2] .. : data ( num of data : iInSize - 1 )
 	//
 	uint8_t result	= 0xFF;
-	int32_t sendSize;
 
-	uint8_t index	= pBuf[0];
+	uint8_t index	= pInBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
-	uint16_t module = pBuf[1];
-	uint8_t *ptr	= pBuf + 2;
-	int32_t size	= iSize - 2;
+	uint16_t module = pInBuf[1];
+	uint8_t *ptr	= pInBuf + 2;
+	int32_t size	= iInSize - 2;
 
 	int32_t iDataSize = size / 2;
 	uint16_t *pData = (uint16_t*)malloc( sizeof(uint16_t) * iDataSize );
@@ -2020,10 +1933,8 @@ int32_t CNX_IPCServer::TCON_DotCorrection( int32_t fd, uint32_t cmd, uint8_t *pB
 	result = 0x01;
 
 ERROR_TCON:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
 
 	if( pData ) free( pData );
 
@@ -2033,31 +1944,38 @@ ERROR_TCON:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_DotCorrectionExtract( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::TCON_DotCorrectionExtract( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( iInSize );
 
 	uint64_t iStartTime = NX_GetTickCount();
 
 	//
-	//	pBuf[0] : index, pBuf[1] : module index
+	//	pInBuf[0] : index, pInBuf[1] : module index
 	//
-	uint8_t index	= pBuf[0];
+
+	uint8_t index	= pInBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
-	uint8_t module	= pBuf[1];
-	uint16_t nBaseX = module % 4 * 64;
-	uint16_t nBaseY = module / 4 * 60;
+	uint8_t module	= pInBuf[1];
+	uint16_t nBaseX = 0;
+	uint16_t nBaseY = 0;
 
-	int32_t iResultLen = 64 * 60 * 8 * 2;
-	uint8_t *pResult = (uint8_t*)malloc( iResultLen * sizeof(uint8_t) );
-	memset( pResult, 0x00, iResultLen * sizeof(uint8_t) );
+	int32_t iResultLen = 0;
+	uint8_t *pResult = NULL;
+	uint8_t *pPtr = NULL;
 
-	uint8_t *pPtr = pResult;
-
-	int32_t sendSize;
 	int32_t cnt = 0;
+
+	int32_t iReadData;
+	int32_t iCol = 0;
+	int32_t iRow = 0;
+
+	iResultLen = 1;
+	pResult = (uint8_t*)malloc( iResultLen * sizeof(uint8_t) );
+	pResult[0] = 0xFF;
 
 	CNX_I2C i2c( port );
 
@@ -2067,11 +1985,36 @@ int32_t CNX_IPCServer::TCON_DotCorrectionExtract( int32_t fd, uint32_t cmd, uint
 		goto ERROR_TCON;
 	}
 
-	printf("port(%d), slave(%d), modlue(%d)\n", port, slave, module);
-
-	for( int32_t i = 0; i < 60; i++ )
+	if( 0 > (iReadData = i2c.Read( slave, TCON_REG_PITCH_INFO )) )
 	{
-		for( int32_t j = 0; j < 64; j++ )
+		NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
+			port, slave, TCON_REG_PITCH_INFO );
+		goto ERROR_TCON;
+	}
+
+	switch( m_iScreenType )
+	{
+		case SCREEN_TYPE_P33:	iCol = 48;	iRow = 45;	break;
+		default:				iCol = 64;	iRow = 60;	break;
+	}
+
+	printf("port( %d ), slave( %d ), modlue( %d ), screenType( %s )\n", port, slave, module,
+		(m_iScreenType == SCREEN_TYPE_P33) ? "P3.3" : "P2.5" );
+
+	nBaseX = module % 4 * iCol;
+	nBaseY = module / 4 * iRow;
+
+	if( pResult ) free( pResult );
+
+	iResultLen = iCol * iRow * 8 * 2;
+	pResult = (uint8_t*)malloc( iResultLen * sizeof(uint8_t) );
+	memset( pResult, 0x00, iResultLen * sizeof(uint8_t) );
+
+	pPtr = pResult;
+
+	for( int32_t i = 0; i < iRow; i++ )
+	{
+		for( int32_t j = 0; j < iCol; j++ )
 		{
 			int16_t ccData14[9] = { 0x0000, };
 			int16_t ccData16[8] = { 0x0000, };
@@ -2150,17 +2093,15 @@ int32_t CNX_IPCServer::TCON_DotCorrectionExtract( int32_t fd, uint32_t cmd, uint
 
 			//	Print Progress Debugging
 			fprintf( stdout, "> %4d / %4d ( %3d %% )\r",
-				i * 64 + j + 1, 60 * 64,
-				(int)((float)((i * 64) + j + 1) / (float)(64 * 60) * (float)100) );
+				i * iCol + j + 1, iRow * iCol,
+				(int)((float)((i * iCol) + j + 1) / (float)(iCol * iRow) * (float)100) );
 			fflush( stdout );
 		}
 	}
 
 ERROR_TCON:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, pResult, iResultLen, m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = iResultLen;
+	memcpy( pOutBuf, pResult, *iOutSize );
 
 	if( pResult ) free( pResult );
 
@@ -2180,18 +2121,18 @@ ERROR_TCON:
 #define TCON_MODULE_RIGHT		3
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_WhiteSeamRead( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::TCON_WhiteSeamRead( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( iInSize );
 
 	//
-	//	pBuf[0] : index
+	//	pInBuf[0] : index
 	//
 
 	uint8_t result = 0xFF;
-	int32_t sendSize;
 
-	uint8_t index	= pBuf[0];
+	uint8_t index	= pInBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
@@ -2374,27 +2315,25 @@ int32_t CNX_IPCServer::TCON_WhiteSeamRead( int32_t fd, uint32_t cmd, uint8_t *pB
 	result = 0x01;
 
 ERROR_TCON:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_WhiteSeamWrite( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::TCON_WhiteSeamWrite( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( iInSize );
 
 	//
-	//	pBuf[0] : index, pBuf[1:2] : top, pBuf[3:4] : bottom, pBuf[5:6] : left, pBuf[7:8] : right
+	//	pInBuf[0] : index, pInBuf[1:2] : top, pInBuf[3:4] : bottom, pInBuf[5:6] : left, pInBuf[7:8] : right
 	//
 
 	uint8_t result = 0xFF;
-	int32_t sendSize;
 
-	uint8_t index	= pBuf[0];
+	uint8_t index	= pInBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
@@ -2403,7 +2342,7 @@ int32_t CNX_IPCServer::TCON_WhiteSeamWrite( int32_t fd, uint32_t cmd, uint8_t *p
 
 	for( int32_t i = 0; i < 4; i++ )
 	{
-		iSeamValue[i] = ((int16_t)(pBuf[i*2+1] << 8) & 0xFF00) + (int16_t)pBuf[i*2+2];
+		iSeamValue[i] = ((int16_t)(pInBuf[i*2+1] << 8) & 0xFF00) + (int16_t)pInBuf[i*2+2];
 	}
 
 	CNX_I2C i2c( port );
@@ -2649,31 +2588,29 @@ int32_t CNX_IPCServer::TCON_WhiteSeamWrite( int32_t fd, uint32_t cmd, uint8_t *p
 	result = 0x01;
 
 ERROR_TCON:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_OptionalData( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::TCON_OptionalData( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( iInSize );
 
 	//
-	//	pBuf[0] : index, pBuf[1] : module
+	//	pInBuf[0] : index, pInBuf[1] : module
 	//
 
 	uint8_t result[32] = { 0xFF, };
-	int32_t sendSize;
 
-	uint8_t index	= pBuf[0];
+	uint8_t index	= pInBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
-	uint8_t module	= pBuf[1];
+	uint8_t module	= pInBuf[1];
 
 	uint16_t opData[16] = { 0x0000, };
 
@@ -2762,27 +2699,25 @@ int32_t CNX_IPCServer::TCON_OptionalData( int32_t fd, uint32_t cmd, uint8_t *pBu
 	}
 
 ERROR_TCON:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, result, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_SwReset( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::TCON_SwReset( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( iInSize );
 
 	//
-	//	pBuf[0] : index
+	//	pInBuf[0] : index
 	//
 
 	uint8_t result	= 0xFF;
-	int32_t sendSize;
 
-	uint8_t index	= pBuf[0];
+	uint8_t index	= pInBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
@@ -2816,32 +2751,30 @@ int32_t CNX_IPCServer::TCON_SwReset( int32_t fd, uint32_t cmd, uint8_t *pBuf, in
 	result = 0x01;
 
 ERROR_TCON:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_EEPRomRead( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::TCON_EEPRomRead( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( pBuf );
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( pInBuf );
+	UNUSED( iInSize );
 
 	uint8_t result	= 0xFF;
-	int32_t sendSize;
 
 	int32_t iAddr = 0, iReadSize;
 	int32_t iRemainSize;
 
-	uint8_t *pInBuf = (uint8_t*)malloc( TCON_EEPROM_DATA_SIZE );
+	uint8_t *pBuf = (uint8_t*)malloc( TCON_EEPROM_DATA_SIZE );
 	uint8_t *pPtr;
 
 	int32_t iRet;
 	CNX_EEPRom eeprom;
-	CNX_EEPRomDataParser parser;
+	CNX_EEPRomData parser;
 	TCON_EEPROM_INFO *pInfo = NULL;
 	uint8_t version[TCON_EEPROM_MAX_VERSION_SIZE];
 
@@ -2856,7 +2789,7 @@ int32_t CNX_IPCServer::TCON_EEPRomRead( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 		//	1-1. Read EEPROM Data
 		//
 		iAddr       = 0;
-		pPtr        = pInBuf;
+		pPtr        = pBuf;
 		iRemainSize = TCON_EEPROM_VERSION_SIZE;
 
 		while( 0 < iRemainSize )
@@ -2884,7 +2817,7 @@ int32_t CNX_IPCServer::TCON_EEPRomRead( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 		//
 		//	1-2. Parse EEPROM Version.
 		//
-		iRet = parser.Init( pInBuf, TCON_EEPROM_VERSION_SIZE );
+		iRet = parser.Init( pBuf, TCON_EEPROM_VERSION_SIZE );
 		if( 0 > iRet )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Parser Init(). ( iRet = %d )\n", iRet );
@@ -2961,7 +2894,7 @@ int32_t CNX_IPCServer::TCON_EEPRomRead( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 		//	3-1. Read EEPRom Data.
 		//
 		iAddr       = 0;
-		pPtr        = pInBuf;
+		pPtr        = pBuf;
 		iRemainSize = TCON_EEPROM_DATA_SIZE;
 
 		while( 0 < iRemainSize )
@@ -2996,14 +2929,14 @@ int32_t CNX_IPCServer::TCON_EEPRomRead( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 			goto ERROR_TCON;
 		}
 
-		fwrite( pInBuf, 1, TCON_EEPROM_DATA_SIZE, pFile );
+		fwrite( pBuf, 1, TCON_EEPROM_DATA_SIZE, pFile );
 		fclose( pFile );
 		NxDbgMsg( NX_DBG_DEBUG, "Make done. ( %s )\n", TCON_EEPROM_BINARY_FILE );
 
 		//
 		//	3-3. Make T_REG_EEPROM.txt
 		//
-		iRet = parser.Init( pInBuf, TCON_EEPROM_DATA_SIZE );
+		iRet = parser.Init( pBuf, TCON_EEPROM_DATA_SIZE );
 		if( 0 > iRet )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Parser Init(). ( iRet = %d )\n", iRet );
@@ -3033,29 +2966,28 @@ int32_t CNX_IPCServer::TCON_EEPRomRead( int32_t fd, uint32_t cmd, uint8_t *pBuf,
 
 ERROR_TCON:
 	parser.Deinit();
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
 
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_Mute( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::TCON_Mute( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( iInSize );
 
 	//
-	//	pBuf[0] : index, pBuf[1] : data
+	//	pInBuf[0] : index, pInBuf[1] : data
 	//
 	uint8_t result	= 0xFF;
-	int32_t sendSize;
 
-	uint8_t index	= pBuf[0];
+	uint8_t index	= pInBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
-	uint8_t data	= pBuf[1];
+	uint8_t data	= pInBuf[1];
 
 	if( data == 0x00 )
 		WaitTime( 500, __FUNCTION__ );
@@ -3085,32 +3017,30 @@ int32_t CNX_IPCServer::TCON_Mute( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32
 	result = 0x01;
 
 ERROR_TCON:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::TCON_Version( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::TCON_Version( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( iInSize );
 
 	//
-	//	pBuf[0] : index
+	//	pInBuf[0] : index
 	//
 
 	uint8_t result[8] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
-	int32_t sendSize;
 
-	uint8_t index	= pBuf[0];
+	uint8_t index	= pInBuf[0];
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
-	uint8_t msbReg	= pBuf[1];
-	uint8_t lsbReg	= pBuf[2];
+	uint8_t msbReg	= pInBuf[1];
+	uint8_t lsbReg	= pInBuf[2];
 
 	uint16_t inReg	= ((int16_t)(msbReg << 8) & 0xFF00) + (int16_t)lsbReg;
 	int32_t iModeName, iTime;
@@ -3148,10 +3078,8 @@ int32_t CNX_IPCServer::TCON_Version( int32_t fd, uint32_t cmd, uint8_t *pBuf, in
 	result[7] = (uint8_t)((iTime >>  0) & 0xFF);
 
 ERROR_TCON:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, result, *iOutSize );
 
 	return 0;
 }
@@ -3163,24 +3091,24 @@ ERROR_TCON:
 //
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::PFPGA_RegWrite( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::PFPGA_RegWrite( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( iInSize );
 
 	//
-	//	pBuf[0] : msb reg, pBuf[1] : lsb reg, pBuf[2] : msb data, pBuf[3] : lsb data
+	//	pInBuf[0] : msb reg, pInBuf[1] : lsb reg, pInBuf[2] : msb data, pInBuf[3] : lsb data
 	//
 
 	uint8_t	result[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
-	int32_t sendSize;
 
 	int32_t port	= PFPGA_I2C_PORT;
 	uint8_t slave	= PFPGA_I2C_SLAVE;
 
-	uint8_t msbReg	= pBuf[0];
-	uint8_t lsbReg	= pBuf[1];
-	uint8_t msbData	= pBuf[2];
-	uint8_t lsbData	= pBuf[3];
+	uint8_t msbReg	= pInBuf[0];
+	uint8_t lsbReg	= pInBuf[1];
+	uint8_t msbData	= pInBuf[2];
+	uint8_t lsbData	= pInBuf[3];
 
 	uint16_t inReg	= ((int16_t)(msbReg << 8) & 0xFF00) + (int16_t)lsbReg;
 	uint16_t inData	= ((int16_t)(msbData << 8) & 0xFF00) + (int16_t)lsbData;
@@ -3200,7 +3128,7 @@ int32_t CNX_IPCServer::PFPGA_RegWrite( int32_t fd, uint32_t cmd, uint8_t *pBuf, 
 		goto ERROR_PFPGA;
 	}
 
-	NxDbgMsg( NX_DBG_ERR, "Write Data. ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+	NxDbgMsg( NX_DBG_DEBUG, "Write Data. ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, inReg, inData );
 
 	result[0] = 0x00;
@@ -3209,31 +3137,29 @@ int32_t CNX_IPCServer::PFPGA_RegWrite( int32_t fd, uint32_t cmd, uint8_t *pBuf, 
 	result[3] = 0x00;
 
 ERROR_PFPGA:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, result, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::PFPGA_RegRead( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::PFPGA_RegRead( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( iInSize );
 
 	//
-	//	pBuf[0] : msb reg, pBuf[1] : lsb reg
+	//	pInBuf[0] : msb reg, pInBuf[1] : lsb reg
 	//
 
 	uint8_t	result[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
-	int32_t sendSize;
 
 	int32_t port	= PFPGA_I2C_PORT;
 	uint8_t slave	= PFPGA_I2C_SLAVE;
 
-	uint8_t msbReg	= pBuf[0];
-	uint8_t lsbReg	= pBuf[1];
+	uint8_t msbReg	= pInBuf[0];
+	uint8_t lsbReg	= pInBuf[1];
 
 	uint16_t inReg	= ((int16_t)(msbReg << 8) & 0xFF00) + (int16_t)lsbReg;
 	int32_t iReadData;
@@ -3253,7 +3179,7 @@ int32_t CNX_IPCServer::PFPGA_RegRead( int32_t fd, uint32_t cmd, uint8_t *pBuf, i
 		goto ERROR_PFPGA;
 	}
 
-	NxDbgMsg( NX_DBG_ERR, "Read Data. ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+	NxDbgMsg( NX_DBG_DEBUG, "Read Data. ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, inReg, iReadData );
 
 	result[0] = (uint8_t)((iReadData >> 24) & 0xFF);
@@ -3262,50 +3188,44 @@ int32_t CNX_IPCServer::PFPGA_RegRead( int32_t fd, uint32_t cmd, uint8_t *pBuf, i
 	result[3] = (uint8_t)((iReadData >>  0) & 0xFF);
 
 ERROR_PFPGA:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, result, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::PFPGA_RegBurstWrite( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::PFPGA_RegBurstWrite( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( fd );
-	UNUSED( cmd );
-	UNUSED( pBuf );
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( pInBuf );
+	UNUSED( iInSize );
 
 	//
 	//	Not Implemetation
 	//
 
 	uint8_t result = 0xFF;
-	int32_t sendSize;
 
 ERROR_PFPGA:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::PFPGA_Status( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::PFPGA_Status( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( pBuf );
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( pInBuf );
+	UNUSED( iInSize );
 
 	//
-	//	pBuf : not used
+	//	pInBuf : not used
 	//
 
 	uint8_t result = 0xFF;
-	int32_t sendSize;
 
 	int32_t port	= PFPGA_I2C_PORT;
 	uint8_t slave	= PFPGA_I2C_SLAVE;
@@ -3332,29 +3252,28 @@ int32_t CNX_IPCServer::PFPGA_Status( int32_t fd, uint32_t cmd, uint8_t *pBuf, in
 	result = ((PFPGA_VAL_CHECK_STATUS == iReadData) ? 1 : 0);
 
 ERROR_PFPGA:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::PFPGA_UniformityData( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::PFPGA_UniformityData( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
+	UNUSED( iCmd );
+
 	//
-	//	pBuf[0] - : data
+	//	pInBuf[0] - : data
 	//
 
 	uint8_t result = 0xFF;
-	int32_t sendSize;
 
 	int32_t port	= PFPGA_I2C_PORT;
 	uint8_t slave	= PFPGA_I2C_SLAVE;
 
-	uint8_t *data	= pBuf;
-	int32_t size	= iSize;
+	uint8_t *data	= pInBuf;
+	int32_t size	= iInSize;
 
 	int32_t iDataSize = size / 2;
 	uint16_t *pData = (uint16_t*)malloc( sizeof(uint16_t) * iDataSize );
@@ -3410,10 +3329,8 @@ int32_t CNX_IPCServer::PFPGA_UniformityData( int32_t fd, uint32_t cmd, uint8_t *
 	result = 0x01;
 
 ERROR_PFPGA:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
 
 	free( pData );
 
@@ -3421,21 +3338,21 @@ ERROR_PFPGA:
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::PFPGA_Mute( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::PFPGA_Mute( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( iInSize );
 
 	//
-	//	pBuf[0] : data
+	//	pInBuf[0] : data
 	//
 
 	uint8_t result = 0xFF;
-	int32_t sendSize;
 
 	int32_t port	= PFPGA_I2C_PORT;
 	uint8_t slave	= PFPGA_I2C_SLAVE;
 
-	uint8_t data	= pBuf[0];
+	uint8_t data	= pInBuf[0];
 
 	if( data == 0x00 )
 		WaitTime( 400, __FUNCTION__ );
@@ -3464,26 +3381,24 @@ int32_t CNX_IPCServer::PFPGA_Mute( int32_t fd, uint32_t cmd, uint8_t *pBuf, int3
 	result = 0x01;
 
 ERROR_PFPGA:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::PFPGA_Version( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::PFPGA_Version( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( pBuf );
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( pInBuf );
+	UNUSED( iInSize );
 
 	//
-	//	pBuf : not used
+	//	pInBuf : not used
 	//
 
 	uint8_t result[8] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
-	int32_t sendSize;
 
 	int32_t port	= PFPGA_I2C_PORT;
 	uint8_t slave	= PFPGA_I2C_SLAVE;
@@ -3524,10 +3439,8 @@ int32_t CNX_IPCServer::PFPGA_Version( int32_t fd, uint32_t cmd, uint8_t *pBuf, i
 	result[7] = (uint8_t)((iReadMinor >>  0) & 0xFF);
 
 ERROR_PFPGA:
-	sendSize = IPC_MakePacket( SEC_KEY_VALUE, cmd, result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sendSize );
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, result, *iOutSize );
 
 	return 0;
 }
@@ -3539,252 +3452,93 @@ ERROR_PFPGA:
 //
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::PLAT_NapVersion( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::PLAT_NapVersion( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( pBuf );
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( pInBuf );
+	UNUSED( iInSize );
 
 	//
-	// pBuf : not used
+	// pInBuf : not used
 	//
 
-	int32_t sendSize = IPC_MakePacket ( SEC_KEY_VALUE, cmd, m_NapVersion, strlen((const char*)m_NapVersion), m_SendBuf, sizeof(m_SendBuf) );
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sent );
+	*iOutSize = strlen((const char*)m_NapVersion);
+	memcpy( pOutBuf, m_NapVersion, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::PLAT_SapVersion( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::PLAT_SapVersion( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( pBuf );
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( pInBuf );
+	UNUSED( iInSize );
 
 	//
-	// pBuf : not used
+	// pInBuf : not used
 	//
 
-	int32_t sendSize = IPC_MakePacket ( SEC_KEY_VALUE, cmd, m_SapVersion, strlen((const char*)m_SapVersion), m_SendBuf, sizeof(m_SendBuf) );
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sent );
+	*iOutSize = strlen((const char*)m_SapVersion);
+	memcpy( pOutBuf, m_SapVersion, *iOutSize );
 
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_IPCServer::PLAT_IpcVersion( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
+int32_t CNX_CinemaManager::PLAT_IpcVersion( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	UNUSED( pBuf );
-	UNUSED( iSize );
+	UNUSED( iCmd );
+	UNUSED( pInBuf );
+	UNUSED( iInSize );
 
 	//
-	// pBuf : not used
+	// pInBuf : not used
 	//
 
-	int32_t sendSize = IPC_MakePacket ( SEC_KEY_VALUE, cmd, m_IpcVersion, strlen((const char*)m_IpcVersion), m_SendBuf, sizeof(m_SendBuf) );
-	write( fd, m_SendBuf, sendSize );
-	// NX_HexDump( m_SendBuf, sent );
+	*iOutSize = strlen((const char*)m_IpcVersion);
+	memcpy( pOutBuf, m_IpcVersion, *iOutSize );
+
 	return 0;
 }
 
 //------------------------------------------------------------------------------
-// int32_t CNX_IPCServer::IMB_ChangeContents( int32_t fd, uint32_t cmd, uint8_t *pBuf, int32_t iSize )
-// {
-// 	UNUSED( iSize );
-// #if 0
-// 	//
-// 	//	pBuf[0] : color format,	pBuf[1] : Bit number,	pBuf[2] : Resolution, 	pBuf[3:4] : Frame rate,
-// 	//	pBuf[5] : Gamma curve,	pBuf[6:7] : Brightness,	pBuf[8] : Enhancement setting
-// 	//
-
-// 	uint8_t result	= 0xFF;
-// 	int32_t sendSize;
-
-// 	uint16_t iColorFormat	= (uint16_t)pBuf[0];
-// 	uint16_t iBitNumber		= (uint16_t)pBuf[1];
-// 	uint16_t iResolution	= (uint16_t)pBuf[2];
-// 	uint16_t iFrameRate		= ((int16_t)(pBuf[3] << 8) & 0xFF00) + (int16_t)pBuf[4];
-// 	uint16_t iGammaCurve	= (uint16_t)pBuf[5];
-// 	uint16_t iBrightness	= ((int16_t)(pBuf[6] << 8) & 0xFF00) + (int16_t)pBuf[7];
-// 	uint16_t iEnhancement	= (uint16_t)pBuf[8];
-
-// 	printf(">> iColorFormat	= %5d ( 0x%04x )\n", iColorFormat, iColorFormat );
-// 	printf(">> iBitNumber	= %5d ( 0x%04x )\n", iBitNumber, iBitNumber );
-// 	printf(">> iResolution	= %5d ( 0x%04x )\n", iResolution, iResolution );
-// 	printf(">> iFrameRate	= %5d ( 0x%04x )\n", iFrameRate, iFrameRate );
-// 	printf(">> iGammaCurve	= %5d ( 0x%04x )\n", iGammaCurve, iGammaCurve );
-// 	printf(">> iBrightness	= %5d ( 0x%04x )\n", iBrightness, iBrightness );
-// 	printf(">> iEnhancement	= %5d ( 0x%04x )\n", iEnhancement, iEnhancement );
-
-// 	result = 0x01;
-// #else
-// 	uint8_t result = 0xFF;
-// 	int32_t sendSize;
-
-// 	printf(">> receive data : 0x%02x\n", pBuf[0]);
-
-// 	if( pBuf[0] == 0x00 || pBuf[0] == 0x01 )
-// 	{
-// 		if( !SendRemote( "cinema.change.contents", (pBuf[0] == 0x00) ? "0" : "1" ) )
-// 		{
-// 			result = 0x01;
-// 		}
-// 	}
-// #endif
-// ERROR_RESERVED:
-// 	sendSize = IPC_MakePacket ( SEC_KEY_VALUE, cmd, &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-// 	write( fd, m_SendBuf, sendSize );
-// 	// NX_HexDump( m_SendBuf, sent );
-
-// 	return 0;
-// }
-
-//------------------------------------------------------------------------------
-int32_t CNX_IPCServer::ProcessCommand( int32_t fd, uint32_t cmd, void *pPayload, int32_t payloadSize )
+int32_t CNX_CinemaManager::PLAT_TmsVersion( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
-	// printf("cmd( 0x%04X ), payload( %p ), size( %d )\n", cmd, pPayload, payloadSize);
+	UNUSED( iCmd );
+	UNUSED( pInBuf );
+	UNUSED( iInSize );
 
-	switch( cmd )
-	{
-	//
-	//	TCON Commands
-	//
-	case TCON_CMD_REG_WRITE:
-		return TCON_RegWrite( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case TCON_CMD_REG_READ:
-		return TCON_RegRead( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case TCON_CMD_REG_BURST_WRITE:
-		return TCON_RegBurstWrite( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case TCON_CMD_INIT:
-		return TCON_Init( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case TCON_CMD_STATUS:
-		return TCON_Status( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case TCON_CMD_DOOR_STATUS:
-		return TCON_DoorStatus( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case TCON_CMD_LVDS_STATUS:
-		return TCON_LvdsStatus( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case TCON_CMD_BOOTING_STATUS:
-		return TCON_BootingStatus( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case TCON_CMD_MODE_NORMAL:
-		return TCON_LedModeNormal( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case TCON_CMD_MODE_LOD:
-		return TCON_LedModeLod( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case TCON_CMD_OPEN_NUM:
-		return TCON_LedOpenNum( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case TCON_CMD_OPEN_POS:
-		return TCON_LedOpenPos( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case TCON_CMD_PATTERN_RUN:
-	case TCON_CMD_PATTERN_STOP:
-		return TCON_TestPattern( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case TCON_CMD_TGAM_R:
-	case TCON_CMD_TGAM_G:
-	case TCON_CMD_TGAM_B:
-		return TCON_TargetGamma( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case TCON_CMD_DGAM_R:
-	case TCON_CMD_DGAM_G:
-	case TCON_CMD_DGAM_B:
-		return TCON_DeviceGamma( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case TCON_CMD_DOT_CORRECTION:
-		return TCON_DotCorrection( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case TCON_CMD_DOT_CORRECTION_EXTRACT:
-		return TCON_DotCorrectionExtract( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case TCON_CMD_WHITE_SEAM_READ:
-		return TCON_WhiteSeamRead( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case TCON_CMD_WHITE_SEAM_WRITE:
-		return TCON_WhiteSeamWrite( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case TCON_CMD_ELAPSED_TIME:
-	case TCON_CMD_ACCUMULATE_TIME:
-		return TCON_OptionalData( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case TCON_CMD_SW_RESET:
-		return TCON_SwReset( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case TCON_CMD_EEPROM_READ:
-		return TCON_EEPRomRead( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case TCON_CMD_MUTE:
-		return TCON_Mute( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case TCON_CMD_VERSION:
-		return TCON_Version( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	//
-	//	PFPGA Commands
-	//
-	case PFPGA_CMD_REG_WRITE:
-	case GDC_COMMAND( CMD_TYPE_PFPGA, PFPGA_CMD_REG_WRITE ):
-		return PFPGA_RegWrite( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case PFPGA_CMD_REG_READ:
-	case GDC_COMMAND( CMD_TYPE_PFPGA, PFPGA_CMD_REG_READ ):
-		return PFPGA_RegRead( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case PFPGA_CMD_STATUS:
-	case GDC_COMMAND( CMD_TYPE_PFPGA, PFPGA_CMD_STATUS ):
-		return PFPGA_Status( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case PFPGA_CMD_MUTE:
-	case GDC_COMMAND( CMD_TYPE_PFPGA, PFPGA_CMD_MUTE ):
-		return PFPGA_Mute( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case PFPGA_CMD_UNIFORMITY_DATA:
-	case GDC_COMMAND( CMD_TYPE_PFPGA, PFPGA_CMD_UNIFORMITY_DATA ):
-		return PFPGA_UniformityData( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case PFPGA_CMD_VERSION:
-	case GDC_COMMAND( CMD_TYPE_PFPGA, PFPGA_CMD_VERSION ):
-		return PFPGA_Version( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	//
-	//	Platform Commands
-	//
-	case PLATFORM_CMD_NAP_VERSION:
-	case GDC_COMMAND( CMD_TYPE_PLATFORM, PLATFORM_CMD_NAP_VERSION ):
-		return PLAT_NapVersion( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case PLATFORM_CMD_SAP_VERSION:
-	case GDC_COMMAND( CMD_TYPE_PLATFORM, PLATFORM_CMD_SAP_VERSION ):
-		return PLAT_SapVersion( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	case PLATFORM_CMD_IPC_SERVER_VERSION:
-	case GDC_COMMAND( CMD_TYPE_PLATFORM, PLATFORM_CMD_IPC_SERVER_VERSION ):
-		return PLAT_IpcVersion( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	//
-	//	IMB Commands
-	//
-	// case IMB_CMD_CHANGE_CONTENTS:
-	// case GDC_COMMAND( CMD_TYPE_IMB, IMB_CMD_CHANGE_CONTENTS ):
-	// 	return IMB_ChangeContents( fd, cmd, (uint8_t*)pPayload, payloadSize );
-
-	default:
-		return -1;
-	}
+	*iOutSize = strlen((const char*)m_TmsVersion);
+	memcpy( pOutBuf, m_TmsVersion, *iOutSize );
 
 	return 0;
 }
 
+//------------------------------------------------------------------------------
+int32_t CNX_CinemaManager::PLAT_ScreenType( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
+{
+	UNUSED( iCmd );
+	UNUSED( pInBuf );
+	UNUSED( iInSize );
+
+	uint8_t result;
+
+#if NX_ENABLE_CHECK_SCREEN_BOOT
+	result = m_iScreenType;
+#else
+	result = m_iScreenType = CheckScreenType();
+#endif
+
+	NxDbgMsg( NX_DBG_INFO, ">>> %s(): ScreenType( %s )\n",
+		__FUNCTION__, (result == SCREEN_TYPE_P33) ? "P3.3" : "P2.5" );
+
+ERROR_PLAT:
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
+
+	return 0;
+}
 
 //------------------------------------------------------------------------------
 //
@@ -3792,9 +3546,9 @@ int32_t CNX_IPCServer::ProcessCommand( int32_t fd, uint32_t cmd, void *pPayload,
 //
 
 //------------------------------------------------------------------------------
-static int32_t TestPatternDci( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
+int32_t CNX_CinemaManager::TestPatternDci( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
 {
-	const uint16_t patternData[][8] = {
+	const uint16_t PatternDataP25[][8] = {
 		//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
 		{	10,		0,		1024,	0,		2160,	2901,	2171,	100		},	//	Red-1
 		{	10,		0,		1024,	0,		2160,	2417,	3493,	1222	},	//	Green-1
@@ -3813,8 +3567,30 @@ static int32_t TestPatternDci( CNX_I2C *pI2c, uint8_t index, uint8_t patternInde
 		{	10,		0,		1024,	0,		2160,	3893,	3960,	3838	},	//	White-3
 	};
 
-	const uint16_t *pData = patternData[patternIndex];
-	int32_t iDataNum = (int32_t)(sizeof(patternData[0]) / sizeof(patternData[0][0]));
+	const uint16_t PatternDataP33[][8] = {
+		//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
+		{	10,		0,		1056,	0,		2160,	2901,	2171,	100		},	//	Red-1
+		{	10,		0,		1056,	0,		2160,	2417,	3493,	1222	},	//	Green-1
+		{	10,		0,		1056,	0,		2160,	2014,	1416,	3816	},	//	Blue-1
+		{	10,		0,		1056,	0,		2160,	2911,	3618,	3890	},	//	Cyan-1
+		{	10,		0,		1056,	0,		2160,	3289,	2421,	3814	},	//	Magenta-1
+		{	10,		0,		1056,	0,		2160,	3494,	3853,	1221	},	//	Yellow-1
+		{	10,		0,		1056,	0,		2160,	2738,	2171,	1233	},	//	Red-2
+		{	10,		0,		1056,	0,		2160,	2767,	3493,	2325	},	//	Green-2
+		{	10,		0,		1056,	0,		2160,	1800,	1416,	3203	},	//	Blue-2
+		{	10,		0,		1056,	0,		2160,	3085,	3590,	3756	},	//	Cyan-2
+		{	10,		0,		1056,	0,		2160,	3062,	2421,	3497	},	//	Magenta-2
+		{	10,		0,		1056,	0,		2160,	3461,	3777,	2065	},	//	Yellow-2
+		{	10,		0,		1056,	0,		2160,	3883,	3960,	4092	},	//	White-1
+		{	10,		0,		1056,	0,		2160,	3794,	3960,	3890	},	//	White-2
+		{	10,		0,		1056,	0,		2160,	3893,	3960,	3838	},	//	White-3
+	};
+
+	const uint16_t (*pPatternData)[8] =
+		(m_iScreenType == SCREEN_TYPE_P33) ? PatternDataP33 : PatternDataP25;
+
+	const uint16_t *pData = pPatternData[patternIndex];
+	int32_t iDataNum = (int32_t)(sizeof(PatternDataP25[0]) / sizeof(PatternDataP25[0][0]));
 
 	if( 0 > pI2c->Write( index & 0x7F, TCON_REG_XYZ_TO_RGB, 0x0001 ) )
 	{
@@ -3858,15 +3634,23 @@ static int32_t TestPatternDci( CNX_I2C *pI2c, uint8_t index, uint8_t patternInde
 }
 
 //------------------------------------------------------------------------------
-static int32_t TestPatternColorBar( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
+int32_t CNX_CinemaManager::TestPatternColorBar( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
 {
-	const uint16_t patternData[][8] = {
+	const uint16_t PatternDataP25[][8] = {
 		//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
 		{	1,		0,		1024,	0,		2160,	4095,	4095,	4095	},	// 6 Color Bar
 	};
 
-	const uint16_t *pData = patternData[patternIndex];
-	int32_t iDataNum = (int32_t)(sizeof(patternData[0]) / sizeof(patternData[0][0]));
+	const uint16_t PatternDataP33[][8] = {
+		//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
+		{	1,		0,		1056,	0,		2160,	4095,	4095,	4095	},	// 6 Color Bar
+	};
+
+	const uint16_t (*pPatternData)[8] =
+		(m_iScreenType == SCREEN_TYPE_P33) ? PatternDataP33 : PatternDataP25;
+
+	const uint16_t *pData = pPatternData[patternIndex];
+	int32_t iDataNum = (int32_t)(sizeof(PatternDataP25[0]) / sizeof(PatternDataP25[0][0]));
 
 	if( 0 > pI2c->Write( index & 0x7F, TCON_REG_XYZ_TO_RGB, 0x0000 ) )
 	{
@@ -3910,9 +3694,9 @@ static int32_t TestPatternColorBar( CNX_I2C *pI2c, uint8_t index, uint8_t patter
 }
 
 //------------------------------------------------------------------------------
-static int32_t TestPatternFullScreenColor( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
+int32_t CNX_CinemaManager::TestPatternFullScreenColor( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
 {
-	const uint16_t patternData[][8] = {
+	const uint16_t PatternDataP25[][8] = {
 		//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
 		{	10,		0,		1024,	0,		2160,	4095,	4095,	4095	},	//	White	100%
 		{	10,		0,		1024,	0,		2160,	3685,	3685,	3685	},	//	Gray	90%
@@ -3933,8 +3717,32 @@ static int32_t TestPatternFullScreenColor( CNX_I2C *pI2c, uint8_t index, uint8_t
 		{	10,		0,		1024,	0,		2160,	4095,	4095,	0		},	//	Yellow 	00%
 	};
 
-	const uint16_t *pData = patternData[patternIndex];
-	int32_t iDataNum = (int32_t)(sizeof(patternData[0]) / sizeof(patternData[0][0]));
+	const uint16_t PatternDataP33[][8] = {
+		//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
+		{	10,		0,		1056,	0,		2160,	4095,	4095,	4095	},	//	White	100%
+		{	10,		0,		1056,	0,		2160,	3685,	3685,	3685	},	//	Gray	90%
+		{	10,		0,		1056,	0,		2160,	3276,	2948,	2948	},	//	Gray	80%
+		{	10,		0,		1056,	0,		2160,	2866,	2866,	2866	},	//	Gray	70%
+		{	10,		0,		1056,	0,		2160,	2457,	2457,	2457	},	//	Gray	60%
+		{	10,		0,		1056,	0,		2160,	2047,	2047,	2047	},	//	Gray	50%
+		{	10,		0,		1056,	0,		2160,	1638,	1638,	1638	},	//	Gray	40%
+		{	10,		0,		1056,	0,		2160,	1228,	1228,	1228	},	//	Gray	30%
+		{	10,		0,		1056,	0,		2160,	819,	819,	819		},	//	Gray	20%
+		{	10,		0,		1056,	0,		2160,	409,	409,	409		},	//	Gray	1c0%
+		{	10,		0,		1056,	0,		2160,	0,		0,		0		},	//	Black	0%
+		{	10,		0,		1056,	0,		2160,	4095,	0,		0		},	//	Red		100%
+		{	10,		0,		1056,	0,		2160,	0,		4095,	0		},	//	Green	100%
+		{	10,		0,		1056,	0,		2160,	0,		0,		4095	},	//	Blue	100%
+		{	10,		0,		1056,	0,		2160,	4095,	0,		4095	},	//	Magenta	100%
+		{	10,		0,		1056,	0,		2160,	0,		4095,	4095	},	//	Cyan	100%
+		{	10,		0,		1056,	0,		2160,	4095,	4095,	0		},	//	Yellow 	00%
+	};
+
+	const uint16_t (*pPatternData)[8] =
+		(m_iScreenType == SCREEN_TYPE_P33) ? PatternDataP33 : PatternDataP25;
+
+	const uint16_t *pData = pPatternData[patternIndex];
+	int32_t iDataNum = (int32_t)(sizeof(PatternDataP25[0]) / sizeof(PatternDataP25[0][0]));
 
 	if( 0 > pI2c->Write( index & 0x7F, TCON_REG_XYZ_TO_RGB, 0x0000 ) )
 	{
@@ -3978,9 +3786,9 @@ static int32_t TestPatternFullScreenColor( CNX_I2C *pI2c, uint8_t index, uint8_t
 }
 
 //------------------------------------------------------------------------------
-static int32_t TestPatternGrayScale( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
+int32_t CNX_CinemaManager::TestPatternGrayScale( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
 {
-	const uint16_t patternData[][8] = {
+	const uint16_t PatternDataP25[][8] = {
 		//	0x24	0x25	0x26	0x27	0x28
 		{	2,		0,		1024,	0,		2160	},							//	Gray 16-Step
 		{	3,		0,		1024,	0,		2160	},							//	Gray 32-Step
@@ -3994,8 +3802,25 @@ static int32_t TestPatternGrayScale( CNX_I2C *pI2c, uint8_t index, uint8_t patte
 		{	9,		4,		1024,	0,		2160	},							//	Blue 2048-Step
 	};
 
-	const uint16_t *pData = patternData[patternIndex];
-	int32_t iDataNum = (int32_t)(sizeof(patternData[0]) / sizeof(patternData[0][0]));
+	const uint16_t PatternDataP33[][8] = {
+		//	0x24	0x25	0x26	0x27	0x28
+		{	2,		0,		1056,	0,		2160	},							//	Gray 16-Step
+		{	3,		0,		1056,	0,		2160	},							//	Gray 32-Step
+		{	4,		0,		1056,	0,		2160	},							//	Gray 64-Step
+		{	5,		0,		1056,	0,		2160	},							//	Gray 128-Step
+		{	6,		0,		1056,	0,		2160	},							//	Gray 256-Step
+		{	7,		0,		1056,	0,		2160	},							//	Gray 512-Step
+		{	9,		7,		1056,	0,		2160	},							//	Gray 2048-Step
+		{	9,		1,		1056,	0,		2160	},							//	Red 2048-Step
+		{	9,		2,		1056,	0,		2160	},							//	Green 2048-Step
+		{	9,		4,		1056,	0,		2160	},							//	Blue 2048-Step
+	};
+
+	const uint16_t (*pPatternData)[8] =
+		(m_iScreenType == SCREEN_TYPE_P33) ? PatternDataP33 : PatternDataP25;
+
+	const uint16_t *pData = pPatternData[patternIndex];
+	int32_t iDataNum = (int32_t)(sizeof(PatternDataP25[0]) / sizeof(PatternDataP25[0][0]));
 
 	if( 0 > pI2c->Write( index & 0x7F, TCON_REG_XYZ_TO_RGB, 0x0000 ) )
 	{
@@ -4039,15 +3864,23 @@ static int32_t TestPatternGrayScale( CNX_I2C *pI2c, uint8_t index, uint8_t patte
 }
 
 //------------------------------------------------------------------------------
-static int32_t TestPatternDot( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
+int32_t CNX_CinemaManager::TestPatternDot( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
 {
-	const uint16_t patternData[][8] = {
+	const uint16_t PatternDataP25[][8] = {
 		//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
 		{	17,		0,		1024,	0,		2160,	4095,	4095,	4095	},	//	Dot Pattern 1x1
 	};
 
-	const uint16_t *pData = patternData[patternIndex];
-	int32_t iDataNum = (int32_t)(sizeof(patternData[0]) / sizeof(patternData[0][0]));
+	const uint16_t PatternDataP33[][8] = {
+		//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
+		{	17,		0,		1056,	0,		2160,	4095,	4095,	4095	},	//	Dot Pattern 1x1
+	};
+
+	const uint16_t (*pPatternData)[8] =
+		(m_iScreenType == SCREEN_TYPE_P33) ? PatternDataP33 : PatternDataP25;
+
+	const uint16_t *pData = pPatternData[patternIndex];
+	int32_t iDataNum = (int32_t)(sizeof(PatternDataP25[0]) / sizeof(PatternDataP25[0][0]));
 
 	if( 0 > pI2c->Write( index & 0x7F, TCON_REG_XYZ_TO_RGB, 0x0000 ) )
 	{
@@ -4091,16 +3924,25 @@ static int32_t TestPatternDot( CNX_I2C *pI2c, uint8_t index, uint8_t patternInde
 }
 
 //------------------------------------------------------------------------------
-static int32_t TestPatternDiagonal( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
+int32_t CNX_CinemaManager::TestPatternDiagonal( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
 {
-	const uint16_t patternData[][8] = {
+	const uint16_t PatternDataP25[][8] = {
 		//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
 		{	104,	0,		1024,	0,		2160,	65535,	65535,	65535	},	//	Right-Down
 		{	105,	0,		1024,	0,		2160,	65535,	65535,	65535	},	//	Right-Up
 	};
 
-	const uint16_t *pData = patternData[patternIndex];
-	int32_t iDataNum = (int32_t)(sizeof(patternData[0]) / sizeof(patternData[0][0]));
+	const uint16_t PatternDataP33[][8] = {
+		//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
+		{	104,	0,		1056,	0,		2160,	65535,	65535,	65535	},	//	Right-Down
+		{	105,	0,		1056,	0,		2160,	65535,	65535,	65535	},	//	Right-Up
+	};
+
+	const uint16_t (*pPatternData)[8] =
+		(m_iScreenType == SCREEN_TYPE_P33) ? PatternDataP33 : PatternDataP25;
+
+	const uint16_t *pData = pPatternData[patternIndex];
+	int32_t iDataNum = (int32_t)(sizeof(PatternDataP25[0]) / sizeof(PatternDataP25[0][0]));
 
 	if( 0 > pI2c->Write( index & 0x7F, TCON_REG_XYZ_TO_RGB, 0x0000 ) )
 	{
@@ -4143,8 +3985,186 @@ static int32_t TestPatternDiagonal( CNX_I2C *pI2c, uint8_t index, uint8_t patter
 	return 0;
 }
 
+
 //------------------------------------------------------------------------------
-static void MakeDirectory( const char *pDir )
+//
+//	Various Functions
+//
+
+//------------------------------------------------------------------------------
+int32_t CNX_CinemaManager::CheckScreenType()
+{
+	int32_t iScreenType = SCREEN_TYPE_P25;
+
+	int32_t iDefScreenSel;
+	int32_t iExpectScreenPitch = -1;
+	int32_t iScreenInfo = -1;
+	int32_t bMissmatch = false;
+
+	{
+		CNX_I2C i2c_2( PFPGA_I2C_PORT );
+
+		if( 0 > i2c_2.Open() )
+		{
+			NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", PFPGA_I2C_PORT );
+			goto ERROR_I2C;
+		}
+
+		if( 0 > (iDefScreenSel = i2c_2.Read( PFPGA_I2C_SLAVE, PFPGA_REG_PF_SCREEN_SEL ) ) )
+		{
+			NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
+				PFPGA_I2C_PORT, PFPGA_I2C_SLAVE, PFPGA_REG_PF_SCREEN_SEL );
+			goto ERROR_I2C;
+		}
+
+		if( 0 > i2c_2.Write( PFPGA_I2C_SLAVE, PFPGA_REG_PF_SCREEN_SEL, 0x0003) )
+		{
+			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+				PFPGA_I2C_PORT, PFPGA_I2C_SLAVE, PFPGA_REG_PF_SCREEN_SEL, 0x0003 );
+			goto ERROR_I2C;
+		}
+	}
+
+	{
+		for( int32_t j = 0; j < 2; j++ )
+		{
+			CNX_I2C i2c_2( PFPGA_I2C_PORT );
+
+			if( 0 > i2c_2.Open() )
+			{
+				NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", PFPGA_I2C_PORT );
+				goto ERROR_I2C;
+			}
+
+			if( 0 > i2c_2.Write( PFPGA_I2C_SLAVE, PFPGA_REG_PF_MODEL, j ) )
+			{
+				NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+					PFPGA_I2C_PORT, PFPGA_I2C_SLAVE, PFPGA_REG_PF_MODEL, j );
+				goto ERROR_I2C;
+			}
+
+#if NX_ENABLE_CHECK_SCREEN_DELAY
+			NxDbgMsg( NX_DBG_DEBUG, ">>> Expected Model : %s\n", j ? "P3.3" : "P2.5" );
+			WaitTime(500, __FUNCTION__);
+#endif
+
+			for( int32_t i = 0; i < 255; i++ )
+			{
+				if( (i & 0x7F) < 0x10 )
+					continue;
+
+				int32_t port  = (i & 0x80) >> 7;
+				uint8_t slave = (i & 0x7F);
+				int32_t iReadData;
+				int32_t iScreenPitch;
+
+				CNX_I2C i2c( port );
+
+				if( 0 > i2c.Open() )
+				{
+					NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
+					goto ERROR_I2C;
+				}
+
+				if( 0 > (iReadData = i2c.Read( slave, TCON_REG_PITCH_INFO ) ) )
+				{
+					continue;
+				}
+
+				NxDbgMsg( NX_DBG_DEBUG, "Detected. ( i2c-%d, slave: 0x%02x, model: %d )\n", port, slave, j );
+
+				iScreenInfo = iReadData;
+				iScreenPitch = iReadData / 1000;
+
+#if NX_ENABLE_CHECK_SCREEN_ALL
+				if( 0 > iExpectScreenPitch )
+					iExpectScreenPitch = iScreenPitch;
+
+				if( iExpectScreenPitch != iScreenPitch )
+				{
+					NxDbgMsg( NX_DBG_WARN, "Warn, Missmatch ScreenType. ( i2c-%d, slave: 0x%02x, data: %d, expected: %dxxx )\n",
+						port, slave, iReadData, iExpectScreenPitch );
+
+					bMissmatch = true;
+				}
+#else
+				iExpectScreenPitch = iScreenPitch;
+				break;
+#endif
+			}
+
+#if NX_ENABLE_CHECK_SCREEN_ALL
+#else
+			if( 0 <= iExpectScreenPitch )
+				break;
+#endif
+		}
+	}
+
+	{
+		NxDbgMsg( NX_DBG_INFO, ">>> ScreenInfo( %d ), ScreenPitch( %d ), bMissmatch( %d )\n",
+			iScreenInfo, iExpectScreenPitch, bMissmatch );
+	}
+
+	{
+		CNX_I2C i2c_2( PFPGA_I2C_PORT );
+		if( 0 > i2c_2.Open() )
+		{
+			NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", PFPGA_I2C_PORT );
+			goto ERROR_I2C;
+		}
+
+		if( bMissmatch == true || 0 > iExpectScreenPitch )
+		{
+			NxDbgMsg( NX_DBG_WARN, ">>> Unknown ScreenType. --> Set Default ScreenType P2.5\n" );
+
+			if( 0 > i2c_2.Write( PFPGA_I2C_SLAVE, PFPGA_REG_PF_MODEL, 0x0000) )
+			{
+				NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+					PFPGA_I2C_PORT, PFPGA_I2C_SLAVE, PFPGA_REG_PF_MODEL, 0x0000 );
+				goto ERROR_I2C;
+			}
+
+			if( 0 > i2c_2.Write( PFPGA_I2C_SLAVE, PFPGA_REG_PF_SCREEN_SEL, iDefScreenSel) )
+			{
+				NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+					PFPGA_I2C_PORT, PFPGA_I2C_SLAVE, PFPGA_REG_PF_SCREEN_SEL, iDefScreenSel );
+				goto ERROR_I2C;
+			}
+
+			iScreenType = SCREEN_TYPE_P25;
+		}
+		else
+		{
+			NxDbgMsg( NX_DBG_WARN, ">>> ScreenType is %s ( %d )\n", (iExpectScreenPitch == 33) ? "P3.3" : "P2.5", iExpectScreenPitch );
+
+			if( 0 > i2c_2.Write( PFPGA_I2C_SLAVE, PFPGA_REG_PF_MODEL, (iExpectScreenPitch == 33) ? 0x0001 : 0x0000) )
+			{
+				NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+					PFPGA_I2C_PORT, PFPGA_I2C_SLAVE, PFPGA_REG_PF_MODEL, (iExpectScreenPitch == 33) ? 0x0001 : 0x0000 );
+				goto ERROR_I2C;
+			}
+
+			if( 0 > i2c_2.Write( PFPGA_I2C_SLAVE, PFPGA_REG_PF_SCREEN_SEL, (iExpectScreenPitch == 33) ? 0x0003 : iDefScreenSel) )
+			{
+				NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
+					PFPGA_I2C_PORT, PFPGA_I2C_SLAVE, PFPGA_REG_PF_SCREEN_SEL, (iExpectScreenPitch == 33) ? 0x0003 : iDefScreenSel );
+				goto ERROR_I2C;
+			}
+
+			iScreenType = (iExpectScreenPitch == 33) ? SCREEN_TYPE_P33 : SCREEN_TYPE_P25;
+		}
+	}
+
+	return iScreenType;
+
+ERROR_I2C:
+	NxDbgMsg( NX_DBG_WARN, ">>> Unknown ScreenType. ( reason: i2c fail ) --> Set Default ScreenType P2.5\n" );
+	return SCREEN_TYPE_P25;
+}
+
+//------------------------------------------------------------------------------
+void CNX_CinemaManager::MakeDirectory( const char *pDir )
 {
 	char buf[1024];
 	char *pBuf = buf;
@@ -4175,7 +4195,7 @@ static void MakeDirectory( const char *pDir )
 }
 
 //------------------------------------------------------------------------------
-static void WaitTime( uint64_t iWaitTime, const char *pMsg )
+void CNX_CinemaManager::WaitTime( uint64_t iWaitTime, const char *pMsg )
 {
 	uint64_t iCurTime = NX_GetTickCount();
 	uint64_t iTimeout = iCurTime + iWaitTime;
@@ -4212,60 +4232,29 @@ static void WaitTime( uint64_t iWaitTime, const char *pMsg )
 }
 
 //------------------------------------------------------------------------------
-//
-//	For Singleton
-//
+CNX_CinemaManager*	CNX_CinemaManager::m_pstInstance = NULL;
+CNX_Mutex			CNX_CinemaManager::m_hInstanceLock;
 
-//------------------------------------------------------------------------------
-CNX_IPCServer* CNX_IPCServer::GetInstance( )
+CNX_CinemaManager* CNX_CinemaManager::GetInstance( void )
 {
-	if( NULL == m_psInstance )
+	CNX_AutoLock lock( &CNX_CinemaManager::m_hInstanceLock );
+
+	if( NULL == m_pstInstance )
 	{
-		m_psInstance = new CNX_IPCServer();
+		m_pstInstance = new CNX_CinemaManager();
 	}
-	return (CNX_IPCServer*)m_psInstance;
+
+	return m_pstInstance;
 }
 
 //------------------------------------------------------------------------------
-void CNX_IPCServer::ReleaseInstance( )
+void CNX_CinemaManager::ReleaseInstance( void )
 {
-	if( NULL != m_psInstance )
+	CNX_AutoLock lock( &CNX_CinemaManager::m_hInstanceLock );
+
+	if( m_pstInstance )
 	{
-		delete m_psInstance;
+		delete m_pstInstance;
+		m_pstInstance = NULL;
 	}
-	m_psInstance = NULL;
-}
-
-
-//------------------------------------------------------------------------------
-//
-//	External APIs
-//
-
-//------------------------------------------------------------------------------
-int32_t NX_IPCServerStart()
-{
-	CNX_IPCServer *hIpc = CNX_IPCServer::GetInstance();
-	return hIpc->StartServer();
-}
-
-//------------------------------------------------------------------------------
-void NX_IPCServerStop()
-{
-	CNX_IPCServer *hIpc = CNX_IPCServer::GetInstance();
-	hIpc->StopServer();
-}
-
-//------------------------------------------------------------------------------
-void NX_SetNapVersion( uint8_t *pVersion, int32_t iSize )
-{
-	CNX_IPCServer *hIpc = CNX_IPCServer::GetInstance();
-	hIpc->SetNapVersion( pVersion, iSize );
-}
-
-//------------------------------------------------------------------------------
-void NX_SetSapVersion( uint8_t *pVersion, int32_t iSize )
-{
-	CNX_IPCServer *hIpc = CNX_IPCServer::GetInstance();
-	hIpc->SetSapVersion( pVersion, iSize );
 }

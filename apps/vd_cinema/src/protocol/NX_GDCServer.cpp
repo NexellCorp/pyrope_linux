@@ -26,7 +26,7 @@
 #include <sys/un.h>
 #include <errno.h>
 
-#include <CNX_BaseClass.h>
+#include <CNX_Base.h>
 #include <CNX_OpenSSL.h>
 #include <gdc_protocol.h>
 #include <SockUtils.h>
@@ -36,7 +36,7 @@
 #define NX_DTAG	"[GDC Server]"
 #include <NX_DbgMsg.h>
 
-#define MAX_TIMEOUT			10000
+#define MAX_TIMEOUT			3000
 #define MAX_PAYLOAD_SIZE	65535
 
 //------------------------------------------------------------------------------
@@ -204,16 +204,16 @@ void CNX_GDCServer::ThreadProc()
 			uint16_t iPayloadSize = 0;
 
 			do {
-				uint8_t tempData;
-				iSize = ReadData( clientSocket, &tempData, 1 );
+				uint8_t temp;
+				iSize = ReadData( clientSocket, &temp, 1 );
 				if( 1 > iSize )
 				{
 					NxErrMsg( "Fail, ReadData().\n" );
 					break;
 				}
 
-				iKey = (iKey << 8) | tempData;
-				if( iKey == GDC_KEY(tempData) )
+				iKey = (iKey << 8) | temp;
+				if( iKey == KEY_GDC(temp) )
 				{
 					break;
 				}
@@ -231,7 +231,7 @@ void CNX_GDCServer::ThreadProc()
 				break;
 			}
 
-			iPayloadSize = MAKE_LENGTH_2BYTE( payloadBuf[0], payloadBuf[1] );
+			iPayloadSize = MAKE_LENGTH( payloadBuf[0], payloadBuf[1] );
 			if( iPayloadSize != 0 )
 			{
 				iSize = ReadData( clientSocket, payloadBuf + 2, iPayloadSize );
@@ -265,7 +265,7 @@ int32_t CNX_GDCServer::WaitClient()
 {
 	int32_t ret;
 	struct pollfd hPoll;
-	
+
 	hPoll.fd		= m_hSocket;
 	hPoll.events	= POLLIN | POLLERR;
 	hPoll.revents	= 0;
@@ -309,12 +309,12 @@ int32_t CNX_GDCServer::ReadData( int32_t fd, uint8_t *pBuf, int32_t iSize )
 	do {
 		int32_t ret;
 		struct pollfd hPoll;
-		
+
 		hPoll.fd		= fd;
 		hPoll.events	= POLLIN | POLLERR;
 		hPoll.revents	= 0;
-		ret = poll( (struct pollfd*)&hPoll, 1, MAX_TIMEOUT );		
-		if( 0 < ret ) 
+		ret = poll( (struct pollfd*)&hPoll, 1, MAX_TIMEOUT );
+		if( 0 < ret )
 		{
 			readSize = read( fd, pBuf, iSize );
 
@@ -356,14 +356,14 @@ int32_t CNX_GDCServer::ProcessCommand( int32_t fd, uint32_t key, void *pPayload,
 
 	switch( key )
 	{
-		case GDC_KEY(1):
+		case KEY_GDC(1):
 		{
 			if( m_cbEventCallback )	m_cbEventCallback( m_hEventParam, EVENT_RECEIVE_CERTIFICATE, pPayload, payloadSize );
 
 			uint8_t *pCertBuf = NULL;
 			int32_t iCertSize = m_pServerSSL->GetCertificate( &pCertBuf );
 
-			iWriteSize = GDC_MakePacket( SEC_KEY(1), (void*)pCertBuf, iCertSize, sendBuf, sizeof(sendBuf) );
+			iWriteSize = GDC_MakePacket( KEY_SEC(1), (void*)pCertBuf, iCertSize, sendBuf, sizeof(sendBuf) );
 			if( 0 > iWriteSize )
 			{
 				if( m_cbEventCallback )	m_cbEventCallback( m_hEventParam, ERROR_MAKE_PACKET, NULL,  0 );
@@ -377,7 +377,7 @@ int32_t CNX_GDCServer::ProcessCommand( int32_t fd, uint32_t key, void *pPayload,
 		}
 		break;
 
-		case GDC_KEY(2):
+		case KEY_GDC(2):
 		{
 			if( m_cbEventCallback )	m_cbEventCallback( m_hEventParam, EVENT_RECEIVE_PLANE_DATA, pPayload, payloadSize );
 
@@ -389,11 +389,11 @@ int32_t CNX_GDCServer::ProcessCommand( int32_t fd, uint32_t key, void *pPayload,
 
 				NxErrMsg( "Fail, Sign().\n" );
 				free( pSignData );
-				
+
 				return -1;
 			}
 
-			iWriteSize = GDC_MakePacket( SEC_KEY(2), (void*)pSignData, iSignSize, sendBuf, sizeof(sendBuf) );
+			iWriteSize = GDC_MakePacket( KEY_SEC(2), (void*)pSignData, iSignSize, sendBuf, sizeof(sendBuf) );
 			if( 0 > iWriteSize )
 			{
 				if( m_cbEventCallback )	m_cbEventCallback( m_hEventParam, ERROR_MAKE_PACKET, NULL,  0 );
@@ -408,11 +408,11 @@ int32_t CNX_GDCServer::ProcessCommand( int32_t fd, uint32_t key, void *pPayload,
 		}
 		break;
 
-		case GDC_KEY(3):
+		case KEY_GDC(3):
 		{
 			if( m_cbEventCallback )	m_cbEventCallback( m_hEventParam, EVENT_RECEIVE_MARRIAGE_OK, pPayload, payloadSize );
 
-			iWriteSize = GDC_MakePacket( SEC_KEY(3), NULL, 0, sendBuf, sizeof(sendBuf) );
+			iWriteSize = GDC_MakePacket( KEY_SEC(3), NULL, 0, sendBuf, sizeof(sendBuf) );
 			if( 0 > iWriteSize )
 			{
 				if( m_cbEventCallback )	m_cbEventCallback( m_hEventParam, ERROR_MAKE_PACKET, NULL,  0 );

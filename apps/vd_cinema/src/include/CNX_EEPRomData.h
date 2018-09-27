@@ -79,10 +79,10 @@ typedef struct tagTCON_EEPROM_INFO{
 	HEADER			19				0x0
 */
 
-class CNX_EEPRomDataParser {
+class CNX_EEPRomData {
 public:
-	CNX_EEPRomDataParser();
-	~CNX_EEPRomDataParser();
+	CNX_EEPRomData();
+	~CNX_EEPRomData();
 
 	//	for file input mode
 	int32_t Init( const char *inFile );

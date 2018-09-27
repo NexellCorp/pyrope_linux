@@ -20,6 +20,7 @@
 #ifndef __CNX_Uart_h__
 #define __CNX_Uart_h__
 
+#include <stdint.h>
 #include <termios.h>
 
 //#define DEFAULT_UART_SPEED	B230400

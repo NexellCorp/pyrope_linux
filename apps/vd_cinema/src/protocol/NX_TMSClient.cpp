@@ -28,7 +28,10 @@
 
 #include <NX_TMSServer.h>
 #include <NX_TMSClient.h>
+#include <NX_CinemaCommand.h>
+
 #include <NX_Utils.h>
+#include <NX_Version.h>
 
 #define NX_DTAG	"[TMS Client]"
 #include <NX_DbgMsg.h>
@@ -48,6 +51,10 @@ public:
 	int32_t SendCommand( const char *pIpAddr, uint32_t iCmd, uint8_t *pBuf, int32_t *iSize );
 
 private:
+	int32_t Send( const char *pIpAddr, uint32_t iCmd, uint8_t *pBuf, int32_t *iSize );
+	int32_t GetVersion( const char *pIpAddr, uint32_t iCmd, uint8_t *pBuf, int32_t *iSize );
+
+private:
 	int32_t ReadData( int32_t fd, uint8_t *pBuf, int32_t iSize );
 	int32_t WriteData( int32_t fd, uint8_t *pBuf, int32_t iSize );
 
@@ -55,7 +62,7 @@ private:
 	//	Rx/Tx Buffer
 	//	Key(4bytes) + Length(2bytes) + Payload(MAX 65535bytes )
 	uint8_t m_SendBuf[MAX_PAYLOAD_SIZE + 6];
-	uint8_t m_ReceiveBuf[MAX_PAYLOAD_SIZE + 6];
+	uint8_t m_RecvBuf[MAX_PAYLOAD_SIZE + 6];
 
 private:
 	static CNX_TMSClient *m_psInstance;
@@ -71,6 +78,18 @@ CNX_TMSClient* CNX_TMSClient::m_psInstance = NULL;
 //------------------------------------------------------------------------------
 int32_t CNX_TMSClient::SendCommand( const char *pIpAddr, uint32_t iCmd, uint8_t *pBuf, int32_t *iSize )
 {
+	if( (iCmd == PLATFORM_CMD_TMS_CLIENT_VERSION) ||
+		(iCmd == GDC_COMMAND(CMD_TYPE_PLATFORM, PLATFORM_CMD_TMS_CLIENT_VERSION)) )
+	{
+		return GetVersion( pIpAddr, iCmd, pBuf, iSize );
+	}
+
+	return Send( pIpAddr, iCmd, pBuf, iSize );
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_TMSClient::Send( const char *pIpAddr, uint32_t iCmd, uint8_t *pBuf, int32_t *iSize )
+{
 	int32_t clntSock;
 	int32_t sendSize, recvSize;
 	int16_t payloadSize;
@@ -84,7 +103,7 @@ int32_t CNX_TMSClient::SendCommand( const char *pIpAddr, uint32_t iCmd, uint8_t 
 		return -1;
 	}
 
-	sendSize = GDC_MakePacket( GDC_KEY(iCmd), pBuf, *iSize, m_SendBuf, sizeof(m_SendBuf) );
+	sendSize = GDC_MakePacket( KEY_GDC(iCmd), pBuf, *iSize, m_SendBuf, sizeof(m_SendBuf) );
 	if( 0 > sendSize )
 	{
 		NxErrMsg( "Error: GDC_MakePacket().\n" );
@@ -97,22 +116,22 @@ int32_t CNX_TMSClient::SendCommand( const char *pIpAddr, uint32_t iCmd, uint8_t 
 
 	write( clntSock, m_SendBuf, sendSize );
 
-	recvSize = read( clntSock, m_ReceiveBuf, sizeof(m_ReceiveBuf) );
-	if( 0 != GDC_ParsePacket( m_ReceiveBuf, recvSize, &key, &payload, &payloadSize ) )
+	recvSize = read( clntSock, m_RecvBuf, sizeof(m_RecvBuf) );
+	if( 0 != GDC_ParsePacket( m_RecvBuf, recvSize, &key, &payload, &payloadSize ) )
 	{
 		NxErrMsg( "Error : GDC_ParsePacket().\n");
 		close( clntSock );
 		return -1;
 	}
 
-	NX_HexDump( m_ReceiveBuf, recvSize, "Recv: " );
+	NX_HexDump( m_RecvBuf, recvSize, "Recv: " );
 	printf("\n");
 
 	//
 	//	Condition of pBuf
 	//	 1. The pBuf must not be NULL.
-	//	 2. The pBuf's size must be same payload's size. ( 65533 bytes )
-	//   3. The iSize is not payload's size.
+	//	 2. The pBuf's size must be same payload's size. ( 65535 bytes )
+	//	 3. The iSize is not payload's size.
 	//	    The iSize is real data size in pBuf.
 	//
 	if( NULL == pBuf )
@@ -126,6 +145,20 @@ int32_t CNX_TMSClient::SendCommand( const char *pIpAddr, uint32_t iCmd, uint8_t 
 	*iSize = payloadSize;
 
 	close( clntSock );
+	return 0;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_TMSClient::GetVersion( const char */*pIpAddr*/, uint32_t /*iCmd*/, uint8_t *pBuf, int32_t *iSize )
+{
+	uint8_t szVersion[1024];
+	snprintf( (char*)szVersion, sizeof(szVersion), "%s ( %08lld-%06lld )", NX_VERSION_TMS_CLIENT, NX_DATE(), NX_TIME() );
+
+	int32_t payloadSize = (int32_t)strlen((const char*)szVersion);
+
+	memcpy( pBuf, szVersion, payloadSize );
+	*iSize = payloadSize;
+
 	return 0;
 }
 

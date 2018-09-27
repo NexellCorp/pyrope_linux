@@ -26,7 +26,7 @@
 #include <sys/un.h>
 #include <errno.h>
 
-#include <CNX_BaseClass.h>
+#include <CNX_Base.h>
 #include <CNX_OpenSSL.h>
 #include <gdc_protocol.h>
 #include <SockUtils.h>
@@ -94,12 +94,12 @@ int32_t CNX_GDCClient::ReadData( int32_t fd, uint8_t *pBuf, int32_t iSize )
 	do {
 		int32_t ret;
 		struct pollfd hPoll;
-		
+
 		hPoll.fd		= fd;
 		hPoll.events	= POLLIN | POLLERR;
 		hPoll.revents	= 0;
 		ret = poll( (struct pollfd*)&hPoll, 1, MAX_TIMEOUT );
-		if( 0 < ret ) 
+		if( 0 < ret )
 		{
 			readSize = read( fd, pBuf, iSize );
 
@@ -158,7 +158,7 @@ int32_t CNX_GDCClient::Verify( const char *pIpAddr, int32_t iPort, const char *p
 	clientSSL.ReadCertificate( pCertFile );
 
 	int32_t iCertSize = clientSSL.GetCertificate( &pCertBuf );
-	iWriteSize = GDC_MakePacket( GDC_KEY(1), (void*)pCertBuf, iCertSize, buf, sizeof(buf) );
+	iWriteSize = GDC_MakePacket( KEY_GDC(1), (void*)pCertBuf, iCertSize, buf, sizeof(buf) );
 	WriteData( connectSock, buf, iWriteSize );
 
 	while(1)
@@ -180,7 +180,7 @@ int32_t CNX_GDCClient::Verify( const char *pIpAddr, int32_t iPort, const char *p
 			}
 
 			iKey = (iKey << 8) | tempData;
-			if( iKey == SEC_KEY(tempData) )
+			if( iKey == KEY_SEC(tempData) )
 			{
 				break;
 			}
@@ -198,7 +198,7 @@ int32_t CNX_GDCClient::Verify( const char *pIpAddr, int32_t iPort, const char *p
 			goto ErrorExit;
 		}
 
-		iPayloadSize = MAKE_LENGTH_2BYTE( buf[0], buf[1] );
+		iPayloadSize = MAKE_LENGTH( buf[0], buf[1] );
 		if( iPayloadSize != 0 )
 		{
 			iSize = ReadData( connectSock, buf + 2, iPayloadSize );
@@ -216,7 +216,7 @@ int32_t CNX_GDCClient::Verify( const char *pIpAddr, int32_t iPort, const char *p
 		//
 		//
 		//
-		if( iKey == SEC_KEY(1) )
+		if( iKey == KEY_SEC(1) )
 		{
 			printf("======================================================================\n");
 			printf("> Receive Ceriticate.\n");
@@ -231,10 +231,10 @@ int32_t CNX_GDCClient::Verify( const char *pIpAddr, int32_t iPort, const char *p
 			clientSSL.ReadCertificate( pPayload, iPayloadSize );
 
 			// Send Plane Text String
-			iWriteSize = GDC_MakePacket( GDC_KEY(2), (void*)pPlaneText, strlen((char*)pPlaneText), buf, sizeof(buf) );
+			iWriteSize = GDC_MakePacket( KEY_GDC(2), (void*)pPlaneText, strlen((char*)pPlaneText), buf, sizeof(buf) );
 			WriteData( connectSock, buf, iWriteSize );
 		}
-		else if( iKey == SEC_KEY(2) )
+		else if( iKey == KEY_SEC(2) )
 		{
 			printf("======================================================================\n");
 			printf("> Receive Signed Data.\n");
@@ -247,10 +247,10 @@ int32_t CNX_GDCClient::Verify( const char *pIpAddr, int32_t iPort, const char *p
 				goto ErrorExit;
 			}
 
-			iWriteSize = GDC_MakePacket( GDC_KEY(3), NULL, 0, buf, sizeof(buf) );
+			iWriteSize = GDC_MakePacket( KEY_GDC(3), NULL, 0, buf, sizeof(buf) );
 			WriteData( connectSock, buf, iWriteSize );
 		}
-		else if( iKey == SEC_KEY(3) )
+		else if( iKey == KEY_SEC(3) )
 		{
 			printf("======================================================================\n");
 			printf("> Receive Marriage OK.\n");

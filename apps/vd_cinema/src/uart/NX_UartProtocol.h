@@ -20,6 +20,8 @@
 #ifndef __NX_UartProtocol_h__
 #define __NX_UartProtocol_h__
 
+#include <stdint.h>
+
 #define UART_START_CODE		0xCafeFace
 
 #define CMD_BOOT_DONE		0x00000001

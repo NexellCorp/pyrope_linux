@@ -17,11 +17,11 @@
 //
 //------------------------------------------------------------------------------
 
-#ifndef __NX_I2CREGISTER_H__
-#define __NX_I2CREGISTER_H__
+#ifndef __NX_CINEMAREGISTER_H__
+#define __NX_CINEMAREGISTER_H__
 
 //
-//	TON Initialize
+//	TCON Initialize
 //
 #define TCON_REG_SCAN_DATA1				0x0122
 #define TCON_REG_SCAN_DATA2				0x0123
@@ -286,6 +286,12 @@
 
 
 //
+//	TCON Pitch Info
+//
+#define TCON_REG_PITCH_INFO				0x000E		// P2.5: d'25xxx, P3.3: d'33xxx
+
+
+//
 //	P.FPGA Status
 //
 #define PFPGA_I2C_PORT					2
@@ -304,5 +310,7 @@
 #define PFPGA_REG_PF_RESERVED1			0x01C1
 #define PFPGA_REG_PF_FPGA_TIME			0x018E
 
+#define PFPGA_REG_PF_MODEL				0x01F0		// P2.5: 0      , P3.3: 1
+#define PFPGA_REG_PF_SCREEN_SEL			0x01C8		// 01: Left, 10: Right, 11: Both
 
-#endif	// __NX_I2CREGISTER_H__
+#endif	// __NX_CINEMAREGISTER_H__

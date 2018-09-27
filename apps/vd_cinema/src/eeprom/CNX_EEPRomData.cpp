@@ -17,7 +17,7 @@
 //
 //------------------------------------------------------------------------------
 
-#include "CNX_EEPRomDataParser.h"
+#include "CNX_EEPRomData.h"
 
 #include <stdio.h>		//	FILE i/o
 #include <stdlib.h>		//	malloc
@@ -28,7 +28,7 @@
 #include <sys/types.h>
 #endif
 
-CNX_EEPRomDataParser::CNX_EEPRomDataParser()
+CNX_EEPRomData::CNX_EEPRomData()
 	: m_pInBuffer(NULL)
 	, m_nInBufferSize(0)
 	, m_pOutBuffer(NULL)
@@ -40,7 +40,7 @@ CNX_EEPRomDataParser::CNX_EEPRomDataParser()
 	memset( m_pTconInfo , 0, sizeof(TCON_EEPROM_INFO) );
 }
 
-CNX_EEPRomDataParser::~CNX_EEPRomDataParser()
+CNX_EEPRomData::~CNX_EEPRomData()
 {
 	if( m_pTconInfo )
 		free(m_pTconInfo );
@@ -48,7 +48,7 @@ CNX_EEPRomDataParser::~CNX_EEPRomDataParser()
 		free(m_pInBuffer);
 }
 
-int32_t CNX_EEPRomDataParser::Init( const char *inFile )
+int32_t CNX_EEPRomData::Init( const char *inFile )
 {
 	if( NULL == inFile )
 		return ERR_IN_FILE;
@@ -82,7 +82,7 @@ int32_t CNX_EEPRomDataParser::Init( const char *inFile )
 	return ERR_NONE;
 }
 
-int32_t CNX_EEPRomDataParser::Init( void *pBuf, int32_t bufSize )
+int32_t CNX_EEPRomData::Init( void *pBuf, int32_t bufSize )
 {
 	if( NULL == pBuf )
 		return ERR_IN_BUF;
@@ -96,7 +96,7 @@ int32_t CNX_EEPRomDataParser::Init( void *pBuf, int32_t bufSize )
 	return ERR_NONE;
 }
 
-int32_t CNX_EEPRomDataParser::Parse( TCON_EEPROM_INFO **ppOutInfo )
+int32_t CNX_EEPRomData::Parse( TCON_EEPROM_INFO **ppOutInfo )
 {
 	if( m_InputMode == INPUT_MODE_NONE || m_nInBufferSize<=0 )
 		return ERR_NOT_INIT;
@@ -201,7 +201,7 @@ int32_t CNX_EEPRomDataParser::Parse( TCON_EEPROM_INFO **ppOutInfo )
 	return ERR_NONE;
 }
 
-int32_t CNX_EEPRomDataParser::ParseVersion( TCON_EEPROM_INFO **ppOutInfo )
+int32_t CNX_EEPRomData::ParseVersion( TCON_EEPROM_INFO **ppOutInfo )
 {
 	if( m_InputMode == INPUT_MODE_NONE || m_nInBufferSize<=0 )
 		return ERR_NOT_INIT;
@@ -239,7 +239,7 @@ int32_t CNX_EEPRomDataParser::ParseVersion( TCON_EEPROM_INFO **ppOutInfo )
 	return ERR_NONE;
 }
 
-void CNX_EEPRomDataParser::Deinit()
+void CNX_EEPRomData::Deinit()
 {
 	if( m_pTconInfo )
 	{
@@ -257,7 +257,7 @@ void CNX_EEPRomDataParser::Deinit()
 //
 //	Private Methods
 //
-void CNX_EEPRomDataParser::ParseModeData( uint8_t *pInBuf, MODE_DATA_INFO *pOutInfo )
+void CNX_EEPRomData::ParseModeData( uint8_t *pInBuf, MODE_DATA_INFO *pOutInfo )
 {
 	//	MODE0 signiture ACCII : 'M','O','D','E','0' ~ 'M','O','D','E','5'
 	memcpy( pOutInfo->signiture, pInBuf, 5 );
@@ -289,7 +289,7 @@ void CNX_EEPRomDataParser::ParseModeData( uint8_t *pInBuf, MODE_DATA_INFO *pOutI
 }
 
 
-void CNX_EEPRomDataParser::ParseGammaData( uint8_t *pInBuf, GAMMA_INFO *pOutGamma )
+void CNX_EEPRomData::ParseGammaData( uint8_t *pInBuf, GAMMA_INFO *pOutGamma )
 {
 	uint32_t *gamma;
 	uint8_t *pBuf = pInBuf;
@@ -349,7 +349,7 @@ void CNX_EEPRomDataParser::ParseGammaData( uint8_t *pInBuf, GAMMA_INFO *pOutGamm
 		  +-- TGAM1_G.txt
 		  +-- TGAM1_B.txt
 */
-void CNX_EEPRomDataParser::WriteGamaInfo(GAMMA_INFO *pGamaInfo, const char *outFilePreFix)
+void CNX_EEPRomData::WriteGamaInfo(GAMMA_INFO *pGamaInfo, const char *outFilePreFix)
 {
 	FILE *pFd;
 	char filename[MAX_PATH];
@@ -387,7 +387,7 @@ void CNX_EEPRomDataParser::WriteGamaInfo(GAMMA_INFO *pGamaInfo, const char *outF
 	}
 }
 
-void CNX_EEPRomDataParser::WriteModeInfo(TCON_EEPROM_INFO *pTconInfo, const char *outFileName)
+void CNX_EEPRomData::WriteModeInfo(TCON_EEPROM_INFO *pTconInfo, const char *outFileName)
 {
 	FILE *pFd;
 	int32_t numModes;
@@ -491,7 +491,7 @@ void CNX_EEPRomDataParser::WriteModeInfo(TCON_EEPROM_INFO *pTconInfo, const char
 	fclose( pFd );
 }
 
-void CNX_EEPRomDataParser::WriteTconInfo( TCON_EEPROM_INFO *pTconInfo, const char *outputPath )
+void CNX_EEPRomData::WriteTconInfo( TCON_EEPROM_INFO *pTconInfo, const char *outputPath )
 {
 	char prefix[MAX_PATH];
 

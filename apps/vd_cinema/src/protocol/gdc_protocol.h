@@ -22,41 +22,43 @@
 
 #include <stdint.h>
 
+#define MAKE_KEY(C0, C1, C2, C3)	\
+		( ((uint32_t)(uint8_t)(C3)      ) |	\
+		  ((uint32_t)(uint8_t)(C2) << 8 ) |	\
+		  ((uint32_t)(uint8_t)(C1) << 16) |	\
+		  ((uint32_t)(uint8_t)(C0) << 24) )
+
+#define MAKE_LENGTH(C0, C1)	\
+		( ((uint16_t)(uint8_t)(C1)      ) |	\
+		  ((uint16_t)(uint8_t)(C0) << 8 ) )
+
+#define	KEY_GDC(N)	MAKE_KEY('G','D','C',N)
+#define KEY_SEC(N)	MAKE_KEY('S','A','M',N)
+
 //
 //	GDC <--> S.AP Communication Packet Format
 //
 //	Key( 4 bytes ) + Length( 2 bytes ) + Value ( n bytes )
 //
 //	Description
-//		KeyValue:
+//		key		: 4 Bytes
 //			a. GDC --> SEC : GDC_KEY_VALUE "TMSx"
 //			b. SEC --> GDC : SEC_KEY_VALUE "SECx"
-//		Length :
-//			Command ( 2 bytes ) + Payload ( n Bytes )
+//		Length	: 2 Bytes
+//		Payload	: N Bytes
 //
-#ifndef MAKE_KEY_4BYTE
-#define MAKE_KEY_4BYTE(C0, C1, C2, C3)		\
-		( ((uint32_t)(uint8_t)(C3)      ) |	\
-		  ((uint32_t)(uint8_t)(C2) << 8 ) |	\
-		  ((uint32_t)(uint8_t)(C1) << 16) |	\
-		  ((uint32_t)(uint8_t)(C0) << 24) )
-#endif
 
-#ifndef MAKE_LENGTH_2BYTE
-#define MAKE_LENGTH_2BYTE(C0, C1)			\
-		( ((uint16_t)(uint8_t)(C1)      ) |	\
-		  ((uint16_t)(uint8_t)(C0) << 8 ) )
-#endif
-
-#define	GDC_KEY(N)		MAKE_KEY_4BYTE('G','D','C',N)
-#define SEC_KEY(N)		MAKE_KEY_4BYTE('S','A','M',N)
-
-//
 //	APIs
-//
-int32_t GDC_MakePacket( uint32_t key, void *payload, int16_t payloadSize, void *pOutBuf, int32_t outBufSize );
-int32_t GDC_ParsePacket( void *pInBuf, int32_t inBufSize, uint32_t *key, void **payload, int16_t *playloadSize );
+int32_t GDC_MakePacket(
+	uint32_t iKey, void *pPayload, int16_t iPayloadSize,
+	void *pOutBuf, int32_t iOutBufSize
+);
 
-void	GDC_DumpPacket( void *pData, int16_t dataSize );
+int32_t GDC_ParsePacket(
+	void *pInBuf, int32_t iInBufSize,
+	uint32_t *iKey, void **ppPayload, int16_t *iPayloadSize
+);
+
+void GDC_DumpPacket( void *pData, int16_t iDataSize, int32_t bProtocol );
 
 #endif	// __GDC_PROTOCOL_H__

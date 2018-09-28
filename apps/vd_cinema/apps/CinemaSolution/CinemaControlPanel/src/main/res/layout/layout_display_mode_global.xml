@@ -239,7 +239,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:text="Seam ON/OFF*"
+                    android:text="Edge Correction*"
                     android:gravity="center"
                     android:paddingTop="15dp"
                     android:paddingBottom="15dp"

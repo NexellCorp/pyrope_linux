@@ -219,11 +219,11 @@ public class CinemaTask {
         }
     }
 
-    public void Run( int cmd, Context context, Adapter adapter, int func, int pattern, boolean status, PreExecuteCallback preExecute, PostExecuteCallback postExecute ) {
+    public void Run( int cmd, Context context, int func, int pattern, boolean status, PreExecuteCallback preExecute, PostExecuteCallback postExecute, ProgressUpdateCallback progressUpdate ) {
         switch( cmd )
         {
             case CMD_TEST_PATTERN:
-                new AsyncTaskTestPattern(context, adapter, func, pattern, status, preExecute, postExecute).execute();
+                new AsyncTaskTestPattern(context, func, pattern, status, preExecute, postExecute, progressUpdate).execute();
                 break;
             default:
                 Log.i(VD_DTAG, String.format("Fail, Invalid Command. ( %d )", cmd));
@@ -2062,34 +2062,44 @@ public class CinemaTask {
         private Context mContext = null;
         private PreExecuteCallback mPreExecute = null;
         private PostExecuteCallback mPostExecute = null;
+        private ProgressUpdateCallback mProgressUpdate = null;
 
         private byte[] mCabinet;
-        private SelectRunAdapter mAdapter;
         private int mFunc = 0;
         private int mPattern = 0;
         private boolean mStatus = false;
 
-        private int[] mPatternReg = {
-                CinemaInfo.REG_TCON_FLASH_CC,
-                CinemaInfo.REG_TCON_CC_MODULE,
+        private int[] mBypassReg = {
                 CinemaInfo.REG_TCON_XYZ_TO_RGB,
+                CinemaInfo.REG_TCON_CC_CABINET,
+                CinemaInfo.REG_TCON_CC_PIXEL,
                 CinemaInfo.REG_TCON_SEAM_ON,
+                CinemaInfo.REG_TCON_CC_MODULE,
         };
 
-        private int[] mPatternDat = {
+        private int[] mBypassEnableDat = {
+                0x0001,
                 0x0000,
-                0x0000,
-                0x0000,
-                0x0000,
+                0x0001,
+                0x0001,
+                0x0001,
         };
 
-        public AsyncTaskTestPattern( Context context, Adapter adapter, int func, int pattern, boolean status, PreExecuteCallback preExecute, PostExecuteCallback postExecute ) {
+        private int[] mBypassDisableDat = {
+                0x0001,
+                0x0001,
+                0x0001,
+                0x0001,
+                0x0001,
+        };
+
+        public AsyncTaskTestPattern( Context context, int func, int pattern, boolean status, PreExecuteCallback preExecute, PostExecuteCallback postExecute, ProgressUpdateCallback progressUpdate ) {
             mContext = context;
             mPreExecute = preExecute;
             mPostExecute = postExecute;
+            mProgressUpdate = progressUpdate;
+
             mCabinet = ((CinemaInfo)mContext).GetCabinet();
-            if( adapter instanceof SelectRunAdapter )
-                mAdapter = (SelectRunAdapter)adapter;
 
             mFunc = func;
             mPattern = pattern;
@@ -2106,65 +2116,83 @@ public class CinemaTask {
             boolean bValidPort1 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_R);
 
             if( mFunc < 7 ) {
+                Log.i(VD_DTAG, String.format( Locale.US, ">>>>> mFunc = %d, mPattern = %d, mStatus = %b", mFunc, mPattern, mStatus));
+
                 byte[] data = { (byte)mFunc, (byte)mPattern };
 
                 byte[] data0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, data);
                 byte[] data1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, data);
 
-                Log.i(VD_DTAG, String.format( Locale.US, ">>>>> mFunc = %d, mPattern = %d, mStatus = %b", mFunc, mPattern, mStatus));
-
                 if( bValidPort0 ) ctrl.Send( mStatus ? NxCinemaCtrl.CMD_TCON_PATTERN_RUN : NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data0 );
                 if( bValidPort1 ) ctrl.Send( mStatus ? NxCinemaCtrl.CMD_TCON_PATTERN_RUN : NxCinemaCtrl.CMD_TCON_PATTERN_STOP, data1 );
             }
-            else {
-                byte[] reg = ctrl.IntToByteArray(mPatternReg[mFunc-7], NxCinemaCtrl.FORMAT_INT16);
+            else if( mFunc > 7 ) {
+                Log.i(VD_DTAG, String.format( Locale.US, ">>>>> mFunc = %d, mPattern = %d, mStatus = %b", mFunc, mPattern, mStatus));
+
+                byte[] reg = ctrl.IntToByteArray(mBypassReg[mFunc-8], NxCinemaCtrl.FORMAT_INT16);
                 byte[] dat = ctrl.IntToByteArray(mStatus ? 0x0001 : 0x0000, NxCinemaCtrl.FORMAT_INT16);
                 byte[] data = ctrl.AppendByteArray(reg, dat);
                 byte[] data0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, data);
                 byte[] data1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, data);
 
-                Log.i(VD_DTAG, String.format( Locale.US, ">>>>> mFunc = %d, mPattern = %d, mStatus = %b", mFunc, mPattern, mStatus));
-
                 if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, data0 );
                 if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, data1 );
+            }
+            else {
+                Log.i(VD_DTAG, String.format( Locale.US, ">>>>> mFunc = %d, mPattern = %d, mStatus = %b", mFunc, mPattern, mStatus));
+
+                for( int i = 0; i < mBypassReg.length; i++ )
+                {
+                    byte[] reg = ctrl.IntToByteArray(mBypassReg[i], NxCinemaCtrl.FORMAT_INT16);
+                    byte[] dat = ctrl.IntToByteArray(mStatus ? mBypassEnableDat[i] : mBypassDisableDat[i], NxCinemaCtrl.FORMAT_INT16);
+                    byte[] data = ctrl.AppendByteArray(reg, dat);
+                    byte[] data0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, data);
+                    byte[] data1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, data);
+
+                    if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, data0 );
+                    if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_WRITE, data1 );
+                }
             }
 
             //
             //  Update Enable/Disable Button
             //
-            for( int i = 0; i < mPatternReg.length; i++ ) {
-                byte[] result, inData;
-                byte slave = mCabinet[0];
-                mPatternDat[i] = 0;
-
-                inData = new byte[] { slave };
-                inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mPatternReg[i], NxCinemaCtrl.FORMAT_INT16));
-
-                result = ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_READ, inData );
-                if( result == null || result.length == 0 ) {
-                    Log.i(VD_DTAG, String.format(Locale.US, "i2c read fail.( id: 0x%02X, reg: 0x%04X )", slave, mPatternReg[i] ));
-                    continue;
+            if( mProgressUpdate != null )
+            {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
 
-                mPatternDat[i] = ctrl.ByteArrayToInt(result);
+                for( int i = 0; i < mBypassReg.length; i++ ) {
+                    byte[] result, inData;
+                    byte slave = mCabinet[0];
+                    int data;
+
+                    inData = new byte[] { slave };
+                    inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mBypassReg[i], NxCinemaCtrl.FORMAT_INT16));
+
+                    result = ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_READ, inData );
+                    if( result == null || result.length == 0 ) {
+                        Log.i(VD_DTAG, String.format(Locale.US, "i2c read fail.( id: 0x%02X, reg: 0x%04X )", slave, mBypassReg[i] ));
+                        continue;
+                    }
+
+                    data = ctrl.ByteArrayToInt(result);
+                    publishProgress(i, data);
+
+                    Log.i(VD_DTAG, String.format(">>> read pattern register. ( reg: 0x%04X, dat: 0x%04X )", i, data) );
+                }
             }
 
-            for( int i = 0; i < mPatternReg.length; i++ ) {
-                Log.i(VD_DTAG, String.format(">>> read pattern register. ( reg: 0x%04X, dat: 0x%04X )", mPatternReg[i], mPatternDat[i]) );
-            }
-
-            publishProgress(mPatternDat[0], mPatternDat[1], mPatternDat[2], mPatternDat[3]);
             return null;
         }
 
         @Override
         protected void onProgressUpdate(Integer... values) {
-            for( int i = 0; i < mPatternReg.length; i++ ) {
-                SelectRunInfo info = mAdapter.getItem(i+7);
-                if( info == null )
-                    continue;
-
-                info.SetStatus(values[i] == 0x0001);
+            if( mProgressUpdate != null ) {
+                mProgressUpdate.onProgressUpdate(values);
             }
             super.onProgressUpdate(values);
         }

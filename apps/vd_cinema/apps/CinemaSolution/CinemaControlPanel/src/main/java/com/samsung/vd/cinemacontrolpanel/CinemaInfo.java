@@ -34,7 +34,7 @@ public class CinemaInfo extends Application {
     public static final String KEY_TREG_0x018B      = "treg.0x018b";    // REG_WIDTH_CONTROL
     public static final String KEY_TREG_0x018C      = "treg.0x018c";    // REG_SYNC_DELAY
     public static final String KEY_TREG_0x018A      = "treg.0x018a";    // REG_SYNC_REVERSE
-    public static final String KEY_TREG_0x018D      = "treg.0x018d";    // REG_SACLE
+    public static final String KEY_TREG_0x018D      = "treg.0x018d";    // REG_SCALE
     public static final String KEY_TREG_0x018E      = "treg.0x018e";    // REG_ZERO_SCALE
     public static final String KEY_TREG_0x0192      = "treg.0x0192";    // REG_SEAM_ON
     public static final String KEY_TREG_0x0055      = "treg.0x0055";    // REG_MODULE_ON
@@ -47,13 +47,18 @@ public class CinemaInfo extends Application {
     //  Register
     //
     public static final int REG_TCON_PITCH_INFO             = 0x000E;   // P2.5: d'25xxx, P3.3: d'33xxx
-    public static final int REG_PFPGA_PF_MODEL              = 0x01F0;   // P2.5: 0      , P3.3: 1
-    public static final int REG_PFPGA_PF_SCREEN_SEL         = 0x01C8;   // 01: Left, 10: Right, 11: Both
-
-    public static final int REG_TCON_FLASH_CC               = 0x0044;
-    public static final int REG_TCON_CC_MODULE              = 0x0052;
+    public static final int REG_TCON_WIDTH_CONTROL          = 0x018B;
+    public static final int REG_TCON_SYNC_DELAY             = 0x018C;
+    public static final int REG_TCON_SYNC_REVERSE           = 0x018A;
+    public static final int REG_TCON_SCALE                  = 0x018D;
+    public static final int REG_TCON_ZERO_SCALE             = 0x018E;
+    public static final int REG_TCON_LIVE_LOD_EN            = 0x0100;
+    public static final int REG_TCON_LOD_INSERT_EN          = 0x011E;
     public static final int REG_TCON_XYZ_TO_RGB             = 0x0004;
+    public static final int REG_TCON_CC_CABINET             = 0x0052;
+    public static final int REG_TCON_CC_PIXEL               = 0x0044;
     public static final int REG_TCON_SEAM_ON                = 0x0192;
+    public static final int REG_TCON_CC_MODULE              = 0x0055;
     public static final int REG_TCON_SCAN_MODE              = 0x0120;
 
     public static final int REG_TCON_0x018B                 = 0x018B;
@@ -67,7 +72,11 @@ public class CinemaInfo extends Application {
     public static final int REG_TCON_0x0100                 = 0x0100;
     public static final int REG_TCON_0x011E                 = 0x011E;
 
+    public static final int REG_PFPGA_PF_MODEL              = 0x01F0;   // P2.5: 0      , P3.3: 1
+    public static final int REG_PFPGA_PF_SCREEN_SEL         = 0x01C8;   // 01: Left, 10: Right, 11: Both
     public static final int REG_PFPGA_NUC_EN                = 0x01B0;
+    public static final int REG_PFPGA_RESOLUTION            = 0x0199;
+
     public static final int REG_PFPGA_0x0199                = 0x0199;
 
     public static final int RET_ERROR   = -1;

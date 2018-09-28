@@ -1,7 +1,7 @@
 #!/bin/bash
 NX_DIR_WORKING=$(pwd)
 NX_DIR_SCRIPT=$(cd "$(dirname "$0")" && pwd)
-NX_DIR_TARGET=$NX_DIR_SCRIPT/result/image
+NX_DIR_TARGET=$NX_DIR_SCRIPT/package/image
 NX_DATE="$(date +%Y%m%d)_$(date +%H%M%S)"
 
 NX_DIR_LIB=$NX_DIR_SCRIPT/lib
@@ -28,6 +28,6 @@ for package in "${NX_PACKAGE[@]}"; do
 done
 
 cd $NX_DIR_SCRIPT
-tar cvzf result_$NX_DATE.tar.gz result
+tar cvzf package_$NX_DATE.tar.gz package
 
 cd $NX_DIR_WORKING

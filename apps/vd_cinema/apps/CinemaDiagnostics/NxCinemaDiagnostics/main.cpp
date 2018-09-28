@@ -30,7 +30,7 @@
 
 #include <CNX_I2C.h>
 #include <CNX_EEPRom.h>
-#include <CNX_EEPRomDataParser.h>
+#include <CNX_EEPRomData.h>
 #include <NX_Utils.h>
 #include <NX_SecureLinkServer.h>
 
@@ -284,7 +284,7 @@ static int32_t DiagnosticsEEPRom( void *pObj )
 	NX_DIAG_INFO *pInfo = (NX_DIAG_INFO*)pObj;
 
 	CNX_EEPRom eeprom;
-	CNX_EEPRomDataParser parser;
+	CNX_EEPRomData parser;
 	TCON_EEPROM_INFO *pTconInfo = NULL;
 
 	int32_t iAddr = 0, iReadSize, iTotalSize;

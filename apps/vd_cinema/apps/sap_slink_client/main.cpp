@@ -34,7 +34,7 @@
 #include <NX_Utils.h>
 #include <NX_Queue.h>
 #include <CNX_Uart.h>
-#include <CNX_BaseClass.h>
+#include <CNX_Base.h>
 
 #include <NX_GDCServer.h>
 

@@ -111,6 +111,9 @@ END_MESSAGE_MAP()
 
 //
 //	Version Information
+//	* Version 0.3.0 at 2018.09.28
+//	  -. expand number of log text. 
+//	  -. add log rotation function. ( disabled )
 //
 //	* Version 0.2.0 at 2018.07.03
 //	  -. fixed bug related working directory. ( the working directory is default directory when directory is not exist. )
@@ -178,6 +181,7 @@ BOOL CNxCinemaDiagnosticsPanelDlg::OnInitDialog()
 	_tsetlocale( LC_ALL, L"korean" );
 #endif
 
+	m_EditLog.SetLimitText( UINT_MAX );    
 	m_BtnTest.ShowWindow( FALSE );
 
 	LoadConfig();
@@ -306,7 +310,6 @@ void CNxCinemaDiagnosticsPanelDlg::OnBnClickedBtnWorkingOpen()
 void CNxCinemaDiagnosticsPanelDlg::OnBnClickedBtnTest()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-
 	ClearEditControl();
 	LogClear();
 
@@ -524,29 +527,42 @@ void CNxCinemaDiagnosticsPanelDlg::GetText( CWnd *pWnd, CString &szResult )
 
 void CNxCinemaDiagnosticsPanelDlg::LogPrint( LPCTSTR szFormat, ... )
 {
-	CString szTemp;
+	CString szText;
 
 	va_list args;
 	va_start( args, szFormat );
-	szTemp.FormatV( szFormat, args );
+	szText.FormatV( szFormat, args );
 	va_end( args );
+
+#if NX_ENABLE_LOG_ROTATION
+	while( m_EditLog.GetWindowTextLengthW() > MAX_LOG_TEXT || m_EditLog.GetLineCount() > MAX_LOG_LINE )
+	{
+		CString szTemp;
+		m_EditLog.GetWindowTextW( szTemp );
+		
+		int nLineEnd = szTemp.Find( L"\n", 0 );
+
+		m_EditLog.SetSel( 0, nLineEnd+1, TRUE );
+		m_EditLog.ReplaceSel( L"" );
+	}
+#endif
 
 	int nLength = m_EditLog.GetWindowTextLengthW();
 	m_EditLog.SetSel( nLength, nLength );
-	m_EditLog.ReplaceSel( szTemp );
+	m_EditLog.ReplaceSel( szText );
 	m_EditLog.LineScroll( m_EditLog.GetLineCount() );
 }
 
 void CNxCinemaDiagnosticsPanelDlg::LogPrint( BOOL bEnable, LPCTSTR szFormat, ... )
 {
-	CString szTemp;
+	CString szText;
 
 	va_list args;
 	va_start( args, szFormat );
-	szTemp.FormatV( szFormat, args );
+	szText.FormatV( szFormat, args );
 	va_end( args );
 
-	if( bEnable ) LogPrint( szTemp );
+	if( bEnable ) LogPrint( szText );
 }
 
 void CNxCinemaDiagnosticsPanelDlg::LogClear()
@@ -693,7 +709,7 @@ void CNxCinemaDiagnosticsPanelDlg::ThreadProc( void )
 void CNxCinemaDiagnosticsPanelDlg::RunTest( void *pObj )
 {
 	CNxCinemaDiagnosticsPanelDlg *pDlg = (CNxCinemaDiagnosticsPanelDlg*)pObj;
-	
+
 	Init( pObj );
 	StopControlPanel( pObj );
 

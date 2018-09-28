@@ -12,6 +12,8 @@
 #define NX_RET_ERROR		L"device not found"
 #define NX_RET_NONE			L"NOT TESTED"
 
+#define NX_ENABLE_LOG_ROTATION	0
+
 typedef struct NX_ADB_INFO {
 	CString		szProduct;
 	CString		szStatus;
@@ -78,6 +80,7 @@ public:
 	void SaveConfig();
 
 private:
+	enum { MAX_LOG_TEXT = 2147483647, MAX_LOG_LINE = 5000 };
 	enum { MAX_REPEAT_NUM = 9999, MIN_REPEAT_NUM = 0, MAX_WAIT_TIME = 3 };
 
 	void Run( void (*cbFunc)(void *pObj), void *pObj );

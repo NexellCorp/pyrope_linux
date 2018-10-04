@@ -68,6 +68,14 @@ public class CinemaBaseActivity extends AppCompatActivity {
     }
 
     //
+    //  ScreenSaver Prepare
+    //
+    private CinemaService.ScreenSaverCallback mScreenSaverCallback;
+    protected void RegisterScreenSaverCallback( CinemaService.ScreenSaverCallback callback ) {
+        mScreenSaverCallback = callback;
+    }
+
+    //
     //  Launch Current Activity to Another Activity
     //
     protected void Launch( Context packageContext, Class<?> cls ) {
@@ -197,6 +205,7 @@ public class CinemaBaseActivity extends AppCompatActivity {
             CinemaService.LocalBinder binder = (CinemaService.LocalBinder)service;
             mService = binder.GetService();
             mService.RegisterTmsCallback( mTmsEventCallback );
+            mService.RegisterScreenSaverCallback( mScreenSaverCallback );
             mServiceRun = true;
         }
 

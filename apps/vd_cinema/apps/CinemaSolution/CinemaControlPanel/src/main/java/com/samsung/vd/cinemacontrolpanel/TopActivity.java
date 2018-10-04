@@ -30,6 +30,7 @@ public class TopActivity extends CinemaBaseActivity {
     private int mInitMode;
     private Button mBtnInitMode;
     private TextView mTextInitMode;
+    private Button mBtnScreenOn;
 
     private TextButtonAdapter mAdapterMode;
     private ConfigTconInfo mTconEEPRomInfo = new ConfigTconInfo();
@@ -162,11 +163,11 @@ public class TopActivity extends CinemaBaseActivity {
         TextView textComment = (TextView)findViewById(R.id.textCommentTop);
         textComment.setText("");
         textComment.append(String.format(Locale.US, "-. TCON Config File\t\t\t\t: [USB_TOP]/%s/%s\n", ConfigTconInfo.PATH_SOURCE, ConfigTconInfo.NAME));
+        textComment.append(String.format(Locale.US, "-. Gamma File\t\t\t\t\t\t: [USB_TOP]/%s/%s\n", LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME));
         textComment.append(String.format(Locale.US, "-. PFPGA Config File\t\t\t\t: [USB_TOP]/%s/%s\n", ConfigPfpgaInfo.PATH_SOURCE, ConfigPfpgaInfo.NAME));
         textComment.append(String.format(Locale.US, "-. Uniformity File\t\t\t\t\t: [USB_TOP]/%s/%s\n", LedUniformityInfo.PATH_SOURCE, LedUniformityInfo.NAME));
-        textComment.append(String.format(Locale.US, "-. Gamma File\t\t\t\t\t\t: [USB_TOP]/%s/%s\n", LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME));
-        textComment.append(String.format(Locale.US, "-. Dot Correct Path\t\t\t\t: [USB_TOP]/%s/IDxxx/\n", LedDotCorrectInfo.PATH));
-        textComment.append(String.format(Locale.US, "-. Dot Correct Extract Path\t: [USB_TOP]/DOT_CORRECTION_IDxxx/\n"));
+        textComment.append(String.format(Locale.US, "-. Pixel Correct Path\t\t\t\t: [USB_TOP]/%s/IDxxx/\n", LedDotCorrectInfo.PATH));
+        textComment.append(String.format(Locale.US, "-. Pixel Correct Extract Path\t: [USB_TOP]/%s/IDxxx/", LedDotCorrectInfo.PATH_EXTRACT));
 
         //
         //  Screen Type
@@ -179,6 +180,41 @@ public class TopActivity extends CinemaBaseActivity {
         //
         TextView textEEPRomStatus = (TextView)findViewById(R.id.textEEPRomStatus);
         textEEPRomStatus.setText( mCinemaInfo.IsValidEEPRom() ? "VALID" : "INVALID"  );
+
+        //
+        //  Screen On
+        //
+        mBtnScreenOn = (Button)findViewById(R.id.btnScreenOn);
+        if( mCinemaInfo.IsScreenOn() ) mBtnScreenOn.setText("OFF");
+        else mBtnScreenOn.setText("ON");
+
+        mBtnScreenOn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                final boolean mute = mBtnScreenOn.getText().toString().equals("OFF");
+
+                CinemaTask.GetInstance().Run(
+                        CinemaTask.CMD_SCREEN_MUTE,
+                        getApplicationContext(),
+                        mute,
+                        new CinemaTask.PreExecuteCallback() {
+                            @Override
+                            public void onPreExecute(Object[] values) {
+                                ShowProgress();
+                            }
+                        },
+                        new CinemaTask.PostExecuteCallback() {
+                            @Override
+                            public void onPostExecute(Object[] values) {
+                                mBtnScreenOn.setText( mute ? "ON" : "OFF" );
+                                mCinemaInfo.SetScreenOn(mute ? true : false);
+                                HideProgress();
+                            }
+                        },
+                        null
+                );
+            }
+        });
 
         //
         //  Parse TCON Configuration Files.
@@ -272,7 +308,6 @@ public class TopActivity extends CinemaBaseActivity {
                     return;
 
                 if( 0 > (Integer)values[0] ) {
-
                     return;
                 }
 
@@ -281,8 +316,17 @@ public class TopActivity extends CinemaBaseActivity {
                     mTextInitMode.setText(String.format(Locale.US, "Mode #%d", mInitMode +1));
                 }
 
-                if( CinemaTask.CMD_TMS_QUE <= (Integer)values[0] ) {
+                if( CinemaTask.CMD_TMS_QUE <= (Integer)values[0] &&
+                    CinemaTask.CMD_TMS_SCREEN > (Integer)values[0] ) {
                     UpdateInitialValue();
+                }
+
+                if( CinemaTask.TMS_SCREEN_ON  == (Integer)values[0] ||
+                    CinemaTask.TMS_SCREEN_OFF == (Integer)values[0] ) {
+
+                    boolean mute = (Integer)values[0] == CinemaTask.TMS_SCREEN_OFF;
+                    mBtnScreenOn.setText(mute ? "ON" : "OFF");
+                    mCinemaInfo.SetScreenOn(!mute);
                 }
             }
         });

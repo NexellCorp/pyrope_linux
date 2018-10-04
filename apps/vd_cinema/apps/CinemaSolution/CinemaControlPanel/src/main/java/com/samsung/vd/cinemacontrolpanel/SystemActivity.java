@@ -234,7 +234,8 @@ public class SystemActivity extends CinemaBaseActivity {
                 if( 0 > (Integer)values[0] )
                     return;
 
-                if( CinemaTask.CMD_TMS_QUE > (Integer)values[0] )
+                if( CinemaTask.CMD_TMS_QUE > (Integer)values[0] ||
+                    CinemaTask.CMD_TMS_SCREEN <= (Integer)values[0] )
                     return;
 
                 boolean bScale2K= (

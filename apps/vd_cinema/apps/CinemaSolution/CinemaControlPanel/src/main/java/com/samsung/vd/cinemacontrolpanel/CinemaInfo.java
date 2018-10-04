@@ -25,6 +25,7 @@ public class CinemaInfo extends Application {
     public static final String KEY_INITIAL_MODE     = "initial.mode";
     public static final String KEY_SCREEN_ROTATE    = "screen.rotate";
     public static final String KEY_MODE_3D          = "mode.3d";
+    public static final String KEY_SCREEN_ON        = "screen.on";
 
     public static final String KEY_UPDATE_TGAM0     = "update.tgam0";   // 0: skip, 1: eeprom, 2: usb
     public static final String KEY_UPDATE_TGAM1     = "update.tgam1";   // 0: skip, 1: eeprom, 2: usb
@@ -54,11 +55,15 @@ public class CinemaInfo extends Application {
     public static final int REG_TCON_ZERO_SCALE             = 0x018E;
     public static final int REG_TCON_LIVE_LOD_EN            = 0x0100;
     public static final int REG_TCON_LOD_INSERT_EN          = 0x011E;
+    public static final int REG_TCON_BOX_R                  = 0x0029;
+    public static final int REG_TCON_BOX_G                  = 0x002A;
+    public static final int REG_TCON_BOX_B                  = 0x002B;
     public static final int REG_TCON_XYZ_TO_RGB             = 0x0004;
     public static final int REG_TCON_CC_CABINET             = 0x0052;
     public static final int REG_TCON_CC_PIXEL               = 0x0044;
     public static final int REG_TCON_SEAM_ON                = 0x0192;
     public static final int REG_TCON_CC_MODULE              = 0x0055;
+    public static final int REG_TCON_PATTERN                = 0x0024;
     public static final int REG_TCON_SCAN_MODE              = 0x0120;
 
     public static final int REG_TCON_0x018B                 = 0x018B;
@@ -289,6 +294,15 @@ public class CinemaInfo extends Application {
         SetValue( KEY_MODE_3D, bEnable ? "true" : "false" );
     }
 
+    public boolean IsScreenOn() {
+        String strTemp = GetValue( KEY_SCREEN_ON );
+        return (strTemp == null) || strTemp.equals("true");
+    }
+
+    public void SetScreenOn( boolean bOn ) {
+        SetValue( KEY_SCREEN_ON, bOn ? "true" : "false" );
+    }
+
     //
     //  System Log
     //
@@ -349,7 +363,7 @@ public class CinemaInfo extends Application {
                 id = ((number % TCON_BASE_OFFSET) < 8) ? (byte)(number + TCON_BASE_OFFSET) : (byte)((number | 0x80) + TCON_BASE_OFFSET);
                 break;
             case SCREEN_TYPE_P33:
-                id = (number < TCON_P33_RIGHT_OFFSET) ? (byte)(number + TCON_BASE_OFFSET) : (byte)((number + TCON_BASE_OFFSET) | 0x80);
+                id = (number < TCON_P33_RIGHT_OFFSET) ? (byte)(number + TCON_BASE_OFFSET) : (byte)(((number-TCON_P33_RIGHT_OFFSET) | 0x80) + TCON_BASE_OFFSET);
                 break;
             default:
                 break;
@@ -485,6 +499,7 @@ public class CinemaInfo extends Application {
                     return -1;
                 }
             }
+
             return 0;
         }
     };
@@ -508,7 +523,7 @@ public class CinemaInfo extends Application {
         }
         else {
             //
-            //  Not Use This Function
+            //  This function is not used.
             //
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
             byte[] result, inData;

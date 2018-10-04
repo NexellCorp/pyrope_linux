@@ -80,6 +80,7 @@
                 android:orientation="horizontal"
                 android:weightSum="1">
 
+                <!-- Current EEPRom Status -->
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -89,7 +90,6 @@
                     android:textStyle=""
                     android:layout_weight="0.25" />
 
-                <!-- Current Mode -->
                 <TextView
                     android:id="@+id/textEEPRomStatus"
                     android:layout_width="0dp"
@@ -97,18 +97,18 @@
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:text="Invalid"
                     android:textStyle=""
-                    android:layout_weight="0.25" />
+                    android:layout_weight="0.09" />
 
+                <!-- Screen Type -->
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:text="- Screen Type : "
-                    android:paddingStart="30dp"
+                    android:paddingStart="20dp"
                     android:textStyle=""
-                    android:layout_weight="0.25" />
+                    android:layout_weight="0.24" />
 
-                <!-- Screen Type -->
                 <TextView
                     android:id="@+id/textScreenType"
                     android:layout_width="0dp"
@@ -116,7 +116,25 @@
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:text="Unknown"
                     android:textStyle=""
-                    android:layout_weight="0.25" />
+                    android:layout_weight="0.09" />
+
+                <!-- Screen Control -->
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:text="- Screen Control : "
+                    android:paddingStart="20dp"
+                    android:textStyle=""
+                    android:layout_weight="0.24" />
+
+                <Button
+                    android:id="@+id/btnScreenOn"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="OFF"
+                    android:textStyle=""
+                    android:layout_weight="0.09" />
             </LinearLayout>
 
             <LinearLayout

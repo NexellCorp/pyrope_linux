@@ -65,6 +65,15 @@ public class CinemaService extends Service {
         mTmsEventCallback = callback;
     }
 
+    private ScreenSaverCallback mScreenSaverCallback = null;
+    interface ScreenSaverCallback {
+        void onPrepare();
+    }
+
+    public void RegisterScreenSaverCallback( ScreenSaverCallback callback ) {
+        mScreenSaverCallback = callback;
+    }
+
     //
     //  For Screen Saver
     //
@@ -128,6 +137,9 @@ public class CinemaService extends Service {
                 break;
 
             case KEY_SCREEN_LOG_OUT:
+                if( mScreenSaverCallback != null )
+                    mScreenSaverCallback.onPrepare();
+
                 ((CinemaInfo)getApplicationContext()).InsertLog("Logout.");
 
                 Intent intent = new Intent(CinemaService.this, LoginActivity.class);
@@ -419,7 +431,8 @@ public class CinemaService extends Service {
                                 );
                             }
 
-                            if( CinemaTask.CMD_TMS_QUE <= mode ) {
+                            if( CinemaTask.CMD_TMS_QUE <= mode &&
+                                CinemaTask.CMD_TMS_SCREEN > mode ) {
                                 final boolean bScale2K= (
                                         CinemaTask.TMS_P25_2K_2D == mode || CinemaTask.TMS_P25_2K_3D == mode ||
                                         CinemaTask.TMS_P33_2K_2D == mode || CinemaTask.TMS_P33_2K_3D == mode );
@@ -492,6 +505,37 @@ public class CinemaService extends Service {
                                             }
                                         },
                                         null
+                                );
+                            }
+
+                            if( CinemaTask.CMD_TMS_SCREEN <= mode ) {
+                                final boolean bMute = (CinemaTask.TMS_SCREEN_OFF == mode);
+
+                                CinemaTask.GetInstance().Run(
+                                    CinemaTask.CMD_SCREEN_MUTE,
+                                    getApplicationContext(),
+                                    bMute,
+                                    new CinemaTask.PreExecuteCallback() {
+                                        @Override
+                                        public void onPreExecute(Object[] values) {
+                                            CinemaLoading.Show(getApplicationContext());
+                                        }
+                                    },
+                                    new CinemaTask.PostExecuteCallback() {
+                                        @Override
+                                        public void onPostExecute(Object[] values) {
+                                            if( !(values instanceof Integer[]) )
+                                                return;
+
+                                            Log.i(VD_DTAG, String.format("Screen Mute Done. ( mode = %d, isMute = %b )", mode, bMute));
+
+                                            if( mTmsEventCallback != null )
+                                                mTmsEventCallback.onTmsEventCallback( new Integer[]{ mode } );
+
+                                            CinemaLoading.Hide();
+                                        }
+                                    },
+                                    null
                                 );
                             }
                         }

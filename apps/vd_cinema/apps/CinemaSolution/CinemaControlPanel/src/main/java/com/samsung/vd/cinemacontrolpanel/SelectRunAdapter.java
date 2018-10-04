@@ -34,7 +34,7 @@ public class SelectRunAdapter extends ArrayAdapter<SelectRunInfo> {
 
     @Override
     public SelectRunInfo getItem(int position) {
-        return mData.get(position);
+        return (mData.size() > position) ? mData.get(position) : null;
     }
 
     @Override

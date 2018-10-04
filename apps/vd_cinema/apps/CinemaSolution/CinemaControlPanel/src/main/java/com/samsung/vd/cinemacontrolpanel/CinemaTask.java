@@ -71,7 +71,10 @@ public class CinemaTask {
     public static final int CMD_CHANGE_SCALE            = 98;
     public static final int CMD_CHANGE_MODE             = 99;
 
-    public static final int CMD_TMS_QUE                 = 150;  // MODE: 0 - 149, CUE: 145 - 255
+    public static final int CMD_POST_EXECUTE			= 110;
+    public static final int CMD_SCREEN_MUTE				= 120;
+
+    public static final int CMD_TMS_QUE                 = 150;  // MODE: 0 - 149, CUE: 150 - 255
     public static final int TMS_P25_4K_2D               = 150;
     public static final int TMS_P25_2K_2D               = 151;
     public static final int TMS_P25_4K_3D               = 152;
@@ -80,7 +83,10 @@ public class CinemaTask {
     public static final int TMS_P33_4K_3D               = 155;
     public static final int TMS_P33_2K_2D               = 156;
     public static final int TMS_P33_2K_3D               = 157;
-    public static final int TMS_MAX                     = 157;
+
+    public static final int CMD_TMS_SCREEN              = 200;
+    public static final int TMS_SCREEN_ON               = 200;
+    public static final int TMS_SCREEN_OFF              = 201;
 
     private Semaphore mSem = new Semaphore(1);
     private long mStartTime;
@@ -180,6 +186,9 @@ public class CinemaTask {
             case CMD_CHANGE_MODE:
                 new AsyncTaskChangeMode(context, value, preExecute, postExecute).execute();
                 break;
+            case CMD_POST_EXECUTE:
+                new AsyncTaskPostExecute(context, value, preExecute, postExecute, progressUpdate).execute();
+                break;
             default:
                 Log.i(VD_DTAG, String.format("Fail, Invalid Command. ( %d )", cmd));
                 break;
@@ -212,6 +221,9 @@ public class CinemaTask {
                 break;
             case CMD_CHANGE_SCALE:
                 new AsyncTaskChangeScale(context, value, preExecute, postExecute, progressUpdate).execute();
+                break;
+            case CMD_SCREEN_MUTE:
+                new AsyncTaskScreenMute(context, value, preExecute, postExecute, progressUpdate).execute();
                 break;
             default:
                 Log.i(VD_DTAG, String.format("Fail, Invalid Command. ( %d )", cmd));
@@ -339,6 +351,71 @@ public class CinemaTask {
     }
 
     //
+    //  Implementation Function
+    //
+    public void TconRegWrite( Context context, int[] register, int[] data ) {
+        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+        boolean bValidPort0 = ((CinemaInfo)context).IsCabinetValidPort(CinemaInfo.PORT_L);
+        boolean bValidPort1 = ((CinemaInfo)context).IsCabinetValidPort(CinemaInfo.PORT_R);
+
+        if( register == null || data == null )
+            return ;
+
+        if( register.length == 0 || data.length == 0 )
+            return ;
+
+        if( register.length != data.length )
+            return ;
+
+        if( !bValidPort0 && !bValidPort1 )
+            return ;
+
+        Log.i(VD_DTAG, ">>> Write Register.");
+
+        for( int i = 0; i < register.length; i++ ) {
+            byte[] reg = ctrl.IntToByteArray(register[i], NxCinemaCtrl.FORMAT_INT16);
+            byte[] dat = ctrl.IntToByteArray(data[i], NxCinemaCtrl.FORMAT_INT16);
+            byte[] inData = ctrl.AppendByteArray(reg, dat);
+
+            byte[] inData0 = ctrl.AppendByteArray(new byte[]{(byte)0x09}, inData);
+            byte[] inData1 = ctrl.AppendByteArray(new byte[]{(byte)0x89}, inData);
+
+            if(bValidPort0) ctrl.Send(NxCinemaCtrl.CMD_TCON_REG_WRITE, inData0);
+            if(bValidPort1) ctrl.Send(NxCinemaCtrl.CMD_TCON_REG_WRITE, inData1);
+        }
+    }
+
+    public void ClearCabinetDoor( Context context ) {
+        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+        boolean bValidPort0 = ((CinemaInfo)context).IsCabinetValidPort(CinemaInfo.PORT_L);
+        boolean bValidPort1 = ((CinemaInfo)context).IsCabinetValidPort(CinemaInfo.PORT_R);
+
+        if( !bValidPort0 && !bValidPort1 )
+            return ;
+
+        Log.i(VD_DTAG, ">>> Clear Cabinet Door.");
+
+        if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_DOOR_STATUS, new byte[]{(byte)0x09, (byte)0} );
+        if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_DOOR_STATUS, new byte[]{(byte)0x89, (byte)0} );
+    }
+
+    public void ClearTestPattern( Context context ) {
+        NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+        boolean bValidPort0 = ((CinemaInfo)context).IsCabinetValidPort(CinemaInfo.PORT_L);
+        boolean bValidPort1 = ((CinemaInfo)context).IsCabinetValidPort(CinemaInfo.PORT_R);
+
+        if( !bValidPort0 && !bValidPort1 )
+            return ;
+
+        Log.i(VD_DTAG, ">>> Clear Test Pattern." );
+
+        for( int i = 0; i < 7; i++ ) {
+            if( bValidPort0 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_PATTERN_STOP, new byte[]{(byte)0x09, (byte)i, (byte)0} );
+            if( bValidPort1 ) ctrl.Send( NxCinemaCtrl.CMD_TCON_PATTERN_STOP, new byte[]{(byte)0x89, (byte)i, (byte)0} );
+        }
+    }
+
+    //
     //  Implementation AsyncTask
     //
     private class AsyncTaskTconRegWrite extends AsyncTask<Void, Void, Void> {
@@ -364,6 +441,9 @@ public class CinemaTask {
 
         @Override
         protected Void doInBackground(Void... voids) {
+            if( mRegister == null || mData == null )
+                return null;
+
             if( mCabinet.length == 0 || mRegister.length == 0 || mData.length == 0 )
                 return null;
 
@@ -445,6 +525,9 @@ public class CinemaTask {
 
         @Override
         protected Void doInBackground(Void... voids) {
+            if (mRegister == null)
+                return null;
+
             if( mCabinet.length == 0 || mRegister.length == 0)
                 return null;
 
@@ -521,6 +604,9 @@ public class CinemaTask {
 
         @Override
         protected Void doInBackground(Void... voids) {
+            if (mRegister == null || mData == null)
+                return null;
+
             if( mRegister.length == 0 || mData.length == 0 )
                 return null;
 
@@ -592,6 +678,9 @@ public class CinemaTask {
 
         @Override
         protected Void doInBackground(Void... voids) {
+            if (mRegister == null)
+                return null;
+
             if( mRegister.length == 0)
                 return null;
 
@@ -814,6 +903,7 @@ public class CinemaTask {
                 }
 
                 ((CinemaInfo)mContext).SetFirstBoot(false);
+                ((CinemaInfo)mContext).SetScreenOn(true);
             }
 
             //
@@ -2167,15 +2257,20 @@ public class CinemaTask {
 
                 for( int i = 0; i < mBypassReg.length; i++ ) {
                     byte[] result, inData;
-                    byte slave = mCabinet[0];
+                    byte index = mCabinet[0];
                     int data;
 
-                    inData = new byte[] { slave };
+                    inData = new byte[]{ index };
                     inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mBypassReg[i], NxCinemaCtrl.FORMAT_INT16));
 
                     result = ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_READ, inData );
                     if( result == null || result.length == 0 ) {
-                        Log.i(VD_DTAG, String.format(Locale.US, "i2c read fail.( id: 0x%02X, reg: 0x%04X )", slave, mBypassReg[i] ));
+                        Log.i(VD_DTAG, String.format(Locale.US, "i2c read fail.( cabinet: %d, port: %d, slave: 0x%02x, reg: 0x%04X )",
+                                ((CinemaInfo) mContext).GetCabinetNumber(index),
+                                ((CinemaInfo) mContext).GetCabinetPort(index),
+                                ((CinemaInfo) mContext).GetCabinetSlave(index),
+                                mBypassReg[i]
+                        ));
                         continue;
                     }
 
@@ -2538,15 +2633,15 @@ public class CinemaTask {
 
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
 
-            int index = (mIndexPos != 0) ? mIndexPos - 1 : 0;
-            byte slave = mCabinet[index];
+            int pos = (mIndexPos != 0) ? mIndexPos - 1 : 0;
+            byte index = mCabinet[pos];
 
             //
             //  1. Read White Seam Value in Flash Memory.
             //
             if( !mEmulate ) {
                 Log.i(VD_DTAG, ">>> White Seam Read in Flash Memory.");
-                byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_WHITE_SEAM_READ, new byte[] {slave} );
+                byte[] result = ctrl.Send(NxCinemaCtrl.CMD_TCON_WHITE_SEAM_READ, new byte[]{index});
                 if( result == null || result.length == 0 || result[0] != 0x01 ) {
                     Log.i(VD_DTAG, "Fail, WhiteSeam Read.");
                     return null;
@@ -2559,12 +2654,18 @@ public class CinemaTask {
             Log.i(VD_DTAG, ">>> White Seam Read in Emulate Register.");
             for( int i = 0; i < mSeamReg.length; i++ ) {
                 byte[] result, inData;
-                inData = new byte[] { slave };
+                inData = new byte[]{ index };
                 inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mSeamReg[i], NxCinemaCtrl.FORMAT_INT16));
 
                 result = ctrl.Send( NxCinemaCtrl.CMD_TCON_REG_READ, inData );
                 if( result == null || result.length == 0 ) {
-                    Log.i(VD_DTAG, String.format(Locale.US, "i2c read fail.( id: 0x%02X, reg: 0x%04X )", slave, mSeamReg[i] ));
+                    Log.i(VD_DTAG, String.format(Locale.US, "i2c read fail.( cabinet: %d, port: %d, slave: 0x%02x, reg: 0x%04X )",
+                            ((CinemaInfo) mContext).GetCabinetNumber(index),
+                            ((CinemaInfo) mContext).GetCabinetPort(index),
+                            ((CinemaInfo) mContext).GetCabinetSlave(index),
+                            mSeamReg[i]
+                    ));
+
                     mSeamVal[i] = CinemaInfo.RET_ERROR;
                     publishProgress( i, mSeamVal[i] );
                     continue;
@@ -2573,8 +2674,14 @@ public class CinemaTask {
                 mSeamVal[i] = ctrl.ByteArrayToInt(result);
                 publishProgress( i, mSeamVal[i] );
 
-                Log.i(VD_DTAG, String.format(Locale.US, ">>> WhiteSeam Read Done. ( pos: %d, slave: 0x%02X, emulate: %b, %s: %d )",
-                        index, slave, mEmulate, mSeamStr[i], mSeamVal[i]
+                Log.i(VD_DTAG, String.format(Locale.US, ">>> WhiteSeam Read Done. ( pos: %d, cabinet: %d, port: %d, slave: 0x%02x, emulate: %b, %s: %d )",
+                        pos,
+                        ((CinemaInfo) mContext).GetCabinetNumber(index),
+                        ((CinemaInfo) mContext).GetCabinetPort(index),
+                        ((CinemaInfo) mContext).GetCabinetSlave(index),
+                        mEmulate,
+                        mSeamStr[i],
+                        mSeamVal[i]
                 ));
             }
 
@@ -2648,7 +2755,7 @@ public class CinemaTask {
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
 
             if( mIndexPos == 0 ) {
-                Log.i(VD_DTAG, "WhiteSeam Emulate. ( index: all )");
+                Log.i(VD_DTAG, "WhiteSeam Emulate. ( pos: all )");
 
                 boolean bValidPort0 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_L);
                 boolean bValidPort1 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_R);
@@ -2671,12 +2778,17 @@ public class CinemaTask {
             }
             else {
                 int pos = mIndexPos - 1;
-                byte slave = mCabinet[pos];
-                Log.i(VD_DTAG, String.format(Locale.US, "WhiteSeam Emulate. ( index: %d, slave: 0x%02x )", pos, slave));
+                byte index = mCabinet[pos];
+                Log.i(VD_DTAG, String.format(Locale.US, "WhiteSeam Emulate. ( pos: %d, cabinet: %d, port: %d, slave: 0x%02x )",
+                        pos,
+                        ((CinemaInfo) mContext).GetCabinetNumber(index),
+                        ((CinemaInfo) mContext).GetCabinetPort(index),
+                        ((CinemaInfo) mContext).GetCabinetSlave(index)
+                ));
 
                 for( int j = 0; j < mSeamReg.length; j++ ) {
                     byte[] inData;
-                    inData = new byte[] { slave };
+                    inData = new byte[] { index };
                     inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mSeamReg[j], NxCinemaCtrl.FORMAT_INT16));
                     inData = ctrl.AppendByteArray(inData, ctrl.IntToByteArray(mSeamVal[j], NxCinemaCtrl.FORMAT_INT16));
 
@@ -3122,14 +3234,19 @@ public class CinemaTask {
             int end     = (mModule != LedDotCorrectInfo.MAX_MODULE_NUM) ? mModule + 1 : LedDotCorrectInfo.MAX_MODULE_NUM;
 
             for( int i = start; i < end; i++ ) {
-                Log.i(VD_DTAG, String.format(Locale.US, "Pixel correction extract. ( slave: 0x%02X, module: %d )", (byte)mIndex, i) );
+                Log.i(VD_DTAG, String.format(Locale.US, "Pixel correction extract. ( cabinet: %d, port: %d, slave: 0x%02x, module: %d )",
+                        ((CinemaInfo) mContext).GetCabinetNumber((byte) mIndex),
+                        ((CinemaInfo) mContext).GetCabinetPort((byte) mIndex),
+                        ((CinemaInfo) mContext).GetCabinetSlave((byte) mIndex),
+                        i
+                ));
 
                 byte[] result = ctrl.Send( NxCinemaCtrl.CMD_TCON_DOT_CORRECTION_EXTRACT, new byte[]{(byte)mIndex, (byte)i} );
                 if( result == null || result.length == 0)
                     continue;
 
                 String[] extPath = FileManager.GetExternalPath();
-                String strDir = String.format(Locale.US, "%s/DOT_CORRECTION_ID%03d", extPath[0], ((CinemaInfo)mContext).GetCabinetNumber((byte)mIndex));
+                String strDir = String.format(Locale.US, "%s/%s/ID%03d", extPath[0], LedDotCorrectInfo.PATH_EXTRACT, ((CinemaInfo) mContext).GetCabinetNumber((byte) mIndex));
                 if( !FileManager.MakeDirectory( strDir ) ) {
                     Log.i(VD_DTAG, String.format(Locale.US, "Fail, Create Directory. ( %s )", strDir));
                     continue;
@@ -3825,8 +3942,139 @@ public class CinemaTask {
             if( mPostExecute != null )
                 mPostExecute.onPostExecute( ToInteger(mResult) );
 
-            Log.i(VD_DTAG, String.format( Locale.US, ">>> Change Mode Done. ( curTime: %d mSec )", System.currentTimeMillis()));
-            Log.i(VD_DTAG, String.format(Locale.US, ">>> Change Mode Done. ( %d mSec )", System.currentTimeMillis() - mStartTime ));
+            Log.i(VD_DTAG, String.format(Locale.US, ">>> Change Mode Done. ( curTime: %d mSec )", System.currentTimeMillis()));
+            Log.i(VD_DTAG, String.format(Locale.US, ">>> Change Mode Done. ( %d mSec )", System.currentTimeMillis() - mStartTime));
+            Unlock();
+            super.onPostExecute(aVoid);
+        }
+    }
+
+    private class AsyncTaskPostExecute extends AsyncTask<Void, Void, Void> {
+        private Context mContext = null;
+        private PreExecuteCallback mPreExecute = null;
+        private PostExecuteCallback mPostExecute = null;
+        private ProgressUpdateCallback mProgressUpdate = null;
+
+        private int mDelay = 0;
+
+        public AsyncTaskPostExecute(Context context, int delay, PreExecuteCallback preExecute, PostExecuteCallback postExecute, ProgressUpdateCallback progressUpdate) {
+            mContext = context;
+            mPreExecute = preExecute;
+            mPostExecute = postExecute;
+            mProgressUpdate = progressUpdate;
+
+            mDelay = delay;
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            try {
+                Thread.sleep(mDelay);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Void... values) {
+            if (mProgressUpdate != null)
+                mProgressUpdate.onProgressUpdate(null);
+
+            super.onProgressUpdate();
+        }
+
+        @Override
+        protected void onPreExecute() {
+            Lock();
+            Log.i(VD_DTAG, ">>> Post Execute Start.");
+            mStartTime = System.currentTimeMillis();
+
+            if (mPreExecute != null)
+                mPreExecute.onPreExecute(null);
+
+            super.onPreExecute();
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            if (mPostExecute != null)
+                mPostExecute.onPostExecute(null);
+
+            Log.i(VD_DTAG, String.format(Locale.US, ">>> Post Execute Done. ( %d mSec )", System.currentTimeMillis() - mStartTime));
+            Unlock();
+            super.onPostExecute(aVoid);
+        }
+    }
+
+    private class AsyncTaskScreenMute extends AsyncTask<Void, Void, Void> {
+        private Context mContext = null;
+        private PreExecuteCallback mPreExecute = null;
+        private PostExecuteCallback mPostExecute = null;
+        private ProgressUpdateCallback mProgressUpdate = null;
+
+        private boolean mMute = true;
+        public AsyncTaskScreenMute( Context context, boolean mute, PreExecuteCallback preExecute, PostExecuteCallback postExecute, ProgressUpdateCallback progressUpdate ) {
+            mContext = context;
+            mPreExecute = preExecute;
+            mPostExecute = postExecute;
+            mProgressUpdate = progressUpdate;
+
+            mMute = mute;
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+
+            if( mMute )
+            {
+                ctrl.Send(NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[]{(byte)0x01});
+            }
+
+            {
+                boolean bValidPort0 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_L);
+                boolean bValidPort1 = ((CinemaInfo)mContext).IsCabinetValidPort(CinemaInfo.PORT_R);
+
+                if (bValidPort0) ctrl.Send(NxCinemaCtrl.CMD_TCON_MUTE, new byte[]{(byte)0x09, mMute ? (byte)0x01 : (byte)0x00});
+                if (bValidPort1) ctrl.Send(NxCinemaCtrl.CMD_TCON_MUTE, new byte[]{(byte)0x89, mMute ? (byte)0x01 : (byte)0x00});
+            }
+
+            if( !mMute )
+            {
+                ctrl.Send(NxCinemaCtrl.CMD_PFPGA_MUTE, new byte[]{(byte)0x00});
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Void... values) {
+            if (mProgressUpdate != null)
+                mProgressUpdate.onProgressUpdate(null);
+
+            super.onProgressUpdate();
+        }
+
+        @Override
+        protected void onPreExecute() {
+            Lock();
+            Log.i(VD_DTAG, String.format(Locale.US, ">>> Screen Mute Start ( %b ).", mMute));
+            mStartTime = System.currentTimeMillis();
+
+            if (mPreExecute != null)
+                mPreExecute.onPreExecute(null);
+
+            super.onPreExecute();
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            if (mPostExecute != null)
+                mPostExecute.onPostExecute(ToInteger(new int[] {mMute ? TMS_SCREEN_OFF : TMS_SCREEN_ON}));
+
+            Log.i(VD_DTAG, String.format(Locale.US, ">>> Screen Mute Done. ( %d mSec )", System.currentTimeMillis() - mStartTime));
             Unlock();
             super.onPostExecute(aVoid);
         }

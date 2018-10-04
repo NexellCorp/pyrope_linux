@@ -83,15 +83,29 @@ public class DisplayCheckActivity extends CinemaBaseActivity {
             new String[0],
     };
 
+    private int[] mTestPatternReg = {
+            CinemaInfo.REG_TCON_BOX_R,
+            CinemaInfo.REG_TCON_BOX_G,
+            CinemaInfo.REG_TCON_BOX_B,
+    };
+
+    private int[] mTestPatternDat = {
+            0x0000,
+            0x0000,
+            0x0000,
+    };
+
     private int[] mBypassReg = {
             CinemaInfo.REG_TCON_XYZ_TO_RGB,   //  8, XYZ to RGB Conversion
             CinemaInfo.REG_TCON_CC_CABINET,   //  9, Gamut Mapping
             CinemaInfo.REG_TCON_CC_PIXEL,     // 10, Pixel Correction
             CinemaInfo.REG_TCON_SEAM_ON,      // 11, Edge Correction
             CinemaInfo.REG_TCON_CC_MODULE,    // 12, Module Correction
+            CinemaInfo.REG_TCON_PATTERN,      // This is not menu. Just background setting.
     };
 
     private int[] mBypassDat = {
+            0x0000,
             0x0000,
             0x0000,
             0x0000,
@@ -310,6 +324,19 @@ public class DisplayCheckActivity extends CinemaBaseActivity {
 
         mTabHost.getTabWidget().getChildTabViewAt(2).setEnabled(false);
         ((TextView) mTabHost.getTabWidget().getChildAt(2).findViewById(android.R.id.title)).setTextColor(0xFFDCDCDC);
+
+        //
+        //
+        //
+        this.RegisterScreenSaverCallback(new CinemaService.ScreenSaverCallback() {
+            @Override
+            public void onPrepare() {
+                CinemaTask.GetInstance().ClearTestPattern(getApplicationContext());
+                CinemaTask.GetInstance().TconRegWrite(getApplicationContext(), mTestPatternReg, mTestPatternDat);
+                CinemaTask.GetInstance().TconRegWrite(getApplicationContext(), mBypassReg, mBypassDat);
+                CinemaTask.GetInstance().TconRegWrite(getApplicationContext(), mScanModeReg, mScanModeDat);
+            }
+        });
     }
 
     private void AddTabs() {
@@ -354,7 +381,7 @@ public class DisplayCheckActivity extends CinemaBaseActivity {
         CinemaTask.GetInstance().Run(
                 CinemaTask.CMD_TCON_REG_READ,
                 getApplicationContext(),
-                mScanModeReg,
+                mTestPatternReg,
                 new CinemaTask.PreExecuteCallback() {
                     @Override
                     public void onPreExecute(Object[] values) {
@@ -369,8 +396,8 @@ public class DisplayCheckActivity extends CinemaBaseActivity {
 
                         for( int i = 0 ; i < values.length; i++ )
                         {
-                            mScanModeDat[i] = (Integer)values[i];
-                            Log.i(VD_DTAG, String.format(">>> backup scan mode register. ( reg: 0x%04X, dat: 0x%04X )", mScanModeReg[i], mScanModeDat[i]) );
+                            mTestPatternDat[i] = (Integer)values[i];
+                            Log.i(VD_DTAG, String.format(">>> backup test pattern register. ( reg: 0x%04X, dat: 0x%04X )", mTestPatternReg[i], mTestPatternDat[i]) );
                         }
                         HideProgress();
                     }
@@ -404,6 +431,33 @@ public class DisplayCheckActivity extends CinemaBaseActivity {
                                 info.SetStatus((Integer)values[1] == 0x0001 );
                                 mAdapterTestPattern.notifyDataSetChanged();
                             }
+                        }
+                        HideProgress();
+                    }
+                },
+                null
+        );
+
+        CinemaTask.GetInstance().Run(
+                CinemaTask.CMD_TCON_REG_READ,
+                getApplicationContext(),
+                mScanModeReg,
+                new CinemaTask.PreExecuteCallback() {
+                    @Override
+                    public void onPreExecute(Object[] values) {
+                        ShowProgress();
+                    }
+                },
+                new CinemaTask.PostExecuteCallback() {
+                    @Override
+                    public void onPostExecute(Object[] values) {
+                        if( !(values instanceof Integer[]) )
+                            return;
+
+                        for( int i = 0 ; i < values.length; i++ )
+                        {
+                            mScanModeDat[i] = (Integer)values[i];
+                            Log.i(VD_DTAG, String.format(">>> backup scan mode register. ( reg: 0x%04X, dat: 0x%04X )", mScanModeReg[i], mScanModeDat[i]) );
                         }
                         HideProgress();
                     }
@@ -444,8 +498,8 @@ public class DisplayCheckActivity extends CinemaBaseActivity {
         CinemaTask.GetInstance().Run(
                 CinemaTask.CMD_TCON_REG_WRITE,
                 getApplicationContext(),
-                mScanModeReg,
-                mScanModeDat,
+                mTestPatternReg,
+                mTestPatternDat,
                 new CinemaTask.PreExecuteCallback() {
                     @Override
                     public void onPreExecute(Object[] values) {
@@ -455,14 +509,11 @@ public class DisplayCheckActivity extends CinemaBaseActivity {
                 new CinemaTask.PostExecuteCallback() {
                     @Override
                     public void onPostExecute(Object[] values) {
-                        for( int i = 0; i < mScanModeReg.length; i++ ) {
-                            Log.i(VD_DTAG, String.format(">>> restore scan mode register. ( reg: 0x%04X, dat: 0x%04X )", mScanModeReg[i], mScanModeDat[i]) );
+                        for( int i = 0; i < mTestPatternReg.length; i++ ) {
+                            Log.i(VD_DTAG, String.format(">>> restore test pattern register. ( reg: 0x%04X, dat: 0x%04X )", mTestPatternReg[i], mTestPatternDat[i]) );
                         }
 
                         HideProgress();
-
-                        if( null != postExecute )
-                            postExecute.onPostExecute(values);
                     }
                 },
                 null
@@ -486,6 +537,49 @@ public class DisplayCheckActivity extends CinemaBaseActivity {
                             Log.i(VD_DTAG, String.format(">>> restore bypass register. ( reg: 0x%04X, dat: 0x%04X )", mBypassReg[i], mBypassDat[i]) );
                         }
 
+                        HideProgress();
+                    }
+                },
+                null
+        );
+
+        CinemaTask.GetInstance().Run(
+                CinemaTask.CMD_TCON_REG_WRITE,
+                getApplicationContext(),
+                mScanModeReg,
+                mScanModeDat,
+                new CinemaTask.PreExecuteCallback() {
+                    @Override
+                    public void onPreExecute(Object[] values) {
+                        ShowProgress();
+                    }
+                },
+                new CinemaTask.PostExecuteCallback() {
+                    @Override
+                    public void onPostExecute(Object[] values) {
+                        for( int i = 0; i < mScanModeReg.length; i++ ) {
+                            Log.i(VD_DTAG, String.format(">>> restore scan mode register. ( reg: 0x%04X, dat: 0x%04X )", mScanModeReg[i], mScanModeDat[i]) );
+                        }
+
+                        HideProgress();
+                    }
+                },
+                null
+        );
+
+        CinemaTask.GetInstance().Run(
+                CinemaTask.CMD_POST_EXECUTE,
+                getApplicationContext(),
+                0,
+                new CinemaTask.PreExecuteCallback() {
+                    @Override
+                    public void onPreExecute(Object[] values) {
+                        ShowProgress();
+                    }
+                },
+                new CinemaTask.PostExecuteCallback() {
+                    @Override
+                    public void onPostExecute(Object[] values) {
                         HideProgress();
 
                         if( null != postExecute )

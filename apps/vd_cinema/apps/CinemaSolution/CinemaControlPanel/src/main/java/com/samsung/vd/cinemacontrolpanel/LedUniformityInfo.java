@@ -16,7 +16,7 @@ import java.util.StringTokenizer;
 public class LedUniformityInfo {
     private static final String VD_DTAG = "LedUniformityInfo";
 
-    public static final String PATH_SOURCE = "DCI";
+    public static final String PATH_SOURCE = "DCI/PFPGA";
     public static final String PATH_TARGET = "/storage/sdcard0/SAMSUNG/PFPGA";
     public static final String NAME = "UC_COEF.txt";
 

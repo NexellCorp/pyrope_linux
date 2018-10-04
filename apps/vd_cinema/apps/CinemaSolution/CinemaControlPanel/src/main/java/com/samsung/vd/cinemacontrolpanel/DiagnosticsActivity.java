@@ -377,7 +377,6 @@ public class DiagnosticsActivity extends CinemaBaseActivity {
         //
         //
         //
-
         Log.i(VD_DTAG, "--> Login Group : " + mCinemaInfo.GetUserGroup());
 
         if( mCinemaInfo.GetUserGroup().equals(AccountPreference.GROUP_CALIBRATOR) ) {
@@ -390,6 +389,16 @@ public class DiagnosticsActivity extends CinemaBaseActivity {
             mTabHost.getTabWidget().getChildTabViewAt(4).setEnabled(false);
             ((TextView)mTabHost.getTabWidget().getChildAt(4).findViewById(android.R.id.title)).setTextColor(0xFFDCDCDC);
         }
+
+        //
+        //
+        //
+        this.RegisterScreenSaverCallback(new CinemaService.ScreenSaverCallback() {
+            @Override
+            public void onPrepare() {
+                CinemaTask.GetInstance().ClearCabinetDoor(getApplicationContext());
+            }
+        });
     }
 
     private void AddTabs() {

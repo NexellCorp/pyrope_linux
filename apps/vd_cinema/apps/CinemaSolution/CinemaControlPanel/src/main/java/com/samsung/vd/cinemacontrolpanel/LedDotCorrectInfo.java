@@ -20,7 +20,8 @@ import java.util.regex.Pattern;
 public class LedDotCorrectInfo {
     private static final String VD_DTAG = "LedDotCorrectInfo";
 
-    public static final String PATH = "DCI/DOT";
+    public static final String PATH = "DCI/PIXEL";
+    public static final String PATH_EXTRACT = "DCI/PIXEL_READ";
     public static final String PATTERN_DIR  = "ID(\\d*)";
 
     public static final String PATTERN_NAME = "RGB_P(2_5|3_3)_ID(\\d*)_(L|R)(\\d)(A|B).txt";
@@ -138,7 +139,12 @@ public class LedDotCorrectInfo {
             }
         }
 
-        Log.i(VD_DTAG, String.format("Parse Done.( slave: 0x%02x, module: %d )", (byte)mIndex, mModule));
+        Log.i(VD_DTAG, String.format("Parse Done.( cabinet: %d, port: %d, slave: 0x%02x, module: %d )",
+                ((CinemaInfo)mContext).GetCabinetNumber((byte)mIndex),
+                ((CinemaInfo)mContext).GetCabinetPort((byte)mIndex),
+                ((CinemaInfo)mContext).GetCabinetSlave((byte)mIndex),
+                mModule
+        ));
         return true;
     }
 

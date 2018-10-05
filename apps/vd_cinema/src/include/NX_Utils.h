@@ -28,6 +28,7 @@
 uint64_t	NX_GetTickCount( void );
 int32_t		NX_GetRandomValue( int32_t iStartNum, int32_t iEndNum );
 
+void		NX_HexDump( const void *data, int32_t size, const char *tag, const char *msg );
 void		NX_HexDump( const void *data, int32_t size, const char *msg );
 void		NX_HexDump( const void *data, int32_t size );
 

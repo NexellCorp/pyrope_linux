@@ -111,8 +111,7 @@ int32_t CNX_TMSClient::Send( const char *pIpAddr, uint32_t iCmd, uint8_t *pBuf, 
 		return -1;
 	}
 
-	NX_HexDump( m_SendBuf, sendSize, "Send: " );
-	printf("\n");
+	NX_HexDump( m_SendBuf, sendSize, "Send" );
 
 	write( clntSock, m_SendBuf, sendSize );
 
@@ -124,8 +123,7 @@ int32_t CNX_TMSClient::Send( const char *pIpAddr, uint32_t iCmd, uint8_t *pBuf, 
 		return -1;
 	}
 
-	NX_HexDump( m_RecvBuf, recvSize, "Recv: " );
-	printf("\n");
+	NX_HexDump( m_RecvBuf, recvSize, "Recv" );
 
 	//
 	//	Condition of pBuf

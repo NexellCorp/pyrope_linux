@@ -52,25 +52,7 @@ int32_t NX_GetRandomValue( int32_t iStartNum, int32_t iEndNum )
 }
 
 //------------------------------------------------------------------------------
-void NX_HexDump( const void *data, int32_t size, const char *msg )
-{
-	const uint8_t *byte = (const uint8_t *)data;
-
-	printf("%s ( %d bytes ):", msg, size);
-
-	for( int32_t i = 0; i < size; ++i)
-	{
-		if ((i % 16) == 0)
-		{
-			printf("\n%04x", i);
-		}
-
-		printf(" %02x", byte[i]);
-	}
-}
-
-//------------------------------------------------------------------------------
-void NX_HexDump( const void *data, int32_t size )
+static void HexDump( const void *data, int32_t size, const char *tag )
 {
 	int32_t i=0, offset = 0;
 	char tmp[32];
@@ -78,7 +60,7 @@ void NX_HexDump( const void *data, int32_t size )
 	const uint8_t *_data = (const uint8_t*)data;
 	while( offset < size )
 	{
-		sprintf( lineBuf, "%08lx :  ", (unsigned long)offset );
+		sprintf( lineBuf, "%08lx    ", (unsigned long)offset );
 		for( i=0 ; i<16 ; ++i )
 		{
 			if( i == 8 ){
@@ -119,10 +101,40 @@ void NX_HexDump( const void *data, int32_t size )
 #ifndef ANDROID
 		printf( "%s", lineBuf );
 #else
-		__android_log_print(ANDROID_LOG_DEBUG, "", "%s", lineBuf );
+		__android_log_print(ANDROID_LOG_DEBUG, tag, "%s", lineBuf );
 #endif
 		offset += 16;
 	}
+}
+
+//------------------------------------------------------------------------------
+void NX_HexDump( const void *data, int32_t size, const char *msg )
+{
+#ifndef ANDROID
+	printf("%s ( %d bytes ):\n", msg, size);
+#else
+	__android_log_print(ANDROID_LOG_DEBUG, "", "%s ( %d bytes ):", msg, size );
+#endif
+
+	HexDump( data, size, "" );
+}
+
+//------------------------------------------------------------------------------
+void NX_HexDump( const void *data, int32_t size, const char *tag, const char *msg )
+{
+#ifndef ANDROID
+	printf("%s ( %d bytes ):\n", msg, size);
+#else
+	__android_log_print(ANDROID_LOG_DEBUG, tag, "%s ( %d bytes ):", msg, size );
+#endif
+
+	HexDump( data, size, tag );
+}
+
+//------------------------------------------------------------------------------
+void NX_HexDump( const void *data, int32_t size )
+{
+	HexDump( data, size, "" );
 }
 
 //------------------------------------------------------------------------------

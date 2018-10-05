@@ -267,6 +267,7 @@ void CNX_TMSServer::ThreadProc()
 		NxDbgMsg( NX_DBG_VBS, "iCmd = 0x%08x, readSize = %d\n", iCmd, iReadSize );
 
 		NxDbgMsg( NX_DBG_DEBUG, ">>>> Receive QueCommand. ( curTime: %lld mSec )\n",  NX_GetTickCount() );
+		NX_HexDump( m_RecvBuf, iPayloadSize + 6, NX_DTAG, "Recv" );
 
 		if( !m_pCinema->IsBusy() )
 		{
@@ -295,6 +296,7 @@ void CNX_TMSServer::ThreadProc()
 		iSendSize = GDC_MakePacket( KEY_SEC(iCmd), outBuf, iOutSize, m_SendBuf, sizeof(m_SendBuf) );
 		WriteData( iClientSocket, m_SendBuf, iSendSize );
 
+		NX_HexDump( m_SendBuf, iSendSize, NX_DTAG, "Send" );
 		NxDbgMsg( NX_DBG_DEBUG, ">>>> Receive QueCommand Done. ( curTime: %lld mSec )\n",  NX_GetTickCount() );
 
 ERROR_TMS:

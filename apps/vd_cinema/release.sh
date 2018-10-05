@@ -22,6 +22,9 @@ NX_PACKAGE=(
 for package in "${NX_PACKAGE[@]}"; do
 	package_name=$(basename $package)
 	result=$NX_DIR_TARGET/$package_name
+	if ! test -e $package; then
+		continue
+	fi
 
 	cmp -s $package $result
 	if [ $? -ne 0 ]; then
@@ -30,10 +33,12 @@ for package in "${NX_PACKAGE[@]}"; do
 	fi
 done
 
+echo ">>> Package TarBall."
 cd $NX_DIR_SCRIPT
 tar cvzf VDCinemaRelease_$NX_DATE.tar.gz release
 cd $NX_DIR_WORKING
 
+echo ">>> Package Zip."
 cd $NX_DIR_SCRIPT/release
 zip -r $NX_DIR_SCRIPT/VDCinemaRelease_$NX_DATE.zip *
 cd $NX_DIR_WORKING

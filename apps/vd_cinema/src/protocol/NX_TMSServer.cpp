@@ -236,7 +236,7 @@ void CNX_TMSServer::ThreadProc()
 		iReadSize = ReadData( iClientSocket, pRecvBuf, 2 );
 		if( 2 != iReadSize )
 		{
-			NxDbgMsg( NX_DBG_ERR, "Fail, ReadData().\n" );
+			NxDbgMsg( NX_DBG_ERR, "Fail, Read Length. ( read: %d, expected: 2 )\n", iReadSize );
 			goto ERROR_TMS;
 		}
 
@@ -246,7 +246,7 @@ void CNX_TMSServer::ThreadProc()
 		//	Size Check
 		if( iPayloadSize+8 > (int32_t)sizeof(m_RecvBuf) )
 		{
-			NxDbgMsg( NX_DBG_ERR, "Fail, Data Size.\n" );
+			NxDbgMsg( NX_DBG_ERR, "Fail, Check Payload Size.\n" );
 			goto ERROR_TMS;
 		}
 
@@ -256,7 +256,7 @@ void CNX_TMSServer::ThreadProc()
 			iReadSize = ReadData( iClientSocket, pRecvBuf, iPayloadSize );
 			if( iReadSize != iPayloadSize )
 			{
-				NxErrMsg( "Fail, ReadData().\n" );
+				NxDbgMsg( NX_DBG_ERR, "Fail, Read Payload. ( read: %d, expected: %d )\n", iReadSize, iPayloadSize );
 				goto ERROR_TMS;
 			}
 		}
@@ -271,6 +271,8 @@ void CNX_TMSServer::ThreadProc()
 
 		if( !m_pCinema->IsBusy() )
 		{
+			NxDbgMsg( NX_DBG_INFO, "SendCommand().\n" );
+
 			uint8_t sendData[4] = { 0x00, };
 			sprintf( (char*)sendData, "%d", pPayload[0] );
 
@@ -289,6 +291,8 @@ void CNX_TMSServer::ThreadProc()
 		}
 		else
 		{
+			NxDbgMsg( NX_DBG_INFO, "IsBusy().\n" );
+
 			outBuf[0] = 0xFE;
 			iOutSize = 1;
 		}

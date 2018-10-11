@@ -89,7 +89,10 @@ CNX_CinemaManager::CNX_CinemaManager()
 	memset( m_IpcVersion, 0x00, sizeof(m_IpcVersion) );
 	memset( m_TmsVersion, 0x00, sizeof(m_TmsVersion) );
 
-	snprintf( (char*)m_IpcVersion, sizeof(m_IpcVersion), "%s ( %s, %s )", NX_VERSION_IPC_SERVER, __TIME__, __DATE__ );
+	NxDbgMsg( NX_DBG_INFO, "--------------------------------------------------------------------------------\n" );
+	NxDbgMsg( NX_DBG_INFO, ">> Build Information:  %08lld-%06lld ( %s, %s )\n",
+		NX_DATE(), NX_TIME(), __TIME__, __DATE__ );
+	NxDbgMsg( NX_DBG_INFO, "--------------------------------------------------------------------------------\n" );
 
 	MakeDirectory( TCON_EEPROM_RESULT_PATH );
 	MakeDirectory( TCON_USB_RESULT_PATH );
@@ -114,8 +117,8 @@ void CNX_CinemaManager::SetNapVersion( uint8_t *pVersion, int32_t iSize )
 	char szVersion[1024] = { 0x00, };
 	memcpy( szVersion, pVersion, iSize );
 
-	// NAP VERSION + IPC BUILD DATE
-	snprintf( (char*)m_NapVersion, sizeof(m_NapVersion), "%s ( %lld )", szVersion, NX_DATE() );
+	// NAP VERSION + BUILD DATE of CinemaManager
+	snprintf( (char*)m_NapVersion, sizeof(m_NapVersion), "%s ( %08lld )", szVersion, NX_DATE() );
 }
 
 //------------------------------------------------------------------------------

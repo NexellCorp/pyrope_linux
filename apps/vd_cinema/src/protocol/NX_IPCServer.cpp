@@ -218,7 +218,7 @@ void CNX_IPCServer::ThreadProc()
 		iReadSize = ReadData( iClientSocket, pRecvBuf, 2 );
 		if( 2 != iReadSize )
 		{
-			NxDbgMsg( NX_DBG_ERR, "Fail, ReadData().\n" );
+			NxDbgMsg( NX_DBG_ERR, "Fail, Read Command. ( read: %d, expected: 2 )\n", iReadSize );
 			goto ERROR_IPC;
 		}
 
@@ -229,7 +229,7 @@ void CNX_IPCServer::ThreadProc()
 		iReadSize = ReadData( iClientSocket, pRecvBuf, 2 );
 		if( 2 != iReadSize )
 		{
-			NxDbgMsg( NX_DBG_ERR, "Fail, ReadData().\n" );
+			NxDbgMsg( NX_DBG_ERR, "Fail, Read Length. ( read: %d, expected: 2 )\n", iReadSize );
 			goto ERROR_IPC;
 		}
 
@@ -239,7 +239,7 @@ void CNX_IPCServer::ThreadProc()
 		//	Size Check
 		if( iPayloadSize+8 > (int32_t)sizeof(m_RecvBuf) )
 		{
-			NxDbgMsg( NX_DBG_ERR, "Fail, Data Size.\n" );
+			NxDbgMsg( NX_DBG_ERR, "Fail, Check Payload Size.\n" );
 			goto ERROR_IPC;
 		}
 
@@ -249,7 +249,7 @@ void CNX_IPCServer::ThreadProc()
 			iReadSize = ReadData( iClientSocket, pRecvBuf, iPayloadSize );
 			if( iReadSize != iPayloadSize )
 			{
-				NxDbgMsg( NX_DBG_ERR, "Fail, ReadData().\n" );
+				NxDbgMsg( NX_DBG_ERR, "Fail, Read Payload. ( read: %d, expected: %d )\n", iReadSize, iPayloadSize );
 				goto ERROR_IPC;
 			}
 		}
@@ -279,6 +279,7 @@ ERROR_IPC:
 		if( 0 < iClientSocket )
 		{
 			close( iClientSocket );
+			iClientSocket = -1;
 		}
 	}
 }

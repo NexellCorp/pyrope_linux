@@ -140,8 +140,6 @@ public class CinemaService extends Service {
                 if( mScreenSaverCallback != null )
                     mScreenSaverCallback.onPrepare();
 
-                ((CinemaInfo)getApplicationContext()).InsertLog("Logout.");
-
                 Intent intent = new Intent(CinemaService.this, LoginActivity.class);
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);

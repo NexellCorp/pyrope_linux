@@ -226,7 +226,6 @@ public class LoginActivity extends CinemaBaseActivity {
 
             mCinemaInfo.SetUserGroup(strGroup);
             mCinemaInfo.SetUserId(( mAccountPreference.ReadId(strGroup, index) ));
-            mCinemaInfo.InsertLog( "Login." );
         }
         else {
             Log.i(VD_DTAG, "Rescue Mode.");
@@ -255,7 +254,6 @@ public class LoginActivity extends CinemaBaseActivity {
             }
 
             mCinemaInfo.SetUserGroup(AccountPreference.GROUP_ROOT);
-            mCinemaInfo.InsertLog( "Login." );
         }
 
         return true;

@@ -12,6 +12,8 @@ import android.widget.TextView;
 import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTitleBar;
 
+import java.util.Locale;
+
 /**
  * Created by doriya on 8/18/16.
  */
@@ -159,8 +161,7 @@ public class AccountActivity extends CinemaBaseActivity {
                         mAccountPreference.Add( accountGroup, accountIndex, editId.getText().toString(), editPw.getText().toString() );
 
                         String strId = mAccountPreference.ReadId(accountGroup, accountIndex);
-                        String strLog = String.format("Update account. ( %s, %s )", accountGroup, strId );
-                        mCinemaInfo.InsertLog( strLog );
+                        // mCinemaInfo.InsertLog( String.format( Locale.US, "Update account. ( %s, %s )", accountGroup, strId) );
                     }
 
                     editConfirm.setText("");

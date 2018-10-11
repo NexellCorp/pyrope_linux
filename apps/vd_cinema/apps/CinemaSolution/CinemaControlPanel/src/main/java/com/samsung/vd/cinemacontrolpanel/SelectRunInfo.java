@@ -10,6 +10,7 @@ public class SelectRunInfo {
     private String[] mBtnText = new String[]{"RUN"};
     private boolean mToggle = false;
     private boolean mStatus = false;
+    private int mSpinnerIndex = 0;
 
     private SelectRunAdapter.OnClickListener mOnClickListener;
 
@@ -45,6 +46,14 @@ public class SelectRunInfo {
 
     public void SetSpinnerItem( String[] spinnerItem ) {
         mSpinnerItem = spinnerItem;
+    }
+
+    public int GetSpinnerIndex() {
+        return mSpinnerIndex;
+    }
+
+    public void SetSpinnerIndex( int index ) {
+        mSpinnerIndex = index;
     }
 
     public void SetOnClickListener(SelectRunAdapter.OnClickListener listener ) {

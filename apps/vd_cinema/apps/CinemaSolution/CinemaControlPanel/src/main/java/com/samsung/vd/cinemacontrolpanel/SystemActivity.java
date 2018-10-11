@@ -18,6 +18,7 @@ import android.widget.RadioButton;
 import android.widget.RelativeLayout;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TabHost;
+import android.widget.TextView;
 
 import com.samsung.vd.baseutils.VdStatusBar;
 import com.samsung.vd.baseutils.VdTitleBar;
@@ -35,9 +36,10 @@ public class SystemActivity extends CinemaBaseActivity {
     private RadioButton mRadioResolution2K, mRadioResolution4K;
     private RadioButton mRadio3DModeOn, mRadio3DModeOff;
 
-    private ListView mListViewLog;
-
+    private SimpleCursorAdapter mAdapterLog;
     private StatusDescribeAdapter mAdapterVersion;
+
+    private TabHost mTabHost;
 
     @Override
     protected void onCreate( Bundle savedInstanceState) {
@@ -174,7 +176,6 @@ public class SystemActivity extends CinemaBaseActivity {
 
                                 if( (Integer)values[0] == CinemaInfo.RET_PASS ) {
                                     ShowMessage("Change IP Address.");
-                                    mCinemaInfo.InsertLog("Change IP Address.");
                                 }
 
                                 Log.i(VD_DTAG, String.format("Set Network Done. ( ret = %d )", (Integer)values[0]));
@@ -189,8 +190,29 @@ public class SystemActivity extends CinemaBaseActivity {
         //
         //  SYSTEM LOG
         //
-        mListViewLog = (ListView)findViewById(R.id.listview_system_log);
-        mListViewLog.addFooterView(listViewFooter);
+        ListView listViewLog = (ListView)findViewById(R.id.listview_system_log);
+        listViewLog.addFooterView(listViewFooter);
+
+        String[] from = {
+                CinemaLog.FIELD_LOG_LOCAL_DATE,
+                CinemaLog.FIELD_LOG_ACCOUNT,
+                CinemaLog.FIELD_LOG_DESCRIBE
+        };
+
+        int[] to = {
+                R.id.listview_row_system_log_date,
+                R.id.listview_row_system_log_account,
+                R.id.listview_row_system_log_describe
+        };
+
+        mAdapterLog = new SimpleCursorAdapter(
+                getApplicationContext(),
+                R.layout.listview_row_system_log,
+                new CinemaLog( getApplicationContext() ).GetCursorDatabases(),
+                from, to,
+                CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER
+        );
+        listViewLog.setAdapter( mAdapterLog );
 
         //
         //  SYSTEM VERSION
@@ -234,6 +256,9 @@ public class SystemActivity extends CinemaBaseActivity {
                 if( 0 > (Integer)values[0] )
                     return;
 
+                // if( mAdapterLog != null )
+                //     mAdapterLog.changeCursor(new CinemaLog(getApplicationContext()).GetCursorDatabases());
+
                 if( CinemaTask.CMD_TMS_QUE > (Integer)values[0] ||
                     CinemaTask.CMD_TMS_SCREEN <= (Integer)values[0] )
                     return;
@@ -264,35 +289,41 @@ public class SystemActivity extends CinemaBaseActivity {
         //
         AddTabs();
         UpdateInitial();
+
+        //
+        //
+        //
+        mTabHost.getTabWidget().getChildTabViewAt(2).setEnabled(false);
+        ((TextView)mTabHost.getTabWidget().getChildAt(2).findViewById(android.R.id.title)).setTextColor(0xFFDCDCDC);
    }
 
     private void AddTabs() {
-        TabHost tabHost = (TabHost)findViewById( R.id.tabHost );
-        tabHost.setup();
+        mTabHost = (TabHost)findViewById( R.id.tabHost );
+        mTabHost.setup();
 
-        TabHost.TabSpec tabSpec0 = tabHost.newTabSpec( "TAB0" );
+        TabHost.TabSpec tabSpec0 = mTabHost.newTabSpec( "TAB0" );
         tabSpec0.setIndicator("INITIAL");
         tabSpec0.setContent(R.id.tab_system_initial);
 
-        TabHost.TabSpec tabSpec1 = tabHost.newTabSpec( "TAB1" );
+        TabHost.TabSpec tabSpec1 = mTabHost.newTabSpec( "TAB1" );
         tabSpec1.setIndicator("IP CONFIG");
         tabSpec1.setContent(R.id.tab_system_ip);
 
-        TabHost.TabSpec tabSpec2 = tabHost.newTabSpec( "TAB2" );
+        TabHost.TabSpec tabSpec2 = mTabHost.newTabSpec( "TAB2" );
         tabSpec2.setIndicator("SYSTEM LOG");
         tabSpec2.setContent(R.id.tab_system_log);
 
-        TabHost.TabSpec tabSpec3 = tabHost.newTabSpec( "TAB3" );
+        TabHost.TabSpec tabSpec3 = mTabHost.newTabSpec( "TAB3" );
         tabSpec3.setIndicator("SYSTEM VERSION");
         tabSpec3.setContent(R.id.tab_system_version);
 
-        tabHost.addTab(tabSpec0);
-        tabHost.addTab(tabSpec1);
-        tabHost.addTab(tabSpec2);
-        tabHost.addTab(tabSpec3);
+        mTabHost.addTab(tabSpec0);
+        mTabHost.addTab(tabSpec1);
+        mTabHost.addTab(tabSpec2);
+        mTabHost.addTab(tabSpec3);
 
-        tabHost.setOnTabChangedListener(mSystemTabChange);
-        tabHost.setCurrentTab(0);
+        mTabHost.setOnTabChangedListener(mSystemTabChange);
+        mTabHost.setCurrentTab(0);
     }
 
     private TabHost.OnTabChangeListener mSystemTabChange = new TabHost.OnTabChangeListener() {
@@ -384,23 +415,8 @@ public class SystemActivity extends CinemaBaseActivity {
     }
 
     private void UpdateSystemLog() {
-        CinemaLog log = new CinemaLog( getApplicationContext() );
-        Cursor cursor = log.GetCursorDatabases();
-
-        String[] from = {
-                CinemaLog.FIELD_LOG_LOCAL_DATE,
-                CinemaLog.FIELD_LOG_ACCOUNT,
-                CinemaLog.FIELD_LOG_DESCRIBE
-        };
-
-        int[] to = {
-                R.id.listview_row_system_log_date,
-                R.id.listview_row_system_log_account,
-                R.id.listview_row_system_log_describe
-        };
-
-        SimpleCursorAdapter adapter = new SimpleCursorAdapter( getApplicationContext(), R.layout.listview_row_system_log, cursor, from, to, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER );
-        mListViewLog.setAdapter( adapter );
+        // if( mAdapterLog != null )
+        //    mAdapterLog.changeCursor(new CinemaLog(getApplicationContext()).GetCursorDatabases());
     }
 
     private void UpdateSystemVersion() {

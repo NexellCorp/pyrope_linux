@@ -602,9 +602,6 @@ public class DisplayModeActivity extends CinemaBaseActivity {
                                 }
                                 else {
                                     mCinemaInfo.SetValue(CinemaInfo.KEY_CABINET_NUM, mEditCabinet.getText().toString());
-                                    mCinemaInfo.InsertLog(
-                                        String.format( "Change cabinet number. ( %s -> %s )", curCabinetNum, desireCabinetNum )
-                                    );
                                 }
                                 HideProgress();
                             }

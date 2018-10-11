@@ -122,7 +122,6 @@ public class TopActivity extends CinemaBaseActivity {
         titleBar.SetListener(VdTitleBar.BTN_BACK, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mCinemaInfo.InsertLog("Logout.");
                 Launch(v.getContext(), LoginActivity.class);
             }
         });

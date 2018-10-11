@@ -4,6 +4,7 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
@@ -83,8 +84,9 @@ public class SelectRunAdapter extends ArrayAdapter<SelectRunInfo> {
 
         String[] text = mData.get(mPosition).GetBtnText();
         boolean status = mData.get(mPosition).GetStatus();
-        mButton.setText( status ? text[1] : text[0] );
+        int spinPos = mData.get(mPosition).GetSpinnerIndex();
 
+        mButton.setText( status ? text[1] : text[0] );
         mButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -101,6 +103,19 @@ public class SelectRunAdapter extends ArrayAdapter<SelectRunInfo> {
 
                     listener.onClickListener( mPosition, mSpinner.getSelectedItemPosition(), !mData.get(mPosition).GetToggle() || status );
                 }
+            }
+        });
+
+        mSpinner.setSelection(spinPos);
+        mSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                mData.get(mPosition).SetSpinnerIndex(i);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+
             }
         });
 

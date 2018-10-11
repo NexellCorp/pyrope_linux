@@ -27,7 +27,7 @@ public class DisplayCheckActivity extends CinemaBaseActivity {
             "DCI",                          //  0, Run/Stop
             "Color Bar",                    //  1, Run/Stop
             "Full Screen Color",            //  2, Run/Stop
-            "Gary Scale ( Horizontal )",    //  3, Run/Stop
+            "Gray Scale ( Horizontal )",    //  3, Run/Stop
             "Dot Pattern / Checker Board",  //  4, Run/Stop
             "Diagonal Pattern",             //  5, Run/Stop,   Toggle Menu
             "Cabinet ID",                   //  6, Run/Stop,   Toggle Menu

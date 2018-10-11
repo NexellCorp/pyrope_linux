@@ -1,0 +1,102 @@
+################################################################################
+# Native Linux Build Enviornment
+OBJTREE		:= $(if $(BUILD_DIR),$(BUILD_DIR),$(CURDIR))
+
+################################################################################
+# Toolchain
+CC 		 	:= gcc
+CXX		 	:= g++
+AR 		 	:= ar
+AS			:= as
+LD 		 	:= ld
+NM 		 	:= nm
+RANLIB 	 	:= ranlib
+OBJCOPY	 	:= objcopy
+STRIP	 	:= strip
+
+################################################################################
+# Library & Header
+INCLUDE   	:=
+LIBRARY		:=
+
+################################################################################
+# Build Options
+OPTS		:= -Wall -O2 -Wextra -Wcast-align -Wno-unused-parameter -Wshadow -Wwrite-strings -Wcast-qual -fno-strict-aliasing -fstrict-overflow -fsigned-char -fno-omit-frame-pointer -fno-optimize-sibling-calls
+COPTS 		:= $(OPTS)
+CXXOPTS 	:= $(OPTS) -Wnon-virtual-dtor
+
+CFLAGS 	 	:= $(COPTS)
+CXXFLAGS 	:= $(CXXOPTS)
+AFLAGS 		:=
+
+ARFLAGS		:= crv
+LDFLAGS  	:=
+
+################################################################################
+# Generic Rules
+%.o: %.c
+	$(CC) $(CFLAGS) $(INCLUDE) -c -o $@ $<
+
+%.o: %.s
+	$(AS) $(AFLAGS) $(INCLUDE) -c -o $@ $<
+
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c -o $@ $<
+
+################################################################################
+# Build options
+INCLUDE += -I./ -I../../../src/include
+INCLUDE += -I./ -I../../../src/protocol
+INCLUDE += -I./ -I../../../src/cinema
+INCLUDE += -I./ -I../../../src/i2c
+INCLUDE += -I./ -I../../../src/eeprom
+
+LIBRARY	+= -L../../../lib
+LIBRARY	+= -lstdc++ -lpthread
+
+################################################################################
+# Target
+COBJS	:=
+CXXOBJS	:= tms_server.o
+CXXOBJS	+= ../../../src/protocol/gdc_protocol.o
+CXXOBJS	+= ../../../src/protocol/NX_TMSServer.o
+CXXOBJS += ../../../src/cinema/CNX_CinemaManager.o
+CXXOBJS += ../../../src/i2c/CNX_I2C.o
+CXXOBJS += ../../../src/eeprom/CNX_EEPRom.o
+CXXOBJS += ../../../src/eeprom/CNX_EEPRomData.o
+CXXOBJS += ../../../src/utils/NX_Utils.o
+CXXOBJS += ../../../src/utils/SockUtils.o
+CXXOBJS += ../../../src/utils/CNX_GpioControl.o
+CXXOBJS += ../../../src/utils/NX_DbgMsg.o
+
+TARGET	:= nx_tms_server
+
+################################################################################
+# Build
+OBJS	:= $(COBJS) $(CXXOBJS)
+
+all: $(TARGET)
+
+$(TARGET): depend $(OBJS)
+	$(CC) $(CFLAGS) $(CXXFLAGS) $(AFLGAS) $(OBJS) -o $(TARGET) $(LIBRARY) -g
+
+clean:
+	rm -f $(TARGET) $(TARGET2) *.o .depend
+	rm -f ../../../src/protocol/*.o
+	rm -f ../../../src/cinema/*.o
+	rm -f ../../../src/i2c/*.o
+	rm -f ../../../src/eeprom/*.o
+	rm -f ../../../src/utils/*.o
+
+install:
+
+################################################################################
+# Dependency
+ifeq (.depend,$(wildcard .depend))
+include .depend
+endif
+
+SRCS := $(COBJS:.o=.c) $(CXXOBJS:.o=.cpp) $(AOBJS:.o=.s)
+INCS := $(INCLUDE)
+depend dep:
+	$(CC) -M $(CFLAGS) $(CXXFLAGS) $(AFLGAS) $(INCS) $(SRCS) > .depend

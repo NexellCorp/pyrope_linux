@@ -16,7 +16,7 @@ case "$1" in
         dns2=`$cmd_cat $network_config | $cmd_sed -n 6p`
 
         ifconfig eth0 $ipaddr netmask $netmask
-        ndc network create 100 
+        ndc network create 100
         ndc network interface add 100 eth0
         ndc network route add 100 eth0 $cidr
         ndc network route add 100 eth0 0.0.0.0/0 $gateway
@@ -32,10 +32,12 @@ case "$1" in
             fi
         fi
         ndc network default set 100
+        setprop service.adb.tcp.port 5555; stop adbd; start adbd
         ;;
 
   stop)
         echo "Stopping network.."
+        setprop service.adb.tcp.port ""; stop adbd; start adbd
         netcfg eth0 down
         ndc network destroy 100
         ndc interface clearaddrs eth0

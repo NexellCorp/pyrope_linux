@@ -111,7 +111,10 @@ END_MESSAGE_MAP()
 
 //
 //	Version Information
-//	* Version 0.3.0 at 2018.09.28
+//	* Version 0.3.0 at 2018.11.01
+//	  -. update NxCinemaDiagnostics
+//
+//	* Version 0.2.1 at 2018.09.28
 //	  -. expand number of log text. 
 //	  -. add log rotation function. ( disabled )
 //
@@ -125,7 +128,7 @@ END_MESSAGE_MAP()
 //	  -. First Draft.
 //
 
-#define NX_DIAG_VERSION		L"v0.2.0"
+#define NX_DIAG_VERSION		L"v0.3.0"
 
 BOOL CNxCinemaDiagnosticsPanelDlg::OnInitDialog()
 {

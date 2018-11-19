@@ -9,7 +9,7 @@ LOCAL_SRC_FILES:= \
 
 LOCAL_C_INCLUDES += \
 	$(VD_TOP)/src/utils \
-	$(VD_TOP)/src/tms \
+	$(VD_TOP)/src/protocol \
 	$(VD_TOP)/src/include
 
 LOCAL_SHARED_LIBRARIES := \
@@ -36,7 +36,7 @@ LOCAL_SRC_FILES:= \
 
 LOCAL_C_INCLUDES += \
 	$(VD_TOP)/src/utils \
-	$(VD_TOP)/src/tms \
+	$(VD_TOP)/src/protocol \
 	$(VD_TOP)/src/include
 
 LOCAL_SHARED_LIBRARIES := \

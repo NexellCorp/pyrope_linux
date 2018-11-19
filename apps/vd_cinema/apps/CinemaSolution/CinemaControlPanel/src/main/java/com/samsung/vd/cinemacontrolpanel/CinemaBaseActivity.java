@@ -1,9 +1,11 @@
 package com.samsung.vd.cinemacontrolpanel;
 
 import android.app.Dialog;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
@@ -15,6 +17,8 @@ import android.view.MotionEvent;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.Toast;
+
+import java.util.Locale;
 
 /**
  * Created by doriya on 5/23/18.
@@ -49,6 +53,28 @@ public class CinemaBaseActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+
+        if( null != mBroadcastReceiver ) {
+            IntentFilter filter = new IntentFilter();
+            filter.addAction( Intent.ACTION_MEDIA_MOUNTED );
+            filter.addAction( Intent.ACTION_MEDIA_EJECT );
+            filter.addDataScheme("file");
+            registerReceiver( mBroadcastReceiver, filter );
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        if( null != mBroadcastReceiver ) {
+            unregisterReceiver( mBroadcastReceiver );
+        }
+    }
+
+    @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
         boolean isOn = false;
         if( mService != null ) {
@@ -57,6 +83,14 @@ public class CinemaBaseActivity extends AppCompatActivity {
         }
 
         return !isOn || super.dispatchTouchEvent(ev);
+    }
+
+    //
+    //  Mount / Unmount Broadcast Receiver
+    //
+    private BroadcastReceiver mBroadcastReceiver = null;
+    protected void RegisterBroadcastReceiver( BroadcastReceiver receiver ) {
+        mBroadcastReceiver = receiver;
     }
 
     //
@@ -116,6 +150,41 @@ public class CinemaBaseActivity extends AppCompatActivity {
 
         mToast.setText(szMsg);
         mToast.show();
+    }
+
+    //
+    //  For Development Mode
+    //
+    private long mPrvTime = 0;
+    private int mDevelCount = 0;
+
+    protected void SetDevelMode() {
+        long curTime = System.currentTimeMillis();
+        if( (mPrvTime + 500) > curTime ) {
+            mDevelCount++;
+            if( ((CinemaInfo)getApplicationContext()).IsDevelMode() ) {
+                // ShowMessage("No need, developer mode has already been enabled");
+                return;
+            }
+        }
+        else {
+            mDevelCount = 0;
+        }
+
+        if( 1 < mDevelCount ) {
+            ShowMessage(String.format(Locale.US, "You are now %d steps away from being a developer", 7-mDevelCount));
+        }
+
+        if( 6 < mDevelCount ) {
+            ((CinemaInfo)getApplicationContext()).SetDevelMode( true );
+            ShowMessage("You are now a developer!");
+        }
+
+        mPrvTime = curTime;
+    }
+
+    protected boolean IsDevelMode() {
+        return ((CinemaInfo)getApplicationContext()).IsDevelMode();
     }
 
     //

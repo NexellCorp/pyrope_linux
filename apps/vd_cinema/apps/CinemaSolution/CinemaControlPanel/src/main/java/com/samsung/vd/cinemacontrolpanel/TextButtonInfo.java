@@ -5,21 +5,31 @@ package com.samsung.vd.cinemacontrolpanel;
  */
 
 public class TextButtonInfo {
+    public static final int MAX_BTN_NUM = 4;
+
     private String mTitle = "";
     private String mText = "";
-    private boolean mEnable = false;
-    private TextButtonAdapter.OnClickListener mOnClickListener = null;
+    private boolean mTextEnable = false;
+    private boolean[] mBtnEnable = new boolean[MAX_BTN_NUM];
+    private TextButtonAdapter.OnClickListener[] mOnClickListener = new TextButtonAdapter.OnClickListener[MAX_BTN_NUM];
 
     public TextButtonInfo( String title, String text) {
-        mTitle = title;
-        mText = text;
-        mEnable = !mTitle.equals("") && !mText.equals("");
+        mTitle      = title;
+        mText       = text;
+        mTextEnable = !mTitle.equals("") && !mText.equals("");
+
+        for( int i = 0; i < mBtnEnable.length; i++ )
+            mBtnEnable[i] = mTextEnable;
     }
 
-    public TextButtonInfo( String title, String text, TextButtonAdapter.OnClickListener listener ) {
-        mTitle = title;
-        mText = text;
-        mEnable = !mTitle.equals("") && !mText.equals("");
+    public TextButtonInfo( String title, String text, TextButtonAdapter.OnClickListener[] listener ) {
+        mTitle      = title;
+        mText       = text;
+        mTextEnable = !mTitle.equals("") && !mText.equals("");
+
+        for( int i = 0; i < mBtnEnable.length; i++ )
+            mBtnEnable[i] = mTextEnable;
+
         mOnClickListener = listener;
     }
 
@@ -39,20 +49,29 @@ public class TextButtonInfo {
         mText = text;
     }
 
-    public boolean GetEnable() {
-        return mEnable;
+    public boolean GetTextEnable() {
+        return mTextEnable;
     }
 
-    public void SetEnable( boolean enable ) {
-        mEnable = enable;
+    public void SetTextEnable( boolean enable ) {
+        mTextEnable = enable;
     }
 
-    public void SetOnClickListener(TextButtonAdapter.OnClickListener listener ) {
+    public boolean GetBtnEnable(int button) {
+        return (button < MAX_BTN_NUM) && mBtnEnable[button];
+    }
+
+    public void SetBtnEnable(int button, boolean enable) {
+        if( button < MAX_BTN_NUM )
+            mBtnEnable[button] = enable;
+    }
+
+    public void SetOnClickListener(TextButtonAdapter.OnClickListener[] listener ) {
         mOnClickListener = listener;
     }
 
-    public TextButtonAdapter.OnClickListener GetOnClickListener() {
-        return mOnClickListener;
+    public TextButtonAdapter.OnClickListener GetOnClickListener( int button ) {
+        return (button < MAX_BTN_NUM) ? mOnClickListener[button] : null;
     }
 
 }

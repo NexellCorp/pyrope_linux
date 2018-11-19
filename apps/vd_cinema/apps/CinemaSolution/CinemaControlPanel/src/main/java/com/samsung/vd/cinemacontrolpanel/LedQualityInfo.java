@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -71,10 +72,17 @@ public class LedQualityInfo {
             {
                 Matcher matcher = pattern.matcher(strValue);
                 if( matcher.matches() ) {
-                    mData[0][index] = Integer.parseInt( matcher.group(1), 10 );
-                    mData[1][index] = Integer.parseInt( matcher.group(2), 10 );
-                    mData[2][index] = Integer.parseInt( matcher.group(3), 10 );
-                    mData[3][index] = Integer.parseInt( matcher.group(4), 10 );
+                    try {
+                        mData[0][index] = Integer.parseInt( matcher.group(1), 10 );
+                        mData[1][index] = Integer.parseInt( matcher.group(2), 10 );
+                        mData[2][index] = Integer.parseInt( matcher.group(3), 10 );
+                        mData[3][index] = Integer.parseInt( matcher.group(4), 10 );
+                    } catch (NumberFormatException e) {
+                        Log.i(VD_DTAG, String.format(Locale.US, "Cannot Convert String to Integer. ( %s, %s, %s, %s )",
+                                matcher.group(1), matcher.group(2), matcher.group(3), matcher.group(4))
+                        );
+                        return false;
+                    }
                 }
                 index++;
             }

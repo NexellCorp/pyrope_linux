@@ -149,27 +149,6 @@ public class DisplayModeActivity extends CinemaBaseActivity {
     };
 
     @Override
-    protected void onResume() {
-        super.onResume();
-
-        //
-        //  This is called after onCreate().
-        //
-        IntentFilter filter = new IntentFilter();
-        filter.addAction( Intent.ACTION_MEDIA_MOUNTED );
-        filter.addAction( Intent.ACTION_MEDIA_EJECT );
-        filter.addDataScheme("file");
-
-        registerReceiver( mBroadcastReceiver, filter );
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        unregisterReceiver( mBroadcastReceiver );
-    }
-
-    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_display_mode);
@@ -219,6 +198,8 @@ public class DisplayModeActivity extends CinemaBaseActivity {
         if( !mCinemaInfo.IsEnableExit() ) {
             titleBar.SetVisibility(VdTitleBar.BTN_EXIT, View.GONE);
         }
+
+        RegisterBroadcastReceiver(mBroadcastReceiver);
 
         //
         //  Configuration StatusBar
@@ -759,17 +740,19 @@ public class DisplayModeActivity extends CinemaBaseActivity {
         resultPath = FileManager.CheckFile(ConfigPfpgaInfo.PATH_TARGET, ConfigPfpgaInfo.NAME);
         for( String file : resultPath ) {
             ConfigPfpgaInfo info = new ConfigPfpgaInfo();
-            if( info.Parse( file ) ) {
-                if( info.GetModeNum() != 0 ) {
-                    String[] strTemp = new String[info.GetModeNum()];
-                    for( int i = 0; i < info.GetModeNum(); i++ )
-                    {
-                        strTemp[i] = String.format(Locale.US, "%d", i+1);
-                    }
-                    mSpinnerUniformity.setAdapter( new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, strTemp));
-                    mSpinnerUniformity.setEnabled(true);
-                }
+            if( !info.Update(file) )
+                continue;
+
+            String[] strTemp = new String[info.GetModeNum()];
+            int count = 0;
+            for( int i = 0; i < 30; i++ ) {
+                if( !info.IsValid(i) )
+                    continue;
+
+                strTemp[count++] = String.format(Locale.US, "%d", i+1);
             }
+            mSpinnerUniformity.setAdapter( new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, strTemp));
+            mSpinnerUniformity.setEnabled(true);
         }
     }
 

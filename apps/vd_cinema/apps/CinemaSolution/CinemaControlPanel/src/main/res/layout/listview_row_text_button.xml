@@ -10,29 +10,77 @@
         android:id="@+id/listview_row_text_button_title"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textAppearance="?android:attr/textAppearanceSmall"
         android:gravity="center"
         android:paddingTop="10dp"
         android:paddingBottom="10dp"
-        android:layout_weight="0.2"/>
+        android:layout_weight="0.12"/>
 
     <TextView
         android:id="@+id/listview_row_text_button_text"
-        android:background="@drawable/draw_line_left_right"
+        android:background="@drawable/draw_line_left"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textAppearance="?android:attr/textAppearanceSmall"
         android:gravity="center"
         android:paddingTop="13dp"
         android:paddingBottom="13dp"
-        android:layout_weight="0.65"/>
+        android:layout_weight="0.44"/>
 
-    <Button
-        android:id="@+id/listview_row_text_button_button"
+    <LinearLayout
+        android:background="@drawable/draw_line_left"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:gravity="center"
-        android:layout_weight="0.15"
-        android:text="Apply"/>
+        android:layout_weight="0.11">
+        <Button
+            android:id="@+id/listview_row_text_button_button0"
+            android:textSize="11sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="UPDATE"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:background="@drawable/draw_line_left"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.11">
+        <Button
+            android:id="@+id/listview_row_text_button_button1"
+            android:textSize="11sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="DELETE"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:background="@drawable/draw_line_left"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.11">
+        <Button
+            android:id="@+id/listview_row_text_button_button2"
+            android:textSize="11sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="DOWNLOAD"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:background="@drawable/draw_line_left"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.11">
+        <Button
+            android:id="@+id/listview_row_text_button_button3"
+            android:textSize="11sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="APPLY"/>
+    </LinearLayout>
 
 </LinearLayout>

@@ -12,11 +12,10 @@ import android.os.Message;
 import android.provider.Settings;
 import android.util.Log;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.lang.ref.WeakReference;
+import java.util.Locale;
 
 /**
  * Created by doriya on 11/9/16.
@@ -194,43 +193,47 @@ public class CinemaService extends Service {
                 while( mRun )
                 {
                     LocalSocket lSocket = lServer.accept();
-                    if( null != lSocket ) {
-                        if( isDetectTamper ) {
-                            String strEvent = Read(lSocket.getInputStream());
+                    if( null == lSocket )
+                        continue;
 
-                            String[] strToken = strEvent.split(" ");
-                            if( strToken[0].equals("Error") )
-                            {
-                                if( !mDoorTamper && strToken[1].equals("DoorTamper") ) {
-                                    mDoorTamper = true;
+                    if( !isDetectTamper ) {
+                        lSocket.close();
+                        continue;
+                    }
 
-                                    CinemaAlert.Show( getApplicationContext(), "Alert", strToken[0] + " " + strToken[1], CinemaAlert.TYPE_DOOR, new CinemaAlert.OnFinishListener() {
-                                        @Override
-                                        public void onFinish() {
-                                            mDoorTamper = false;
-                                        }
-                                    });
+                    String strEvent = ReadString(lSocket);
 
-                                    RefreshScreenSaver();
+                    String[] strToken = strEvent.split(" ");
+                    if( strToken[0].equals("Error") )
+                    {
+                        if( !mDoorTamper && strToken[1].equals("DoorTamper") ) {
+                            mDoorTamper = true;
+
+                            CinemaAlert.Show( getApplicationContext(), "Alert", strToken[0] + " " + strToken[1], CinemaAlert.TYPE_DOOR, new CinemaAlert.OnFinishListener() {
+                                @Override
+                                public void onFinish() {
+                                    mDoorTamper = false;
                                 }
+                            });
 
-                                if( !mMarriageTamper && strToken[1].equals("MarriageTamper") ) {
-                                    mMarriageTamper = true;
-
-                                    CinemaAlert.Show( getApplicationContext(), "Alert", strToken[0] + " " + strToken[1], CinemaAlert.TYPE_MARRIAGE, new CinemaAlert.OnFinishListener() {
-                                        @Override
-                                        public void onFinish() {
-                                            mMarriageTamper = false;
-                                        }
-                                    });
-
-                                    RefreshScreenSaver();
-                                }
-                            }
+                            RefreshScreenSaver();
                         }
 
-                        lSocket.close();
+                        if( !mMarriageTamper && strToken[1].equals("MarriageTamper") ) {
+                            mMarriageTamper = true;
+
+                            CinemaAlert.Show( getApplicationContext(), "Alert", strToken[0] + " " + strToken[1], CinemaAlert.TYPE_MARRIAGE, new CinemaAlert.OnFinishListener() {
+                                @Override
+                                public void onFinish() {
+                                    mMarriageTamper = false;
+                                }
+                            });
+
+                            RefreshScreenSaver();
+                        }
                     }
+
+                    lSocket.close();
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -247,44 +250,8 @@ public class CinemaService extends Service {
         public synchronized void Stop() {
             if( mRun ) {
                 mRun = false;
-                try {
-                    Write("");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                WriteDummy(SOCKET_NAME);
             }
-        }
-
-        private String Read(InputStream inStream) {
-            InputStreamReader inStreamReader = new InputStreamReader(inStream);
-            BufferedReader bufferedReader = new BufferedReader(inStreamReader);
-            StringBuilder strBuilder = new StringBuilder();
-
-            String inLine;
-            try {
-                while (((inLine = bufferedReader.readLine()) != null)) {
-                    strBuilder.append(inLine);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            String strResult = strBuilder.toString();
-
-            try {
-                bufferedReader.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            return strResult;
-        }
-
-        private void Write(String message) throws IOException {
-            LocalSocket sender = new LocalSocket();
-            sender.connect(new LocalSocketAddress(SOCKET_NAME));
-            sender.getOutputStream().write(message.getBytes());
-            sender.getOutputStream().close();
         }
     }
 
@@ -306,16 +273,17 @@ public class CinemaService extends Service {
                 while( mRun )
                 {
                     LocalSocket lSocket = lServer.accept();
-                    if( null != lSocket ) {
-                        String strEvent = Read(lSocket.getInputStream());
-                        String strAlive = ((CinemaInfo)getApplicationContext()).GetSecureAlive();
+                    if( null == lSocket )
+                        continue;
 
-                        if( strEvent.equals("Alive") && strAlive.equals("false") ) {
-                            ((CinemaInfo)getApplicationContext()).SetSecureAlive("true");
-                        }
+                    String strEvent = ReadString(lSocket);
+                    String strAlive = ((CinemaInfo)getApplicationContext()).GetSecureAlive();
 
-                        lSocket.close();
+                    if( strEvent.equals("Alive") && strAlive.equals("false") ) {
+                        ((CinemaInfo)getApplicationContext()).SetSecureAlive("true");
                     }
+
+                    lSocket.close();
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -332,45 +300,8 @@ public class CinemaService extends Service {
         public synchronized void Stop() {
             if( mRun ) {
                 mRun = false;
-                try {
-                    Write("");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                WriteDummy(SOCKET_NAME);
             }
-        }
-
-        private String Read(InputStream inStream) {
-            InputStreamReader inStreamReader = new InputStreamReader(inStream);
-            BufferedReader bufferedReader = new BufferedReader(inStreamReader);
-            StringBuilder strBuilder = new StringBuilder();
-
-            String inLine;
-            try {
-                while (((inLine = bufferedReader.readLine()) != null)) {
-                    strBuilder.append(inLine);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            String strResult = strBuilder.toString();
-
-            try {
-                bufferedReader.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            return strResult;
-        }
-
-        private void Write(String message) throws IOException {
-            LocalSocket sender = new LocalSocket();
-            sender.connect(new LocalSocketAddress(SOCKET_NAME));
-            sender.getOutputStream().write(message.getBytes());
-            sender.getOutputStream().close();
-            sender.close();
         }
     }
 
@@ -380,6 +311,8 @@ public class CinemaService extends Service {
     private class TmsEventReceiver extends Thread {
         private String SOCKET_NAME = "cinema.tms";
         private boolean mRun = false;
+        private boolean mLoop = false;
+        private int mCmd = -1;
 
         public TmsEventReceiver() {
         }
@@ -391,125 +324,149 @@ public class CinemaService extends Service {
 
                 while( mRun )
                 {
-                    LocalSocket lSocket = lServer.accept();
-                    if( null != lSocket ) {
-                        String strValue = Read(lSocket.getInputStream());
-                        if( null != strValue ) {
-                            final int mode = Integer.parseInt(strValue, 10);
+                    final LocalSocket lSocket = lServer.accept();
+                    if( null == lSocket )
+                        continue;
 
-                            if( CinemaTask.CMD_TMS_QUE > mode ) {
-                                CinemaTask.GetInstance().Run(
-                                        CinemaTask.CMD_CHANGE_MODE,
-                                        getApplicationContext(),
-                                        mode,
-                                        new CinemaTask.PreExecuteCallback() {
-                                            @Override
-                                            public void onPreExecute(Object[] values) {
-                                                CinemaLoading.Show(getApplicationContext());
-                                            }
-                                        },
-                                        new CinemaTask.PostExecuteCallback() {
-                                            @Override
-                                            public void onPostExecute(Object[] values) {
-                                                if( !(values instanceof Integer[]) )
-                                                    return;
+                    mLoop = true;
 
-                                                if( 0 > (Integer)values[0] )
-                                                    Log.i(VD_DTAG, "Fail, Change Mode.");
-                                                else
-                                                    Log.i(VD_DTAG, String.format("Change Mode Done. ( mode = %d )", (Integer)values[0] + 1));
+//                    while( mLoop )
+                    {
+                        byte[] szData = ReadByte(lSocket);
+                        if( null == szData || szData.length == 0 ) {
+                            lSocket.close();
+                            continue;
+                        }
 
-                                                if( mTmsEventCallback != null )
-                                                    mTmsEventCallback.onTmsEventCallback( (Integer[])values );
+                        mCmd = szData[0] & 0xFF;
+                        Log.i(VD_DTAG, String.format(Locale.US, ">>> Receive Command ( cmd: %d, length: %d )", mCmd, szData.length));
 
-                                                CinemaLoading.Hide();
-                                            }
-                                        },
-                                        null
-                                );
-                            }
+                        //
+                        //  Change Mode
+                        //
+                        if( CinemaTask.TMS_MODE_CHANGE <= mCmd &&
+                            CinemaTask.TMS_MODE_DELETE > mCmd ) {
 
-                            if( CinemaTask.CMD_TMS_QUE <= mode &&
-                                CinemaTask.CMD_TMS_SCREEN > mode ) {
-                                final boolean bScale2K= (
-                                        CinemaTask.TMS_P25_2K_2D == mode || CinemaTask.TMS_P25_2K_3D == mode ||
-                                        CinemaTask.TMS_P33_2K_2D == mode || CinemaTask.TMS_P33_2K_3D == mode );
-                                final boolean bMode3D = (
-                                        CinemaTask.TMS_P25_2K_3D == mode || CinemaTask.TMS_P25_4K_3D == mode ||
-                                        CinemaTask.TMS_P33_2K_3D == mode || CinemaTask.TMS_P33_4K_3D == mode );
+                            CinemaTask.GetInstance().Run(
+                                    CinemaTask.CMD_CHANGE_MODE,
+                                    getApplicationContext(),
+                                    mCmd,
+                                    new CinemaTask.PreExecuteCallback() {
+                                        @Override
+                                        public void onPreExecute(Object[] values) {
+                                            CinemaLoading.Show(getApplicationContext());
+                                        }
+                                    },
+                                    new CinemaTask.PostExecuteCallback() {
+                                        @Override
+                                        public void onPostExecute(Object[] values) {
+                                            if( !(values instanceof Integer[]) )
+                                                return;
 
-                                //
-                                //  Do not allow to change pitch ( P25 <--> P33 )
-                                //
-                                // final boolean bPitch25= (
-                                //         CinemaTask.TMS_P25_4K_2D == mode || CinemaTask.TMS_P25_2K_2D == mode ||
-                                //         CinemaTask.TMS_P25_4K_3D == mode || CinemaTask.TMS_P25_2K_3D == mode );
+                                            if( 0 > (Integer)values[0] )
+                                                Log.i(VD_DTAG, "Fail, Change Mode.");
+                                            else
+                                                Log.i(VD_DTAG, String.format("Change Mode Done. ( mode = %d )", (Integer)values[0] + 1));
 
-                                //
-                                //  Change Scale ( 2K <-> 4K )
-                                //
-                                CinemaTask.GetInstance().Run(
-                                        CinemaTask.CMD_CHANGE_SCALE,
-                                        getApplicationContext(),
-                                        bScale2K,
-                                        new CinemaTask.PreExecuteCallback() {
-                                            @Override
-                                            public void onPreExecute(Object[] values) {
-                                                CinemaLoading.Show(getApplicationContext());
-                                            }
-                                        },
-                                        new CinemaTask.PostExecuteCallback() {
-                                            @Override
-                                            public void onPostExecute(Object[] values) {
-                                                if( !(values instanceof Integer[]) )
-                                                    return;
+                                            if( mTmsEventCallback != null )
+                                                mTmsEventCallback.onTmsEventCallback( (Integer[])values );
 
-                                                Log.i(VD_DTAG, String.format("Change Scale Done. ( mode = %d, is2K = %b )", mode, bScale2K));
+                                            Write(lSocket, (0 > (Integer)values[0]) ? RET_FAIL : RET_PASS );
+                                            CinemaLoading.Hide();
+                                            mLoop = false;
+                                        }
+                                    },
+                                    null
+                            );
+                        }
 
-                                                if( mTmsEventCallback != null )
-                                                    mTmsEventCallback.onTmsEventCallback( new Integer[]{ mode } );
+                        if( CinemaTask.TMS_SCREEN_CHANGE <= mCmd &&
+                            CinemaTask.TMS_SCREEN > mCmd ) {
+                            final boolean bScale2K= (
+                                    CinemaTask.TMS_P25_2K_2D == mCmd || CinemaTask.TMS_P25_2K_3D == mCmd ||
+                                    CinemaTask.TMS_P33_2K_2D == mCmd || CinemaTask.TMS_P33_2K_3D == mCmd );
+                            final boolean bMode3D = (
+                                    CinemaTask.TMS_P25_2K_3D == mCmd || CinemaTask.TMS_P25_4K_3D == mCmd ||
+                                    CinemaTask.TMS_P33_2K_3D == mCmd || CinemaTask.TMS_P33_4K_3D == mCmd );
 
-                                                CinemaLoading.Hide();
-                                            }
-                                        },
-                                        null
-                                );
+                            //
+                            //  Do not allow to change pitch ( P25 <--> P33 )
+                            //
+                            // final boolean bPitch25= (
+                            //         CinemaTask.TMS_P25_4K_2D == mode || CinemaTask.TMS_P25_2K_2D == mode ||
+                            //         CinemaTask.TMS_P25_4K_3D == mode || CinemaTask.TMS_P25_2K_3D == mode );
 
-                                //
-                                //  Change 3D/2D ( 2D <-> 3D )
-                                //
-                                CinemaTask.GetInstance().Run(
-                                        CinemaTask.CMD_CHANGE_3D,
-                                        getApplicationContext(),
-                                        bMode3D,
-                                        new CinemaTask.PreExecuteCallback() {
-                                            @Override
-                                            public void onPreExecute(Object[] values) {
-                                                CinemaLoading.Show(getApplicationContext());
-                                            }
-                                        },
-                                        new CinemaTask.PostExecuteCallback() {
-                                            @Override
-                                            public void onPostExecute(Object[] values) {
-                                                if( !(values instanceof Integer[]) )
-                                                    return;
+                            //
+                            //  Change Scale ( 2K <-> 4K )
+                            //
+                            CinemaTask.GetInstance().Run(
+                                    CinemaTask.CMD_CHANGE_SCALE,
+                                    getApplicationContext(),
+                                    bScale2K,
+                                    new CinemaTask.PreExecuteCallback() {
+                                        @Override
+                                        public void onPreExecute(Object[] values) {
+                                            CinemaLoading.Show(getApplicationContext());
+                                        }
+                                    },
+                                    new CinemaTask.PostExecuteCallback() {
+                                        @Override
+                                        public void onPostExecute(Object[] values) {
+                                            if( !(values instanceof Integer[]) )
+                                                return;
 
-                                                Log.i(VD_DTAG, String.format("Change 3D Done. ( mode = %d, is3D = %b )", mode, bMode3D));
+                                            Log.i(VD_DTAG, String.format("Change Scale Done. ( mode = %d, is2K = %b )", mCmd, bScale2K));
 
-                                                if( mTmsEventCallback != null )
-                                                    mTmsEventCallback.onTmsEventCallback( new Integer[]{ mode } );
+                                            if( mTmsEventCallback != null )
+                                                mTmsEventCallback.onTmsEventCallback( new Integer[]{ mCmd } );
 
-                                                CinemaLoading.Hide();
-                                            }
-                                        },
-                                        null
-                                );
-                            }
+                                            CinemaLoading.Hide();
+                                        }
+                                    },
+                                    null
+                            );
 
-                            if( CinemaTask.CMD_TMS_SCREEN <= mode ) {
-                                final boolean bMute = (CinemaTask.TMS_SCREEN_OFF == mode);
+                            //
+                            //  Change 3D/2D ( 2D <-> 3D )
+                            //
+                            CinemaTask.GetInstance().Run(
+                                    CinemaTask.CMD_CHANGE_3D,
+                                    getApplicationContext(),
+                                    bMode3D,
+                                    new CinemaTask.PreExecuteCallback() {
+                                        @Override
+                                        public void onPreExecute(Object[] values) {
+                                            CinemaLoading.Show(getApplicationContext());
+                                        }
+                                    },
+                                    new CinemaTask.PostExecuteCallback() {
+                                        @Override
+                                        public void onPostExecute(Object[] values) {
+                                            if( !(values instanceof Integer[]) )
+                                                return;
 
-                                CinemaTask.GetInstance().Run(
+                                            Log.i(VD_DTAG, String.format("Change 3D Done. ( mode = %d, is3D = %b )", mCmd, bMode3D));
+
+                                            if( mTmsEventCallback != null )
+                                                mTmsEventCallback.onTmsEventCallback( new Integer[]{ mCmd } );
+
+                                            Write(lSocket, RET_PASS);
+                                            CinemaLoading.Hide();
+
+                                            mLoop = false;
+                                        }
+                                    },
+                                    null
+                            );
+                        }
+
+                        //
+                        //
+                        //
+                        if( CinemaTask.TMS_SCREEN <= mCmd &&
+                            CinemaTask.TMS_CONFIG > mCmd ) {
+                            final boolean bMute = (CinemaTask.TMS_SCREEN_OFF == mCmd);
+                            CinemaTask.GetInstance().Run(
                                     CinemaTask.CMD_SCREEN_MUTE,
                                     getApplicationContext(),
                                     bMute,
@@ -525,21 +482,137 @@ public class CinemaService extends Service {
                                             if( !(values instanceof Integer[]) )
                                                 return;
 
-                                            Log.i(VD_DTAG, String.format("Screen Mute Done. ( mode = %d, isMute = %b )", mode, bMute));
+                                            Log.i(VD_DTAG, String.format("Screen Mute Done. ( mode = %d, isMute = %b )", mCmd, bMute));
 
                                             if( mTmsEventCallback != null )
-                                                mTmsEventCallback.onTmsEventCallback( new Integer[]{ mode } );
+                                                mTmsEventCallback.onTmsEventCallback( new Integer[]{ mCmd } );
 
+                                            Write(lSocket, RET_PASS);
                                             CinemaLoading.Hide();
+
+                                            mLoop = false;
                                         }
                                     },
                                     null
+                            );
+                        }
+
+                        //
+                        //
+                        //
+                        if( CinemaTask.TMS_CONFIG_UPLOAD == mCmd ) {
+                            byte[] inData = new byte[szData.length-1];
+                            System.arraycopy( szData, 1, inData, 0, szData.length-1);
+
+                            CinemaTask.GetInstance().Run(
+                                    CinemaTask.CMD_CONFIG_UPLOAD,
+                                    getApplicationContext(),
+                                    inData,
+                                    new CinemaTask.PreExecuteCallback() {
+                                        @Override
+                                        public void onPreExecute(Object[] values) {
+                                            CinemaLoading.Show(getApplicationContext());
+                                        }
+                                    },
+                                    new CinemaTask.PostExecuteCallback() {
+                                        @Override
+                                        public void onPostExecute(Object[] values) {
+                                            if( !(values instanceof Integer[]) )
+                                                return;
+
+                                            if( mTmsEventCallback != null )
+                                                mTmsEventCallback.onTmsEventCallback( new Integer[]{ mCmd, (Integer)values[0] } );
+
+                                            Write(lSocket, (0 > (Integer)values[0]) ? RET_FAIL : RET_PASS );
+
+                                            CinemaLoading.Hide();
+                                            mLoop = false;
+                                        }
+                                    },
+                                    null
+                            );
+                        }
+
+                        //
+                        //  Delete Configuration
+                        //
+                        if( CinemaTask.TMS_MODE_DELETE <= mCmd &&
+                            CinemaTask.TMS_MODE_DELETE_29 >= mCmd ) {
+
+                            if( CinemaTask.TMS_MODE_DELETE_ALL == mCmd ) {
+                                for( int i = 10; i < 30; i++ ) {
+                                    final int pos = i;
+                                    CinemaTask.GetInstance().Run(
+                                            CinemaTask.CMD_CONFIG_DELETE,
+                                            getApplicationContext(),
+                                            pos,
+                                            new CinemaTask.PreExecuteCallback() {
+                                                @Override
+                                                public void onPreExecute(Object[] values) {
+                                                    CinemaLoading.Show(getApplicationContext());
+                                                }
+                                            },
+                                            new CinemaTask.PostExecuteCallback() {
+                                                @Override
+                                                public void onPostExecute(Object[] values) {
+                                                    if( !(values instanceof Integer[]) )
+                                                        return;
+
+                                                    if( mTmsEventCallback != null && ((Integer)values[0] == CinemaInfo.RET_PASS) )
+                                                        mTmsEventCallback.onTmsEventCallback( (Integer[])new Integer[]{mCmd} );
+
+                                                    CinemaLoading.Hide();
+
+                                                    if( pos == 29 ) {
+                                                        Write(lSocket, RET_PASS);
+                                                        mLoop = false;
+                                                    }
+                                                }
+                                            },
+                                            null
+                                    );
+                                }
+                            }
+                            else {
+                                CinemaTask.GetInstance().Run(
+                                        CinemaTask.CMD_CONFIG_DELETE,
+                                        getApplicationContext(),
+                                        mCmd - CinemaTask.TMS_MODE_DELETE_10 + 10,
+                                        new CinemaTask.PreExecuteCallback() {
+                                            @Override
+                                            public void onPreExecute(Object[] values) {
+                                                CinemaLoading.Show(getApplicationContext());
+                                            }
+                                        },
+                                        new CinemaTask.PostExecuteCallback() {
+                                            @Override
+                                            public void onPostExecute(Object[] values) {
+                                                if( !(values instanceof Integer[]) )
+                                                    return;
+
+                                                if( mTmsEventCallback != null && ((Integer)values[0] == CinemaInfo.RET_PASS) )
+                                                    mTmsEventCallback.onTmsEventCallback( (Integer[])new Integer[]{mCmd} );
+
+                                                CinemaLoading.Hide();
+
+                                                Write(lSocket, RET_PASS);
+                                                mLoop = false;
+                                            }
+                                        },
+                                        null
                                 );
                             }
                         }
-                        lSocket.close();
+
+                        //
+                        //  Download Operation operate in TMS_Server().
+                        //
                     }
+
+                    //lSocket.close();
                 }
+
+                lServer.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -548,52 +621,104 @@ public class CinemaService extends Service {
         public synchronized void Start() {
             if( !mRun ) {
                 mRun = true;
+
                 start();
             }
         }
 
         public synchronized void Stop() {
             if( mRun ) {
-                mRun = false;
-                try {
-                    Write("");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                mLoop   = false;
+                mRun    = false;
+                WriteDummy(SOCKET_NAME);
             }
         }
+    }
 
-        private String Read(InputStream inStream) {
-            InputStreamReader inStreamReader = new InputStreamReader(inStream);
-            BufferedReader bufferedReader = new BufferedReader(inStreamReader);
-            StringBuilder strBuilder = new StringBuilder();
+    private static final String RET_PASS = "pass";
+    private static final String RET_FAIL = "fail";
 
-            String inLine;
-            try {
-                while (((inLine = bufferedReader.readLine()) != null)) {
-                    strBuilder.append(inLine);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+    private boolean IsLogPrint() {
+        return false;
+    }
+
+    private String ReadString(LocalSocket socket) {
+        byte[] readData = new byte[1024];
+        String message = "";
+        int readSize = 0;
+        try {
+            readSize = socket.getInputStream().read(readData);
+            message = new String(readData, 0, readSize);
+            if( IsLogPrint() ) {
+                Log.i(VD_DTAG, String.format(Locale.US, ">>> Recv %d bytes: %s", readSize, message));
             }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return message;
+    }
 
-            String strResult = strBuilder.toString();
+    private byte[] ReadByte(LocalSocket socket) {
+        byte[] result = new byte[0];
+        try {
+            byte[] readData = new byte[65535];
+            int readSize;
+            int expectedSize = 0;
 
-            try {
-                bufferedReader.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            do {
+                readSize = socket.getInputStream().read(readData);
 
-            return strResult;
+                if( result.length == 0)
+                    expectedSize = ((readData[0] & 0xFF) << 8) | (readData[1] & 0xFF);
+
+                byte[] temp = new byte[result.length+readSize];
+
+                System.arraycopy( result, 0, temp, 0, result.length );
+                System.arraycopy( readData, (result.length == 0) ? 2 : 0, temp, result.length, readSize );
+
+                result = temp;
+            } while(result.length < expectedSize);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    private void Write(LocalSocket socket, String message) {
+        try {
+            socket.getOutputStream().write(message.getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
-        private void Write(String message) throws IOException {
-            LocalSocket sender = new LocalSocket();
-            sender.connect(new LocalSocketAddress(SOCKET_NAME));
-            sender.getOutputStream().write(message.getBytes());
-            sender.getOutputStream().close();
-            sender.close();
+        if( IsLogPrint() )
+            Log.i(VD_DTAG, String.format(Locale.US, ">>> Send %d bytes: %s", message.length(), message));
+    }
+
+    private void Write(String name, String message) {
+        try {
+            LocalSocket socket = new LocalSocket();
+            socket.connect(new LocalSocketAddress(name));
+            OutputStream outStream = socket.getOutputStream();
+            outStream.write(message.getBytes());
+            outStream.close();
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void WriteDummy(String name) {
+        try {
+            String message = "";
+            LocalSocket socket = new LocalSocket();
+            socket.connect(new LocalSocketAddress(name));
+            OutputStream outStream = socket.getOutputStream();
+            outStream.write(message.getBytes());
+            outStream.close();
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

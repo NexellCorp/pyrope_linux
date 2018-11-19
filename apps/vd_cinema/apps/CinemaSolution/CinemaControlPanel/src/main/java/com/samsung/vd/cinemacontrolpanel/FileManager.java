@@ -4,6 +4,7 @@ import android.util.Log;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,6 +24,69 @@ public class FileManager {
     private static final String VD_DTAG = "FileManager";
 
     public FileManager() {
+    }
+
+    public static String GetFileName( String fullPath ) {
+        File file = new File(fullPath);
+        return file.getName();
+    }
+
+    public static String GetFilePath( String fullPath ) {
+        File file = new File(fullPath);
+        return file.getParentFile().toString();
+    }
+
+    public static byte[] ReadByte( String infile ) {
+        FileInputStream inStream = null;
+        byte[] result = null;
+        try {
+            File file = new File(infile);
+            result = new byte[(int)file.length()];
+
+            inStream = new FileInputStream(file);
+            int readable = inStream.read(result);
+
+            if( readable != file.length() ) {
+                Log.i(VD_DTAG, String.format(Locale.US, "Fail, read size. ( expected: %d, readable: %d )",
+                        file.length(), readable));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (inStream != null) {
+                try {
+                    inStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return result;
+    }
+
+    public static boolean WriteByte( String outfile, byte[] data ) {
+        FileOutputStream outStream = null;
+        try {
+            outStream = new FileOutputStream(outfile);
+            try {
+                outStream.write(data);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } finally {
+            if (outStream != null) {
+                try {
+                    outStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return true;
     }
 
     public static String[] CheckFile( String topdir, String regularExpression ) {
@@ -115,6 +179,46 @@ public class FileManager {
                     temp[result.length] = dir.getAbsolutePath();
                     result = temp;
                 }
+            }
+        }
+
+        return result;
+    }
+
+    public static String[] GetFileInDirectory( String top ) {
+        String[] result = new String[0];
+        File[] list = new File( top ).listFiles();
+
+        if( list == null || list.length == 0)
+            return result;
+
+        for( File file : list ) {
+            if( !file.isFile() )
+                continue;
+
+            String[] temp = Arrays.copyOf( result, result.length + 1);
+            temp[result.length] = file.getAbsolutePath();
+            result = temp;
+        }
+
+        return result;
+    }
+
+    public static String[] GetFileInUsbDirectory( String top ) {
+        String[] result = new String[0];
+
+        for( int i = 0; i < 10; i++ ) {
+            File[] list = new File( String.format(Locale.US, "/storage/usbdisk%d/%s", i, top) ).listFiles();
+            if( list == null || list.length == 0 )
+                continue;
+
+            for( File file : list ) {
+                if( !file.isFile() )
+                    continue;
+
+                String[] temp = Arrays.copyOf( result, result.length + 1);
+                temp[result.length] = file.getAbsolutePath();
+                result = temp;
             }
         }
 

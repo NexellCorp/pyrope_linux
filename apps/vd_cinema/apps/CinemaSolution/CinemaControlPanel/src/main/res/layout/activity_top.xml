@@ -26,18 +26,18 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:layout_weight="0.8"
+            android:layout_weight="0.82"
             android:weightSum="1">
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceLarge"
-                android:text="* Quick Launcher"
-                android:paddingTop="10dp"
-                android:paddingStart="10dp"
-                android:paddingEnd="0dp"
-                android:textStyle="" />
+            <!--<TextView-->
+                <!--android:layout_width="match_parent"-->
+                <!--android:layout_height="wrap_content"-->
+                <!--android:textAppearance="?android:attr/textAppearanceLarge"-->
+                <!--android:text="* Quick Launcher"-->
+                <!--android:paddingTop="10dp"-->
+                <!--android:paddingStart="10dp"-->
+                <!--android:paddingEnd="0dp"-->
+                <!--android:textStyle="" />-->
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -64,7 +64,7 @@
                     android:id="@+id/textCommentTop"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
-                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
                     android:paddingStart="40dp"
                     android:paddingEnd="0dp"
                     android:textStyle=""
@@ -97,7 +97,7 @@
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:text="Invalid"
                     android:textStyle=""
-                    android:layout_weight="0.09" />
+                    android:layout_weight="0.12" />
 
                 <!-- Screen Type -->
                 <TextView
@@ -107,7 +107,7 @@
                     android:text="- Screen Type : "
                     android:paddingStart="20dp"
                     android:textStyle=""
-                    android:layout_weight="0.24" />
+                    android:layout_weight="0.20" />
 
                 <TextView
                     android:id="@+id/textScreenType"
@@ -116,25 +116,30 @@
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:text="Unknown"
                     android:textStyle=""
-                    android:layout_weight="0.09" />
+                    android:layout_weight="0.12" />
 
-                <!-- Screen Control -->
-                <TextView
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:text="- Screen Control : "
-                    android:paddingStart="20dp"
+                    android:gravity="center"
+                    android:layout_weight="0.03" />
+
+                <!-- Screen Control -->
+                <Button
+                    android:id="@+id/btnScreenType"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="Check"
                     android:textStyle=""
-                    android:layout_weight="0.24" />
+                    android:layout_weight="0.14" />
 
                 <Button
                     android:id="@+id/btnScreenOn"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="OFF"
+                    android:text="SCREEN OFF"
                     android:textStyle=""
-                    android:layout_weight="0.09" />
+                    android:layout_weight="0.14" />
             </LinearLayout>
 
             <LinearLayout
@@ -163,7 +168,66 @@
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:text="Mode #1"
                     android:textStyle=""
-                    android:layout_weight="0.61" />
+                    android:layout_weight="0.12" />
+<!--
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:layout_weight="0.16" >
+                    <RadioButton
+                        android:id="@+id/radioDeveloper"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Developer"/>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:layout_weight="0.16" >
+                    <RadioButton
+                        android:id="@+id/radioUser"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="User     "/>
+                </LinearLayout>
+-->
+<!--
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:layout_weight="0.03" />
+-->
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/textOperator"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:text="- Mode : "
+                    android:paddingStart="20dp"
+                    android:textStyle=""
+                    android:layout_weight="0.15" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:layout_weight="0.17">
+
+                    <Spinner
+                        android:layout_width="120dp"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/spinnerOperator" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:layout_weight="0.03" />
 
                 <!-- Mode Update -->
                 <Button
@@ -171,6 +235,16 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:text="Update"
+                    android:textStyle=""
+                    android:enabled="false"
+                    android:layout_weight="0.14" />
+
+                <!-- Mode Delete -->
+                <Button
+                    android:id="@+id/btnInitModeDelete"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="Delete"
                     android:textStyle=""
                     android:enabled="false"
                     android:layout_weight="0.14" />
@@ -253,10 +327,10 @@
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_marginLeft="20dp"
-            android:layout_marginRight="20dp"
-            android:layout_weight="0.2"
-            android:padding="15dp"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp"
+            android:layout_weight="0.18"
+            android:padding="10dp"
             android:orientation="vertical">
 
             <Button

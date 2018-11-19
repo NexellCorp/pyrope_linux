@@ -1,7 +1,6 @@
 package com.samsung.vd.cinemacontrolpanel;
 
 import android.content.Context;
-import android.database.Cursor;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Patterns;
@@ -259,8 +258,8 @@ public class SystemActivity extends CinemaBaseActivity {
                 // if( mAdapterLog != null )
                 //     mAdapterLog.changeCursor(new CinemaLog(getApplicationContext()).GetCursorDatabases());
 
-                if( CinemaTask.CMD_TMS_QUE > (Integer)values[0] ||
-                    CinemaTask.CMD_TMS_SCREEN <= (Integer)values[0] )
+                if( CinemaTask.TMS_SCREEN_CHANGE > (Integer)values[0] ||
+                    CinemaTask.TMS_SCREEN <= (Integer)values[0] )
                     return;
 
                 boolean bScale2K= (

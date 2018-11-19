@@ -38,4 +38,8 @@ public class VdStatusBar {
     public void SetVisibility( int id, int visibility ) {
         if( id == TXT_TIME ) mTextClock.setVisibility( visibility );
     }
+
+    public void SetListener( View.OnClickListener listener ) {
+        mTextClock.setOnClickListener( listener );
+    }
 }

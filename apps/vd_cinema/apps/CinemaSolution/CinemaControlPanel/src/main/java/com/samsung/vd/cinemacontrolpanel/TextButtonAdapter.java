@@ -44,7 +44,7 @@ public class TextButtonAdapter extends ArrayAdapter<TextButtonInfo> {
 
         final TextView mTitle;
         final TextView mText;
-        final Button mButton;
+        final Button[] mButton = new Button[4];
 
         TextButtonAdapter.Holder mHolder;
 
@@ -54,12 +54,19 @@ public class TextButtonAdapter extends ArrayAdapter<TextButtonInfo> {
 
             mTitle = (TextView)convertView.findViewById(R.id.listview_row_text_button_title);
             mText = (TextView)convertView.findViewById(R.id.listview_row_text_button_text);
-            mButton = (Button)convertView.findViewById(R.id.listview_row_text_button_button);
+            mButton[0] = (Button)convertView.findViewById(R.id.listview_row_text_button_button0);
+            mButton[1] = (Button)convertView.findViewById(R.id.listview_row_text_button_button1);
+            mButton[2] = (Button)convertView.findViewById(R.id.listview_row_text_button_button2);
+            mButton[3] = (Button)convertView.findViewById(R.id.listview_row_text_button_button3);
 
             mHolder = new TextButtonAdapter.Holder();
             mHolder.mTitle = mTitle;
             mHolder.mText = mText;
-            mHolder.mButton = mButton;
+
+            mHolder.mButton[0] = mButton[0];
+            mHolder.mButton[1] = mButton[1];
+            mHolder.mButton[2] = mButton[2];
+            mHolder.mButton[3] = mButton[3];
             convertView.setTag(mHolder);
         }
         else {
@@ -67,25 +74,32 @@ public class TextButtonAdapter extends ArrayAdapter<TextButtonInfo> {
 
             mTitle = mHolder.mTitle;
             mText = mHolder.mText;
-            mButton = mHolder.mButton;
+            mButton[0] = mHolder.mButton[0];
+            mButton[1] = mHolder.mButton[1];
+            mButton[2] = mHolder.mButton[2];
+            mButton[3] = mHolder.mButton[3];
         }
 
         mTitle.setText( mData.get(position).GetTitle() );
         mText.setText( mData.get(position).GetText() );
 
-        mTitle.setEnabled( mData.get(position).GetEnable() );
-        mText.setEnabled( mData.get(position).GetEnable() );
-        mButton.setEnabled( mData.get(position).GetEnable() );
+        mTitle.setEnabled( mData.get(position).GetTextEnable() );
+        mText.setEnabled( mData.get(position).GetTextEnable() );
 
-        mButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                TextButtonAdapter.OnClickListener listener = mData.get(mPosition).GetOnClickListener();
-                if( listener != null ) {
-                    listener.onClickListener(mPosition);
+        for( int i = 0; i < TextButtonInfo.MAX_BTN_NUM; i++ ) {
+            final int button = i;
+            mButton[button].setEnabled( mData.get(position).GetBtnEnable(button) );
+
+            mButton[button].setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    TextButtonAdapter.OnClickListener listener = mData.get(mPosition).GetOnClickListener(button);
+                    if( listener != null ) {
+                        listener.onClickListener(mPosition);
+                    }
                 }
-            }
-        });
+            });
+        }
 
         return convertView;
     }
@@ -115,7 +129,7 @@ public class TextButtonAdapter extends ArrayAdapter<TextButtonInfo> {
     private class Holder {
         TextView mTitle;
         TextView mText;
-        Button mButton;
+        Button[] mButton = new Button[TextButtonInfo.MAX_BTN_NUM];
     }
 }
 

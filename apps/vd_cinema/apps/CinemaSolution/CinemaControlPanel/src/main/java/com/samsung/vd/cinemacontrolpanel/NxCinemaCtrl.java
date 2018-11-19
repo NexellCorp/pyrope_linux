@@ -62,6 +62,10 @@ public class NxCinemaCtrl {
 
     public static final int CMD_PLATFORM_IS_BUSY            = 0x0220;
     public static final int CMD_PLATFORM_SCREEN_TYPE        = 0x0221;
+    public static final int CMD_PLATFORM_CHECK_CABINET      = 0x0222;
+    public static final int CMD_PLATFORM_CONFIG_UPLOAD      = 0x0230;
+    public static final int CMD_PLATFORM_CONFIG_DOWNLOAD    = 0x0231;
+    public static final int CMD_PLATFORM_CONFIG_DELETE      = 0x0232;
 
     private static NxCinemaCtrl mInstance;
 

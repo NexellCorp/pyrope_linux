@@ -22,6 +22,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <poll.h>
 
 #include <gdc_protocol.h>
 #include <SockUtils.h>
@@ -36,6 +37,7 @@
 #define NX_DTAG	"[TMS Client]"
 #include <NX_DbgMsg.h>
 
+#define MAX_TIMEOUT			10000
 #define MAX_PAYLOAD_SIZE	65535
 
 class CNX_TMSClient
@@ -48,15 +50,15 @@ public:
 	static void ReleaseInstance();
 
 public:
+	int32_t SendPacket( int32_t fd, uint8_t *pBuf, int32_t iSize );
+	int32_t RecvPacket( int32_t fd, uint8_t *pBuf, int32_t iSize );
+
 	int32_t SendCommand( const char *pIpAddr, uint32_t iCmd, uint8_t *pBuf, int32_t *iSize );
+	int32_t SendCommand( const char *pIpAddr, void *pObj, int32_t (*cbProcess)(int32_t, void*) );
 
 private:
 	int32_t Send( const char *pIpAddr, uint32_t iCmd, uint8_t *pBuf, int32_t *iSize );
 	int32_t GetVersion( const char *pIpAddr, uint32_t iCmd, uint8_t *pBuf, int32_t *iSize );
-
-private:
-	int32_t ReadData( int32_t fd, uint8_t *pBuf, int32_t iSize );
-	int32_t WriteData( int32_t fd, uint8_t *pBuf, int32_t iSize );
 
 private:
 	//	Rx/Tx Buffer
@@ -88,10 +90,28 @@ int32_t CNX_TMSClient::SendCommand( const char *pIpAddr, uint32_t iCmd, uint8_t 
 }
 
 //------------------------------------------------------------------------------
+int32_t CNX_TMSClient::SendCommand( const char *pIpAddr, void *pObj, int32_t (*cbProcess)(int32_t, void *) )
+{
+	int32_t clntSock = TCP_Connect( pIpAddr, TMS_SERVER_PORT );
+	if( -1 == clntSock)
+	{
+		NxErrMsg( "Error : TCP_Connect (%s:%d)\n", pIpAddr, TMS_SERVER_PORT );
+		return -1;
+	}
+
+	int32_t iRet = 0;
+	if( cbProcess )
+		iRet = cbProcess( clntSock, pObj );
+
+	close( clntSock );
+	return iRet;
+}
+
+//------------------------------------------------------------------------------
 int32_t CNX_TMSClient::Send( const char *pIpAddr, uint32_t iCmd, uint8_t *pBuf, int32_t *iSize )
 {
 	int32_t clntSock;
-	int32_t sendSize, recvSize;
+	int32_t sendSize, recvSize = 0;
 	int16_t payloadSize;
 	uint32_t key;
 	void *payload;
@@ -111,11 +131,11 @@ int32_t CNX_TMSClient::Send( const char *pIpAddr, uint32_t iCmd, uint8_t *pBuf, 
 		return -1;
 	}
 
-	NX_HexDump( m_SendBuf, sendSize, "Send" );
+	// NX_HexDump( m_SendBuf, sendSize, NX_DTAG, "Send" );
 
-	write( clntSock, m_SendBuf, sendSize );
+	NX_TMSSendPacket( clntSock, m_SendBuf, sendSize );
 
-	recvSize = read( clntSock, m_RecvBuf, sizeof(m_RecvBuf) );
+	recvSize = NX_TMSRecvPacket( clntSock, m_RecvBuf, sizeof(m_RecvBuf) );
 	if( 0 != GDC_ParsePacket( m_RecvBuf, recvSize, &key, &payload, &payloadSize ) )
 	{
 		NxErrMsg( "Error : GDC_ParsePacket().\n");
@@ -123,7 +143,7 @@ int32_t CNX_TMSClient::Send( const char *pIpAddr, uint32_t iCmd, uint8_t *pBuf, 
 		return -1;
 	}
 
-	NX_HexDump( m_RecvBuf, recvSize, "Recv" );
+	// NX_HexDump( m_RecvBuf, recvSize, NX_DTAG, "Recv" );
 
 	//
 	//	Condition of pBuf
@@ -160,6 +180,52 @@ int32_t CNX_TMSClient::GetVersion( const char */*pIpAddr*/, uint32_t /*iCmd*/, u
 	return 0;
 }
 
+//------------------------------------------------------------------------------
+int32_t CNX_TMSClient::SendPacket( int32_t fd, uint8_t* pBuf, int32_t iSize )
+{
+	return write( fd, pBuf, iSize );
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_TMSClient::RecvPacket( int32_t fd, uint8_t* pBuf, int32_t iSize )
+{
+	int32_t iReadSize, iTotalSize = 0;
+	do {
+		int32_t iRet;
+		struct pollfd hPoll;
+
+		hPoll.fd		= fd;
+		hPoll.events	= POLLIN | POLLERR;
+		hPoll.revents	= 0;
+
+		iRet = poll( (struct pollfd*)&hPoll, 1, MAX_TIMEOUT );
+		if( 0 < iRet )
+		{
+			iReadSize = read( fd, pBuf, iSize );
+			if( 0 >= iReadSize )
+			{
+				return -1;
+			}
+
+			iSize      -= iReadSize;
+			pBuf       += iReadSize;
+			iTotalSize += iReadSize;
+		}
+		else if( 0 > iRet )
+		{
+			NxErrMsg( "Fail, poll().\n");
+			return -1;
+		}
+		else
+		{
+			NxDbgMsg( NX_DBG_VBS, "Timeout. ReadData().\n");
+			return 0;
+		}
+	} while( (0 < iSize) && (iTotalSize < (((pBuf[4] << 8) | pBuf[5]) + 6)) );
+
+	return iTotalSize;
+}
+
 
 //------------------------------------------------------------------------------
 //
@@ -193,8 +259,29 @@ void CNX_TMSClient::ReleaseInstance()
 //
 
 //------------------------------------------------------------------------------
+int32_t NX_TMSSendPacket( int32_t fd, uint8_t *pBuf, int32_t iSize )
+{
+	CNX_TMSClient *hTms = CNX_TMSClient::GetInstance();
+	return hTms->SendPacket( fd, pBuf, iSize );
+}
+
+//------------------------------------------------------------------------------
+int32_t NX_TMSRecvPacket( int32_t fd, uint8_t *pBuf, int32_t iSize )
+{
+	CNX_TMSClient *hTms = CNX_TMSClient::GetInstance();
+	return hTms->RecvPacket( fd, pBuf, iSize );
+}
+
+//------------------------------------------------------------------------------
 int32_t NX_TMSSendCommand( const char *pIpAddr, int32_t iCmd, uint8_t *pBuf, int32_t *iSize )
 {
 	CNX_TMSClient *hTms = CNX_TMSClient::GetInstance();
 	return hTms->SendCommand( pIpAddr, iCmd, pBuf, iSize );
+}
+
+//------------------------------------------------------------------------------
+int32_t NX_TMSSendCommand( const char *pIpAddr, void *pObj, int32_t (*cbProcess)(int32_t iSock, void *pObj) )
+{
+	CNX_TMSClient *hTms = CNX_TMSClient::GetInstance();
+	return hTms->SendCommand( pIpAddr, pObj, cbProcess );
 }

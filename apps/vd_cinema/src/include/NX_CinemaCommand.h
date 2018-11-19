@@ -97,12 +97,16 @@
 
 #define PLATFORM_CMD_IS_BUSY			0x0220	//	Check Busy Status					// 0x80 | 0x20
 #define PLATFORM_CMD_SCREEN_TYPE		0x0221	//	Check ScreenType					// 0x80 | 0x21
+#define PLATFORM_CMD_CHECK_CABINET		0x0222	//	Check Cabinet						// 0x80 | 0x22
 
+#define PLATFORM_CMD_CONFIG_UPLOAD		0x0230	//										// 0x80 | 0x30
+#define PLATFORM_CMD_CONFIG_DOWNLOAD	0x0231	//										// 0x80 | 0x31
+#define PLATFORM_CMD_CONFIG_DELETE		0x0232	//										// 0x80 | 0x32
 
 //
 //	IMB Command
 //
 // #define IMB_CMD_CHANGE_CONTENTS			0x0C10	//	IMB Change Contents					// 0xC0 | 0x10
-#define IMB_CMD_QUE							0x0C20	//	IMB QUE Command					// 0xC0 | 0x20
+#define IMB_CMD_QUE						0x0C20	//	IMB QUE Command					// 0xC0 | 0x20
 
 #endif	// __NX_CINEMACOMMAND_H__

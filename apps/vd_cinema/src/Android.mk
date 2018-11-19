@@ -15,7 +15,10 @@ LOCAL_SRC_FILES += \
 
 # Add Cinema
 LOCAL_SRC_FILES += \
-	cinema/CNX_CinemaManager.cpp
+	cinema/CNX_CinemaManager.cpp \
+	cinema/CNX_CinemaControl.cpp \
+	cinema/CNX_CinemaBehavior.cpp \
+	cinema/NX_String.cpp	\
 
 # Add UART Sources
 LOCAL_SRC_FILES += \
@@ -34,6 +37,7 @@ LOCAL_SRC_FILES += \
 
 # Add Utils Sources
 LOCAL_SRC_FILES += \
+	utils/fmemopen.c \
 	utils/crc32.cpp	\
 	utils/NX_Utils.cpp \
 	utils/ping.cpp \

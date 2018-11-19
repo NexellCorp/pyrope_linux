@@ -23,7 +23,8 @@
 #include <stdio.h>
 #include <pthread.h>
 
-#include <CNX_I2C.h>
+#include <CNX_Base.h>
+#include <CNX_CinemaControl.h>
 
 class CNX_CinemaManager
 {
@@ -93,18 +94,22 @@ private:
 	int32_t PLAT_SapVersion( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize );
 	int32_t PLAT_IpcVersion( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize );
 	int32_t PLAT_TmsVersion( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize );
+	int32_t PLAT_IsBusy( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize );
 	int32_t PLAT_ScreenType( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize );
+	int32_t PLAT_CheckCabinet( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize );
+
+	int32_t PLAT_ConfigUpload( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize );
+	int32_t PLAT_ConfigDownload( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize );
+	int32_t PLAT_ConfigDelete( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize );
 
 private:
-	int32_t TestPatternDci( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex );
-	int32_t TestPatternColorBar( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex );
-	int32_t TestPatternFullScreenColor( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex );
-	int32_t TestPatternGrayScale( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex );
-	int32_t TestPatternDot( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex );
-	int32_t TestPatternDiagonal( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex );
+	int32_t TestPatternDci(  uint8_t index, uint8_t pattern );
+	int32_t TestPatternColorBar( uint8_t index, uint8_t pattern );
+	int32_t TestPatternFullScreenColor( uint8_t index, uint8_t pattern );
+	int32_t TestPatternGrayScale( uint8_t index, uint8_t pattern );
+	int32_t TestPatternDot( uint8_t index, uint8_t pattern );
+	int32_t TestPatternDiagonal( uint8_t index, uint8_t pattern );
 
-	int32_t CheckScreenType( void );
-	void	MakeDirectory( const char *pDir );
 	void	WaitTime( uint64_t iWaitTime, const char *pMsg = NULL );
 
 private:
@@ -114,9 +119,10 @@ private:
 	static CNX_CinemaManager*	m_pstInstance;
 	static CNX_Mutex			m_hInstanceLock;
 
+	CNX_CinemaControl*	m_pCinema;
+
 	CNX_Mutex		m_hLock;
 	pthread_t		m_hThreadCommand;
-	pthread_t		m_hThreadInitial;
 	int32_t			m_bRun;
 
 	int32_t			m_iCmd;
@@ -131,7 +137,7 @@ private:
 	uint8_t			m_TmsVersion[MAX_STR_SIZE];		// Version for TMS Server
 
 	enum { MAX_TEST_PATTERN = 6 };
-	int32_t		(CNX_CinemaManager::*m_pTestPatternFunc[MAX_TEST_PATTERN])( CNX_I2C*, uint8_t, uint8_t );
+	int32_t		(CNX_CinemaManager::*m_pTestPatternFunc[MAX_TEST_PATTERN])( uint8_t, uint8_t );
 
 	enum { SCREEN_TYPE_P25 = 0, SCREEN_TYPE_P33 = 1 };
 	int32_t		m_iScreenType;

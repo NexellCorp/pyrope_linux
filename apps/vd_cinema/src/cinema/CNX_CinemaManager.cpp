@@ -28,9 +28,9 @@
 #include <sys/types.h>
 
 #include <CNX_Base.h>
-#include <CNX_I2C.h>
 #include <CNX_EEPRom.h>
 #include <CNX_EEPRomData.h>
+#include <CNX_CinemaBehavior.h>
 #include <CNX_CinemaManager.h>
 
 #include <NX_CinemaCommand.h>
@@ -42,39 +42,52 @@
 #include <NX_DbgMsg.h>
 
 //------------------------------------------------------------------------------
-#define I2C_DEBUG			0
-#define I2C_SEPARATE_BURST	1
-
 #ifndef UNUSED
 #define UNUSED(x)			(void)(x)
 #endif
+
+// path in external storage
+#define TCON_TREG_PATH					"DCI/TCON"
+#define TCON_TREG_FILE					"DCI/TCON/T_REG.txt"
+#define PFPGA_PREG_PATH					"DCI/PFPGA"
+#define PFPGA_PREG_FILE					"DCI/PFPGA/P_REG.txt"
+
+// path in internal storage
+#define TCON_EEPROM_TREG_PATH			"/storage/sdcard0/SAMSUNG/TCON_EEPROM"
+#define TCON_EEPROM_TREG_FILE			"/storage/sdcard0/SAMSUNG/TCON_EEPROM/T_REG.txt"
+#define TCON_EEPROM_TREG_BINARY			"/storage/sdcard0/SAMSUNG/TCON_EEPROM/T_REG.bin"
+#define TCON_EEPROM_GAMMA_PATH			"/storage/sdcard0/SAMSUNG/TCON_EEPROM/LUT"
+
+#define TCON_USB_TREG_PATH				"/storage/sdcard0/SAMSUNG/TCON_USB"
+#define TCON_USB_TREG_FILE				"/storage/sdcard0/SAMSUNG/TCON_USB/T_REG.txt"
+#define TCON_USB_GAMMA_PATH				"/storage/sdcard0/SAMSUNG/TCON_USB/LUT"
+
+#define TCON_BEHAVIOR_PATH				"/storage/sdcard0/SAMSUNG/TCON_BEHAVIOR"
+
+#define PFPGA_USB_PREG_PATH				"/storage/sdcard0/SAMSUNG/PFPGA"
+#define PFPGA_USB_PREG_FILE				"/storage/sdcard0/SAMSUNG/PFPGA/P_REG.txt"
+#define PFPGA_USB_UNIFORMITY_FILE		"/storage/sdcard0/SAMSUNG/PFPGA/UC_COEF.txt"
+
+#define I2C_DEBUG			0
+#define I2C_SEPARATE_BURST	1
+
+#define TCON_BURST_RETRY_COUNT			3
 
 #define NX_ENABLE_CHECK_SCREEN_ALL		false
 #define NX_ENABLE_CHECK_SCREEN_BOOT		false
 #define NX_ENABLE_CHECK_SCREEN_DELAY	false
 
-#define TCON_BURST_RETRY_COUNT			3
-
-#define TCON_EEPROM_DATA_SIZE			128 * 1024	// 128 KBytes
-#define TCON_EEPROM_VERSION_SIZE		512
-#define TCON_EEPROM_PAGE_SIZE			256
-#define TCON_EEPROM_MAX_VERSION_SIZE	257
-
-#define TCON_EEPROM_RESULT_PATH			"/storage/sdcard0/SAMSUNG/TCON_EEPROM"
-#define TCON_USB_RESULT_PATH			"/storage/sdcard0/SAMSUNG/TCON_USB"
-#define PFPGA_USB_RESULT_PATH			"/storage/sdcard0/SAMSUNG/PFPGA"
-
-#define TCON_EEPROM_BINARY_FILE			"/storage/sdcard0/SAMSUNG/TCON_EEPROM/T_REG.bin"
+// #define NX_CRYPTION_KEY			0x55		// 0b 01010101
 
 //------------------------------------------------------------------------------
 CNX_CinemaManager::CNX_CinemaManager()
-	: m_hThreadCommand( 0x00 )
+	: m_pCinema( CNX_CinemaControl::GetInstance() )
+	, m_hThreadCommand( 0x00 )
 	, m_bRun( false )
-	, m_iCmd( 0x0000 )
 #if NX_ENABLE_CHECK_SCREEN_BOOT
-	, m_iScreenType (CheckScreenType())
+	, m_iScreenType( m_pCinema->GetScreenType() )
 #else
-	, m_iScreenType (SCREEN_TYPE_P25)
+	, m_iScreenType( SCREEN_TYPE_P25 )
 #endif
 {
 	m_pTestPatternFunc[0] = &CNX_CinemaManager::TestPatternDci;
@@ -94,9 +107,13 @@ CNX_CinemaManager::CNX_CinemaManager()
 		NX_DATE(), NX_TIME(), __TIME__, __DATE__ );
 	NxDbgMsg( NX_DBG_INFO, "--------------------------------------------------------------------------------\n" );
 
-	MakeDirectory( TCON_EEPROM_RESULT_PATH );
-	MakeDirectory( TCON_USB_RESULT_PATH );
-	MakeDirectory( PFPGA_USB_RESULT_PATH );
+	NX_MakeDirectory( TCON_EEPROM_TREG_PATH );
+	NX_MakeDirectory( TCON_EEPROM_GAMMA_PATH );
+	NX_MakeDirectory( TCON_USB_TREG_PATH );
+	NX_MakeDirectory( TCON_USB_GAMMA_PATH );
+	NX_MakeDirectory( PFPGA_USB_PREG_PATH );
+
+	NX_MakeDirectory( TCON_BEHAVIOR_PATH );
 }
 
 //------------------------------------------------------------------------------
@@ -106,6 +123,12 @@ CNX_CinemaManager::~CNX_CinemaManager()
 	{
 		pthread_join( m_hThreadCommand, NULL );
 		m_hThreadCommand = 0x00;
+	}
+
+	if( m_pCinema )
+	{
+		CNX_CinemaControl::ReleaseInstance();
+		m_pCinema = NULL;
 	}
 }
 
@@ -310,8 +333,19 @@ int32_t CNX_CinemaManager::ProcessCommand( uint32_t iCmd, uint8_t *pInBuf, int32
 	case CMD_PLATFORM( PLATFORM_CMD_IPC_SERVER_VERSION ):	return PLAT_IpcVersion( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
 	case PLATFORM_CMD_TMS_SERVER_VERSION:
 	case CMD_PLATFORM( PLATFORM_CMD_TMS_SERVER_VERSION ):	return PLAT_TmsVersion( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case PLATFORM_CMD_IS_BUSY:
+	case CMD_PLATFORM( PLATFORM_CMD_IS_BUSY ):				return PLAT_IsBusy( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
 	case PLATFORM_CMD_SCREEN_TYPE:
 	case CMD_PLATFORM( PLATFORM_CMD_SCREEN_TYPE ):			return PLAT_ScreenType( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case PLATFORM_CMD_CHECK_CABINET:
+	case CMD_PLATFORM( PLATFORM_CMD_CHECK_CABINET ):		return PLAT_CheckCabinet( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+
+	case PLATFORM_CMD_CONFIG_UPLOAD:
+	case CMD_PLATFORM( PLATFORM_CMD_CONFIG_UPLOAD ):		return PLAT_ConfigUpload( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case PLATFORM_CMD_CONFIG_DOWNLOAD:
+	case CMD_PLATFORM( PLATFORM_CMD_CONFIG_DOWNLOAD ):		return PLAT_ConfigDownload( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
+	case PLATFORM_CMD_CONFIG_DELETE:
+	case CMD_PLATFORM( PLATFORM_CMD_CONFIG_DELETE ):		return PLAT_ConfigDelete( iCmd, pInBuf, iInSize, pOutBuf, iOutSize );
 
 	default :
 		break;
@@ -350,15 +384,7 @@ int32_t CNX_CinemaManager::TCON_RegWrite( uint32_t iCmd, uint8_t *pInBuf, int32_
 	uint16_t inReg	= ((int16_t)(msbReg << 8) & 0xFF00) + (int16_t)lsbReg;
 	uint16_t inData	= ((int16_t)(msbData << 8) & 0xFF00) + (int16_t)lsbData;
 
-	CNX_I2C i2c( port );
-
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_TCON;
-	}
-
-	if( 0 > i2c.Write( slave, inReg, inData ) )
+	if( 0 > m_pCinema->Write( port, slave, inReg, inData ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, inReg, inData );
@@ -402,15 +428,7 @@ int32_t CNX_CinemaManager::TCON_RegRead( uint32_t iCmd, uint8_t *pInBuf, int32_t
 	uint16_t inReg	= ((int16_t)(msbReg << 8) & 0xFF00) + (int16_t)lsbReg;
 	int32_t iReadData;
 
-	CNX_I2C i2c( port );
-
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_TCON;
-	}
-
-	if( 0 > (iReadData = i2c.Read( slave, inReg )) )
+	if( 0 > (iReadData = m_pCinema->Read( port, slave, inReg )) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 			port, slave, inReg );
@@ -470,22 +488,14 @@ int32_t CNX_CinemaManager::TCON_Init( uint32_t iCmd, uint8_t *pInBuf, int32_t iI
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
-	CNX_I2C i2c( port );
-
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_TCON;
-	}
-
-	if( 0 > i2c.Write( slave, TCON_REG_SCAN_DATA1, 0x0000 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_SCAN_DATA1, 0x0000 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_SCAN_DATA1, 0x0000 );
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_SCAN_DATA2, 0x0025 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_SCAN_DATA2, 0x0025 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_SCAN_DATA2, 0x0025 );
@@ -517,24 +527,18 @@ int32_t CNX_CinemaManager::TCON_Status( uint32_t iCmd, uint8_t *pInBuf, int32_t 
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
-	CNX_I2C i2c( port );
 	int32_t iWriteData, iReadData = 0x0000;
 
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_TCON;
-	}
-
 	iWriteData = (uint16_t)NX_GetRandomValue( 0x0000, 0x7FFF );
-	if( 0 > i2c.Write( slave, TCON_REG_CHECK_STATUS, (uint16_t*)&iWriteData, 1 ) )
+
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_CHECK_STATUS, (uint16_t)iWriteData ) )
 	{
 		// NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 		// 	port, slave, TCON_REG_CHECK_STATUS, iWriteData );
 		goto ERROR_TCON;
 	}
 
-	if( 0 > (iReadData = i2c.Read( slave, TCON_REG_CHECK_STATUS )) )
+	if( 0 > (iReadData = m_pCinema->Read( port, slave, TCON_REG_CHECK_STATUS )) )
 	{
 		// NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 		// 	port, slave, TCON_REG_CHECK_STATUS );
@@ -567,25 +571,18 @@ int32_t CNX_CinemaManager::TCON_DoorStatus( uint32_t iCmd, uint8_t *pInBuf, int3
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
-	CNX_I2C i2c( port );
 	int32_t iReadData = 0x0000;
-
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_TCON;
-	}
 
 	if( bRead )
 	{
-		if( 0 > (iReadData = i2c.Read( slave, TCON_REG_CHECK_DOOR_READ )) )
+		if( 0 > (iReadData = m_pCinema->Read( port, slave, TCON_REG_CHECK_DOOR_READ )) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 				port, slave, TCON_REG_CHECK_DOOR_READ );
 			goto ERROR_TCON;
 		}
 
-		if( 0 > i2c.Write( slave, TCON_REG_RESERVED1, 2046 ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_RESERVED1, 2046 ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_RESERVED1, 2046 );
@@ -596,14 +593,14 @@ int32_t CNX_CinemaManager::TCON_DoorStatus( uint32_t iCmd, uint8_t *pInBuf, int3
 	}
 	else
 	{
-		if( 0 > i2c.Write( slave, TCON_REG_RESERVED1, 0 ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_RESERVED1, 0 ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_RESERVED1, 0 );
 			goto ERROR_TCON;
 		}
 
-		if( 0 > i2c.Write( slave, TCON_REG_CLOSE_DOOR, 0 ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_CLOSE_DOOR, 0 ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_CLOSE_DOOR, 0 );
@@ -611,7 +608,7 @@ int32_t CNX_CinemaManager::TCON_DoorStatus( uint32_t iCmd, uint8_t *pInBuf, int3
 		}
 		usleep(75000);
 
-		if( 0 > i2c.Write( slave, TCON_REG_CLOSE_DOOR, 1 ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_CLOSE_DOOR, 1 ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_CLOSE_DOOR, 1 );
@@ -619,7 +616,7 @@ int32_t CNX_CinemaManager::TCON_DoorStatus( uint32_t iCmd, uint8_t *pInBuf, int3
 		}
 		usleep(75000);
 
-		if( 0 > i2c.Write( slave, TCON_REG_CLOSE_DOOR, 0 ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_CLOSE_DOOR, 0 ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_CLOSE_DOOR, 0 );
@@ -652,16 +649,9 @@ int32_t CNX_CinemaManager::TCON_LvdsStatus( uint32_t iCmd, uint8_t *pInBuf, int3
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
-	CNX_I2C i2c( port );
 	int32_t iReadData = 0x0000;
 
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_TCON;
-	}
-
-	if( 0 > (iReadData = i2c.Read( slave, TCON_REG_LVDS_STATUS )) )
+	if( 0 > (iReadData = m_pCinema->Read( port, slave, TCON_REG_LVDS_STATUS )) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 			port, slave, TCON_REG_LVDS_STATUS );
@@ -696,16 +686,9 @@ int32_t CNX_CinemaManager::TCON_BootingStatus( uint32_t iCmd, uint8_t *pInBuf, i
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
-	CNX_I2C i2c( port );
 	int32_t iReadData = 0x0000;
 
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_TCON;
-	}
-
-	if( 0 > (iReadData = i2c.Read( slave, TCON_REG_BOOTING_STATUS )) )
+	if( 0 > (iReadData = m_pCinema->Read( port, slave, TCON_REG_BOOTING_STATUS )) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 			port, slave, TCON_REG_BOOTING_STATUS );
@@ -740,15 +723,7 @@ int32_t CNX_CinemaManager::TCON_LedModeNormal( uint32_t iCmd, uint8_t *pInBuf, i
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
-	CNX_I2C i2c( port );
-
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_TCON;
-	}
-
-	if( 0 > i2c.Write( slave, TCON_REG_ERROR_OUT_SEL, 0x0000 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_ERROR_OUT_SEL, 0x0000 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_ERROR_OUT_SEL, 0x0001 );
@@ -757,7 +732,7 @@ int32_t CNX_CinemaManager::TCON_LedModeNormal( uint32_t iCmd, uint8_t *pInBuf, i
 
 	usleep( 100000 );
 
-	if( 0 > i2c.Write( slave, TCON_REG_LIVE_LOD_EN, 0x0000 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_LIVE_LOD_EN, 0x0000 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_LIVE_LOD_EN, 0x0000 );
@@ -766,7 +741,7 @@ int32_t CNX_CinemaManager::TCON_LedModeNormal( uint32_t iCmd, uint8_t *pInBuf, i
 
 	usleep( 100000 );
 
-	if( 0 > i2c.Write( slave, TCON_REG_PATTERN, 0x0000) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_PATTERN, 0x0000) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_PATTERN, 0x0000 );
@@ -812,17 +787,9 @@ int32_t CNX_CinemaManager::TCON_LedModeLod( uint32_t iCmd, uint8_t *pInBuf, int3
 	const uint16_t *pPatternData =
 		(m_iScreenType == SCREEN_TYPE_P33) ? PatternDataP33 : PatternDataP25;
 
-	CNX_I2C i2c( port );
-
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_TCON;
-	}
-
 	for( int32_t i = 0; i < iPatternSize; i++ )
 	{
-		if( 0 > i2c.Write( slave, TCON_REG_PATTERN + i, pPatternData[i] ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_PATTERN + i, pPatternData[i] ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_PATTERN + i, pPatternData[i] );
@@ -832,14 +799,14 @@ int32_t CNX_CinemaManager::TCON_LedModeLod( uint32_t iCmd, uint8_t *pInBuf, int3
 
 	usleep( 100000 );
 
-	if( 0 > i2c.Write( slave, TCON_REG_LOD_REMOVAL_EN, 0x0000 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_LOD_REMOVAL_EN, 0x0000 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_LOD_REMOVAL_EN, 0x0000 );
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_LIVE_LOD_EN, 0x0001 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_LIVE_LOD_EN, 0x0001 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_LIVE_LOD_EN, 0x0000 );
@@ -849,7 +816,7 @@ int32_t CNX_CinemaManager::TCON_LedModeLod( uint32_t iCmd, uint8_t *pInBuf, int3
 
 	usleep( 3000000 );	// delay during 3.00sec over ( LOD Scan Time )
 
-	if( 0 > i2c.Write( slave, TCON_REG_ERROR_OUT_SEL, 0x0001 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_ERROR_OUT_SEL, 0x0001 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_ERROR_OUT_SEL, 0x0001 );
@@ -883,22 +850,14 @@ int32_t CNX_CinemaManager::TCON_LedOpenNum( uint32_t iCmd, uint8_t *pInBuf, int3
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
-	CNX_I2C i2c( port );
-
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_TCON;
-	}
-
-	if( 0 > i2c.Read( slave, TCON_REG_LOD_100_CHK_DONE ) )
+	if( 0 > m_pCinema->Read( port, slave, TCON_REG_LOD_100_CHK_DONE ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 			port, slave, TCON_REG_LOD_100_CHK_DONE );
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Read( slave, TCON_REG_ERROR_NUM_OVR ) )
+	if( 0 > m_pCinema->Read( port, slave, TCON_REG_ERROR_NUM_OVR ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 			port, slave, TCON_REG_ERROR_NUM_OVR );
@@ -907,7 +866,7 @@ int32_t CNX_CinemaManager::TCON_LedOpenNum( uint32_t iCmd, uint8_t *pInBuf, int3
 
 	for( int32_t i = 0; i < MAX_LOD_MODULE; i++ )
 	{
-		iReadData = i2c.Read( slave, TCON_REG_ERROR_NUM_M1 + i );
+		iReadData = m_pCinema->Read( port, slave, TCON_REG_ERROR_NUM_M1 + i );
 		if( 0 > iReadData )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
@@ -948,21 +907,13 @@ int32_t CNX_CinemaManager::TCON_LedOpenPos( uint32_t iCmd, uint8_t *pInBuf, int3
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
-	CNX_I2C i2c( port );
-
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_TCON;
-	}
-
 	usleep( 50000 );
 
-	iErrorOutReady = i2c.Read( slave, TCON_REG_ERROR_OUT_RDY );
+	iErrorOutReady = m_pCinema->Read( port, slave, TCON_REG_ERROR_OUT_RDY );
 	if( iErrorOutReady )
 	{
-		iCoordinateX = i2c.Read( slave, TCON_REG_X_COORDINATE );
-		iCoordinateY = i2c.Read( slave, TCON_REG_Y_COORDINATE );
+		iCoordinateX = m_pCinema->Read( port, slave, TCON_REG_X_COORDINATE );
+		iCoordinateY = m_pCinema->Read( port, slave, TCON_REG_Y_COORDINATE );
 
 		result[0] = (uint8_t)((iCoordinateX >> 8 ) & 0xFF);
 		result[1] = (uint8_t)((iCoordinateX >> 0 ) & 0xFF);
@@ -970,9 +921,9 @@ int32_t CNX_CinemaManager::TCON_LedOpenPos( uint32_t iCmd, uint8_t *pInBuf, int3
 		result[3] = (uint8_t)((iCoordinateY >> 0 ) & 0xFF);
 	}
 
-	i2c.Write( slave, TCON_REG_ERROR_OUT_CLK, 0x0001 );
+	m_pCinema->Write( port, slave, TCON_REG_ERROR_OUT_CLK, 0x0001 );
 	usleep( 50000 );
-	i2c.Write( slave, TCON_REG_ERROR_OUT_CLK, 0x0000 );
+	m_pCinema->Write( port, slave, TCON_REG_ERROR_OUT_CLK, 0x0000 );
 
 ERROR_TCON:
 	*iOutSize = sizeof(result);
@@ -996,29 +947,21 @@ int32_t CNX_CinemaManager::TCON_TestPattern( uint32_t iCmd, uint8_t *pInBuf, int
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
-	uint8_t funcIndex = pInBuf[1];
-	uint8_t patternIndex = pInBuf[2];
-
-	CNX_I2C i2c( port );
-
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_TCON;
-	}
+	uint8_t func = pInBuf[1];
+	uint8_t pattern = pInBuf[2];
 
 	if( TCON_CMD_PATTERN_RUN == iCmd )
 	{
-		if( funcIndex != MAX_TEST_PATTERN )
+		if( func != MAX_TEST_PATTERN )
 		{
 			NxDbgMsg( NX_DBG_INFO, "ScreenType( %d ), Port( %d ), Slave( 0x%02X ), FuncIndex( %d ), PatternIndex( %d )",
-				m_iScreenType, port, slave, funcIndex, patternIndex );
+				m_iScreenType, port, slave, func, pattern );
 
-			(this->*m_pTestPatternFunc[funcIndex])(&i2c, index, patternIndex);
+			(this->*m_pTestPatternFunc[func])(index, pattern);
 		}
 		else
 		{
-			if( 0 > i2c.Write( slave, TCON_REG_CABINET_ID, 0x0001 ) )
+			if( 0 > m_pCinema->Write( port, slave, TCON_REG_CABINET_ID, 0x0001 ) )
 			{
 				NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 					port, slave, TCON_REG_CABINET_ID, 0x0000 );
@@ -1028,12 +971,12 @@ int32_t CNX_CinemaManager::TCON_TestPattern( uint32_t iCmd, uint8_t *pInBuf, int
 #if I2C_DEBUG
 			for( int32_t i = 0x16; i < 0x80; i++ )
 			{
-				int32_t ret = i2c.Read( i, TCON_REG_CHECK_STATUS );
+				int32_t ret = m_pCinema->Read( i, TCON_REG_CHECK_STATUS );
 				if( 0 > ret )
 					continue;
 
 				int32_t iReadData = 0x0000;
-				if( 0 > (iReadData = i2c.Read( i, TCON_REG_CABINET_ID )) )
+				if( 0 > (iReadData = m_pCinema->Read( i, TCON_REG_CABINET_ID )) )
 				{
 					NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 						port, i, TCON_REG_CABINET_ID );
@@ -1048,16 +991,16 @@ int32_t CNX_CinemaManager::TCON_TestPattern( uint32_t iCmd, uint8_t *pInBuf, int
 	}
 	else
 	{
-		if( 0 > i2c.Write( slave, TCON_REG_XYZ_TO_RGB, 0x0001 ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_XYZ_TO_RGB, 0x0001 ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_XYZ_TO_RGB, 0x0000 );
 			goto ERROR_TCON;
 		}
 
-		if( funcIndex != MAX_TEST_PATTERN )
+		if( func != MAX_TEST_PATTERN )
 		{
-			if( 0 > i2c.Write( slave, TCON_REG_PATTERN, 0x0000 ) )
+			if( 0 > m_pCinema->Write( port, slave, TCON_REG_PATTERN, 0x0000 ) )
 			{
 				NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 					port, slave, TCON_REG_PATTERN, 0x0000 );
@@ -1067,12 +1010,12 @@ int32_t CNX_CinemaManager::TCON_TestPattern( uint32_t iCmd, uint8_t *pInBuf, int
 #if I2C_DEBUG
 			for( int32_t i = 0x16; i < 0x80; i++ )
 			{
-				int32_t ret = i2c.Read( i, TCON_REG_CHECK_STATUS );
+				int32_t ret = m_pCinema->Read( i, TCON_REG_CHECK_STATUS );
 				if( 0 > ret )
 					continue;
 
 				int32_t iReadData = 0x0000;
-				if( 0 > (iReadData = i2c.Read( i, TCON_REG_PATTERN )) )
+				if( 0 > (iReadData = m_pCinema->Read( i, TCON_REG_PATTERN )) )
 				{
 					NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 						port, i, TCON_REG_PATTERN );
@@ -1086,7 +1029,7 @@ int32_t CNX_CinemaManager::TCON_TestPattern( uint32_t iCmd, uint8_t *pInBuf, int
 		}
 		else
 		{
-			if( 0 > i2c.Write( slave, TCON_REG_CABINET_ID, 0x0000 ) )
+			if( 0 > m_pCinema->Write( port, slave, TCON_REG_CABINET_ID, 0x0000 ) )
 			{
 				NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 					port, slave, TCON_REG_CABINET_ID, 0x0000 );
@@ -1096,12 +1039,12 @@ int32_t CNX_CinemaManager::TCON_TestPattern( uint32_t iCmd, uint8_t *pInBuf, int
 #if I2C_DEBUG
 			for( int32_t i = 0x16; i < 0x80; i++ )
 			{
-				int32_t ret = i2c.Read( i, TCON_REG_CHECK_STATUS );
+				int32_t ret = m_pCinema->Read( i, TCON_REG_CHECK_STATUS );
 				if( 0 > ret )
 					continue;
 
 				int32_t iReadData = 0x0000;
-				if( 0 > (iReadData = i2c.Read( i, TCON_REG_CABINET_ID )) )
+				if( 0 > (iReadData = m_pCinema->Read( i, TCON_REG_CABINET_ID )) )
 				{
 					NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 						port, i, TCON_REG_CABINET_ID );
@@ -1183,15 +1126,7 @@ int32_t CNX_CinemaManager::TCON_TargetGamma( uint32_t iCmd, uint8_t *pInBuf, int
 		iLsbCheckSum = iLsbCheckSum ^ pLsbData[i];
 	}
 
-	CNX_I2C i2c( port );
-
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_TCON;
-	}
-
-	if( 0 > i2c.Write( slave, TCON_REG_TGAM_WR_SEL, wrSel) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_TGAM_WR_SEL, wrSel) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_TGAM_WR_SEL, wrSel );
@@ -1199,7 +1134,7 @@ int32_t CNX_CinemaManager::TCON_TargetGamma( uint32_t iCmd, uint8_t *pInBuf, int
 	}
 	usleep(100000);
 
-	if( 0 > i2c.Write( slave, TCON_REG_LUT_BURST_SEL, burstSel) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_LUT_BURST_SEL, burstSel) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_LUT_BURST_SEL, burstSel );
@@ -1213,7 +1148,7 @@ int32_t CNX_CinemaManager::TCON_TargetGamma( uint32_t iCmd, uint8_t *pInBuf, int
 #if I2C_SEPARATE_BURST
 		for( int32_t i = 0; i < 4; i++ )
 		{
-			if( 0 > i2c.Write( slave, dataReg, pMsbData + iDataSize / 4 * i, iDataSize / 4) )
+			if( 0 > m_pCinema->Write( port, slave, dataReg, pMsbData + iDataSize / 4 * i, iDataSize / 4) )
 			{
 				NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, size: 0x%04x )\n",
 					port, slave, dataReg, iDataSize );
@@ -1221,7 +1156,7 @@ int32_t CNX_CinemaManager::TCON_TargetGamma( uint32_t iCmd, uint8_t *pInBuf, int
 			}
 		}
 #else
-		if( 0 > i2c.Write( slave, dataReg, pMsbData, iDataSize ) )
+		if( 0 > m_pCinema->Write( port, slave, dataReg, pMsbData, iDataSize ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, size: 0x%04x )\n",
 				port, slave, dataReg, iDataSize );
@@ -1230,8 +1165,8 @@ int32_t CNX_CinemaManager::TCON_TargetGamma( uint32_t iCmd, uint8_t *pInBuf, int
 #endif
 		usleep(100000);
 
-		if( (iDataSize == i2c.Read( slave, TCON_REG_BURST_DATA_CNT )) &&
-			(iMsbCheckSum == i2c.Read( slave, TCON_REG_BURST_DATA_XOR )) )
+		if( (iDataSize == m_pCinema->Read( port, slave, TCON_REG_BURST_DATA_CNT )) &&
+			(iMsbCheckSum == m_pCinema->Read( port, slave, TCON_REG_BURST_DATA_XOR )) )
 		{
 			bFail = false;
 			break;
@@ -1248,7 +1183,7 @@ int32_t CNX_CinemaManager::TCON_TargetGamma( uint32_t iCmd, uint8_t *pInBuf, int
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_LUT_BURST_SEL, 0x0000) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_LUT_BURST_SEL, 0x0000) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_LUT_BURST_SEL, 0x0000 );
@@ -1256,7 +1191,7 @@ int32_t CNX_CinemaManager::TCON_TargetGamma( uint32_t iCmd, uint8_t *pInBuf, int
 	}
 	usleep(100000);
 
-	if( 0 > i2c.Write( slave, TCON_REG_TGAM_WR_SEL, wrSel | 0x0001) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_TGAM_WR_SEL, wrSel | 0x0001) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_TGAM_WR_SEL, wrSel );
@@ -1264,7 +1199,7 @@ int32_t CNX_CinemaManager::TCON_TargetGamma( uint32_t iCmd, uint8_t *pInBuf, int
 	}
 	usleep(100000);
 
-	if( 0 > i2c.Write( slave, TCON_REG_LUT_BURST_SEL, burstSel) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_LUT_BURST_SEL, burstSel) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_LUT_BURST_SEL, burstSel );
@@ -1278,7 +1213,7 @@ int32_t CNX_CinemaManager::TCON_TargetGamma( uint32_t iCmd, uint8_t *pInBuf, int
 #if I2C_SEPARATE_BURST
 		for( int32_t i = 0; i < 4; i++ )
 		{
-			if( 0 > i2c.Write( slave, dataReg, pLsbData + iDataSize / 4 * i, iDataSize / 4) )
+			if( 0 > m_pCinema->Write( port, slave, dataReg, pLsbData + iDataSize / 4 * i, iDataSize / 4) )
 			{
 				NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, size: 0x%04x )\n",
 					port, slave, dataReg, iDataSize / 4 );
@@ -1286,7 +1221,7 @@ int32_t CNX_CinemaManager::TCON_TargetGamma( uint32_t iCmd, uint8_t *pInBuf, int
 			}
 		}
 #else
-		if( 0 > i2c.Write( slave, dataReg, pLsbData, iDataSize ) )
+		if( 0 > m_pCinema->Write( port, slave, dataReg, pLsbData, iDataSize ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, size: 0x%04x )\n",
 				port, slave, dataReg, iDataSize );
@@ -1295,8 +1230,8 @@ int32_t CNX_CinemaManager::TCON_TargetGamma( uint32_t iCmd, uint8_t *pInBuf, int
 #endif
 		usleep(100000);
 
-		if( (iDataSize == i2c.Read( slave, TCON_REG_BURST_DATA_CNT )) &&
-			(iLsbCheckSum == i2c.Read( slave, TCON_REG_BURST_DATA_XOR )) )
+		if( (iDataSize == m_pCinema->Read( port, slave, TCON_REG_BURST_DATA_CNT )) &&
+			(iLsbCheckSum == m_pCinema->Read( port, slave, TCON_REG_BURST_DATA_XOR )) )
 		{
 			bFail = false;
 			break;
@@ -1313,7 +1248,7 @@ int32_t CNX_CinemaManager::TCON_TargetGamma( uint32_t iCmd, uint8_t *pInBuf, int
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_LUT_BURST_SEL, 0x0000) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_LUT_BURST_SEL, 0x0000) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_LUT_BURST_SEL, 0x0000 );
@@ -1390,15 +1325,7 @@ int32_t CNX_CinemaManager::TCON_DeviceGamma( uint32_t iCmd, uint8_t *pInBuf, int
 		iLsbCheckSum = iLsbCheckSum ^ pLsbData[i];
 	}
 
-	CNX_I2C i2c( port );
-
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_TCON;
-	}
-
-	if( 0 > i2c.Write( slave, TCON_REG_DGAM_WR_SEL, wrSel) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_DGAM_WR_SEL, wrSel) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_DGAM_WR_SEL, wrSel );
@@ -1406,7 +1333,7 @@ int32_t CNX_CinemaManager::TCON_DeviceGamma( uint32_t iCmd, uint8_t *pInBuf, int
 	}
 	usleep(100000);
 
-	if( 0 > i2c.Write( slave, TCON_REG_LUT_BURST_SEL, burstSel) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_LUT_BURST_SEL, burstSel) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_LUT_BURST_SEL, burstSel );
@@ -1420,7 +1347,7 @@ int32_t CNX_CinemaManager::TCON_DeviceGamma( uint32_t iCmd, uint8_t *pInBuf, int
 #if I2C_SEPARATE_BURST
 		for( int32_t i = 0; i < 4; i++ )
 		{
-			if( 0 > i2c.Write( slave, dataReg, pMsbData + iDataSize / 4 * i, iDataSize / 4) )
+			if( 0 > m_pCinema->Write( port, slave, dataReg, pMsbData + iDataSize / 4 * i, iDataSize / 4) )
 			{
 				NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, size: 0x%04x )\n",
 					port, slave, dataReg, iDataSize );
@@ -1428,7 +1355,7 @@ int32_t CNX_CinemaManager::TCON_DeviceGamma( uint32_t iCmd, uint8_t *pInBuf, int
 			}
 		}
 #else
-		if( 0 > i2c.Write( slave, dataReg, pMsbData, iDataSize ) )
+		if( 0 > m_pCinema->Write( port, slave, dataReg, pMsbData, iDataSize ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, size: 0x%04x )\n",
 				port, slave, dataReg, iDataSize );
@@ -1437,8 +1364,8 @@ int32_t CNX_CinemaManager::TCON_DeviceGamma( uint32_t iCmd, uint8_t *pInBuf, int
 #endif
 		usleep(100000);
 
-		if( (iDataSize == i2c.Read( slave, TCON_REG_BURST_DATA_CNT )) &&
-			(iMsbCheckSum == i2c.Read( slave, TCON_REG_BURST_DATA_XOR )) )
+		if( (iDataSize == m_pCinema->Read( port, slave, TCON_REG_BURST_DATA_CNT )) &&
+			(iMsbCheckSum == m_pCinema->Read( port, slave, TCON_REG_BURST_DATA_XOR )) )
 		{
 			bFail = false;
 			break;
@@ -1455,7 +1382,7 @@ int32_t CNX_CinemaManager::TCON_DeviceGamma( uint32_t iCmd, uint8_t *pInBuf, int
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_LUT_BURST_SEL, 0x0000) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_LUT_BURST_SEL, 0x0000) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_LUT_BURST_SEL, 0x0000 );
@@ -1463,7 +1390,7 @@ int32_t CNX_CinemaManager::TCON_DeviceGamma( uint32_t iCmd, uint8_t *pInBuf, int
 	}
 	usleep(100000);
 
-	if( 0 > i2c.Write( slave, TCON_REG_DGAM_WR_SEL, wrSel | 0x0001) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_DGAM_WR_SEL, wrSel | 0x0001) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_DGAM_WR_SEL, wrSel );
@@ -1471,7 +1398,7 @@ int32_t CNX_CinemaManager::TCON_DeviceGamma( uint32_t iCmd, uint8_t *pInBuf, int
 	}
 	usleep(100000);
 
-	if( 0 > i2c.Write( slave, TCON_REG_LUT_BURST_SEL, burstSel) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_LUT_BURST_SEL, burstSel) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_LUT_BURST_SEL, burstSel );
@@ -1485,7 +1412,7 @@ int32_t CNX_CinemaManager::TCON_DeviceGamma( uint32_t iCmd, uint8_t *pInBuf, int
 #if I2C_SEPARATE_BURST
 		for( int32_t i = 0; i < 4; i++ )
 		{
-			if( 0 > i2c.Write( slave, dataReg, pLsbData + iDataSize / 4 * i, iDataSize / 4) )
+			if( 0 > m_pCinema->Write( port, slave, dataReg, pLsbData + iDataSize / 4 * i, iDataSize / 4) )
 			{
 				NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, size: 0x%04x )\n",
 					port, slave, dataReg, iDataSize / 4 );
@@ -1493,7 +1420,7 @@ int32_t CNX_CinemaManager::TCON_DeviceGamma( uint32_t iCmd, uint8_t *pInBuf, int
 			}
 		}
 #else
-		if( 0 > i2c.Write( slave, dataReg, pLsbData, iDataSize ) )
+		if( 0 > m_pCinema->Write( port, slave, dataReg, pLsbData, iDataSize ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, size: 0x%04x )\n",
 				port, slave, dataReg, iDataSize );
@@ -1502,8 +1429,8 @@ int32_t CNX_CinemaManager::TCON_DeviceGamma( uint32_t iCmd, uint8_t *pInBuf, int
 #endif
 		usleep(100000);
 
-		if( (iDataSize == i2c.Read( slave, TCON_REG_BURST_DATA_CNT )) &&
-			(iLsbCheckSum == i2c.Read( slave, TCON_REG_BURST_DATA_XOR )) )
+		if( (iDataSize == m_pCinema->Read( port, slave, TCON_REG_BURST_DATA_CNT )) &&
+			(iLsbCheckSum == m_pCinema->Read( port, slave, TCON_REG_BURST_DATA_XOR )) )
 		{
 			bFail = false;
 			break;
@@ -1520,7 +1447,7 @@ int32_t CNX_CinemaManager::TCON_DeviceGamma( uint32_t iCmd, uint8_t *pInBuf, int
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_LUT_BURST_SEL, 0x0000) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_LUT_BURST_SEL, 0x0000) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_LUT_BURST_SEL, 0x0000 );
@@ -1605,18 +1532,10 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 
 	printf("port(%d), slave(0x%02x), module(%d)\n", port, slave, module);
 
-	CNX_I2C i2c( port );
-
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_TCON;
-	}
-
 	//
 	// 0. Driver Clock Off.
 	//
-	if( 0 > i2c.Write( slave, TCON_REG_DRVIVER_CLK_OFF, 0x0001 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_DRVIVER_CLK_OFF, 0x0001 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_DRVIVER_CLK_OFF, 0x0001 );
@@ -1627,7 +1546,7 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 	//
 	// 1. Flash Selection.
 	//
-	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, module ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_SEL, module ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_FLASH_SEL, module );
@@ -1638,21 +1557,21 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 	//
 	// 1. Read CC data.
 	//
-	if( 0 > i2c.Write( slave, TCON_REG_F_CC_RD_EN, 0x0001 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_F_CC_RD_EN, 0x0001 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_F_CC_RD_EN, 0x0001 );
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_F_CC_RD_EN, 0x0000 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_F_CC_RD_EN, 0x0000 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_F_CC_RD_EN, 0x0000 );
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, module >> 1 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_SEL, module >> 1 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_FLASH_SEL, module >> 1 );
@@ -1663,7 +1582,7 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 	for( int32_t i = 0; i < (int32_t)(sizeof(ccData) / sizeof(ccData[0])); i++ )
 	{
 		int32_t iReadData = 0x0000;
-		if( 0 > (iReadData = i2c.Read( slave, TCON_REG_F_CC00_READ + i )) )
+		if( 0 > (iReadData = m_pCinema->Read( port, slave, TCON_REG_F_CC00_READ + i )) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 				port, slave, TCON_REG_F_CC00_READ + i );
@@ -1673,7 +1592,7 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 		ccData[i] = (uint16_t)(iReadData & 0x0000FFFF);
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, module ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_SEL, module ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_FLASH_SEL, module );
@@ -1683,14 +1602,14 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 	//
 	//	2. Read Optional Data
 	//
-	if( 0 > i2c.Write( slave, TCON_REG_F_LED_RD_EN, 0x0001 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_F_LED_RD_EN, 0x0001 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_F_LED_RD_EN, 0x0001 );
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_F_LED_RD_EN, 0x0000 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_F_LED_RD_EN, 0x0000 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_F_LED_RD_EN, 0x0000 );
@@ -1701,7 +1620,7 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 	for( int32_t i = 0; i < (int32_t)(sizeof(opData) / sizeof(opData[0])); i++ )
 	{
 		int32_t iReadData = 0x0000;
-		if( 0 > (iReadData = i2c.Read( slave, TCON_REG_F_LED_DATA00_READ + i )) )
+		if( 0 > (iReadData = m_pCinema->Read( port, slave, TCON_REG_F_LED_DATA00_READ + i )) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 				port, slave, TCON_REG_F_LED_DATA00_READ + i );
@@ -1714,14 +1633,14 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 	//
 	//	3. Flash Protection Off.
 	//
-	if( 0 > i2c.Write( slave, TCON_REG_FLASH_STATUS_WRITE, 0x0002 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0002 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0002 );
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_FLASH_STATUS_WRITE, 0x0000 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0000 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0000 );
@@ -1732,14 +1651,14 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 	//
 	//	4. Erase Flash.
 	//
-	if( 0 > i2c.Write( slave, TCON_REG_FLASH_CHIP_ERASE, 0x0001 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_CHIP_ERASE, 0x0001 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_FLASH_CHIP_ERASE, 0x0001 );
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_FLASH_CHIP_ERASE, 0x0000 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_CHIP_ERASE, 0x0000 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_FLASH_CHIP_ERASE, 0x0000 );
@@ -1750,7 +1669,7 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 	//
 	//	5. Write Dot Correction Data.
 	//
-	if( 0 > i2c.Write( slave, TCON_REG_LUT_BURST_SEL, 0x0040) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_LUT_BURST_SEL, 0x0040) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_LUT_BURST_SEL, 0x0040 );
@@ -1763,7 +1682,7 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 #if I2C_SEPARATE_BURST
 		for( int32_t i = 0; i < 30; i++ )
 		{
-			if( 0 > i2c.Write( slave, TCON_REG_FLASH_WDATA, pData + iDataSize / 30 * i, iDataSize / 30) )
+			if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_WDATA, pData + iDataSize / 30 * i, iDataSize / 30) )
 			{
 				NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, size: 0x%04x )\n",
 					port, slave, TCON_REG_FLASH_WDATA, iDataSize / 30 );
@@ -1771,7 +1690,7 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 			}
 		}
 #else
-		if( 0 > i2c.Write( slave, TCON_REG_FLASH_WDATA, pData, iDataSize ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_WDATA, pData, iDataSize ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, size: 0x%04x )\n",
 				port, slave, TCON_REG_FLASH_WDATA, iDataSize );
@@ -1780,8 +1699,8 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 #endif
 		usleep(100000);
 
-		if( (iDataSize == i2c.Read( slave, TCON_REG_BURST_DATA_CNT )) &&
-			(iCheckSum == i2c.Read( slave, TCON_REG_BURST_DATA_XOR )) )
+		if( (iDataSize == m_pCinema->Read( port, slave, TCON_REG_BURST_DATA_CNT )) &&
+			(iCheckSum == m_pCinema->Read( port, slave, TCON_REG_BURST_DATA_XOR )) )
 		{
 			bFail = false;
 			break;
@@ -1793,7 +1712,7 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 		bFail = true;
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_LUT_BURST_SEL, 0x0000) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_LUT_BURST_SEL, 0x0000) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_LUT_BURST_SEL, 0x0000 );
@@ -1805,7 +1724,7 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 	//
 	for( int32_t i = 0; i < (int32_t)(sizeof(ccData) / sizeof(ccData[0])); i++ )
 	{
-		if( 0 > i2c.Write( slave, TCON_REG_CC00 + i, ccData[i] ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_CC00 + i, ccData[i] ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_CC00 + i, ccData[i] );
@@ -1813,14 +1732,14 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 		}
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_F_CC_WR_EN, 0x0001 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_F_CC_WR_EN, 0x0001 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_F_CC_WR_EN, 0x0001 );
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_F_CC_WR_EN, 0x0000 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_F_CC_WR_EN, 0x0000 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_F_CC_WR_EN, 0x0000 );
@@ -1833,7 +1752,7 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 	//
 	for( int32_t i = 0; i < (int32_t)(sizeof(opData) / sizeof(opData[0])); i++ )
 	{
-		if( 0 > i2c.Write( slave, TCON_REG_F_LED_DATA00 + i, opData[i] ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_F_LED_DATA00 + i, opData[i] ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_F_LED_DATA00 + i, opData[i] );
@@ -1841,14 +1760,14 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 		}
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_F_LED_WR_EN, 0x0001 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_F_LED_WR_EN, 0x0001 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_F_LED_WR_EN, 0x0001 );
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_F_LED_WR_EN, 0x0000 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_F_LED_WR_EN, 0x0000 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_F_LED_WR_EN, 0x0000 );
@@ -1859,14 +1778,14 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 	//
 	//	8. Flash Protection On.
 	//
-	if( 0 > i2c.Write( slave, TCON_REG_FLASH_STATUS_WRITE, 0x0003 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0003 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0003 );
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_FLASH_STATUS_WRITE, 0x0000 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0000 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0000 );
@@ -1874,7 +1793,7 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 	}
 	usleep(75000);
 
-	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, 0x001F ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_SEL, 0x001F ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_FLASH_SEL, 0x001F );
@@ -1885,7 +1804,7 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 	//
 	// 9. Driver Clock On.
 	//
-	if( 0 > i2c.Write( slave, TCON_REG_MUTE, 0x0001 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_MUTE, 0x0001 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_MUTE, 0x0001 );
@@ -1894,7 +1813,7 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 
 	usleep(75000);
 
-	if( 0 > i2c.Write( slave, TCON_REG_SW_RESET, 0x0000 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_SW_RESET, 0x0000 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_SW_RESET, 0x0000 );
@@ -1904,7 +1823,7 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 	usleep(75000);
 
 
-	if( 0 > i2c.Write( slave, TCON_REG_SW_RESET, 0x0001 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_SW_RESET, 0x0001 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_SW_RESET, 0x0001 );
@@ -1913,7 +1832,7 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 
 	usleep(150000);
 
-	if( 0 > i2c.Write( slave, TCON_REG_MUTE, 0x0000 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_MUTE, 0x0000 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_MUTE, 0x0000 );
@@ -1925,7 +1844,7 @@ int32_t CNX_CinemaManager::TCON_DotCorrection( uint32_t iCmd, uint8_t *pInBuf, i
 	//
 	// 9. Driver Clock On.
 	//
-	if( 0 > i2c.Write( slave, TCON_REG_DRVIVER_CLK_OFF, 0x0000 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_DRVIVER_CLK_OFF, 0x0000 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_DRVIVER_CLK_OFF, 0x0000 );
@@ -1980,15 +1899,7 @@ int32_t CNX_CinemaManager::TCON_DotCorrectionExtract( uint32_t iCmd, uint8_t *pI
 	pResult = (uint8_t*)malloc( iResultLen * sizeof(uint8_t) );
 	pResult[0] = 0xFF;
 
-	CNX_I2C i2c( port );
-
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_TCON;
-	}
-
-	if( 0 > (iReadData = i2c.Read( slave, TCON_REG_PITCH_INFO )) )
+	if( 0 > (iReadData = m_pCinema->Read( port, slave, TCON_REG_PITCH_INFO )) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 			port, slave, TCON_REG_PITCH_INFO );
@@ -2028,14 +1939,14 @@ int32_t CNX_CinemaManager::TCON_DotCorrectionExtract( uint32_t iCmd, uint8_t *pI
 
 			// printf("pos_x(%d), pos_y(%d)\n", pos_x, pos_y);
 
-			if( 0 > i2c.Write( slave, TCON_REG_ADDR_CC_POS_X, pos_x ) )
+			if( 0 > m_pCinema->Write( port, slave, TCON_REG_ADDR_CC_POS_X, pos_x ) )
 			{
 				NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 					port, slave, TCON_REG_ADDR_CC_POS_X, pos_x );
 				goto ERROR_TCON;
 			}
 
-			if( 0 > i2c.Write( slave, TCON_REG_ADDR_CC_POS_Y, pos_y ) )
+			if( 0 > m_pCinema->Write( port, slave, TCON_REG_ADDR_CC_POS_Y, pos_y ) )
 			{
 				NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 					port, slave, TCON_REG_ADDR_CC_POS_Y, pos_y );
@@ -2046,7 +1957,7 @@ int32_t CNX_CinemaManager::TCON_DotCorrectionExtract( uint32_t iCmd, uint8_t *pI
 
 			for( int32_t k = 0; k < (int32_t)(sizeof(ccData14) / sizeof(ccData14[0])); k++ )
 			{
-				if( 0 > (ccData14[k] = i2c.Read( slave, TCON_REG_ADDR_CC_IN_CC00 + k )) )
+				if( 0 > (ccData14[k] = m_pCinema->Read( port, slave, TCON_REG_ADDR_CC_IN_CC00 + k )) )
 				{
 					NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 						port, slave, TCON_REG_ADDR_CC_IN_CC00 + k );
@@ -2144,18 +2055,10 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamRead( uint32_t iCmd, uint8_t *pInBuf, i
 	uint16_t iTempValue[4];
 	int32_t iReadData;
 
-	CNX_I2C i2c( port );
-
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_TCON;
-	}
-
 	//
 	//	1. Read Flash Data. ( FLASH --> SRAM in FPGA ) :: All optional data(24EA) is read.
 	//
-	if( 0 > i2c.Write( slave, TCON_REG_F_LED_RD_EN, 0x0000 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_F_LED_RD_EN, 0x0000 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_F_LED_RD_EN, 0x0000 );
@@ -2163,7 +2066,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamRead( uint32_t iCmd, uint8_t *pInBuf, i
 	}
 	usleep(75000);
 
-	if( 0 > i2c.Write( slave, TCON_REG_F_LED_RD_EN, 0x0001 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_F_LED_RD_EN, 0x0001 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_F_LED_RD_EN, 0x0001 );
@@ -2171,7 +2074,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamRead( uint32_t iCmd, uint8_t *pInBuf, i
 	}
 	usleep(75000);
 
-	if( 0 > i2c.Write( slave, TCON_REG_F_LED_RD_EN, 0x0000 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_F_LED_RD_EN, 0x0000 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_F_LED_RD_EN, 0x0000 );
@@ -2187,7 +2090,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamRead( uint32_t iCmd, uint8_t *pInBuf, i
 		if( !IS_TCON_MODULE_TOP(module) )
 			continue;
 
-		if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, module ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_SEL, module ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_FLASH_SEL, module );
@@ -2195,7 +2098,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamRead( uint32_t iCmd, uint8_t *pInBuf, i
 		}
 		usleep(100000);
 
-		if( 0 > (iReadData = i2c.Read( slave, TCON_REG_F_LED_DATA00_READ )) )
+		if( 0 > (iReadData = m_pCinema->Read( port, slave, TCON_REG_F_LED_DATA00_READ )) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 				port, slave, TCON_REG_F_LED_DATA00_READ );
@@ -2206,7 +2109,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamRead( uint32_t iCmd, uint8_t *pInBuf, i
 		iSeamValue[TCON_MODULE_TOP] = iTempValue[TCON_MODULE_TOP];
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_SEAM_TOP, iSeamValue[TCON_MODULE_TOP] ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_SEAM_TOP, iSeamValue[TCON_MODULE_TOP] ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_SEAM_TOP, iSeamValue[TCON_MODULE_TOP] );
@@ -2221,7 +2124,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamRead( uint32_t iCmd, uint8_t *pInBuf, i
 		if( !IS_TCON_MODULE_BOTTOM(module) )
 			continue;
 
-		if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, module ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_SEL, module ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_FLASH_SEL, module );
@@ -2229,7 +2132,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamRead( uint32_t iCmd, uint8_t *pInBuf, i
 		}
 		usleep(100000);
 
-		if( 0 > (iReadData = i2c.Read( slave, TCON_REG_F_LED_DATA01_READ )) )
+		if( 0 > (iReadData = m_pCinema->Read( port, slave, TCON_REG_F_LED_DATA01_READ )) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 				port, slave, TCON_REG_F_LED_DATA01_READ );
@@ -2240,7 +2143,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamRead( uint32_t iCmd, uint8_t *pInBuf, i
 		iSeamValue[TCON_MODULE_BOTTOM] = iTempValue[TCON_MODULE_BOTTOM];
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_SEAM_BOTTOM, iSeamValue[TCON_MODULE_BOTTOM] ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_SEAM_BOTTOM, iSeamValue[TCON_MODULE_BOTTOM] ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_SEAM_BOTTOM, iSeamValue[TCON_MODULE_BOTTOM] );
@@ -2255,7 +2158,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamRead( uint32_t iCmd, uint8_t *pInBuf, i
 		if( !IS_TCON_MODULE_LEFT(module) )
 			continue;
 
-		if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, module ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_SEL, module ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_FLASH_SEL, module );
@@ -2263,7 +2166,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamRead( uint32_t iCmd, uint8_t *pInBuf, i
 		}
 		usleep(100000);
 
-		if( 0 > (iReadData = i2c.Read( slave, TCON_REG_F_LED_DATA02_READ )) )
+		if( 0 > (iReadData = m_pCinema->Read( port, slave, TCON_REG_F_LED_DATA02_READ )) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 				port, slave, TCON_REG_F_LED_DATA00_READ );
@@ -2274,7 +2177,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamRead( uint32_t iCmd, uint8_t *pInBuf, i
 		iSeamValue[TCON_MODULE_LEFT] = iTempValue[TCON_MODULE_LEFT];
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_SEAM_LEFT, iSeamValue[TCON_MODULE_LEFT] ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_SEAM_LEFT, iSeamValue[TCON_MODULE_LEFT] ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_SEAM_LEFT, iSeamValue[TCON_MODULE_LEFT] );
@@ -2289,7 +2192,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamRead( uint32_t iCmd, uint8_t *pInBuf, i
 		if( !IS_TCON_MODULE_RIGHT(module) )
 			continue;
 
-		if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, module ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_SEL, module ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_FLASH_SEL, module );
@@ -2297,7 +2200,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamRead( uint32_t iCmd, uint8_t *pInBuf, i
 		}
 		usleep(100000);
 
-		if( 0 > (iReadData = i2c.Read( slave, TCON_REG_F_LED_DATA03_READ )) )
+		if( 0 > (iReadData = m_pCinema->Read( port, slave, TCON_REG_F_LED_DATA03_READ )) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 				port, slave, TCON_REG_F_LED_DATA00_READ );
@@ -2308,7 +2211,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamRead( uint32_t iCmd, uint8_t *pInBuf, i
 		iSeamValue[TCON_MODULE_RIGHT] = iTempValue[TCON_MODULE_RIGHT];
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_SEAM_RIGHT, iSeamValue[TCON_MODULE_RIGHT] ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_SEAM_RIGHT, iSeamValue[TCON_MODULE_RIGHT] ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_SEAM_RIGHT, iSeamValue[TCON_MODULE_RIGHT] );
@@ -2348,18 +2251,10 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamWrite( uint32_t iCmd, uint8_t *pInBuf, 
 		iSeamValue[i] = ((int16_t)(pInBuf[i*2+1] << 8) & 0xFF00) + (int16_t)pInBuf[i*2+2];
 	}
 
-	CNX_I2C i2c( port );
-
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_TCON;
-	}
-
 	//
 	//	1. Read Flash Data. ( FLASH --> SRAM in FPGA ) :: All optional data(24EA) is read.
 	//
-	if( 0 > i2c.Write( slave, TCON_REG_F_LED_RD_EN, 0x0000 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_F_LED_RD_EN, 0x0000 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_F_LED_RD_EN, 0x0000 );
@@ -2367,7 +2262,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamWrite( uint32_t iCmd, uint8_t *pInBuf, 
 	}
 	usleep(75000);
 
-	if( 0 > i2c.Write( slave, TCON_REG_F_LED_RD_EN, 0x0001 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_F_LED_RD_EN, 0x0001 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_F_LED_RD_EN, 0x0001 );
@@ -2375,7 +2270,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamWrite( uint32_t iCmd, uint8_t *pInBuf, 
 	}
 	usleep(75000);
 
-	if( 0 > i2c.Write( slave, TCON_REG_F_LED_RD_EN, 0x0000 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_F_LED_RD_EN, 0x0000 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_F_LED_RD_EN, 0x0000 );
@@ -2391,7 +2286,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamWrite( uint32_t iCmd, uint8_t *pInBuf, 
 		//
 		//	2-1. Flash Selection.
 		//
-		if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, module ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_SEL, module ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_FLASH_SEL, module );
@@ -2405,7 +2300,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamWrite( uint32_t iCmd, uint8_t *pInBuf, 
 		for( int32_t i = 0; i < 16; i++ )
 		{
 			int32_t iReadData = 0x0000;
-			if( 0 > (iReadData = i2c.Read( slave, TCON_REG_F_LED_DATA00_READ + i )) )
+			if( 0 > (iReadData = m_pCinema->Read( port, slave, TCON_REG_F_LED_DATA00_READ + i )) )
 			{
 				NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 					port, slave, TCON_REG_F_LED_DATA00_READ + i );
@@ -2477,7 +2372,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamWrite( uint32_t iCmd, uint8_t *pInBuf, 
 		//
 		//	4-1. Flash Selection.
 		//
-		if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, module ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_SEL, module ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_FLASH_SEL, module );
@@ -2488,7 +2383,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamWrite( uint32_t iCmd, uint8_t *pInBuf, 
 		//
 		//	4-2. Flash Protection Off.
 		//
-		if( 0 > i2c.Write( slave, TCON_REG_FLASH_STATUS_WRITE, 0x0000 ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0000 ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0000 );
@@ -2496,7 +2391,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamWrite( uint32_t iCmd, uint8_t *pInBuf, 
 		}
 		usleep(75000);
 
-		if( 0 > i2c.Write( slave, TCON_REG_FLASH_STATUS_WRITE, 0x0002 ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0002 ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0002 );
@@ -2504,7 +2399,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamWrite( uint32_t iCmd, uint8_t *pInBuf, 
 		}
 		usleep(75000);
 
-		if( 0 > i2c.Write( slave, TCON_REG_FLASH_STATUS_WRITE, 0x0000 ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0000 ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0000 );
@@ -2517,7 +2412,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamWrite( uint32_t iCmd, uint8_t *pInBuf, 
 		//
 		for( int32_t i = 0; i < 16; i++ )
 		{
-			if( 0 > i2c.Write( slave, TCON_REG_F_LED_DATA00 + i, opData[module][i] ) )
+			if( 0 > m_pCinema->Write( port, slave, TCON_REG_F_LED_DATA00 + i, opData[module][i] ) )
 			{
 				NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 					port, slave, TCON_REG_F_LED_DATA00 + i, opData[module][i] );
@@ -2525,7 +2420,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamWrite( uint32_t iCmd, uint8_t *pInBuf, 
 			}
 		}
 
-		if( 0 > i2c.Write( slave, TCON_REG_F_LED_WR_EN, 0x0000 ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_F_LED_WR_EN, 0x0000 ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_F_LED_WR_EN, 0x0000 );
@@ -2533,7 +2428,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamWrite( uint32_t iCmd, uint8_t *pInBuf, 
 		}
 		usleep(75000);
 
-		if( 0 > i2c.Write( slave, TCON_REG_F_LED_WR_EN, 0x0001 ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_F_LED_WR_EN, 0x0001 ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_F_LED_WR_EN, 0x0001 );
@@ -2541,7 +2436,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamWrite( uint32_t iCmd, uint8_t *pInBuf, 
 		}
 		usleep(75000);
 
-		if( 0 > i2c.Write( slave, TCON_REG_F_LED_WR_EN, 0x0000 ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_F_LED_WR_EN, 0x0000 ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_F_LED_WR_EN, 0x0000 );
@@ -2552,7 +2447,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamWrite( uint32_t iCmd, uint8_t *pInBuf, 
 		//
 		//	4-4. Flash Protection On.
 		//
-		if( 0 > i2c.Write( slave, TCON_REG_FLASH_STATUS_WRITE, 0x0000 ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0000 ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0000 );
@@ -2560,7 +2455,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamWrite( uint32_t iCmd, uint8_t *pInBuf, 
 		}
 		usleep(75000);
 
-		if( 0 > i2c.Write( slave, TCON_REG_FLASH_STATUS_WRITE, 0x0003 ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0003 ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0003 );
@@ -2568,7 +2463,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamWrite( uint32_t iCmd, uint8_t *pInBuf, 
 		}
 		usleep(75000);
 
-		if( 0 > i2c.Write( slave, TCON_REG_FLASH_STATUS_WRITE, 0x0000 ) )
+		if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0000 ) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 				port, slave, TCON_REG_FLASH_STATUS_WRITE, 0x0000 );
@@ -2580,7 +2475,7 @@ int32_t CNX_CinemaManager::TCON_WhiteSeamWrite( uint32_t iCmd, uint8_t *pInBuf, 
 	//
 	//	5. Flash Selection Off.
 	//
-	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, 0x001F ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_SEL, 0x001F ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_FLASH_SEL, 0x001F );
@@ -2617,18 +2512,10 @@ int32_t CNX_CinemaManager::TCON_OptionalData( uint32_t iCmd, uint8_t *pInBuf, in
 
 	uint16_t opData[16] = { 0x0000, };
 
-	CNX_I2C i2c( port );
-
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_TCON;
-	}
-
 	//
 	//	1. Flash Selection.
 	//
-	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, module ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_SEL, module ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_FLASH_SEL, module );
@@ -2639,14 +2526,14 @@ int32_t CNX_CinemaManager::TCON_OptionalData( uint32_t iCmd, uint8_t *pInBuf, in
 	//
 	//	2. Pluse Generation for Flash Read.
 	//
-	if( 0 > i2c.Write( slave, TCON_REG_F_LED_RD_EN, 0x0001 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_F_LED_RD_EN, 0x0001 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_F_LED_RD_EN, 0x0001 );
 		goto ERROR_TCON;
 	}
 
-	if( 0 > i2c.Write( slave, TCON_REG_F_LED_RD_EN, 0x0000 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_F_LED_RD_EN, 0x0000 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_F_LED_RD_EN, 0x0000 );
@@ -2660,7 +2547,7 @@ int32_t CNX_CinemaManager::TCON_OptionalData( uint32_t iCmd, uint8_t *pInBuf, in
 	for( int32_t i = 0; i < (int32_t)(sizeof(opData) / sizeof(opData[0])); i++ )
 	{
 		int32_t iReadData = 0x0000;
-		if( 0 > (iReadData = i2c.Read( slave, TCON_REG_F_LED_DATA00_READ + i )) )
+		if( 0 > (iReadData = m_pCinema->Read( port, slave, TCON_REG_F_LED_DATA00_READ + i )) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 				port, slave, TCON_REG_F_LED_DATA00_READ + i );
@@ -2674,7 +2561,7 @@ int32_t CNX_CinemaManager::TCON_OptionalData( uint32_t iCmd, uint8_t *pInBuf, in
 	//
 	//	4. Flash Selection Off.
 	//
-	if( 0 > i2c.Write( slave, TCON_REG_FLASH_SEL, 0x001F ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_FLASH_SEL, 0x001F ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_FLASH_SEL, 0x001F );
@@ -2724,15 +2611,7 @@ int32_t CNX_CinemaManager::TCON_SwReset( uint32_t iCmd, uint8_t *pInBuf, int32_t
 	int32_t port	= (index & 0x80) >> 7;
 	uint8_t slave	= (index & 0x7F);
 
-	CNX_I2C i2c( port );
-
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_TCON;
-	}
-
-	if( 0 > i2c.Write( slave, TCON_REG_SW_RESET, 0x0000 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_SW_RESET, 0x0000 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_SW_RESET, 0x0000 );
@@ -2742,7 +2621,7 @@ int32_t CNX_CinemaManager::TCON_SwReset( uint32_t iCmd, uint8_t *pInBuf, int32_t
 	usleep(75000);
 
 
-	if( 0 > i2c.Write( slave, TCON_REG_SW_RESET, 0x0001 ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_SW_RESET, 0x0001 ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_SW_RESET, 0x0001 );
@@ -2850,12 +2729,12 @@ int32_t CNX_CinemaManager::TCON_EEPRomRead( uint32_t iCmd, uint8_t *pInBuf, int3
 	//
 	//	2. Check Version
 	//
-	if( !access( TCON_EEPROM_BINARY_FILE, F_OK) )
+	if( !access( TCON_EEPROM_TREG_BINARY, F_OK) )
 	{
 		//
 		//	2-1. Binary Version Parsing.
 		//
-		parser.Init( TCON_EEPROM_BINARY_FILE );
+		parser.Init( TCON_EEPROM_TREG_BINARY );
 		if( 0 > iRet )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Parser Init(). ( iRet = %d )\n", iRet );
@@ -2925,16 +2804,16 @@ int32_t CNX_CinemaManager::TCON_EEPRomRead( uint32_t iCmd, uint8_t *pInBuf, int3
 		//
 		//	3-2. Make Binary File.
 		//
-		pFile = fopen( TCON_EEPROM_BINARY_FILE, "wb" );
+		pFile = fopen( TCON_EEPROM_TREG_BINARY, "wb" );
 		if( NULL == pFile )
 		{
-			NxDbgMsg( NX_DBG_ERR, "Fail, Make Binary File. ( %s )\n", TCON_EEPROM_BINARY_FILE );
+			NxDbgMsg( NX_DBG_ERR, "Fail, Make Binary File. ( %s )\n", TCON_EEPROM_TREG_BINARY );
 			goto ERROR_TCON;
 		}
 
 		fwrite( pBuf, 1, TCON_EEPROM_DATA_SIZE, pFile );
 		fclose( pFile );
-		NxDbgMsg( NX_DBG_DEBUG, "Make done. ( %s )\n", TCON_EEPROM_BINARY_FILE );
+		NxDbgMsg( NX_DBG_DEBUG, "Make done. ( %s )\n", TCON_EEPROM_TREG_BINARY );
 
 		//
 		//	3-3. Make T_REG_EEPROM.txt
@@ -2953,8 +2832,8 @@ int32_t CNX_CinemaManager::TCON_EEPRomRead( uint32_t iCmd, uint8_t *pInBuf, int3
 			goto ERROR_TCON;
 		}
 
-		parser.WriteTconInfo( pInfo, TCON_EEPROM_RESULT_PATH );
-		NxDbgMsg( NX_DBG_DEBUG, "Make done. ( %s/T_REG_EEPROM.txt )\n", TCON_EEPROM_RESULT_PATH );
+		parser.WriteTconInfo( pInfo, TCON_EEPROM_TREG_PATH );
+		NxDbgMsg( NX_DBG_DEBUG, "Make done. ( %s )\n", TCON_EEPROM_TREG_PATH );
 
 		sync();
 
@@ -2993,17 +2872,9 @@ int32_t CNX_CinemaManager::TCON_Mute( uint32_t iCmd, uint8_t *pInBuf, int32_t iI
 	uint8_t data	= pInBuf[1];
 
 	if( data == 0x00 )
-		WaitTime( 500, __FUNCTION__ );
+		NX_WaitTime( 500, __FUNCTION__, NX_DTAG );
 
-	CNX_I2C i2c( port );
-
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_TCON;
-	}
-
-	if( 0 > i2c.Write( slave, TCON_REG_DRVIVER_CLK_OFF, data ) )
+	if( 0 > m_pCinema->Write( port, slave, TCON_REG_DRVIVER_CLK_OFF, data ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, TCON_REG_DRVIVER_CLK_OFF, data );
@@ -3015,7 +2886,7 @@ int32_t CNX_CinemaManager::TCON_Mute( uint32_t iCmd, uint8_t *pInBuf, int32_t iI
 
 	// already delayed in PFPGA Mute.
 	if( data == 0x01 )
-		WaitTime( 0, __FUNCTION__ );
+		NX_WaitTime( 0, __FUNCTION__, NX_DTAG );
 
 	result = 0x01;
 
@@ -3048,22 +2919,14 @@ int32_t CNX_CinemaManager::TCON_Version( uint32_t iCmd, uint8_t *pInBuf, int32_t
 	uint16_t inReg	= ((int16_t)(msbReg << 8) & 0xFF00) + (int16_t)lsbReg;
 	int32_t iModeName, iTime;
 
-	CNX_I2C i2c( port );
-
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_TCON;
-	}
-
-	if( 0 > (iModeName = i2c.Read( slave, TCON_REG_FPGA_MODE_NAME )) )
+	if( 0 > (iModeName = m_pCinema->Read( port, slave, TCON_REG_FPGA_MODE_NAME )) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 			port, slave, TCON_REG_FPGA_MODE_NAME );
 		goto ERROR_TCON;
 	}
 
-	if( 0 > (iTime = i2c.Read( slave, TCON_REG_FPGA_TIME1 )) )
+	if( 0 > (iTime = m_pCinema->Read( port, slave, TCON_REG_FPGA_TIME1 )) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 			port, slave, TCON_REG_FPGA_TIME1 );
@@ -3116,15 +2979,7 @@ int32_t CNX_CinemaManager::PFPGA_RegWrite( uint32_t iCmd, uint8_t *pInBuf, int32
 	uint16_t inReg	= ((int16_t)(msbReg << 8) & 0xFF00) + (int16_t)lsbReg;
 	uint16_t inData	= ((int16_t)(msbData << 8) & 0xFF00) + (int16_t)lsbData;
 
-	CNX_I2C i2c( port );
-
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_PFPGA;
-	}
-
-	if( 0 > i2c.Write( slave, inReg, inData ) )
+	if( 0 > m_pCinema->Write( port, slave, inReg, inData ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, inReg, inData );
@@ -3167,15 +3022,7 @@ int32_t CNX_CinemaManager::PFPGA_RegRead( uint32_t iCmd, uint8_t *pInBuf, int32_
 	uint16_t inReg	= ((int16_t)(msbReg << 8) & 0xFF00) + (int16_t)lsbReg;
 	int32_t iReadData;
 
-	CNX_I2C i2c( port );
-
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_PFPGA;
-	}
-
-	if( 0 > (iReadData = i2c.Read( slave, inReg )) )
+	if( 0 > (iReadData = m_pCinema->Read( port, slave, inReg )) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 			port, slave, inReg );
@@ -3233,16 +3080,9 @@ int32_t CNX_CinemaManager::PFPGA_Status( uint32_t iCmd, uint8_t *pInBuf, int32_t
 	int32_t port	= PFPGA_I2C_PORT;
 	uint8_t slave	= PFPGA_I2C_SLAVE;
 
-	CNX_I2C i2c( port );
 	int32_t iReadData = 0x0000;
 
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_PFPGA;
-	}
-
-	if( 0 > (iReadData = i2c.Read( slave, PFPGA_REG_CHECK_STATUS )) )
+	if( 0 > (iReadData = m_pCinema->Read( port, slave, PFPGA_REG_CHECK_STATUS )) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 			port, slave, PFPGA_REG_CHECK_STATUS );
@@ -3286,15 +3126,7 @@ int32_t CNX_CinemaManager::PFPGA_UniformityData( uint32_t iCmd, uint8_t *pInBuf,
 		pData[i] = ((int16_t)(data[2 * i + 0] << 8) & 0xFF00) | ((int16_t)(data[2 * i + 1] << 0) & 0x00FF);
 	}
 
-	CNX_I2C i2c( port );
-
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_PFPGA;
-	}
-
-	if( 0 > i2c.Write( slave, PFPGA_REG_LUT_BURST_SEL, 0x0080) )
+	if( 0 > m_pCinema->Write( port, slave, PFPGA_REG_LUT_BURST_SEL, 0x0080) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, PFPGA_REG_LUT_BURST_SEL, 0x0080 );
@@ -3305,7 +3137,7 @@ int32_t CNX_CinemaManager::PFPGA_UniformityData( uint32_t iCmd, uint8_t *pInBuf,
 #if I2C_SEPARATE_BURST
 	for( int32_t i = 0; i < 4; i++ )
 	{
-		if( 0 > i2c.Write( slave, PFPGA_REG_NUC_WDATA, pData + iDataSize / 4 * i, iDataSize / 4) )
+		if( 0 > m_pCinema->Write( port, slave, PFPGA_REG_NUC_WDATA, pData + iDataSize / 4 * i, iDataSize / 4) )
 		{
 			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, size: 0x%04x )\n",
 				port, slave, PFPGA_REG_NUC_WDATA, iDataSize / 4 );
@@ -3313,7 +3145,7 @@ int32_t CNX_CinemaManager::PFPGA_UniformityData( uint32_t iCmd, uint8_t *pInBuf,
 		}
 	}
 #else
-	if( 0 > i2c.Write( slave, PFPGA_REG_NUC_WDATA, pData, iDataSize ) )
+	if( 0 > m_pCinema->Write( port, slave, PFPGA_REG_NUC_WDATA, pData, iDataSize ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, size: 0x%04x )\n",
 			port, slave, PFPGA_REG_NUC_WDATA, iDataSize );
@@ -3321,7 +3153,7 @@ int32_t CNX_CinemaManager::PFPGA_UniformityData( uint32_t iCmd, uint8_t *pInBuf,
 	}
 #endif
 
-	if( 0 > i2c.Write( slave, PFPGA_REG_LUT_BURST_SEL, 0x0000) )
+	if( 0 > m_pCinema->Write( port, slave, PFPGA_REG_LUT_BURST_SEL, 0x0000) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, PFPGA_REG_LUT_BURST_SEL, 0x0000 );
@@ -3358,17 +3190,9 @@ int32_t CNX_CinemaManager::PFPGA_Mute( uint32_t iCmd, uint8_t *pInBuf, int32_t i
 	uint8_t data	= pInBuf[0];
 
 	if( data == 0x00 )
-		WaitTime( 400, __FUNCTION__ );
+		NX_WaitTime( 400, __FUNCTION__, NX_DTAG );
 
-	CNX_I2C i2c( port );
-
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_PFPGA;
-	}
-
-	if( 0 > i2c.Write( slave, PFPGA_REG_MUTE, data ) )
+	if( 0 > m_pCinema->Write( port, slave, PFPGA_REG_MUTE, data ) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
 			port, slave, PFPGA_REG_MUTE, data );
@@ -3379,7 +3203,7 @@ int32_t CNX_CinemaManager::PFPGA_Mute( uint32_t iCmd, uint8_t *pInBuf, int32_t i
 			port, slave, PFPGA_REG_MUTE, data );
 
 	if( data == 0x01 )
-		WaitTime( 100, __FUNCTION__ );	// 2frame with 24Hz
+		NX_WaitTime( 100, __FUNCTION__, NX_DTAG );	// 2frame with 24Hz
 
 	result = 0x01;
 
@@ -3406,23 +3230,16 @@ int32_t CNX_CinemaManager::PFPGA_Version( uint32_t iCmd, uint8_t *pInBuf, int32_
 	int32_t port	= PFPGA_I2C_PORT;
 	uint8_t slave	= PFPGA_I2C_SLAVE;
 
-	CNX_I2C i2c( port );
 	int32_t iReadMajor = 0x0000, iReadMinor = 0x0000;
 
-	if( 0 > i2c.Open() )
-	{
-		NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-		goto ERROR_PFPGA;
-	}
-
-	if( 0 > (iReadMajor = i2c.Read( slave, PFPGA_REG_PF_VERSION )) )
+	if( 0 > (iReadMajor = m_pCinema->Read( port, slave, PFPGA_REG_PF_VERSION )) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 			port, slave, PFPGA_REG_PF_VERSION );
 		goto ERROR_PFPGA;
 	}
 
-	if( 0 > (iReadMinor = i2c.Read( slave, PFPGA_REG_PF_RESERVED1 )) )
+	if( 0 > (iReadMinor = m_pCinema->Read( port, slave, PFPGA_REG_PF_RESERVED1 )) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 			port, slave, PFPGA_REG_PF_RESERVED1 );
@@ -3519,6 +3336,27 @@ int32_t CNX_CinemaManager::PLAT_TmsVersion( uint32_t iCmd, uint8_t *pInBuf, int3
 }
 
 //------------------------------------------------------------------------------
+int32_t CNX_CinemaManager::PLAT_IsBusy( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
+{
+	UNUSED( iCmd );
+	UNUSED( pInBuf );
+	UNUSED( iInSize );
+
+	//
+	// If the Manager is busy, the Manager return NX_RET_RESOURCE_BUSY in SendCommand().
+	// So, This function just return as below.
+	//
+	pOutBuf[0] = 0x00;
+	pOutBuf[1] = 0x00;
+	pOutBuf[2] = 0x00;
+	pOutBuf[3] = 0x00;
+
+	*iOutSize  = 4;
+
+	return 0;
+}
+
+//------------------------------------------------------------------------------
 int32_t CNX_CinemaManager::PLAT_ScreenType( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
 {
 	UNUSED( iCmd );
@@ -3530,7 +3368,7 @@ int32_t CNX_CinemaManager::PLAT_ScreenType( uint32_t iCmd, uint8_t *pInBuf, int3
 #if NX_ENABLE_CHECK_SCREEN_BOOT
 	result = m_iScreenType;
 #else
-	result = m_iScreenType = CheckScreenType();
+	result = m_iScreenType = m_pCinema->GetScreenType();
 #endif
 
 	NxDbgMsg( NX_DBG_INFO, ">>> %s(): ScreenType( %s )\n",
@@ -3544,12 +3382,213 @@ ERROR_PLAT:
 }
 
 //------------------------------------------------------------------------------
+int32_t CNX_CinemaManager::PLAT_CheckCabinet( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
+{
+	UNUSED( iCmd );
+	UNUSED( pInBuf );
+	UNUSED( iInSize );
+
+	uint8_t *pCabinet = NULL;
+	int32_t iCabinetNum = m_pCinema->GetCabinet( &pCabinet );
+
+	*iOutSize = iCabinetNum;
+	memcpy( pOutBuf, pCabinet, *iOutSize );
+
+	return 0;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_CinemaManager::PLAT_ConfigUpload( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
+{
+	//
+	//	USB or TMS --> Platform
+	//
+	UNUSED( iCmd );
+
+	uint8_t result = 0xFF;
+	//
+	//	pInBuf[0] : data ( num of data : iInSize )
+	//
+	uint8_t* pTmpBuf = (uint8_t*)malloc( sizeof(uint8_t) * iInSize );
+	memcpy( pTmpBuf, pInBuf, iInSize );
+
+#if NX_CRYPTION_KEY			// Decryption
+	for( int32_t i = 0; i < iInSize; i++ )
+		pTmpBuf[i] = pTmpBuf[i] ^ NX_CRYPTION_KEY;
+#endif
+
+	NX_BEHAVIOR_INFO *pInfo;
+
+	CNX_CinemaBehavior behavior;
+	if( 0 > behavior.Parse( pTmpBuf, iInSize ) )
+	{
+		printf("Fail, Parse().\n");
+		goto ERROR_PLAT;
+	}
+
+	behavior.GetBehaviorInfo( &pInfo );
+	behavior.MakeBehavior( "%s/BEHAVIOR_%s_MODE%02d.txt", TCON_BEHAVIOR_PATH, pInfo->pTransColor, pInfo->iMode );
+	behavior.MakeTreg( "%s/T_REG_MODE%02d.txt", TCON_USB_TREG_PATH, pInfo->iMode );
+	behavior.MakeGamma( "%s/TGAM1_%s_%s.txt", TCON_USB_GAMMA_PATH, pInfo->pTransColor, pInfo->pTrans );
+
+	result = pInfo->iMode;
+
+ERROR_PLAT:
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
+
+	if( pTmpBuf ) free( pTmpBuf );
+	return 0;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_CinemaManager::PLAT_ConfigDownload( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
+{
+	//
+	//	Platform --> USB or TMS
+	//
+	UNUSED( iCmd );
+	UNUSED( iInSize );
+
+	//
+	//	pInBuf[0] : mode, pInBuf[1] : color
+	//
+	int32_t iResultSize = 1;
+	uint8_t* pResult = (uint8_t*)malloc( sizeof(uint8_t) * iResultSize );
+	int32_t iReadSize = 0;
+
+	int32_t iMode  = pInBuf[0];
+	int32_t iColor = pInBuf[1];
+
+	pResult[0] = 0xFF;
+
+	char szFile[1024];
+	snprintf(szFile, sizeof(szFile), "%s/BEHAVIOR_%s_MODE%02d.txt",
+		TCON_BEHAVIOR_PATH, (iColor == 0) ? "R" : ((iColor==1) ? "G" : "B"), iMode );
+
+	FILE *hFile = fopen( szFile, "rb" );
+	if( NULL == hFile )
+	{
+		printf("Fail, fopen(). ( %s )\n", szFile);
+		goto ERROR_PLAT;
+	}
+
+	if( pResult ) free( pResult );
+
+	fseek( hFile, 0, SEEK_END );
+	iResultSize = ftell( hFile );
+	pResult     = (uint8_t*)malloc( iResultSize );
+	if( NULL == pResult )
+	{
+		printf("Fail, malloc(). ( size: %d )\n", iResultSize );
+		goto ERROR_PLAT;
+	}
+
+	fseek( hFile, 0, SEEK_SET );
+
+	iReadSize = fread( pResult, 1, iResultSize, hFile );
+	if( iReadSize != iResultSize )
+	{
+		printf("Fail, fread(). ( expected: %d, read: %d )\n", iResultSize, iReadSize );
+
+		if( pResult ) free( pResult );
+		fclose( hFile );
+
+		pResult[0] = 0xFF;
+		iResultSize = 1;
+	}
+
+#if NX_CRYPTION_KEY			// Encryption
+	for( int32_t i = 0; i < iResultSize; i++ )
+		pResult[i] = pResult[i] ^ NX_CRYPTION_KEY;
+#endif
+
+	printf( "Download Done. ( file: %s, size: %d )\n", szFile, iResultSize );
+	NxDbgMsg( NX_DBG_INFO, "Download Done. ( file: %s, size: %d )\n", szFile, iResultSize );
+
+ERROR_PLAT:
+	*iOutSize = iResultSize;
+	memcpy( pOutBuf, pResult, *iOutSize );
+
+	if( pResult ) free( pResult );
+
+	return 0;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_CinemaManager::PLAT_ConfigDelete( uint32_t iCmd, uint8_t *pInBuf, int32_t iInSize, uint8_t *pOutBuf, int32_t *iOutSize )
+{
+	UNUSED( iCmd );
+	UNUSED( iInSize );
+
+	int32_t iMode = pInBuf[0];
+	uint8_t result = 0xFF;
+
+	//
+	//	Delete Config
+	//
+	CNX_CinemaBehavior behavior;
+	NX_TREG_INFO info;
+
+	char szFile[1024];
+	snprintf(szFile, sizeof(szFile), "%s/T_REG.txt", TCON_USB_TREG_PATH );
+
+	int32_t bRemoveGamma = true;
+
+	if( !access(szFile, F_OK) && !behavior.ParseTreg( szFile, iMode, &info) )
+	{
+		for( int32_t i = 10; i < 30; i++ )
+		{
+			if( iMode == i )
+				continue;
+
+			NX_TREG_INFO curInfo;
+			if( !behavior.ParseTreg( szFile, i, &curInfo) )
+			{
+				if( info.iGammaType[1] == curInfo.iGammaType[1] )
+				{
+					bRemoveGamma = false;
+					break;
+				}
+			}
+		}
+	}
+
+	for( int32_t i = 0; i < 3; i++ )
+	{
+		int32_t iGammaType  = info.iGammaType[1] / 1000;
+		if( bRemoveGamma && 0 < iGammaType )
+		{
+			NX_RemoveFile( "%s/TGAM1_%s_%s%03d.txt",
+				TCON_USB_GAMMA_PATH,
+				(i == 0) ? "R" : ((i == 1) ? "G" : "B"),
+				(iGammaType == 1) ? "R" : ((iGammaType == 2) ? "P" : "U"),
+				info.iGammaType[1] % 1000
+			);
+		}
+
+		NX_RemoveFile( "%s/BEHAVIOR_%s_MODE%02d.txt", TCON_BEHAVIOR_PATH, (i == 0) ? "R" : ((i == 1) ? "G" : "B"), iMode );
+	}
+
+	NX_RemoveFile( "%s/T_REG_MODE%02d.txt", TCON_USB_TREG_PATH, iMode );
+
+	result = 0x01;
+
+ERROR_PLAT:
+	*iOutSize = sizeof(result);
+	memcpy( pOutBuf, &result, *iOutSize );
+
+	return 0;
+}
+
+
+//------------------------------------------------------------------------------
 //
 //	Test Pattern Functions
 //
 
 //------------------------------------------------------------------------------
-int32_t CNX_CinemaManager::TestPatternDci( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
+int32_t CNX_CinemaManager::TestPatternDci( uint8_t index, uint8_t pattern )
 {
 	const uint16_t PatternDataP25[][8] = {
 		//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
@@ -3592,17 +3631,17 @@ int32_t CNX_CinemaManager::TestPatternDci( CNX_I2C *pI2c, uint8_t index, uint8_t
 	const uint16_t (*pPatternData)[8] =
 		(m_iScreenType == SCREEN_TYPE_P33) ? PatternDataP33 : PatternDataP25;
 
-	const uint16_t *pData = pPatternData[patternIndex];
+	const uint16_t *pData = pPatternData[pattern];
 	int32_t iDataNum = (int32_t)(sizeof(PatternDataP25[0]) / sizeof(PatternDataP25[0][0]));
 
-	if( 0 > pI2c->Write( index & 0x7F, TCON_REG_XYZ_TO_RGB, 0x0001 ) )
+	if( 0 > m_pCinema->Write( index, TCON_REG_XYZ_TO_RGB, 0x0001 ) )
 	{
 		return -1;
 	}
 
 	for( int32_t i = 0; i < iDataNum; i++ )
 	{
-		if( 0 > pI2c->Write( index & 0x7F, TCON_REG_PATTERN + i, pData[i] ) )
+		if( 0 > m_pCinema->Write( index, TCON_REG_PATTERN + i, pData[i] ) )
 		{
 			return -1;
 		}
@@ -3614,14 +3653,14 @@ int32_t CNX_CinemaManager::TestPatternDci( CNX_I2C *pI2c, uint8_t index, uint8_t
 
 	for( int32_t i = 0x16; i < 0x80; i++ )
 	{
-		int32_t ret = pI2c->Read( i, TCON_REG_CHECK_STATUS );
+		int32_t ret = m_pCinema->Read( i, TCON_REG_CHECK_STATUS );
 		if( 0 > ret )
 			continue;
 
 		for( int32_t j = 0; j < iDataNum; j++ )
 		{
 			int32_t iReadData = 0x0000;
-			if( 0 > (iReadData = pI2c->Read( i, TCON_REG_PATTERN + j )) )
+			if( 0 > (iReadData = m_pCinema->Read( i, TCON_REG_PATTERN + j )) )
 			{
 				NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 					port, i, TCON_REG_PATTERN + j );
@@ -3637,7 +3676,7 @@ int32_t CNX_CinemaManager::TestPatternDci( CNX_I2C *pI2c, uint8_t index, uint8_t
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_CinemaManager::TestPatternColorBar( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
+int32_t CNX_CinemaManager::TestPatternColorBar( uint8_t index, uint8_t pattern )
 {
 	const uint16_t PatternDataP25[][8] = {
 		//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
@@ -3652,17 +3691,17 @@ int32_t CNX_CinemaManager::TestPatternColorBar( CNX_I2C *pI2c, uint8_t index, ui
 	const uint16_t (*pPatternData)[8] =
 		(m_iScreenType == SCREEN_TYPE_P33) ? PatternDataP33 : PatternDataP25;
 
-	const uint16_t *pData = pPatternData[patternIndex];
+	const uint16_t *pData = pPatternData[pattern];
 	int32_t iDataNum = (int32_t)(sizeof(PatternDataP25[0]) / sizeof(PatternDataP25[0][0]));
 
-	if( 0 > pI2c->Write( index & 0x7F, TCON_REG_XYZ_TO_RGB, 0x0000 ) )
+	if( 0 > m_pCinema->Write( index, TCON_REG_XYZ_TO_RGB, 0x0000 ) )
 	{
 		return -1;
 	}
 
 	for( int32_t i = 0; i < iDataNum; i++ )
 	{
-		if( 0 > pI2c->Write( index & 0x7F, TCON_REG_PATTERN + i, pData[i] ) )
+		if( 0 > m_pCinema->Write( index, TCON_REG_PATTERN + i, pData[i] ) )
 		{
 			return -1;
 		}
@@ -3674,14 +3713,14 @@ int32_t CNX_CinemaManager::TestPatternColorBar( CNX_I2C *pI2c, uint8_t index, ui
 
 	for( int32_t i = 0x16; i < 0x80; i++ )
 	{
-		int32_t ret = pI2c->Read( i, TCON_REG_CHECK_STATUS );
+		int32_t ret = m_pCinema->Read( i, TCON_REG_CHECK_STATUS );
 		if( 0 > ret )
 			continue;
 
 		for( int32_t j = 0; j < iDataNum; j++ )
 		{
 			int32_t iReadData = 0x0000;
-			if( 0 > (iReadData = pI2c->Read( i, TCON_REG_PATTERN + j )) )
+			if( 0 > (iReadData = m_pCinema->Read( i, TCON_REG_PATTERN + j )) )
 			{
 				NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 					port, i, TCON_REG_PATTERN + j );
@@ -3697,7 +3736,7 @@ int32_t CNX_CinemaManager::TestPatternColorBar( CNX_I2C *pI2c, uint8_t index, ui
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_CinemaManager::TestPatternFullScreenColor( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
+int32_t CNX_CinemaManager::TestPatternFullScreenColor( uint8_t index, uint8_t pattern )
 {
 	const uint16_t PatternDataP25[][8] = {
 		//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
@@ -3744,17 +3783,17 @@ int32_t CNX_CinemaManager::TestPatternFullScreenColor( CNX_I2C *pI2c, uint8_t in
 	const uint16_t (*pPatternData)[8] =
 		(m_iScreenType == SCREEN_TYPE_P33) ? PatternDataP33 : PatternDataP25;
 
-	const uint16_t *pData = pPatternData[patternIndex];
+	const uint16_t *pData = pPatternData[pattern];
 	int32_t iDataNum = (int32_t)(sizeof(PatternDataP25[0]) / sizeof(PatternDataP25[0][0]));
 
-	if( 0 > pI2c->Write( index & 0x7F, TCON_REG_XYZ_TO_RGB, 0x0000 ) )
+	if( 0 > m_pCinema->Write( index, TCON_REG_XYZ_TO_RGB, 0x0000 ) )
 	{
 		return -1;
 	}
 
 	for( int32_t i = 0; i < iDataNum; i++ )
 	{
-		if( 0 > pI2c->Write( index & 0x7F, TCON_REG_PATTERN + i, pData[i] ) )
+		if( 0 > m_pCinema->Write( index, TCON_REG_PATTERN + i, pData[i] ) )
 		{
 			return -1;
 		}
@@ -3766,14 +3805,14 @@ int32_t CNX_CinemaManager::TestPatternFullScreenColor( CNX_I2C *pI2c, uint8_t in
 
 	for( int32_t i = 0x16; i < 0x80; i++ )
 	{
-		int32_t ret = pI2c->Read( i, TCON_REG_CHECK_STATUS );
+		int32_t ret = m_pCinema->Read( i, TCON_REG_CHECK_STATUS );
 		if( 0 > ret )
 			continue;
 
 		for( int32_t j = 0; j < iDataNum; j++ )
 		{
 			int32_t iReadData = 0x0000;
-			if( 0 > (iReadData = pI2c->Read( i, TCON_REG_PATTERN + j )) )
+			if( 0 > (iReadData = m_pCinema->Read( i, TCON_REG_PATTERN + j )) )
 			{
 				NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 					port, i, TCON_REG_PATTERN + j );
@@ -3789,7 +3828,7 @@ int32_t CNX_CinemaManager::TestPatternFullScreenColor( CNX_I2C *pI2c, uint8_t in
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_CinemaManager::TestPatternGrayScale( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
+int32_t CNX_CinemaManager::TestPatternGrayScale( uint8_t index, uint8_t pattern )
 {
 	const uint16_t PatternDataP25[][8] = {
 		//	0x24	0x25	0x26	0x27	0x28
@@ -3822,17 +3861,17 @@ int32_t CNX_CinemaManager::TestPatternGrayScale( CNX_I2C *pI2c, uint8_t index, u
 	const uint16_t (*pPatternData)[8] =
 		(m_iScreenType == SCREEN_TYPE_P33) ? PatternDataP33 : PatternDataP25;
 
-	const uint16_t *pData = pPatternData[patternIndex];
+	const uint16_t *pData = pPatternData[pattern];
 	int32_t iDataNum = (int32_t)(sizeof(PatternDataP25[0]) / sizeof(PatternDataP25[0][0]));
 
-	if( 0 > pI2c->Write( index & 0x7F, TCON_REG_XYZ_TO_RGB, 0x0000 ) )
+	if( 0 > m_pCinema->Write( index, TCON_REG_XYZ_TO_RGB, 0x0000 ) )
 	{
 		return -1;
 	}
 
 	for( int32_t i = 0; i < iDataNum; i++ )
 	{
-		if( 0 > pI2c->Write( index & 0x7F, TCON_REG_PATTERN + i, pData[i] ) )
+		if( 0 > m_pCinema->Write( index, TCON_REG_PATTERN + i, pData[i] ) )
 		{
 			return -1;
 		}
@@ -3844,14 +3883,14 @@ int32_t CNX_CinemaManager::TestPatternGrayScale( CNX_I2C *pI2c, uint8_t index, u
 
 	for( int32_t i = 0x16; i < 0x80; i++ )
 	{
-		int32_t ret = pI2c->Read( i, TCON_REG_CHECK_STATUS );
+		int32_t ret = m_pCinema->Read( i, TCON_REG_CHECK_STATUS );
 		if( 0 > ret )
 			continue;
 
 		for( int32_t j = 0; j < iDataNum; j++ )
 		{
 			int32_t iReadData = 0x0000;
-			if( 0 > (iReadData = pI2c->Read( i, TCON_REG_PATTERN + j )) )
+			if( 0 > (iReadData = m_pCinema->Read( i, TCON_REG_PATTERN + j )) )
 			{
 				NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 					port, i, TCON_REG_PATTERN + j );
@@ -3867,7 +3906,7 @@ int32_t CNX_CinemaManager::TestPatternGrayScale( CNX_I2C *pI2c, uint8_t index, u
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_CinemaManager::TestPatternDot( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
+int32_t CNX_CinemaManager::TestPatternDot( uint8_t index, uint8_t pattern )
 {
 	const uint16_t PatternDataP25[][8] = {
 		//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
@@ -3882,17 +3921,17 @@ int32_t CNX_CinemaManager::TestPatternDot( CNX_I2C *pI2c, uint8_t index, uint8_t
 	const uint16_t (*pPatternData)[8] =
 		(m_iScreenType == SCREEN_TYPE_P33) ? PatternDataP33 : PatternDataP25;
 
-	const uint16_t *pData = pPatternData[patternIndex];
+	const uint16_t *pData = pPatternData[pattern];
 	int32_t iDataNum = (int32_t)(sizeof(PatternDataP25[0]) / sizeof(PatternDataP25[0][0]));
 
-	if( 0 > pI2c->Write( index & 0x7F, TCON_REG_XYZ_TO_RGB, 0x0000 ) )
+	if( 0 > m_pCinema->Write( index, TCON_REG_XYZ_TO_RGB, 0x0000 ) )
 	{
 		return -1;
 	}
 
 	for( int32_t i = 0; i < iDataNum; i++ )
 	{
-		if( 0 > pI2c->Write( index & 0x7F, TCON_REG_PATTERN + i, pData[i] ) )
+		if( 0 > m_pCinema->Write( index, TCON_REG_PATTERN + i, pData[i] ) )
 		{
 			return -1;
 		}
@@ -3904,14 +3943,14 @@ int32_t CNX_CinemaManager::TestPatternDot( CNX_I2C *pI2c, uint8_t index, uint8_t
 
 	for( int32_t i = 0x16; i < 0x80; i++ )
 	{
-		int32_t ret = pI2c->Read( i, TCON_REG_CHECK_STATUS );
+		int32_t ret = m_pCinema->Read( i, TCON_REG_CHECK_STATUS );
 		if( 0 > ret )
 			continue;
 
 		for( int32_t j = 0; j < iDataNum; j++ )
 		{
 			int32_t iReadData = 0x0000;
-			if( 0 > (iReadData = pI2c->Read( i, TCON_REG_PATTERN + j )) )
+			if( 0 > (iReadData = m_pCinema->Read( i, TCON_REG_PATTERN + j )) )
 			{
 				NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 					port, i, TCON_REG_PATTERN + j );
@@ -3927,7 +3966,7 @@ int32_t CNX_CinemaManager::TestPatternDot( CNX_I2C *pI2c, uint8_t index, uint8_t
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_CinemaManager::TestPatternDiagonal( CNX_I2C *pI2c, uint8_t index, uint8_t patternIndex )
+int32_t CNX_CinemaManager::TestPatternDiagonal( uint8_t index, uint8_t pattern )
 {
 	const uint16_t PatternDataP25[][8] = {
 		//	0x24	0x25	0x26	0x27	0x28	0x29	0x2A	0x2B
@@ -3944,17 +3983,17 @@ int32_t CNX_CinemaManager::TestPatternDiagonal( CNX_I2C *pI2c, uint8_t index, ui
 	const uint16_t (*pPatternData)[8] =
 		(m_iScreenType == SCREEN_TYPE_P33) ? PatternDataP33 : PatternDataP25;
 
-	const uint16_t *pData = pPatternData[patternIndex];
+	const uint16_t *pData = pPatternData[pattern];
 	int32_t iDataNum = (int32_t)(sizeof(PatternDataP25[0]) / sizeof(PatternDataP25[0][0]));
 
-	if( 0 > pI2c->Write( index & 0x7F, TCON_REG_XYZ_TO_RGB, 0x0000 ) )
+	if( 0 > m_pCinema->Write( index, TCON_REG_XYZ_TO_RGB, 0x0000 ) )
 	{
 		return -1;
 	}
 
 	for( int32_t i = 0; i < iDataNum; i++ )
 	{
-		if( 0 > pI2c->Write( index & 0x7F, TCON_REG_PATTERN + i, pData[i] ) )
+		if( 0 > m_pCinema->Write( index, TCON_REG_PATTERN + i, pData[i] ) )
 		{
 			return -1;
 		}
@@ -3966,14 +4005,14 @@ int32_t CNX_CinemaManager::TestPatternDiagonal( CNX_I2C *pI2c, uint8_t index, ui
 
 	for( int32_t i = 0x16; i < 0x80; i++ )
 	{
-		int32_t ret = pI2c->Read( i, TCON_REG_CHECK_STATUS );
+		int32_t ret = m_pCinema->Read( i, TCON_REG_CHECK_STATUS );
 		if( 0 > ret )
 			continue;
 
 		for( int32_t j = 0; j < iDataNum; j++ )
 		{
 			int32_t iReadData = 0x0000;
-			if( 0 > (iReadData = pI2c->Read( i, TCON_REG_PATTERN + j )) )
+			if( 0 > (iReadData = m_pCinema->Read( i, TCON_REG_PATTERN + j )) )
 			{
 				NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
 					port, i, TCON_REG_PATTERN + j );
@@ -3986,252 +4025,6 @@ int32_t CNX_CinemaManager::TestPatternDiagonal( CNX_I2C *pI2c, uint8_t index, ui
 	}
 #endif
 	return 0;
-}
-
-
-//------------------------------------------------------------------------------
-//
-//	Various Functions
-//
-
-//------------------------------------------------------------------------------
-int32_t CNX_CinemaManager::CheckScreenType()
-{
-	int32_t iScreenType = SCREEN_TYPE_P25;
-
-	int32_t iDefScreenSel;
-	int32_t iExpectScreenPitch = -1;
-	int32_t iScreenInfo = -1;
-	int32_t bMissmatch = false;
-
-	{
-		CNX_I2C i2c_2( PFPGA_I2C_PORT );
-
-		if( 0 > i2c_2.Open() )
-		{
-			NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", PFPGA_I2C_PORT );
-			goto ERROR_I2C;
-		}
-
-		if( 0 > (iDefScreenSel = i2c_2.Read( PFPGA_I2C_SLAVE, PFPGA_REG_PF_SCREEN_SEL ) ) )
-		{
-			NxDbgMsg( NX_DBG_ERR, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
-				PFPGA_I2C_PORT, PFPGA_I2C_SLAVE, PFPGA_REG_PF_SCREEN_SEL );
-			goto ERROR_I2C;
-		}
-
-		if( 0 > i2c_2.Write( PFPGA_I2C_SLAVE, PFPGA_REG_PF_SCREEN_SEL, 0x0003) )
-		{
-			NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
-				PFPGA_I2C_PORT, PFPGA_I2C_SLAVE, PFPGA_REG_PF_SCREEN_SEL, 0x0003 );
-			goto ERROR_I2C;
-		}
-	}
-
-	{
-		for( int32_t j = 0; j < 2; j++ )
-		{
-			CNX_I2C i2c_2( PFPGA_I2C_PORT );
-
-			if( 0 > i2c_2.Open() )
-			{
-				NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", PFPGA_I2C_PORT );
-				goto ERROR_I2C;
-			}
-
-			if( 0 > i2c_2.Write( PFPGA_I2C_SLAVE, PFPGA_REG_PF_MODEL, j ) )
-			{
-				NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
-					PFPGA_I2C_PORT, PFPGA_I2C_SLAVE, PFPGA_REG_PF_MODEL, j );
-				goto ERROR_I2C;
-			}
-
-#if NX_ENABLE_CHECK_SCREEN_DELAY
-			NxDbgMsg( NX_DBG_DEBUG, ">>> Expected Model : %s\n", j ? "P3.3" : "P2.5" );
-			WaitTime(500, __FUNCTION__);
-#endif
-
-			for( int32_t i = 0; i < 255; i++ )
-			{
-				if( (i & 0x7F) < 0x10 )
-					continue;
-
-				int32_t port  = (i & 0x80) >> 7;
-				uint8_t slave = (i & 0x7F);
-				int32_t iReadData;
-				int32_t iScreenPitch;
-
-				CNX_I2C i2c( port );
-
-				if( 0 > i2c.Open() )
-				{
-					NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", port );
-					goto ERROR_I2C;
-				}
-
-				if( 0 > (iReadData = i2c.Read( slave, TCON_REG_PITCH_INFO ) ) )
-				{
-					continue;
-				}
-
-				NxDbgMsg( NX_DBG_DEBUG, "Detected. ( i2c-%d, slave: 0x%02x, model: %d )\n", port, slave, j );
-
-				iScreenInfo = iReadData;
-				iScreenPitch = iReadData / 1000;
-
-#if NX_ENABLE_CHECK_SCREEN_ALL
-				if( 0 > iExpectScreenPitch )
-					iExpectScreenPitch = iScreenPitch;
-
-				if( iExpectScreenPitch != iScreenPitch )
-				{
-					NxDbgMsg( NX_DBG_WARN, "Warn, Missmatch ScreenType. ( i2c-%d, slave: 0x%02x, data: %d, expected: %dxxx )\n",
-						port, slave, iReadData, iExpectScreenPitch );
-
-					bMissmatch = true;
-				}
-#else
-				iExpectScreenPitch = iScreenPitch;
-				break;
-#endif
-			}
-
-#if NX_ENABLE_CHECK_SCREEN_ALL
-#else
-			if( 0 <= iExpectScreenPitch )
-				break;
-#endif
-		}
-	}
-
-	{
-		NxDbgMsg( NX_DBG_INFO, ">>> ScreenInfo( %d ), ScreenPitch( %d ), bMissmatch( %d )\n",
-			iScreenInfo, iExpectScreenPitch, bMissmatch );
-	}
-
-	{
-		CNX_I2C i2c_2( PFPGA_I2C_PORT );
-		if( 0 > i2c_2.Open() )
-		{
-			NxDbgMsg( NX_DBG_ERR, "Fail, Open(). ( i2c-%d )\n", PFPGA_I2C_PORT );
-			goto ERROR_I2C;
-		}
-
-		if( bMissmatch == true || 0 > iExpectScreenPitch )
-		{
-			NxDbgMsg( NX_DBG_WARN, ">>> Unknown ScreenType. --> Set Default ScreenType P2.5\n" );
-
-			if( 0 > i2c_2.Write( PFPGA_I2C_SLAVE, PFPGA_REG_PF_MODEL, 0x0000) )
-			{
-				NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
-					PFPGA_I2C_PORT, PFPGA_I2C_SLAVE, PFPGA_REG_PF_MODEL, 0x0000 );
-				goto ERROR_I2C;
-			}
-
-			if( 0 > i2c_2.Write( PFPGA_I2C_SLAVE, PFPGA_REG_PF_SCREEN_SEL, iDefScreenSel) )
-			{
-				NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
-					PFPGA_I2C_PORT, PFPGA_I2C_SLAVE, PFPGA_REG_PF_SCREEN_SEL, iDefScreenSel );
-				goto ERROR_I2C;
-			}
-
-			iScreenType = SCREEN_TYPE_P25;
-		}
-		else
-		{
-			NxDbgMsg( NX_DBG_WARN, ">>> ScreenType is %s ( %d )\n", (iExpectScreenPitch == 33) ? "P3.3" : "P2.5", iExpectScreenPitch );
-
-			if( 0 > i2c_2.Write( PFPGA_I2C_SLAVE, PFPGA_REG_PF_MODEL, (iExpectScreenPitch == 33) ? 0x0001 : 0x0000) )
-			{
-				NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
-					PFPGA_I2C_PORT, PFPGA_I2C_SLAVE, PFPGA_REG_PF_MODEL, (iExpectScreenPitch == 33) ? 0x0001 : 0x0000 );
-				goto ERROR_I2C;
-			}
-
-			if( 0 > i2c_2.Write( PFPGA_I2C_SLAVE, PFPGA_REG_PF_SCREEN_SEL, (iExpectScreenPitch == 33) ? 0x0003 : iDefScreenSel) )
-			{
-				NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
-					PFPGA_I2C_PORT, PFPGA_I2C_SLAVE, PFPGA_REG_PF_SCREEN_SEL, (iExpectScreenPitch == 33) ? 0x0003 : iDefScreenSel );
-				goto ERROR_I2C;
-			}
-
-			iScreenType = (iExpectScreenPitch == 33) ? SCREEN_TYPE_P33 : SCREEN_TYPE_P25;
-		}
-	}
-
-	return iScreenType;
-
-ERROR_I2C:
-	NxDbgMsg( NX_DBG_WARN, ">>> Unknown ScreenType. ( reason: i2c fail ) --> Set Default ScreenType P2.5\n" );
-	return SCREEN_TYPE_P25;
-}
-
-//------------------------------------------------------------------------------
-void CNX_CinemaManager::MakeDirectory( const char *pDir )
-{
-	char buf[1024];
-	char *pBuf = buf;
-
-	memcpy( buf, pDir, sizeof(buf) -1 );
-	buf[sizeof(buf)-1] = 0x00;
-
-	while( *pBuf )
-	{
-		if( '/' == *pBuf )
-		{
-			*pBuf = 0x00;
-			if( 0 != access( buf, F_OK ) && (pBuf != buf) )
-			{
-				printf("Make Directory. ( %s )\n", buf);
-				mkdir( buf, 0777 );
-			}
-			*pBuf = '/';
-		}
-		pBuf++;
-	}
-
-	if( 0 != access( buf, F_OK) )
-	{
-		printf("Make Directory. ( %s )\n", buf);
-		mkdir( buf, 0777 );
-	}
-}
-
-//------------------------------------------------------------------------------
-void CNX_CinemaManager::WaitTime( uint64_t iWaitTime, const char *pMsg )
-{
-	uint64_t iCurTime = NX_GetTickCount();
-	uint64_t iTimeout = iCurTime + iWaitTime;
-	uint64_t iMiliSecond = 0;
-
-	char msg[256] = "";
-	if( NULL != pMsg )
-		snprintf(msg, sizeof(msg), "[%s] ", pMsg);
-
-#if 0
-	fprintf(stdout, "Wait time : %llu sec.\n", iWaitTime / 1000);
-	fflush(stdout);
-#else
-	NxDbgMsg( NX_DBG_DEBUG, "%sWait time : %llu mSec.\n", msg, iWaitTime);
-#endif
-
-	while( iCurTime < iTimeout )
-	{
-#if 0
-		fprintf( stdout, "Wait %llu mSec\r", iMiliSecond );
-		fflush(stdout);
-#else
-		NxDbgMsg( NX_DBG_DEBUG, "%sWait %llu mSec\r", msg, iMiliSecond * 100);
-#endif
-
-		iCurTime = NX_GetTickCount();
-		usleep(100000);
-		iMiliSecond++;
-	}
-
-#if 0
-	printf("\n");
-#endif
 }
 
 //------------------------------------------------------------------------------

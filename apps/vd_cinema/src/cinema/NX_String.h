@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //
-//	Copyright (C) 2016 Nexell Co. All Rights Reserved
+//	Copyright (C) 2018 Nexell Co. All Rights Reserved
 //	Nexell Co. Proprietary & Confidential
 //
 //	NEXELL INFORMS THAT THIS CODE AND INFORMATION IS PROVIDED "AS IS" BASE
@@ -17,13 +17,17 @@
 //
 //------------------------------------------------------------------------------
 
-#ifndef __NX_TMSCLIENT_H__
-#define __NX_TMSCLIENT_H__
+#ifndef __NX_STRING_H__
+#define __NX_STRING_H__
 
-int32_t NX_TMSSendPacket( int32_t fd, uint8_t *pBuf, int32_t iSize );
-int32_t NX_TMSRecvPacket( int32_t fd, uint8_t *pBuf, int32_t iSize );
+#include <stdint.h>
 
-int32_t NX_TMSSendCommand( const char *pIpAddr, int32_t iCmd, uint8_t *pBuf, int32_t *iSize );
-int32_t NX_TMSSendCommand( const char *pIpAddr, void *pObj, int32_t (*cbProcess)(int32_t iSock, void *pObj) );
+int32_t NX_StringUpper( char *pString );
+int32_t NX_StringLower( char *pString );
+int32_t NX_StringTrim( char *pString );
 
-#endif	// __NX_TMSCLIENT_H__
+int32_t NX_GetString( char *pData, int32_t iIndex, char *pResult );
+int32_t NX_GetStringParse( char *pData, const char *pFormat, ... );
+int32_t NX_GetStringNum( char *pData );
+
+#endif	// __NX_STRING_H__

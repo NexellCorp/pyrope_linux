@@ -21,10 +21,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <unistd.h>
 #include <ctype.h>
 #include <time.h>
 #include <sys/time.h>
+#include <sys/stat.h>
 
 #ifdef ANDROID
 #include <android/log.h>
@@ -49,6 +51,97 @@ int32_t NX_GetRandomValue( int32_t iStartNum, int32_t iEndNum )
 
 	srand( (uint32_t)NX_GetTickCount() );
 	return rand() % (iEndNum - iStartNum + 1) + iStartNum;
+}
+
+//------------------------------------------------------------------------------
+void NX_WaitTime( uint64_t iWaitTime, const char *pMsg, const char *tag )
+{
+	uint64_t iCurTime = NX_GetTickCount();
+	uint64_t iTimeout = iCurTime + iWaitTime;
+	uint64_t iMiliSecond = 0;
+
+	char msg[256] = "";
+	if( NULL != pMsg )
+		snprintf(msg, sizeof(msg), "[%s] ", pMsg);
+
+#ifndef ANDROID
+	fprintf(stdout, "Wait time : %llu sec.\n", iWaitTime / 1000);
+	fflush(stdout);
+#else
+	__android_log_print(ANDROID_LOG_DEBUG, tag, "%sWait time : %llu mSec.\n", msg, iWaitTime);
+#endif
+
+	while( iCurTime < iTimeout )
+	{
+#ifndef ANDROID
+		fprintf( stdout, "Wait %llu mSec\r", iMiliSecond );
+		fflush(stdout);
+#else
+		__android_log_print(ANDROID_LOG_DEBUG, tag, "%sWait %llu mSec\r", msg, iMiliSecond * 100);
+#endif
+
+		iCurTime = NX_GetTickCount();
+		usleep(100000);
+		iMiliSecond++;
+	}
+
+#ifndef ANDROID
+	printf("\n");
+#endif
+}
+
+//------------------------------------------------------------------------------
+void NX_MakeDirectory( const char *pFormat, ... )
+{
+	va_list args;
+	char szBuf[1024] = { 0x00, };
+
+	va_start(args, pFormat);
+	vsnprintf(szBuf, sizeof(szBuf), pFormat, args);
+	va_end(args);
+
+	char *pBuf = szBuf;
+	szBuf[sizeof(szBuf)-1] = 0x00;
+
+	while( *pBuf )
+	{
+		if( '/' == *pBuf )
+		{
+			*pBuf = 0x00;
+			if( 0 != access( szBuf, F_OK ) && (pBuf != szBuf) )
+			{
+				printf("Make Directory. ( %s )\n", szBuf);
+				mkdir( szBuf, 0777 );
+			}
+			*pBuf = '/';
+		}
+		pBuf++;
+	}
+
+	if( 0 != access( szBuf, F_OK) )
+	{
+		printf("Make Directory. ( %s )\n", szBuf);
+		mkdir( szBuf, 0777 );
+	}
+}
+
+//------------------------------------------------------------------------------
+int32_t NX_RemoveFile( const char *pFormat, ... )
+{
+	va_list args;
+	char szName[1024] = { 0x00, };
+
+	va_start(args, pFormat);
+	vsnprintf(szName, sizeof(szName), pFormat, args);
+	va_end(args);
+
+	int32_t iRet = remove(szName);
+	if( !iRet )
+	{
+		printf("Remove File. ( %s )\n", szName );
+	}
+
+	return iRet;
 }
 
 //------------------------------------------------------------------------------
@@ -159,7 +252,7 @@ int32_t NX_CompareData( uint8_t *pData1, int32_t iSize1, uint8_t *pData2, int32_
 }
 
 //------------------------------------------------------------------------------
-int32_t NX_SHELL_GetArgument (char *pSrc, char arg[][NX_SHELL_MAX_STR] )
+int32_t NX_SHELL_GetArgument( char *pSrc, char arg[][NX_SHELL_MAX_STR] )
 {
 	int32_t	i, j;
 

@@ -25,7 +25,7 @@
 //
 //	Version Information
 //
-#define NX_VERSION_NAP			"Version 1.2.0"
+#define NX_VERSION_NAP			"Version 1.3.0"
 #define NX_VERSION_SAP			"Version 1.0.0"
 #define NX_VERSION_IPC_SERVER	"v1.00.00"
 #define NX_VERSION_IPC_CLIENT	"v1.00.00"

@@ -68,16 +68,24 @@ protected:
 	virtual void ThreadProc();
 
 private:
+	int32_t BusyResource( int32_t iSock, uint8_t iCmd, int32_t iCmdStep, uint32_t iKey, uint8_t *pPayload, int32_t iPayloadSize );
+	int32_t QueCommand( int32_t iSock, uint8_t iCmd, int32_t iCmdStep, uint32_t iKey, uint8_t *pPayload, int32_t iPayloadSize );
+	int32_t DeleteConfig( int32_t iSock, uint8_t iCmd, int32_t iCmdStep, uint32_t iKey, uint8_t *pPayload, int32_t iPayloadSize );
+	int32_t UploadConfig( int32_t iSock, uint8_t iCmd, int32_t iCmdStep, uint32_t iKey, uint8_t *pPayload, int32_t iPayloadSize );
+	int32_t DownloadConfig( int32_t iSock, uint8_t iCmd, int32_t iCmdStep, uint32_t iKey, uint8_t *pPayload, int32_t iPayloadSize );
+
 	int32_t WaitClient();
 
 	int32_t ReadData( int32_t fd, uint8_t *pBuf, int32_t iSize );
 	int32_t WriteData( int32_t fd, uint8_t *pBuf, int32_t iSize );
-	int32_t SendRemote( const char *pSockName, const char *pMsg );
-
-	// int32_t ProcessCommand( int32_t fd, uint32_t key, void *pPayload, int32_t payloadSize );
-	// int32_t IMB_QueCommand( int32_t fd, uint32_t iCmd, uint8_t *pBuf, int32_t iSize );
+	int32_t SendRemote( const char *pSockName, uint8_t *pSendBuf, int32_t iSendSize, uint8_t *pRecvBuf = NULL, int32_t iRecvSize = 0 );
 
 private:
+	enum { TMS_CMD_DELETE_CONFIG_ALL = 30, TMS_CMD_DELETE_CONFIG_10 = 31, TMS_CMD_DELETE_CONFIG_29 = 50 };
+	enum { TMS_CMD_UPLOAD_CONFIG = 200, TMS_CMD_DOWNLOAD_CONFIG = 201 };
+
+	enum { MAX_CMD_STEP = 3 };
+
 	//	Private Member Variables
 	bool		m_bThreadRun;
 	int32_t		m_hSocket;
@@ -104,11 +112,11 @@ CNX_TMSServer::CNX_TMSServer()
 	, m_hSocket( -1 )
 	, m_cbProcessCallback( NULL )
 	, m_pObj( NULL )
+	, m_pCinema( CNX_CinemaManager::GetInstance() )
 {
 	char szVersion[1024] = { 0x00, };
 	snprintf( (char*)szVersion, sizeof(szVersion), "%s ( %08lld-%06lld )", NX_VERSION_TMS_SERVER, NX_DATE(), NX_TIME() );
 
-	m_pCinema = CNX_CinemaManager::GetInstance();
 	m_pCinema->SetTmsVersion( (uint8_t*)szVersion, strlen(szVersion) );
 }
 
@@ -116,6 +124,9 @@ CNX_TMSServer::CNX_TMSServer()
 CNX_TMSServer::~CNX_TMSServer()
 {
 	StopServer();
+
+	CNX_CinemaManager::ReleaseInstance();
+	m_pCinema = NULL;
 }
 
 //------------------------------------------------------------------------------
@@ -182,17 +193,13 @@ void CNX_TMSServer::RegisterProcessCallback( void (*cbCallback)(uint32_t, uint8_
 void CNX_TMSServer::ThreadProc()
 {
 	int32_t iReadSize;
-	uint32_t iKey = 0, iCmd = 0;
-	uint8_t *pPayload;
-	uint16_t iPayloadSize;
 
-	uint8_t outBuf[MAX_PAYLOAD_SIZE];
-	int32_t iOutSize;
-	int32_t iSendSize;
+	uint8_t iCmd = 0x00;
+	int32_t iCmdStep = 0;
+	int32_t iCmdPend = 0;
 
 	while( m_bThreadRun )
 	{
-		uint8_t *pRecvBuf = m_RecvBuf;
 		int32_t iClientSocket = WaitClient();
 		if( !iClientSocket )
 		{
@@ -203,113 +210,414 @@ void CNX_TMSServer::ThreadProc()
 			goto ERROR_TMS;
 		}
 
-		do {
-			uint8_t temp;
-			iReadSize = ReadData( iClientSocket, &temp, 1 );
-			if( iReadSize != 1 )
+		while( m_bThreadRun )
+		{
+			uint8_t *pRecvBuf = m_RecvBuf;
+			uint32_t iKey = 0;
+			uint8_t *pPayload;
+			uint16_t iPayloadSize;
+
+			do {
+				uint8_t temp;
+				iReadSize = ReadData( iClientSocket, &temp, 1 );
+				if( iReadSize != 1 )
+				{
+					NxErrMsg( "Fail, ReadData().\n" );
+					break;
+				}
+
+				iKey = (iKey << 8) | temp;
+				if( iKey == KEY_GDC(temp) )
+				{
+					break;
+				}
+			} while( m_bThreadRun );
+
+			if( 1 > iReadSize )
 			{
-				NxErrMsg( "Fail, ReadData().\n" );
-				break;
-			}
-
-			iKey = (iKey << 8) | temp;
-			if( iKey == KEY_GDC(temp) )
-			{
-				break;
-			}
-		} while( m_bThreadRun );
-
-		if( 1 > iReadSize )
-		{
-			goto ERROR_TMS;
-		}
-
-		//	Key
-		*pRecvBuf++ = (( iKey >> 24) & 0xFF);
-		*pRecvBuf++ = (( iKey >> 16) & 0xFF);
-		*pRecvBuf++ = (( iKey >>  8) & 0xFF);
-		*pRecvBuf++ = (( iKey      ) & 0xFF);
-
-		iCmd = iKey & 0xFF;
-
-		//	Read Length
-		iReadSize = ReadData( iClientSocket, pRecvBuf, 2 );
-		if( 2 != iReadSize )
-		{
-			NxDbgMsg( NX_DBG_ERR, "Fail, Read Length. ( read: %d, expected: 2 )\n", iReadSize );
-			goto ERROR_TMS;
-		}
-
-		iPayloadSize = MAKE_LENGTH( pRecvBuf[0], pRecvBuf[1] );
-		pRecvBuf += 2;
-
-		//	Size Check
-		if( iPayloadSize+8 > (int32_t)sizeof(m_RecvBuf) )
-		{
-			NxDbgMsg( NX_DBG_ERR, "Fail, Check Payload Size.\n" );
-			goto ERROR_TMS;
-		}
-
-		//	Read all data
-		if( iPayloadSize != 0 )
-		{
-			iReadSize = ReadData( iClientSocket, pRecvBuf, iPayloadSize );
-			if( iReadSize != iPayloadSize )
-			{
-				NxDbgMsg( NX_DBG_ERR, "Fail, Read Payload. ( read: %d, expected: %d )\n", iReadSize, iPayloadSize );
 				goto ERROR_TMS;
 			}
-		}
 
-		pPayload = pRecvBuf;
+			//	Key
+			*pRecvBuf++ = (( iKey >> 24) & 0xFF);
+			*pRecvBuf++ = (( iKey >> 16) & 0xFF);
+			*pRecvBuf++ = (( iKey >>  8) & 0xFF);
+			*pRecvBuf++ = (( iKey      ) & 0xFF);
 
-		NxDbgMsg( NX_DBG_VBS, "\n================================================\n");
-		NxDbgMsg( NX_DBG_VBS, "iCmd = 0x%08x, readSize = %d\n", iCmd, iReadSize );
-
-		NxDbgMsg( NX_DBG_DEBUG, ">>>> Receive QueCommand. ( curTime: %lld mSec )\n",  NX_GetTickCount() );
-		NX_HexDump( m_RecvBuf, iPayloadSize + 6, NX_DTAG, "Recv" );
-
-		if( !m_pCinema->IsBusy() )
-		{
-			NxDbgMsg( NX_DBG_INFO, "SendCommand().\n" );
-
-			uint8_t sendData[4] = { 0x00, };
-			sprintf( (char*)sendData, "%d", pPayload[0] );
-
-			if( !SendRemote( "cinema.tms", (const char*)sendData ) )
+			//	Read Length
+			iReadSize = ReadData( iClientSocket, pRecvBuf, 2 );
+			if( 2 != iReadSize )
 			{
-				outBuf[0] = 0x01;
-				iOutSize = 1;
+				NxDbgMsg( NX_DBG_ERR, "Fail, Read Length. ( read: %d, expected: 2 )\n", iReadSize );
+				goto ERROR_TMS;
+			}
+
+			iPayloadSize = MAKE_LENGTH( pRecvBuf[0], pRecvBuf[1] );
+			pRecvBuf += 2;
+
+			//	Size Check
+			if( iPayloadSize+8 > (int32_t)sizeof(m_RecvBuf) )
+			{
+				NxDbgMsg( NX_DBG_ERR, "Fail, Check Payload Size.\n" );
+				goto ERROR_TMS;
+			}
+
+			//	Read all data
+			if( iPayloadSize != 0 )
+			{
+				iReadSize = ReadData( iClientSocket, pRecvBuf, iPayloadSize );
+				if( iReadSize != iPayloadSize )
+				{
+					NxDbgMsg( NX_DBG_ERR, "Fail, Read Payload. ( read: %d, expected: %d )\n", iReadSize, iPayloadSize );
+					goto ERROR_TMS;
+				}
+			}
+
+			pPayload = pRecvBuf;
+
+			//	Check Valid Command
+			if( KEY_GDC( CMD_IMB(IMB_CMD_QUE) ) != iKey )
+			{
+				NxDbgMsg( NX_DBG_ERR, "Fail, Invalid Command. ( 0x%08X )\n", iKey );
+				break;
+			}
+
+			NxDbgMsg( NX_DBG_VBS, "\n================================================\n");
+			NxDbgMsg( NX_DBG_VBS, "iKey = 0x%08x, iPayloadSize = %d\n", iKey, iPayloadSize );
+
+			NxDbgMsg( NX_DBG_DEBUG, ">>>> Receive QueCommand. ( curTime: %lld mSec )\n",  NX_GetTickCount() );
+			NX_HexDump( m_RecvBuf, iPayloadSize + 6, NX_DTAG, "Recv" );
+
+			if( m_pCinema->IsBusy() )
+			{
+				BusyResource( iClientSocket, iCmd, iCmdStep++, iKey, (uint8_t*)pPayload, iPayloadSize );
+				break;
 			}
 			else
 			{
-				NxDbgMsg( NX_DBG_ERR, "Fail, SendRemote. ( node: cinema.tms )\n");
-				printf("Fail, SendRemote. ( node: cinema.tms )\n");
-				outBuf[0] = 0xFF;
-				iOutSize = 1;
+				if( ( TMS_CMD_UPLOAD_CONFIG == pPayload[0] ) ||			//	Upload User Mode
+					( TMS_CMD_UPLOAD_CONFIG == iCmd        ) )
+				{
+					if( TMS_CMD_UPLOAD_CONFIG == pPayload[0] )
+					{
+						iCmd = pPayload[0];
+					}
+
+					if( 0 != UploadConfig( iClientSocket, iCmd, iCmdStep++, iKey, (uint8_t*)pPayload, iPayloadSize ) )
+					{
+						break;
+					}
+				}
+				else if( ( TMS_CMD_DOWNLOAD_CONFIG == pPayload[0] ) ||		// Download User Mode
+						 ( TMS_CMD_DOWNLOAD_CONFIG == iCmd        ) )
+				{
+					if( TMS_CMD_DOWNLOAD_CONFIG == pPayload[0] )
+					{
+						iCmd = pPayload[0];
+					}
+
+					if( 0 != DownloadConfig( iClientSocket, iCmd, iCmdStep++, iKey, (uint8_t*)pPayload, iPayloadSize ) )
+					{
+						break;
+					}
+				}
+				else if( (  TMS_CMD_DELETE_CONFIG_ALL == pPayload[0] ) ||	// Delete Config All
+						 (  TMS_CMD_DELETE_CONFIG_ALL == iCmd        ) )
+				{
+					if( TMS_CMD_DELETE_CONFIG_ALL == pPayload[0] )
+					{
+						iCmd = pPayload[0];
+					}
+
+					if( 0 != DeleteConfig( iClientSocket, iCmd, iCmdStep++, iKey, (uint8_t*)pPayload, iPayloadSize ) )
+					{
+						break;
+					}
+				}
+				else if( (  TMS_CMD_DELETE_CONFIG_10 <= pPayload[0] &&  TMS_CMD_DELETE_CONFIG_29 >= pPayload[0]) ||		//	Delete user defined mode
+						 (  TMS_CMD_DELETE_CONFIG_10 <= iCmd        &&  TMS_CMD_DELETE_CONFIG_29 >= iCmd       ) )
+				{
+					if( TMS_CMD_DELETE_CONFIG_10 <= pPayload[0] || TMS_CMD_DELETE_CONFIG_29 >= pPayload[0] )
+					{
+						iCmd = pPayload[0];
+					}
+
+					if( 0 != DeleteConfig( iClientSocket, iCmd, iCmdStep++, iKey, (uint8_t*)pPayload, iPayloadSize ) )
+					{
+						break;
+					}
+				}
+				else														//	Change Mode & System Setting Command
+				{
+					if( 0 != QueCommand( iClientSocket, iCmd, iCmdStep++, iKey, (uint8_t*)pPayload, iPayloadSize ) )
+					{
+						break;
+					}
+				}
+				// else
+				// {
+				// 	uint8_t result = 0xFF;
+				// 	int32_t iSendSize = GDC_MakePacket( KEY_SEC(iKey & 0xFF), &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+				// 	WriteData( iClientSocket, m_SendBuf, iSendSize );
+
+				// 	NX_HexDump( m_SendBuf, iSendSize, NX_DTAG, "Send" );
+				// 	NxDbgMsg( NX_DBG_DEBUG, ">>>> Receive QueCommand Done. ( curTime: %lld mSec )\n",  NX_GetTickCount() );
+				// 	break;
+				// }
+			}
+
+			if( MAX_CMD_STEP < iCmdPend++ )
+			{
+				break;
 			}
 		}
-		else
-		{
-			NxDbgMsg( NX_DBG_INFO, "IsBusy().\n" );
-
-			outBuf[0] = 0xFE;
-			iOutSize = 1;
-		}
-
-		iSendSize = GDC_MakePacket( KEY_SEC(iCmd), outBuf, iOutSize, m_SendBuf, sizeof(m_SendBuf) );
-		WriteData( iClientSocket, m_SendBuf, iSendSize );
-
-		NX_HexDump( m_SendBuf, iSendSize, NX_DTAG, "Send" );
-		NxDbgMsg( NX_DBG_DEBUG, ">>>> Receive QueCommand Done. ( curTime: %lld mSec )\n",  NX_GetTickCount() );
 
 ERROR_TMS:
+		iCmd =
+		iCmdStep =
+		iCmdPend = 0;
+
 		if( 0 < iClientSocket )
 		{
 			close( iClientSocket );
 			iClientSocket = -1;
 		}
 	}
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_TMSServer::BusyResource( int32_t iSock, uint8_t iCmd, int32_t iCmdStep, uint32_t iKey, uint8_t *pPayload, int32_t iPayloadSize )
+{
+	UNUSED( iCmd );
+	UNUSED( iCmdStep );
+	UNUSED( pPayload );
+	UNUSED( iPayloadSize );
+
+	int32_t iSendSize;
+	uint8_t result = 0xFE;
+
+	NxDbgMsg( NX_DBG_INFO, "IsBusy().\n" );
+
+	iSendSize = GDC_MakePacket( KEY_SEC(iKey & 0xFF), &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	WriteData( iSock, m_SendBuf, iSendSize );
+
+	NX_HexDump( m_SendBuf, iSendSize, NX_DTAG, "Send" );
+	NxDbgMsg( NX_DBG_DEBUG, ">>>> Receive QueCommand Done. ( curTime: %lld mSec )\n",  NX_GetTickCount() );
+
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_TMSServer::QueCommand( int32_t iSock, uint8_t iCmd, int32_t iCmdStep, uint32_t iKey, uint8_t *pPayload, int32_t iPayloadSize )
+{
+	UNUSED( iCmd );
+	UNUSED( iCmdStep );
+	UNUSED( iPayloadSize );
+
+	int32_t iSendSize;
+	uint8_t result = 0xFF;
+
+	NxDbgMsg( NX_DBG_INFO, "Send QueCommand.\n" );
+
+	uint8_t recvData[1024] = { 0x00, };
+	if( 0 > SendRemote( "cinema.tms", pPayload, iPayloadSize, recvData, sizeof(recvData) ) )
+	{
+		NxDbgMsg( NX_DBG_ERR, "Fail, SendRemote. ( node: cinema.tms )\n");
+		printf("Fail, SendRemote. ( node: cinema.tms )\n");
+	}
+	else
+	{
+		result = !strncmp( (char*)recvData, "pass", sizeof(recvData) ) ? 0x01 : 0x00;
+	}
+
+	iSendSize = GDC_MakePacket( KEY_SEC(iKey & 0xFF), &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+	WriteData( iSock, m_SendBuf, iSendSize );
+
+	NX_HexDump( m_SendBuf, iSendSize, NX_DTAG, "Send" );
+	NxDbgMsg( NX_DBG_DEBUG, ">>>> Receive QueCommand Done. ( curTime: %lld mSec )\n",  NX_GetTickCount() );
+
+	return 1;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_TMSServer::DeleteConfig( int32_t iSock, uint8_t iCmd, int32_t iCmdStep, uint32_t iKey, uint8_t *pPayload, int32_t iPayloadSize )
+{
+	UNUSED( iSock );
+	UNUSED( iCmd );
+	UNUSED( iKey );
+	UNUSED( pPayload );
+	UNUSED( iPayloadSize );
+
+	uint8_t outBuf[MAX_PAYLOAD_SIZE];
+	int32_t iOutSize;
+	int32_t iSendSize;
+
+	switch( iCmdStep )
+	{
+		case 0:
+		{
+			uint8_t result[MAX_PAYLOAD_SIZE];
+
+			if( 0 > SendRemote( "cinema.tms", pPayload, iPayloadSize, result, sizeof(result) ) )
+			{
+				NxDbgMsg( NX_DBG_ERR, "Fail, SendRemote. ( node: cinema.tms )\n");
+				printf("Fail, SendRemote. ( node: cinema.tms )\n");
+			}
+
+			result[0] = 0x01;
+
+			iSendSize = GDC_MakePacket( KEY_SEC(iKey & 0xFF), &result, 1, m_SendBuf, sizeof(m_SendBuf) );
+			WriteData( iSock, m_SendBuf, iSendSize );
+
+			NX_HexDump( m_SendBuf, iSendSize, NX_DTAG, "Send" );
+			NxDbgMsg( NX_DBG_DEBUG, ">>>> Receive QueCommand Done. ( curTime: %lld mSec )\n",  NX_GetTickCount() );
+
+			return 1;
+		}
+
+		default:
+			break;
+	}
+
+	return -1;
+}
+
+//------------------------------------------------------------------------------
+int32_t CNX_TMSServer::UploadConfig( int32_t iSock, uint8_t iCmd, int32_t iCmdStep, uint32_t iKey, uint8_t *pPayload, int32_t iPayloadSize )
+{
+	int32_t iSendSize;
+
+	switch( iCmdStep )
+	{
+		case 0:
+		{
+			uint8_t result = iCmd;
+			iSendSize = GDC_MakePacket( KEY_SEC(iKey & 0xFF), &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
+			if( 0 > WriteData( iSock, m_SendBuf, iSendSize ) )
+			{
+				return -1;
+			}
+
+			NX_HexDump( m_SendBuf, iSendSize, NX_DTAG, "Send" );
+			return 0;
+		}
+
+		case 1:
+		{
+			uint8_t result[MAX_PAYLOAD_SIZE];
+
+			uint8_t *pInBuf = (uint8_t*)malloc( sizeof(uint8_t)*(iPayloadSize+1) );
+			memcpy( pInBuf+1, pPayload, iPayloadSize );
+			pInBuf[0] = iCmd;
+
+			if( 0 > SendRemote( "cinema.tms", pInBuf, iPayloadSize+1, result, sizeof(result) ) )
+			{
+				NxDbgMsg( NX_DBG_ERR, "Fail, SendRemote. ( node: cinema.tms )\n");
+				printf("Fail, SendRemote. ( node: cinema.tms )\n");
+			}
+			if( pInBuf ) free( pInBuf );
+
+			result[0] = (iPayloadSize >> 8) & 0xFF;
+			result[1] = (iPayloadSize >> 0) & 0xFF;
+
+			iSendSize = GDC_MakePacket( KEY_SEC(iKey & 0xFF), result, 2, m_SendBuf, sizeof(m_SendBuf) );
+			if( 0 > WriteData( iSock, m_SendBuf, iSendSize ) )
+			{
+				return -1;
+			}
+
+			NX_HexDump( m_SendBuf, iSendSize, NX_DTAG, "Send" );
+			NxDbgMsg( NX_DBG_DEBUG, ">>>> Receive UploadConfig Done. ( curTime: %lld mSec )\n",  NX_GetTickCount() );
+			return 1;
+		}
+
+		default:
+			break;
+	}
+
+	return -1;
+}
+
+//------------------------------------------------------------------------------
+#include <CNX_CinemaBehavior.h>
+
+int32_t CNX_TMSServer::DownloadConfig( int32_t iSock, uint8_t iCmd, int32_t iCmdStep, uint32_t iKey, uint8_t *pPayload, int32_t iPayloadSize )
+{
+	UNUSED( iCmd );
+	UNUSED( iPayloadSize );
+
+	int32_t iSendSize;
+	static int32_t iMode = 0;
+
+	switch( iCmdStep )
+	{
+		case 0:
+		{
+			iMode = pPayload[1];
+			for( int32_t i = 0; i < 3; i++ )
+			{
+				char szFile[1024];
+				snprintf( szFile, sizeof(szFile), "/storage/sdcard0/SAMSUNG/TCON_BEHAVIOR/BEHAVIOR_%s_MODE%02d.txt",
+					(i == 0) ? "R" : ((i==1) ? "G" : "B"),
+					iMode
+				);
+
+				if( 0 > access(szFile, F_OK) )
+					continue;
+
+				CNX_CinemaBehavior behavior;
+				if( !behavior.Parse( szFile ) )
+				{
+					NX_BEHAVIOR_INFO *pInfo;
+					behavior.GetBehaviorInfo( &pInfo );
+
+					iSendSize = GDC_MakePacket( KEY_SEC(iKey & 0xFF),
+						(pInfo->pDesc == NULL) ? NULL : pInfo->pDesc,
+						(pInfo->pDesc == NULL) ? 0 : strlen(pInfo->pDesc),
+						m_SendBuf, sizeof(m_SendBuf)
+					);
+
+					NX_HexDump( m_SendBuf, iSendSize, NX_DTAG, "Send" );
+
+					if( 0 > WriteData( iSock, m_SendBuf, iSendSize ) )
+					{
+						return -1;
+					}
+					return 0;
+				}
+			}
+
+			iSendSize = GDC_MakePacket( KEY_SEC(iKey & 0xFF), NULL, 0, m_SendBuf, sizeof(m_SendBuf) );
+			WriteData( iSock, m_SendBuf, iSendSize );
+
+			NX_HexDump( m_SendBuf, iSendSize, NX_DTAG, "Send" );
+			return -1;
+		}
+
+		case 1:
+		{
+			uint8_t result[MAX_PAYLOAD_SIZE];
+			uint8_t inBuf[2] = {
+				(uint8_t)iMode,
+				(uint8_t)((pPayload[1] == 'R') ? 0 : ((pPayload[1] == 'G') ? 1 : 2)) };
+			int32_t iReadSize;
+
+			m_pCinema->SendCommand(PLATFORM_CMD_CONFIG_DOWNLOAD, inBuf, sizeof(inBuf), result, &iReadSize );
+
+			iSendSize = GDC_MakePacket( KEY_SEC(iKey & 0xFF), result, iReadSize, m_SendBuf, sizeof(m_SendBuf) );
+			if( 0 > WriteData( iSock, m_SendBuf, iSendSize ) )
+			{
+				return -1;
+			}
+
+			NX_HexDump( m_SendBuf, iSendSize, NX_DTAG, "Send" );
+			return 1;
+		}
+
+		default:
+			break;
+	}
+	return -1;
 }
 
 //------------------------------------------------------------------------------
@@ -401,10 +709,11 @@ int32_t CNX_TMSServer::WriteData( int32_t fd, uint8_t *pBuf, int32_t iSize )
 }
 
 //------------------------------------------------------------------------------
-int32_t CNX_TMSServer::SendRemote( const char *pSockName, const char *pMsg )
+int32_t CNX_TMSServer::SendRemote( const char *pSockName, uint8_t *pSendBuf, int32_t iSendSize, uint8_t *pRecvBuf, int32_t iRecvSize )
 {
 	int32_t sock, len;
 	struct sockaddr_un addr;
+	int32_t iReadSize = 0;
 
 	if( 0 > (sock = socket(AF_UNIX, SOCK_STREAM, 0)) )
 	{
@@ -427,65 +736,39 @@ int32_t CNX_TMSServer::SendRemote( const char *pSockName, const char *pMsg )
 		return -1;
 	}
 
-	if( 0 > WriteData(sock, (uint8_t*)pMsg, strlen(pMsg)) )
+	//
+	// by doriya
+	//
+	uint8_t *pBuf = (uint8_t*)malloc( sizeof(uint8_t) * (iSendSize + 2) );
+	pBuf[0] = (iSendSize >> 8) & 0xFF;
+	pBuf[1] = (iSendSize >> 0) & 0xFF;
+	memcpy( pBuf + 2, pSendBuf, iSendSize );
+
+	if( 0 > write(sock, (uint8_t*)pBuf, iSendSize+2) )
 	{
 		NxDbgMsg( NX_DBG_VBS, "Fail, write().\n");
 		printf("Fail, write().\n");
 		close( sock );
+		if( pBuf ) free( pBuf );
 		return -1;
 	}
 
+	if( NULL != pRecvBuf && 0 < iRecvSize )
+	{
+		if( 0 > (iReadSize = read(sock, (uint8_t*)pRecvBuf, iRecvSize)) )
+		{
+			NxDbgMsg( NX_DBG_VBS, "Fail, read().\n");
+			printf("Fail, read().\n");
+			close( sock );
+			if( pBuf ) free( pBuf );
+			return -1;
+		}
+	}
+
 	close( sock );
-	return 0;
+	if( pBuf ) free( pBuf );
+	return iReadSize;
 }
-
-// //------------------------------------------------------------------------------
-// int32_t CNX_TMSServer::ProcessCommand( int32_t fd, uint32_t key, void *pPayload, int32_t payloadSize )
-// {
-// 	int32_t iCmd = key & 0xFF;
-
-// 	switch( iCmd )
-// 	{
-// 		case GDC_COMMAND( CMD_TYPE_IMB, IMB_CMD_QUE ):
-// 			return IMB_QueCommand( fd, iCmd, (uint8_t*)pPayload, payloadSize );
-// 		default:
-// 			return -1;
-// 	}
-
-// 	return 0;
-// }
-
-// //------------------------------------------------------------------------------
-// int32_t CNX_TMSServer::IMB_QueCommand( int32_t fd, uint32_t iCmd, uint8_t *pBuf, int32_t iSize )
-// {
-// 	NxDbgMsg( NX_DBG_DEBUG, ">>>> Receive QueCommand. ( curTime: %lld mSec )\n",  NX_GetTickCount() );
-// 	UNUSED( iSize );
-
-// 	uint8_t result = 0xFF;
-// 	int32_t sendSize;
-
-// 	uint8_t sendData[4] = { 0x00, };
-// 	sprintf( (char*)sendData, "%d", pBuf[0] );
-
-// 	if( !SendRemote( "cinema.tms", (const char*)sendData ) )
-// 	{
-// 		result = 0x01;
-// 	}
-// 	else
-// 	{
-// 		NxDbgMsg( NX_DBG_ERR, "Fail, SendRemote. ( node: cinema.tms )\n");
-// 		printf("Fail, SendRemote. ( node: cinema.tms )\n");
-// 	}
-
-// 	sendSize = GDC_MakePacket( KEY_SEC(iCmd), &result, sizeof(result), m_SendBuf, sizeof(m_SendBuf) );
-
-// 	WriteData( fd, m_SendBuf, sendSize );
-// 	NX_HexDump( m_SendBuf, sendSize );
-
-// 	NxDbgMsg( NX_DBG_DEBUG, ">>>> Receive QueCommand Done. ( curTime: %lld mSec )\n",  NX_GetTickCount() );
-// 	return 0;
-// }
-
 
 //------------------------------------------------------------------------------
 //

@@ -27,6 +27,10 @@
 
 uint64_t	NX_GetTickCount( void );
 int32_t		NX_GetRandomValue( int32_t iStartNum, int32_t iEndNum );
+void		NX_WaitTime( uint64_t iWaitTime, const char *pMsg, const char *tag );
+
+void		NX_MakeDirectory( const char *pFormat, ... );
+int32_t		NX_RemoveFile( const char *pFormat, ... );
 
 void		NX_HexDump( const void *data, int32_t size, const char *tag, const char *msg );
 void		NX_HexDump( const void *data, int32_t size, const char *msg );
@@ -34,6 +38,6 @@ void		NX_HexDump( const void *data, int32_t size );
 
 int32_t		ping( const char *target );
 
-int32_t		NX_SHELL_GetArgument (char *pSrc, char arg[][NX_SHELL_MAX_STR] );
+int32_t		NX_SHELL_GetArgument( char *pSrc, char arg[][NX_SHELL_MAX_STR] );
 
 #endif	// __NX_UTILS_H__

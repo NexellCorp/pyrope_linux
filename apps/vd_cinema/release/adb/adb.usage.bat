@@ -1,2 +1,0 @@
-.\bin\adb.exe
-pause

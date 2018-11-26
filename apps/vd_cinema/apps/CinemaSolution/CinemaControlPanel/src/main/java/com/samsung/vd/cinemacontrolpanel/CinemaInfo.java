@@ -86,6 +86,9 @@ public class CinemaInfo extends Application {
     public static final int RET_FAIL    = 0;
     public static final int RET_PASS    = 1;
 
+    public static final int RET_FALSE   = 0;
+    public static final int RET_TRUE    = 1;
+
     public static final String[] KEY_TREG_DEFAULT   = {
         KEY_TREG_0x018B,
         KEY_TREG_0x018C,
@@ -196,9 +199,17 @@ public class CinemaInfo extends Application {
         return true;
     }
 
+    public boolean IsEnableLogout() {
+		return false;
+	}
+
     public boolean IsFirstBootAccessEEPRom() {
 		return true;
 	}
+
+	public boolean IsForceUpdateBehavior() {
+        return false;
+    }
 
     public int GetBootTime() {
         return 30;

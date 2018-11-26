@@ -60,7 +60,17 @@ public class LoginActivity extends CinemaBaseActivity {
                         HideProgress();
                     }
                 },
-                null
+                new CinemaTask.ProgressUpdateCallback() {
+                    @Override
+                    public void onProgressUpdate(Object[] values) {
+                        if (!(values instanceof Integer[]))
+                            return;
+
+                        if( (Integer)values[0] == CinemaInfo.RET_TRUE ) {
+                            ShowMessage("Auto Update Behavior File.");
+                        }
+                    }
+                }
         );
 
         if( !mCinemaInfo.IsCheckLogin() ) {

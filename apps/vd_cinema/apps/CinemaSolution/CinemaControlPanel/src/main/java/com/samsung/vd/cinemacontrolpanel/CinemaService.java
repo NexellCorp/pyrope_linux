@@ -132,7 +132,10 @@ public class CinemaService extends Service {
         switch (msg.what) {
             case KEY_SCREEN_TURN_OFF:
                 SetBrightness( 0 );
-                mHandler.sendEmptyMessageDelayed( KEY_SCREEN_LOG_OUT, DEFAULT_LOGOUT_TIME );
+                // Logout. ( It is not stable )
+                if( ((CinemaInfo)getApplicationContext()).IsEnableLogout() ) {
+                    mHandler.sendEmptyMessageDelayed( KEY_SCREEN_LOG_OUT, DEFAULT_LOGOUT_TIME );
+                }
                 break;
 
             case KEY_SCREEN_LOG_OUT:

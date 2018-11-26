@@ -36,7 +36,7 @@
 #include "fmemopen.h"
 #define NX_TREG_EEPROM_FILE		"/storage/sdcard0/SAMSUNG/TCON_EEPROM/T_REG.txt"
 #else
-#define NX_TREG_EEPROM_FILE		"./T_REG.txt"
+#define NX_TREG_EEPROM_FILE		"./data/TCON_EEPROM/T_REG.txt"
 #endif
 
 //------------------------------------------------------------------------------
@@ -315,7 +315,11 @@ int32_t CNX_CinemaBehavior::ParseBehavior( uint8_t *pInBuf, int32_t iInSize )
 	}
 
 	fclose( hFile );
-	SetTregInfo();
+
+	if( 0 > SetTregInfo() )
+	{
+		return -1;
+	}
 
 	DumpBehaviorInfo();
 	DumpTregInfo();
@@ -531,7 +535,7 @@ int32_t CNX_CinemaBehavior::SetBehaviorInfo( FILE *hFile, char *pIndex, char *pD
 		int32_t iDataCnt = 0;
 		char szData[32] = { 0x00, };
 
-		while( fgets( szData, sizeof(szData)-1, hFile ) || iDataCnt < 9 )
+		while( iDataCnt < 9 && fgets( szData, sizeof(szData)-1, hFile )  )
 		{
 			m_BehaviorInfo.pGamutData[iDataCnt++] = strtol( szData, NULL, 10 );
 		}
@@ -541,7 +545,7 @@ int32_t CNX_CinemaBehavior::SetBehaviorInfo( FILE *hFile, char *pIndex, char *pD
 		int32_t iDataCnt = 0;
 		char szData[32] = { 0x00, };
 
-		while( fgets( szData, sizeof(szData)-1, hFile ) || iDataCnt < m_BehaviorInfo.iTransNum )
+		while( iDataCnt < m_BehaviorInfo.iTransNum && fgets( szData, sizeof(szData)-1, hFile ) )
 		{
 			m_BehaviorInfo.pTransTable[iDataCnt++] = strtol( szData, NULL, 10 );
 		}
@@ -638,14 +642,16 @@ int32_t CNX_CinemaBehavior::SetTregInfo()
 
 		if( 0 > ParseTreg( NX_TREG_EEPROM_FILE, iCopyMode, &info ) )
 		{
+			NxDbgMsg( NX_DBG_ERR, "Fail, ParseTreg(). ( iCopyMode: %d, iRefMode: %d, iCurMode: %d )\n",
+				iCopyMode, iRefMode, iCurMode );
 			return -1;
 		}
 
 		m_TregInfo.iMode         = m_BehaviorInfo.iMode;
 		m_TregInfo.iGammaType[0] = 0;
 		m_TregInfo.iGammaType[1] = iTransfer;
-		m_TregInfo.iGammaType[2] = 0;
-		m_TregInfo.iGammaType[3] = 0;
+		m_TregInfo.iGammaType[2] = info.iGammaType[2];
+		m_TregInfo.iGammaType[3] = info.iGammaType[3];
 		m_TregInfo.pDesc         = strdup( m_BehaviorInfo.pDesc );
 		m_TregInfo.iNumber       = info.iNumber;
 		m_TregInfo.pReg          = (uint16_t*)malloc( sizeof(uint16_t)*info.iNumber );
@@ -664,15 +670,6 @@ int32_t CNX_CinemaBehavior::SetTregInfo()
 				if( m_BehaviorInfo.pInput && !strcasecmp(m_BehaviorInfo.pInput, "RGB" ) )	m_TregInfo.pData[i] = 0;
 				else																		m_TregInfo.pData[i] = 1;
 				break;
-			case 0x0089:	// REG_ROM_SEL
-				if( m_BehaviorInfo.pTransLoad && !strcasecmp(m_BehaviorInfo.pTransLoad, "TCON_DCI" ) )	m_TregInfo.pData[i] = 0;
-				if( m_BehaviorInfo.pTransLoad && !strcasecmp(m_BehaviorInfo.pTransLoad, "TCON_ROM1" ) )	m_TregInfo.pData[i] = 1;
-				if( m_BehaviorInfo.pTransLoad && !strcasecmp(m_BehaviorInfo.pTransLoad, "TCON_ROM2" ) )	m_TregInfo.pData[i] = 2;
-				if( m_BehaviorInfo.pTransLoad && !strcasecmp(m_BehaviorInfo.pTransLoad, "TCON_ROM3" ) )	m_TregInfo.pData[i] = 3;
-				if( m_BehaviorInfo.pTransLoad && !strcasecmp(m_BehaviorInfo.pTransLoad, "TCON_ROM4" ) )	m_TregInfo.pData[i] = 4;
-				if( m_BehaviorInfo.pTransLoad && !strcasecmp(m_BehaviorInfo.pTransLoad, "TCON_ROM5" ) )	m_TregInfo.pData[i] = 5;
-				if( m_BehaviorInfo.pTransLoad && !strcasecmp(m_BehaviorInfo.pTransLoad, "USB" ) )		m_TregInfo.pData[i] = 0;
-				break;
 			case 0x0082:	// REG_TGAM_RD_SEL
 				if( m_BehaviorInfo.pTransLoad && !strcasecmp(m_BehaviorInfo.pTransLoad, "TCON_DCI" ) )	m_TregInfo.pData[i] = 0;
 				if( m_BehaviorInfo.pTransLoad && !strcasecmp(m_BehaviorInfo.pTransLoad, "TCON_ROM1" ) )	m_TregInfo.pData[i] = 0;
@@ -681,9 +678,21 @@ int32_t CNX_CinemaBehavior::SetTregInfo()
 				if( m_BehaviorInfo.pTransLoad && !strcasecmp(m_BehaviorInfo.pTransLoad, "TCON_ROM4" ) )	m_TregInfo.pData[i] = 0;
 				if( m_BehaviorInfo.pTransLoad && !strcasecmp(m_BehaviorInfo.pTransLoad, "TCON_ROM5" ) )	m_TregInfo.pData[i] = 0;
 				if( m_BehaviorInfo.pTransLoad && !strcasecmp(m_BehaviorInfo.pTransLoad, "USB" ) )		m_TregInfo.pData[i] = 1;
+				if( m_BehaviorInfo.pTransLoad && !strcasecmp(m_BehaviorInfo.pTransLoad, "TCON_G220" ) )	m_TregInfo.pData[i] = 0; // TCON_ROM1
+				break;
+			case 0x0089:	// REG_ROM_SEL
+				if( m_BehaviorInfo.pTransLoad && !strcasecmp(m_BehaviorInfo.pTransLoad, "TCON_DCI" ) )	m_TregInfo.pData[i] = 0;
+				if( m_BehaviorInfo.pTransLoad && !strcasecmp(m_BehaviorInfo.pTransLoad, "TCON_ROM1" ) )	m_TregInfo.pData[i] = 1;
+				if( m_BehaviorInfo.pTransLoad && !strcasecmp(m_BehaviorInfo.pTransLoad, "TCON_ROM2" ) )	m_TregInfo.pData[i] = 2;
+				if( m_BehaviorInfo.pTransLoad && !strcasecmp(m_BehaviorInfo.pTransLoad, "TCON_ROM3" ) )	m_TregInfo.pData[i] = 3;
+				if( m_BehaviorInfo.pTransLoad && !strcasecmp(m_BehaviorInfo.pTransLoad, "TCON_ROM4" ) )	m_TregInfo.pData[i] = 4;
+				if( m_BehaviorInfo.pTransLoad && !strcasecmp(m_BehaviorInfo.pTransLoad, "TCON_ROM5" ) )	m_TregInfo.pData[i] = 5;
+				if( m_BehaviorInfo.pTransLoad && !strcasecmp(m_BehaviorInfo.pTransLoad, "USB" ) )		m_TregInfo.pData[i] = 0;
+				if( m_BehaviorInfo.pTransLoad && !strcasecmp(m_BehaviorInfo.pTransLoad, "TCON_G220" ) )	m_TregInfo.pData[i] = 1; // TCON_ROM1
 				break;
 			default:
 				m_TregInfo.pData[i] = info.pData[i];
+				break;
 			}
 		}
 
@@ -700,6 +709,8 @@ int32_t CNX_CinemaBehavior::SetTregInfo()
 
 		if( 0 > ParseTreg( NX_TREG_EEPROM_FILE, iRefMode, &info ) )
 		{
+			NxDbgMsg( NX_DBG_ERR, "Fail, ParseTreg(). ( iCopyMode: %d, iRefMode: %d, iCurMode: %d )\n",
+				iCopyMode, iRefMode, iCurMode );
 			return -1;
 		}
 
@@ -751,6 +762,8 @@ int32_t CNX_CinemaBehavior::SetTregInfo()
 
 		if( 0 > ParseTreg( NX_TREG_EEPROM_FILE, iCurMode, &info ) )
 		{
+			NxDbgMsg( NX_DBG_ERR, "Fail, ParseTreg(). ( iCopyMode: %d, iRefMode: %d, iCurMode: %d )\n",
+				iCopyMode, iRefMode, iCurMode );
 			return -1;
 		}
 
@@ -963,6 +976,11 @@ int32_t CNX_CinemaBehavior::CalulateMatrix( uint16_t iSrcData[3][3], uint16_t iD
 				else			// SRGB, P3
 				{
 					iDstData[i][j] = (uint16_t)iTempData[i][j];
+				}
+
+				if( 16383 <= iDstData[i][j] )
+				{
+					iDstData[i][j] = 16383;
 				}
 			}
 		}

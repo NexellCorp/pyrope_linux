@@ -592,6 +592,11 @@ public class DisplayModeActivity extends CinemaBaseActivity {
             }
         });
 
+        if( !mCinemaInfo.IsCheckCabinetNum() ) {
+            mEditCabinet.setEnabled(false);
+            btnCabinetNum.setEnabled(false);
+        }
+
         String[] strSuspendTime = {
             "Disable", "1 min", "3 min", "5 min", "10 min", "20 min", "30 min"
         };

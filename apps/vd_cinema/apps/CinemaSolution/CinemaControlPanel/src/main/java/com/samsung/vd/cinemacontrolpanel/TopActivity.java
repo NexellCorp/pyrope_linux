@@ -46,6 +46,7 @@ public class TopActivity extends CinemaBaseActivity {
     private TextView mTextOperator;
     private Spinner mSpinnerOperator;
 
+    private final Object mSynchronized = new Object();
     private boolean mMounted = false;
 
     @Override
@@ -216,7 +217,9 @@ public class TopActivity extends CinemaBaseActivity {
         //
         //
         String[] extPath = FileManager.GetExternalPath();
-        mMounted = ((extPath != null) && (extPath.length > 0));
+        synchronized(mSynchronized) {
+            mMounted = ((extPath != null) && (extPath.length > 0));
+        }
 
         //
         //  Parse TCON Configuration Files.
@@ -282,9 +285,9 @@ public class TopActivity extends CinemaBaseActivity {
                             new CinemaTask.PostExecuteCallback() {
                                 @Override
                                 public void onPostExecute(Object[] values) {
-                                    ShowMessage( "Update Initial Value File.");
-
                                     UpdateInitialValue();
+
+                                    ShowMessage( "Update All UserMode." );
                                     HideProgress();
                                 }
                             },
@@ -338,8 +341,8 @@ public class TopActivity extends CinemaBaseActivity {
                                                                 ConfigBehaviorInfo.PATH_TARGET, (color == 0) ? "R" : ((color==1) ? "G" : "B"), pos)
                                                 );
 
-                                                ShowMessage( "Update Initial Value File.");
                                                 UpdateInitialValue();
+                                                ShowMessage( "Update All UserMode." );
                                             }
 
                                             HideProgress();
@@ -374,6 +377,8 @@ public class TopActivity extends CinemaBaseActivity {
                             @Override
                             public void onPostExecute(Object[] values) {
                                 UpdateInitialValue();
+
+                                ShowMessage( "Remove All UserMode." );
                                 HideProgress();
                             }
                         },
@@ -414,7 +419,7 @@ public class TopActivity extends CinemaBaseActivity {
                                         if( !(values instanceof Integer[]) )
                                             return;
 
-                                        if( (Integer)values[0] != CinemaInfo.RET_PASS ) {
+                                        if( (Integer)values[0] == CinemaInfo.RET_TRUE ) {
                                             mBehaviorSrcInfo.Delete(pos);
                                             mTconSrcInfo.Delete(pos);
 
@@ -426,6 +431,7 @@ public class TopActivity extends CinemaBaseActivity {
                                             mAdapterMode.notifyDataSetChanged();
 
                                             UpdateBtnDelete();
+                                            ShowMessage( "Remote All UserMode." );
                                         }
                                         HideProgress();
                                     }
@@ -552,8 +558,10 @@ public class TopActivity extends CinemaBaseActivity {
             if( null == action )
                 return;
 
-            mMounted = false;
             mBtnUpdate.setEnabled(false);
+            synchronized(mSynchronized) {
+                mMounted = false;
+            }
 
             if( action.equals(Intent.ACTION_MEDIA_MOUNTED) ) {
                 try {
@@ -561,7 +569,10 @@ public class TopActivity extends CinemaBaseActivity {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                mMounted = true;
+
+                synchronized(mSynchronized) {
+                    mMounted = true;
+                }
             }
 
             ParseTregUsb();
@@ -595,6 +606,8 @@ public class TopActivity extends CinemaBaseActivity {
                             @Override
                             public void onPostExecute(Object[] values) {
                                 UpdateBtnDelete();
+
+                                ShowMessage( String.format( Locale.US, "Update UserMode #%02d", pos+1 ) );
                                 HideProgress();
                             }
                         },
@@ -669,8 +682,9 @@ public class TopActivity extends CinemaBaseActivity {
                                         info.SetBtnEnable( 1, IsDelete(pos) );
                                         info.SetBtnEnable( 2, IsDownload(pos) );
                                         info.SetBtnEnable( 3, IsApply(pos) );
-
                                         mAdapterMode.notifyDataSetChanged();
+
+                                        ShowMessage( String.format( Locale.US, "Update UserMode #%02d", pos+1 ) );
                                         UpdateBtnDelete();
                                     }
                                     HideProgress();
@@ -708,6 +722,7 @@ public class TopActivity extends CinemaBaseActivity {
                 mAdapterMode.notifyDataSetChanged();
 
                 UpdateBtnDelete();
+                ShowMessage( String.format( Locale.US, "Remove UserMode #%02d", pos+1 ) );
             }
             else {
                 CinemaTask.GetInstance().Run(
@@ -726,7 +741,7 @@ public class TopActivity extends CinemaBaseActivity {
                                 if( !(values instanceof Integer[]) )
                                     return;
 
-                                if( (Integer)values[0] != CinemaInfo.RET_PASS ) {
+                                if( (Integer)values[0] == CinemaInfo.RET_TRUE ) {
                                     mBehaviorSrcInfo.Delete(pos);
                                     mTconSrcInfo.Delete(pos);
 
@@ -738,6 +753,7 @@ public class TopActivity extends CinemaBaseActivity {
                                     mAdapterMode.notifyDataSetChanged();
 
                                     UpdateBtnDelete();
+                                    ShowMessage( String.format( Locale.US, "Remove UserMode #%02d", pos+1 ) );
                                 }
                                 HideProgress();
                             }
@@ -759,11 +775,14 @@ public class TopActivity extends CinemaBaseActivity {
                 String szPath = String.format(Locale.US, "%s/%s", extPath[0], ConfigTconInfo.PATH_SOURCE);
                 FileManager.MakeDirectory(szPath);
 
+                String outFile = String.format( Locale.US, "%s/T_REG_MODE%02d.txt", szPath, position );
                 mTconSrcInfo.Make(
-                        String.format( Locale.US, "%s/T_REG_MODE%02d.txt", szPath, position ),
+                        outFile,
                         position,
                         position
                 );
+
+                ShowMessage( String.format( Locale.US, "Download UserMode #%02d. ( %s )", position+1, outFile ) );
             }
             else {
                 String[] extPath = FileManager.GetExternalPath();
@@ -802,12 +821,15 @@ public class TopActivity extends CinemaBaseActivity {
                                     for( int i = 0; i < result.length; i++ )
                                         data[i] = result[i];
 
+                                    String outFile = String.format( Locale.US, "%s/Mode%02d_%s_%s.txt",
+                                            szPath, pos, mBehaviorSrcInfo.GetDesc(pos, color), (color==0) ? "R" : ((color==1) ? "G" : "B"));
+
                                     FileManager.WriteByte(
-                                            String.format( Locale.US, "%s/Mode%02d_%s_%s.txt",
-                                                    szPath, pos, mBehaviorSrcInfo.GetDesc(pos, color), (color==0) ? "R" : ((color==1) ? "G" : "B")),
+                                            outFile,
                                             data
                                     );
 
+                                    ShowMessage( String.format( Locale.US, "Download UserMode #%02d. ( %s )", pos+1, outFile ) );
                                     HideProgress();
                                 }
                             },
@@ -837,13 +859,16 @@ public class TopActivity extends CinemaBaseActivity {
                             if( !(values instanceof Integer[]) )
                                 return;
 
-                            if( 0 > (Integer)values[0] )
+                            if( 0 > (Integer)values[0] ) {
                                 Log.i(VD_DTAG, "Fail, Change Mode.");
+                                ShowMessage( "Change Mode Fail." );
+                            }
                             else {
                                 mInitMode = (Integer)values[0];
                                 mTextInitMode.setText(String.format(Locale.US, "Mode #%d", mInitMode + 1));
 
-                                Log.i(VD_DTAG, String.format("Change Mode Done. ( mode = %d )", (Integer)values[0] + 1));
+                                Log.i(VD_DTAG, String.format(Locale.US, "Change Mode Done. ( mode: %d )", (Integer)values[0] + 1));
+                                ShowMessage(String.format(Locale.US, "Change Mode Done. ( mode: %d )", (Integer)values[0] + 1));
                             }
                             HideProgress();
                         }
@@ -1229,11 +1254,16 @@ public class TopActivity extends CinemaBaseActivity {
     }
 
     private boolean IsDownload(int pos) {
-        if( mCinemaInfo.IsConfigDevelMode() ) {
-            return (10 <= pos) && ((mBehaviorSrcInfo != null) && mTconSrcInfo.IsValid(pos)) && mMounted;
+        boolean mounted = false;
+        synchronized(mSynchronized) {
+            mounted = mMounted;
         }
 
-        return (10 <= pos) && ((mBehaviorSrcInfo != null) && mBehaviorSrcInfo.IsValid(pos)) && mMounted;
+        if( mCinemaInfo.IsConfigDevelMode() ) {
+            return (10 <= pos) && ((mBehaviorSrcInfo != null) && mTconSrcInfo.IsValid(pos)) && mounted;
+        }
+
+        return (10 <= pos) && ((mBehaviorSrcInfo != null) && mBehaviorSrcInfo.IsValid(pos)) && mounted;
     }
 
     private boolean IsApply(int pos) {

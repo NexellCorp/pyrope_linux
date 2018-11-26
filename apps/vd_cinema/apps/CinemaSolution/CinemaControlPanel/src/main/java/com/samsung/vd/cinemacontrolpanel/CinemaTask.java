@@ -537,6 +537,47 @@ public class CinemaTask {
         return !((CinemaInfo)context).IsCheckTconBooting();
     }
 
+    private boolean UpdateBehavior() {
+        Log.i(VD_DTAG, ">> Update Behavior to T_REG.txt");
+
+        ConfigTconInfo info = new ConfigTconInfo();
+        info.Delete();
+        info.Make(
+                String.format( Locale.US, "%s/%s", ConfigTconInfo.PATH_TARGET_USB, ConfigTconInfo.NAME ),
+                10,
+                30
+        );
+
+        String[] files = FileManager.GetFileInDirectory(ConfigBehaviorInfo.PATH_TARGET);
+        if( files == null || files.length == 0 )
+            return false;
+
+        for(String file : files ) {
+            byte[] inData = FileManager.ReadByte(file);
+            if( inData == null || inData.length == 0 )
+                continue;
+
+            NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
+            byte[] result = ctrl.Send( NxCinemaCtrl.CMD_PLATFORM_CONFIG_UPLOAD, inData);
+            if( result != null && 0 < result.length ) {
+                Log.i(VD_DTAG, String.format(Locale.US, ">> Update Behavior( %s )", file));
+
+                info.Update(
+                        String.format( Locale.US, "%s/T_REG_MODE%02d.txt",
+                                ConfigTconInfo.PATH_TARGET_USB, result[0]),
+                        result[0]
+                );
+
+                info.Make(
+                        String.format( Locale.US, "%s/%s", ConfigTconInfo.PATH_TARGET_USB, ConfigTconInfo.NAME ),
+                        10,
+                        30
+                );
+            }
+        }
+        return true;
+    }
+
     //
     //  Implementation AsyncTask
     //
@@ -974,7 +1015,7 @@ public class CinemaTask {
         }
     }
 
-    private class AsyncTaskBootingComplete extends AsyncTask<Void, Void, Void> {
+    private class AsyncTaskBootingComplete extends AsyncTask<Void, Integer, Void> {
         private Context mContext = null;
         private PreExecuteCallback mPreExecute = null;
         private PostExecuteCallback mPostExecute = null;
@@ -1117,6 +1158,9 @@ public class CinemaTask {
                 if( result[0] == (byte)0x00 ) Log.i(VD_DTAG, ">> Update is not needed.");
 
                 if( result[0] != (byte)0xFF ) ((CinemaInfo)mContext).SetValidEEPRom( result[0] != (byte)0xFF );
+                if( result[0] == (byte)0x01 || ((CinemaInfo)mContext).IsForceUpdateBehavior() ) {
+                    publishProgress( UpdateBehavior() ? CinemaInfo.RET_TRUE : CinemaInfo.RET_FALSE );
+                }
             }
 
             //
@@ -1176,10 +1220,9 @@ public class CinemaTask {
                     if( result[0] == (byte)0x00 ) Log.i(VD_DTAG, ">> Update is not needed.");
 
                     if( result[0] != (byte)0xFF ) ((CinemaInfo)mContext).SetValidEEPRom( result[0] != (byte)0xFF );
-
-                    //
-                    //
-                    //
+                    if( result[0] == (byte)0x01 || ((CinemaInfo)mContext).IsForceUpdateBehavior() ) {
+                        publishProgress( UpdateBehavior() ? CinemaInfo.RET_TRUE : CinemaInfo.RET_FALSE );
+                    }
                 }
 
                 //
@@ -1419,9 +1462,9 @@ public class CinemaTask {
         }
 
         @Override
-        protected void onProgressUpdate(Void... values) {
+        protected void onProgressUpdate(Integer... values) {
             if( mProgressUpdate != null )
-                mProgressUpdate.onProgressUpdate(null);
+               mProgressUpdate.onProgressUpdate(values);
 
             super.onProgressUpdate(values);
         }
@@ -4599,7 +4642,6 @@ public class CinemaTask {
         private ProgressUpdateCallback mProgressUpdate = null;
 
         private ConfigTconInfo mTconInfo = new ConfigTconInfo();
-        private ConfigBehaviorInfo mBehaviorInfo = new ConfigBehaviorInfo();
 
         private byte[] mData;
         private int[] mResult = new int[] {-1, };
@@ -4620,43 +4662,36 @@ public class CinemaTask {
                 return null;
             }
 
-            String[] files;
             mTconInfo.Delete();
-            mBehaviorInfo.Delete();
 
-            files = FileManager.CheckFile( ConfigTconInfo.PATH_TARGET_USB, ConfigTconInfo.NAME );
+            String[] files = FileManager.CheckFile( ConfigTconInfo.PATH_TARGET_USB, ConfigTconInfo.NAME );
             if( files != null && files.length != 0 ) {
                 for(String file : files) {
                     mTconInfo.Update(file);
                 }
             }
 
-            files = FileManager.GetFileInDirectory( ConfigBehaviorInfo.PATH_TARGET );
-            if( files != null && files.length != 0 ) {
-                for(String file : files ) {
-                    mBehaviorInfo.Update(file);
-                }
-            }
-
             NxCinemaCtrl ctrl = NxCinemaCtrl.GetInstance();
             byte[] result = ctrl.Send( NxCinemaCtrl.CMD_PLATFORM_CONFIG_UPLOAD, mData);
+            if( result == null || result.length == 0 )
+                return null;
 
-            if( result != null && 0 < result.length ) {
-                mTconInfo.Update(
-                        String.format( Locale.US, "%s/T_REG_MODE%02d.txt",
-                                ConfigTconInfo.PATH_TARGET_USB, mResult[0]),
-                        mResult[0]
-                );
+            if( result[0] == (byte)0xFF )
+                return null;
 
-                mTconInfo.Make(
-                        String.format( Locale.US, "%s/%s", ConfigTconInfo.PATH_TARGET_USB, ConfigTconInfo.NAME ),
-                        10,
-                        30
-                );
+            mTconInfo.Update(
+                    String.format( Locale.US, "%s/T_REG_MODE%02d.txt",
+                            ConfigTconInfo.PATH_TARGET_USB, result[0]),
+                    result[0]
+            );
 
-                mResult[0] = (int)result[0];
-            }
+            mTconInfo.Make(
+                    String.format( Locale.US, "%s/%s", ConfigTconInfo.PATH_TARGET_USB, ConfigTconInfo.NAME ),
+                    10,
+                    30
+            );
 
+            mResult[0] = (int)result[0];
             return null;
         }
 
@@ -4763,7 +4798,6 @@ public class CinemaTask {
         private ProgressUpdateCallback mProgressUpdate = null;
 
         private ConfigTconInfo mTconInfo = new ConfigTconInfo();
-        private ConfigBehaviorInfo mBehaviorInfo = new ConfigBehaviorInfo();
 
         int mMode = -1;
         int[] mResult = new int[0];
@@ -4782,21 +4816,12 @@ public class CinemaTask {
             if( 0 > mMode )
                 return null;
 
-            String[] files;
             mTconInfo.Delete();
-            mBehaviorInfo.Delete();
 
-            files = FileManager.CheckFile( ConfigTconInfo.PATH_TARGET_USB, ConfigTconInfo.NAME );
+            String[] files = FileManager.CheckFile( ConfigTconInfo.PATH_TARGET_USB, ConfigTconInfo.NAME );
             if( files != null && files.length != 0 ) {
                 for(String file : files) {
                     mTconInfo.Update(file);
-                }
-            }
-
-            files = FileManager.GetFileInDirectory( ConfigBehaviorInfo.PATH_TARGET );
-            if( files != null && files.length != 0 ) {
-                for(String file : files ) {
-                    mBehaviorInfo.Update(file);
                 }
             }
 
@@ -4807,8 +4832,7 @@ public class CinemaTask {
             }
 
             mResult = new int[] {
-                    (mTconInfo.IsValid(mMode) || mBehaviorInfo.IsValid(mMode)) ?
-                    CinemaInfo.RET_PASS : CinemaInfo.RET_FAIL
+                    mTconInfo.IsValid(mMode) ? CinemaInfo.RET_PASS : CinemaInfo.RET_FAIL
             };
 
             if( mTconInfo.IsValid(mMode) ) {
@@ -4818,10 +4842,6 @@ public class CinemaTask {
                         10,
                         30
                 );
-            }
-
-            if( mBehaviorInfo.IsValid(mMode) ) {
-                mBehaviorInfo.Delete( mMode );
             }
 
             return null;

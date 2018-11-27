@@ -142,6 +142,9 @@ private:
 	enum { SCREEN_TYPE_P25 = 0, SCREEN_TYPE_P33 = 1 };
 	int32_t		m_iScreenType;
 
+	uint8_t*		m_pCabinet;
+	int32_t			m_iCabinetNum;
+
 private:
 	CNX_CinemaManager (const CNX_CinemaManager &Ref);
 	CNX_CinemaManager &operator=(const CNX_CinemaManager &Ref);

@@ -1243,7 +1243,7 @@ public class CinemaTask {
                 }
 
                 if( !tconInfo.IsValid(mInitMode) ) {
-                   Log.i(VD_DTAG, String.format(Locale.US, "Fail, Change Mode. ( mode: %d )", mInitMode ));
+                    Log.i(VD_DTAG, String.format(Locale.US, "Fail, Change Mode. ( mode: %d )", mInitMode ));
                     return null;
                 }
 

@@ -130,8 +130,10 @@ public class TopActivity extends CinemaBaseActivity {
         TextView textComment = (TextView)findViewById(R.id.textCommentTop);
         textComment.setText("");
         textComment.append(String.format(Locale.US, "-. TCON Config File\t\t\t\t\t: [USB_TOP]/%s/%s\n", ConfigTconInfo.PATH_SOURCE, ConfigTconInfo.NAME));
-        textComment.append(String.format(Locale.US, "-. TCON Behavior Path\t\t\t\t: [USB_TOP]/%s/\n", ConfigBehaviorInfo.PATH_SOURCE));
-        textComment.append(String.format(Locale.US, "-. TCON Behavior Extract Path\t: [USB_TOP]/%s/\n", ConfigBehaviorInfo.PATH_EXTRACT));
+        if( !mCinemaInfo.IsNotSupportBehavior() ) {
+            textComment.append(String.format(Locale.US, "-. TCON Behavior Path\t\t\t\t: [USB_TOP]/%s/\n", ConfigBehaviorInfo.PATH_SOURCE));
+            textComment.append(String.format(Locale.US, "-. TCON Behavior Extract Path\t: [USB_TOP]/%s/\n", ConfigBehaviorInfo.PATH_EXTRACT));
+        }
         textComment.append(String.format(Locale.US, "-. Gamma File\t\t\t\t\t\t: [USB_TOP]/%s/%s\n", LedGammaInfo.PATH_SOURCE, LedGammaInfo.PATTERN_NAME));
         textComment.append(String.format(Locale.US, "-. PFPGA Config File\t\t\t\t: [USB_TOP]/%s/%s\n", ConfigPfpgaInfo.PATH_SOURCE, ConfigPfpgaInfo.NAME));
         textComment.append(String.format(Locale.US, "-. Uniformity File\t\t\t\t\t: [USB_TOP]/%s/%s\n", LedUniformityInfo.PATH_SOURCE, LedUniformityInfo.NAME));
@@ -1238,6 +1240,10 @@ public class TopActivity extends CinemaBaseActivity {
     }
 
     private boolean IsUpdate(int pos) {
+        if( mCinemaInfo.IsNotSupportBehavior() ) {
+            return false;
+        }
+
         if( mCinemaInfo.IsConfigDevelMode() ) {
             return (10 <= pos) && mTconUsbInfo.IsValid(pos);
         }
@@ -1246,6 +1252,10 @@ public class TopActivity extends CinemaBaseActivity {
     }
 
     private boolean IsDelete(int pos) {
+        if( mCinemaInfo.IsNotSupportBehavior() ) {
+            return false;
+        }
+
         if( mCinemaInfo.IsConfigDevelMode() ) {
             return (10 <= pos) && (mTconSrcInfo != null) && mTconSrcInfo.IsValid(pos);
         }
@@ -1254,13 +1264,17 @@ public class TopActivity extends CinemaBaseActivity {
     }
 
     private boolean IsDownload(int pos) {
-        boolean mounted = false;
+        boolean mounted;
         synchronized(mSynchronized) {
             mounted = mMounted;
         }
 
+        if( mCinemaInfo.IsNotSupportBehavior() ) {
+            return false;
+        }
+
         if( mCinemaInfo.IsConfigDevelMode() ) {
-            return (10 <= pos) && ((mBehaviorSrcInfo != null) && mTconSrcInfo.IsValid(pos)) && mounted;
+            return (10 <= pos) && ((mTconSrcInfo != null) && mTconSrcInfo.IsValid(pos)) && mounted;
         }
 
         return (10 <= pos) && ((mBehaviorSrcInfo != null) && mBehaviorSrcInfo.IsValid(pos)) && mounted;

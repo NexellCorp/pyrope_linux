@@ -159,6 +159,9 @@ public class CinemaBaseActivity extends AppCompatActivity {
     private int mDevelCount = 0;
 
     protected void SetDevelMode() {
+        if( ((CinemaInfo)getApplicationContext()).IsNotSupportBehavior() )
+            return;
+
         long curTime = System.currentTimeMillis();
         if( (mPrvTime + 500) > curTime ) {
             mDevelCount++;

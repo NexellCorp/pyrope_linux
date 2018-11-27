@@ -129,7 +129,7 @@ public class CinemaInfo extends Application {
     //
     //
     private boolean mDevelMode      = false;
-    private boolean mConfigDevelMode= false;
+    private boolean mConfigDevelMode= IsNotSupportBehavior();
 
     //
     //  Cabinet Number  = cabinet number for display ( 0, 1, 2, 3 ... )
@@ -209,6 +209,10 @@ public class CinemaInfo extends Application {
 
 	public boolean IsForceUpdateBehavior() {
         return false;
+    }
+
+    public boolean IsNotSupportBehavior() {
+        return true;
     }
 
     public int GetBootTime() {

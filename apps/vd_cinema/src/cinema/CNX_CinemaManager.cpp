@@ -89,6 +89,8 @@ CNX_CinemaManager::CNX_CinemaManager()
 #else
 	, m_iScreenType( SCREEN_TYPE_P25 )
 #endif
+	, m_pCabinet( NULL )
+	, m_iCabinetNum( 0 )
 {
 	m_pTestPatternFunc[0] = &CNX_CinemaManager::TestPatternDci;
 	m_pTestPatternFunc[1] = &CNX_CinemaManager::TestPatternColorBar;
@@ -1165,21 +1167,43 @@ int32_t CNX_CinemaManager::TCON_TargetGamma( uint32_t iCmd, uint8_t *pInBuf, int
 #endif
 		usleep(100000);
 
-		if( (iDataSize == m_pCinema->Read( port, slave, TCON_REG_BURST_DATA_CNT )) &&
-			(iMsbCheckSum == m_pCinema->Read( port, slave, TCON_REG_BURST_DATA_XOR )) )
+		bFail = false;
+
+		for( int32_t i = 0; i < m_iCabinetNum; i++ )
 		{
-			bFail = false;
-			break;
+			int32_t iExpectedSize = m_pCinema->Read(
+				m_pCinema->GetCabinetPort(m_pCabinet[i]),
+				m_pCinema->GetCabinetSlave(m_pCabinet[i]),
+				TCON_REG_BURST_DATA_CNT );
+
+			int32_t iExpectedCheckSum = m_pCinema->Read(
+				m_pCinema->GetCabinetPort(m_pCabinet[i]),
+				m_pCinema->GetCabinetSlave(m_pCabinet[i]),
+				TCON_REG_BURST_DATA_XOR
+			);
+
+			NxDbgMsg( NX_DBG_DEBUG, ">>> Check MSB Gamma Validation. ( port: %d, slave: 0x%02x )\n",
+				m_pCinema->GetCabinetPort(m_pCabinet[i]), m_pCinema->GetCabinetSlave(m_pCabinet[i]) );
+
+			if( (iDataSize != iExpectedSize) || (iMsbCheckSum != iExpectedCheckSum) )
+			{
+				NxDbgMsg( NX_DBG_DEBUG, ">>> Fail, MSB Gamma Validate. ( port: %d, slave: 0x%02x, size: %d, expected size: %d, checksum: %d, expected checksum: %d )\n",
+						m_pCinema->GetCabinetPort(m_pCabinet[i]), m_pCinema->GetCabinetSlave(m_pCabinet[i]), iDataSize, iExpectedSize, iMsbCheckSum, iExpectedCheckSum );
+
+				bFail = true;
+			}
 		}
 
-		// NxDbgMsg( NX_DBG_DEBUG, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
-		// 	port, slave, TCON_REG_BURST_DATA_CNT );
+		if( !bFail )
+			break;
 
 		iRetryCount--;
-		bFail = true;
+		NxDbgMsg( NX_DBG_DEBUG, ">>> Retry Write MSB Gamma. ( cnt: %d )\n", TCON_BURST_RETRY_COUNT - iRetryCount );
 	}
 
-	if( bFail ) {
+	if( bFail )
+	{
+		NxDbgMsg( NX_DBG_ERR, "Fail, Write MSB Gamma.\n");
 		goto ERROR_TCON;
 	}
 
@@ -1230,24 +1254,49 @@ int32_t CNX_CinemaManager::TCON_TargetGamma( uint32_t iCmd, uint8_t *pInBuf, int
 #endif
 		usleep(100000);
 
-		if( (iDataSize == m_pCinema->Read( port, slave, TCON_REG_BURST_DATA_CNT )) &&
-			(iLsbCheckSum == m_pCinema->Read( port, slave, TCON_REG_BURST_DATA_XOR )) )
+		bFail = false;
+
+		for( int32_t i = 0; i < m_iCabinetNum; i++ )
 		{
-			bFail = false;
-			break;
+			int32_t iExpectedSize = m_pCinema->Read(
+				m_pCinema->GetCabinetPort(m_pCabinet[i]),
+				m_pCinema->GetCabinetSlave(m_pCabinet[i]),
+				TCON_REG_BURST_DATA_CNT );
+
+			int32_t iExpectedCheckSum = m_pCinema->Read(
+				m_pCinema->GetCabinetPort(m_pCabinet[i]),
+				m_pCinema->GetCabinetSlave(m_pCabinet[i]),
+				TCON_REG_BURST_DATA_XOR
+			);
+
+			NxDbgMsg( NX_DBG_DEBUG, ">>> Check LSB Gamma Validation. ( port: %d, slave: 0x%02x )\n",
+				m_pCinema->GetCabinetPort(m_pCabinet[i]), m_pCinema->GetCabinetSlave(m_pCabinet[i]) );
+
+			if( (iDataSize != iExpectedSize) || (iLsbCheckSum != iExpectedCheckSum) )
+			{
+				NxDbgMsg( NX_DBG_DEBUG, ">>> Fail, LSB Gamma Validate. ( port: %d, slave: 0x%02x, size: %d, expected size: %d, checksum: %d, expected checksum: %d )\n",
+						m_pCinema->GetCabinetPort(m_pCabinet[i]), m_pCinema->GetCabinetSlave(m_pCabinet[i]), iDataSize, iExpectedSize, iLsbCheckSum, iExpectedCheckSum );
+
+				bFail = true;
+			}
 		}
 
-		// NxDbgMsg( NX_DBG_DEBUG, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
-		// 	port, slave, TCON_REG_BURST_DATA_CNT );
+		if( !bFail )
+			break;
 
 		iRetryCount--;
-		bFail = true;
+		NxDbgMsg( NX_DBG_DEBUG, ">>> Retry Write LSB Gamma. ( cnt: %d )\n", TCON_BURST_RETRY_COUNT - iRetryCount );
 	}
 
-	if( bFail ) {
+	if( bFail )
+	{
+		NxDbgMsg( NX_DBG_ERR, "Fail, Write LSB Gamma.\n");
 		goto ERROR_TCON;
 	}
 
+	result = 0x01;
+
+ERROR_TCON:
 	if( 0 > m_pCinema->Write( port, slave, TCON_REG_LUT_BURST_SEL, 0x0000) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
@@ -1256,9 +1305,6 @@ int32_t CNX_CinemaManager::TCON_TargetGamma( uint32_t iCmd, uint8_t *pInBuf, int
 	}
 	usleep(100000);
 
-	result = 0x01;
-
-ERROR_TCON:
 	*iOutSize = sizeof(result);
 	memcpy( pOutBuf, &result, *iOutSize );
 
@@ -1364,21 +1410,43 @@ int32_t CNX_CinemaManager::TCON_DeviceGamma( uint32_t iCmd, uint8_t *pInBuf, int
 #endif
 		usleep(100000);
 
-		if( (iDataSize == m_pCinema->Read( port, slave, TCON_REG_BURST_DATA_CNT )) &&
-			(iMsbCheckSum == m_pCinema->Read( port, slave, TCON_REG_BURST_DATA_XOR )) )
+		bFail = false;
+
+		for( int32_t i = 0; i < m_iCabinetNum; i++ )
 		{
-			bFail = false;
-			break;
+			int32_t iExpectedSize = m_pCinema->Read(
+				m_pCinema->GetCabinetPort(m_pCabinet[i]),
+				m_pCinema->GetCabinetSlave(m_pCabinet[i]),
+				TCON_REG_BURST_DATA_CNT );
+
+			int32_t iExpectedCheckSum = m_pCinema->Read(
+				m_pCinema->GetCabinetPort(m_pCabinet[i]),
+				m_pCinema->GetCabinetSlave(m_pCabinet[i]),
+				TCON_REG_BURST_DATA_XOR
+			);
+
+			NxDbgMsg( NX_DBG_DEBUG, ">>> Check MSB Gamma Validation. ( port: %d, slave: 0x%02x )\n",
+				m_pCinema->GetCabinetPort(m_pCabinet[i]), m_pCinema->GetCabinetSlave(m_pCabinet[i]) );
+
+			if( (iDataSize != iExpectedSize) || (iMsbCheckSum != iExpectedCheckSum) )
+			{
+				NxDbgMsg( NX_DBG_DEBUG, ">>> Fail, MSB Gamma Validate. ( port: %d, slave: 0x%02x, size: %d, expected size: %d, checksum: %d, expected checksum: %d )\n",
+						m_pCinema->GetCabinetPort(m_pCabinet[i]), m_pCinema->GetCabinetSlave(m_pCabinet[i]), iDataSize, iExpectedSize, iMsbCheckSum, iExpectedCheckSum );
+
+				bFail = true;
+			}
 		}
 
-		// NxDbgMsg( NX_DBG_DEBUG, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
-		// 	port, slave, TCON_REG_BURST_DATA_CNT );
+		if( !bFail )
+			break;
 
 		iRetryCount--;
-		bFail = true;
+		NxDbgMsg( NX_DBG_DEBUG, ">>> Retry Write MSB Gamma. ( cnt: %d )\n", TCON_BURST_RETRY_COUNT - iRetryCount );
 	}
 
-	if( bFail ) {
+	if( bFail )
+	{
+		NxDbgMsg( NX_DBG_ERR, "Fail, Write MSB Gamma.\n");
 		goto ERROR_TCON;
 	}
 
@@ -1429,24 +1497,49 @@ int32_t CNX_CinemaManager::TCON_DeviceGamma( uint32_t iCmd, uint8_t *pInBuf, int
 #endif
 		usleep(100000);
 
-		if( (iDataSize == m_pCinema->Read( port, slave, TCON_REG_BURST_DATA_CNT )) &&
-			(iLsbCheckSum == m_pCinema->Read( port, slave, TCON_REG_BURST_DATA_XOR )) )
+		bFail = false;
+
+		for( int32_t i = 0; i < m_iCabinetNum; i++ )
 		{
-			bFail = false;
-			break;
+			int32_t iExpectedSize = m_pCinema->Read(
+				m_pCinema->GetCabinetPort(m_pCabinet[i]),
+				m_pCinema->GetCabinetSlave(m_pCabinet[i]),
+				TCON_REG_BURST_DATA_CNT );
+
+			int32_t iExpectedCheckSum = m_pCinema->Read(
+				m_pCinema->GetCabinetPort(m_pCabinet[i]),
+				m_pCinema->GetCabinetSlave(m_pCabinet[i]),
+				TCON_REG_BURST_DATA_XOR
+			);
+
+			NxDbgMsg( NX_DBG_DEBUG, ">>> Check LSB Gamma Validation. ( port: %d, slave: 0x%02x )\n",
+				m_pCinema->GetCabinetPort(m_pCabinet[i]), m_pCinema->GetCabinetSlave(m_pCabinet[i]) );
+
+			if( (iDataSize != iExpectedSize) || (iLsbCheckSum != iExpectedCheckSum) )
+			{
+				NxDbgMsg( NX_DBG_DEBUG, ">>> Fail, LSB Gamma Validate. ( port: %d, slave: 0x%02x, size: %d, expected size: %d, checksum: %d, expected checksum: %d )\n",
+						m_pCinema->GetCabinetPort(m_pCabinet[i]), m_pCinema->GetCabinetSlave(m_pCabinet[i]), iDataSize, iExpectedSize, iLsbCheckSum, iExpectedCheckSum );
+
+				bFail = true;
+			}
 		}
 
-		// NxDbgMsg( NX_DBG_DEBUG, "Fail, Read(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x )\n",
-		// 	port, slave, TCON_REG_BURST_DATA_CNT );
+		if( !bFail )
+			break;
 
 		iRetryCount--;
-		bFail = true;
+		NxDbgMsg( NX_DBG_DEBUG, ">>> Retry Write LSB Gamma. ( cnt: %d )\n", TCON_BURST_RETRY_COUNT - iRetryCount );
 	}
 
-	if( bFail ) {
+	if( bFail )
+	{
+		NxDbgMsg( NX_DBG_ERR, "Fail, Write LSB Gamma.\n");
 		goto ERROR_TCON;
 	}
 
+	result = 0x01;
+
+ERROR_TCON:
 	if( 0 > m_pCinema->Write( port, slave, TCON_REG_LUT_BURST_SEL, 0x0000) )
 	{
 		NxDbgMsg( NX_DBG_ERR, "Fail, Write(). ( i2c-%d, slave: 0x%02x, reg: 0x%04x, data: 0x%04x )\n",
@@ -1455,9 +1548,6 @@ int32_t CNX_CinemaManager::TCON_DeviceGamma( uint32_t iCmd, uint8_t *pInBuf, int
 	}
 	usleep(100000);
 
-	result = 0x01;
-
-ERROR_TCON:
 	*iOutSize = sizeof(result);
 	memcpy( pOutBuf, &result, *iOutSize );
 
@@ -3388,11 +3478,10 @@ int32_t CNX_CinemaManager::PLAT_CheckCabinet( uint32_t iCmd, uint8_t *pInBuf, in
 	UNUSED( pInBuf );
 	UNUSED( iInSize );
 
-	uint8_t *pCabinet = NULL;
-	int32_t iCabinetNum = m_pCinema->GetCabinet( &pCabinet );
+	m_iCabinetNum = m_pCinema->GetCabinet( &m_pCabinet );
 
-	*iOutSize = iCabinetNum;
-	memcpy( pOutBuf, pCabinet, *iOutSize );
+	*iOutSize = m_iCabinetNum;
+	memcpy( pOutBuf, m_pCabinet, *iOutSize );
 
 	return 0;
 }
